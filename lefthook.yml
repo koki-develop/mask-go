@@ -1,0 +1,17 @@
+pre-commit:
+  commands:
+    fmt:
+      stage_fixed: true
+      glob: "**/*.go"
+      run: go fmt ./...
+    lint:
+      glob: "**/*.go"
+      run: golangci-lint run
+    gitleaks:
+      run: betterleaks git --pre-commit --staged
+
+pre-push:
+  commands:
+    gitleaks:
+      glob: "**/*"
+      run: betterleaks git
