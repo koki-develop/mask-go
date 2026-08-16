@@ -1,2 +1,4 @@
 [tools]
+betterleaks = "1.7.4"
 go = "1.26.6"
+lefthook = "2.1.10"
