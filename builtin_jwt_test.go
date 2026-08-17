@@ -9,270 +9,18 @@ import (
 	"time"
 )
 
+// The JWT pattern: what it locates and what it leaves alone, written out case
+// by case, the decoder its scan shares between candidates, and the reference
+// that scan is held to.
+//
+// What every built-in shares — the convention its name follows, one value per
+// accessor, usable spans, no false positive on prose, agreement with the
+// reference below, exhaustive and idempotent masking, concurrent use and a
+// linear-time scan — is held to in builtins_test.go, which drives every
+// built-in from one table rather than a set of tests apiece.
+//
 // The tokens written out below are made only of ordered characters: valid in
 // shape, obviously not real.
-
-func Test_GitHubToken(t *testing.T) {
-	tests := []struct {
-		name string
-		src  string
-		want []Span
-	}{
-		{
-			name: "classic personal access token",
-			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxyz",
-			want: []Span{{0, 40}},
-		},
-		{
-			name: "oauth app access token",
-			src:  "gho_0123456789abcdefghijklmnopqrstuvwxyz",
-			want: []Span{{0, 40}},
-		},
-		{
-			name: "app user access token",
-			src:  "ghu_0123456789abcdefghijklmnopqrstuvwxyz",
-			want: []Span{{0, 40}},
-		},
-		{
-			name: "app installation access token",
-			src:  "ghs_0123456789abcdefghijklmnopqrstuvwxyz",
-			want: []Span{{0, 40}},
-		},
-		{
-			name: "app refresh token",
-			src:  "ghr_0123456789abcdefghijklmnopqrstuvwxyz",
-			want: []Span{{0, 40}},
-		},
-		{
-			name: "fine grained personal access token",
-			src:  "github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789",
-			want: []Span{{0, 93}},
-		},
-		{
-			// The ghs_APPID_JWT form GitHub moved installation tokens to in
-			// 2026.
-			name: "stateless installation token",
-			src:  "ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
-			want: []Span{{0, 83}},
-		},
-		{
-			// An app id of thirty-six characters or more opens like a whole
-			// classic token, and the alternation must still prefer the
-			// stateless form: matched the other way round, the underscore
-			// after the app id is left behind.
-			name: "stateless installation token with a long app id",
-			src:  "ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
-			want: []Span{{0, 117}},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := GitHubToken().Find(tt.src); !slices.Equal(got, tt.want) {
-				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_GitHubToken_noMatch(t *testing.T) {
-	tests := []struct {
-		name string
-		src  string
-	}{
-		{
-			name: "prefix alone",
-			src:  "ghp_",
-		},
-		{
-			// Thirty-five characters where the pattern asks for thirty-six.
-			name: "body one character too short",
-			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxy",
-		},
-		{
-			name: "unknown prefix letter",
-			src:  "ghx_0123456789abcdefghijklmnopqrstuvwxyz",
-		},
-		{
-			name: "prefix without separator",
-			src:  "ghp0123456789abcdefghijklmnopqrstuvwxyz",
-		},
-		{
-			// Eighty-one characters where the pattern asks for eighty-two.
-			name: "fine grained body one character too short",
-			src:  "github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678",
-		},
-		{
-			name: "an identifier that starts like the prefix",
-			src:  "github_pattern_for_matching",
-		},
-		{
-			name: "plain prose",
-			src:  "there is no credential in this sentence",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := GitHubToken().Find(tt.src); len(got) != 0 {
-				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
-			}
-		})
-	}
-}
-
-func Test_GitHubToken_inContext(t *testing.T) {
-	tests := []struct {
-		name string
-		src  string
-		want string
-	}{
-		{
-			name: "assignment",
-			src:  "GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz",
-			want: "GITHUB_TOKEN=****************************************",
-		},
-		{
-			name: "quoted",
-			src:  `"ghp_0123456789abcdefghijklmnopqrstuvwxyz"`,
-			want: `"****************************************"`,
-		},
-		{
-			name: "header",
-			src:  "Authorization: token ghp_0123456789abcdefghijklmnopqrstuvwxyz",
-			want: "Authorization: token ****************************************",
-		},
-		{
-			name: "twice",
-			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxyz ghp_0123456789abcdefghijklmnopqrstuvwxyz",
-			want: "**************************************** ****************************************",
-		},
-	}
-
-	m := New(WithPatterns(GitHubToken()))
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := m.Mask(tt.src); got != tt.want {
-				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_GitHubToken_nextToWordCharacters(t *testing.T) {
-	// A word boundary either side of the pattern would not trim these matches
-	// but drop them, letting the token through whole.
-	tests := []struct {
-		name string
-		src  string
-		want string
-	}{
-		{
-			name: "underscore after",
-			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxyz_x",
-			want: "****************************************_x",
-		},
-		{
-			name: "word character before",
-			src:  "xghp_0123456789abcdefghijklmnopqrstuvwxyz",
-			want: "x****************************************",
-		},
-		{
-			name: "underscore before",
-			src:  "TOKEN_ghp_0123456789abcdefghijklmnopqrstuvwxyz",
-			want: "TOKEN_****************************************",
-		},
-		{
-			name: "underscore before a fine grained token",
-			src:  "X_github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789",
-			want: "X_*********************************************************************************************",
-		},
-	}
-
-	m := New(WithPatterns(GitHubToken()))
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := m.Mask(tt.src); got != tt.want {
-				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_GitHubToken_leavesWhatFollowsAlone(t *testing.T) {
-	// Only the stateless installation token carries dots and dashes, so a
-	// classic one must not draw in the host or word written after it.
-	tests := []struct {
-		name string
-		src  string
-		want string
-	}{
-		{
-			name: "host",
-			src:  "host=ghp_0123456789abcdefghijklmnopqrstuvwxyz.example.com",
-			want: "host=****************************************.example.com",
-		},
-		{
-			name: "dashed word",
-			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxyz-suffix",
-			want: "****************************************-suffix",
-		},
-		{
-			name: "sentence",
-			src:  "the token is ghp_0123456789abcdefghijklmnopqrstuvwxyz.",
-			want: "the token is ****************************************.",
-		},
-		{
-			// An underscore and two dots after a classic ghs_ token are the
-			// shape of the stateless form, which is tried first. Only a JWT
-			// may follow the underscore, so this file name does not join the
-			// token.
-			name: "file name after a classic installation token",
-			src:  "ghs_0123456789abcdefghijklmnopqrstuvwxyz_backup.tar.gz",
-			want: "****************************************_backup.tar.gz",
-		},
-	}
-
-	m := New(WithPatterns(GitHubToken()))
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := m.Mask(tt.src); got != tt.want {
-				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
-	// Both built-in patterns fire on a stateless installation token, and the
-	// app id, the underscore after it and the JWT must all go, however long
-	// the app id is.
-	tests := []struct {
-		name string
-		src  string
-		want string
-	}{
-		{
-			name: "short app id",
-			src:  "ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
-			want: "***********************************************************************************",
-		},
-		{
-			name: "app id as long as a classic token",
-			src:  "ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
-			want: "*********************************************************************************************************************",
-		},
-	}
-
-	m := New(WithPatterns(DefaultPatterns()...))
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := m.Mask(tt.src); got != tt.want {
-				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
-			}
-		})
-	}
-}
 
 func Test_JWT(t *testing.T) {
 	tests := []struct {
@@ -598,18 +346,6 @@ func Test_JWT_scanIsLinear(t *testing.T) {
 	}
 }
 
-// What DefaultPatterns reports, and that each built-in reports the name and the
-// value it is documented to, is held to in builtins_test.go, which drives every
-// built-in from one table rather than a pair of tests apiece.
-
-func Test_DefaultPatterns_freshEachCall(t *testing.T) {
-	first := DefaultPatterns()
-	first[0] = fixed("replaced")
-	if second := DefaultPatterns(); second[0] == first[0] {
-		t.Error("modifying the returned slice changed what a later call returns")
-	}
-}
-
 func Test_headerDecoder_decode(t *testing.T) {
 	// The decoder hands the candidates crowded behind one dot a single decode
 	// to share, and tells each of them where its own header begins in it. No
@@ -819,4 +555,72 @@ func Test_closesObject(t *testing.T) {
 			}
 		})
 	}
+}
+
+// referenceJWTFind locates tokens the plain way: every header prefix in turn,
+// decoded and read in full, with no cursor and nothing remembered between
+// candidates. The scanner in builtin_jwt.go must agree with it on every input.
+func referenceJWTFind(src string) []Span {
+	var spans []Span
+	for offset := 0; offset < len(src); {
+		i := strings.Index(src[offset:], jwtHeaderPrefix)
+		if i < 0 {
+			break
+		}
+		start := offset + i
+		offset = start + 1
+
+		dot := start
+		for dot < len(src) && isBase64URLByte(src[dot]) {
+			dot++
+		}
+		if dot == len(src) || src[dot] != '.' {
+			continue
+		}
+
+		decoded, err := base64.RawURLEncoding.DecodeString(src[start:dot])
+		if err != nil {
+			continue
+		}
+		if len(decoded) < len(`{"a":0}`) || decoded[0] != '{' || decoded[1] != '"' {
+			continue
+		}
+		if !closesObject(decoded) || !bytes.Contains(decoded, algName) {
+			continue
+		}
+
+		signed := segmentsEnd(src, dot, signedSegments)
+		if !signed.ok {
+			continue
+		}
+		end := signed.end
+		if encrypted := segmentsEnd(src, dot, encryptedSegments); encrypted.ok && bytes.Contains(decoded, encName) {
+			end = encrypted.end
+		}
+		spans = append(spans, Span{Start: start, End: end})
+		offset = end
+	}
+	return spans
+}
+
+// FuzzJWT_matchesReference guards the cursor, the cheap checks and the decode
+// the scanner remembers between candidates: none of them may change which
+// tokens are located.
+func FuzzJWT_matchesReference(f *testing.F) {
+	f.Add("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
+	f.Add("eyJ.eyJ.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
+	f.Add("eyIwIjoxLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
+	f.Add("eyLDqSI6MSwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
+	f.Add("eyeyeyey.a.b")
+	f.Add("eyJhYiI6fQ.a.b")
+	f.Add("eyJhbGci!!!.a.b")
+	f.Add(strings.Repeat("eyJ", 8) + "aad9.a.b")
+	f.Add(strings.Repeat("eyJ", 8) + "!aad9.a.b")
+	f.Add("eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.k.iv.ct.tag")
+	f.Add("eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY123.iv12345.0123456789abcdef")
+	f.Add("eyJhbGciOiJIUzI1NiJ9.eyJhbGciOiJIUzI1NiJ9.0123456789abcdef.a.b")
+	f.Add("eyMiYWxnIjoieCJ9.payload.0123456789abcdef")
+	f.Add("eyJeyJeyJ..eyJ..")
+
+	fuzzAgainstReference(f, JWT().Find, referenceJWTFind)
 }

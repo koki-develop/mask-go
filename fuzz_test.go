@@ -1,13 +1,15 @@
 package mask
 
 import (
-	"bytes"
-	"encoding/base64"
 	"encoding/binary"
 	"slices"
-	"strings"
 	"testing"
 )
+
+// The fuzzing that belongs to no one pattern: the targets that drive a Masker,
+// and the body the per-pattern targets share. A pattern's own target lives with
+// the pattern, in the builtin_<name>_test.go beside it, so that this file does
+// not grow with every pattern added.
 
 // reportedSpans reads the spans a fuzz input asks the pattern to report: two
 // signed sixteen bit offsets a span, most significant byte first. Anything left
@@ -126,58 +128,12 @@ func FuzzMasker_Mask(f *testing.F) {
 	})
 }
 
-// referenceJWTFind locates tokens the plain way: every header prefix in turn,
-// decoded and read in full, with no cursor and nothing remembered between
-// candidates. The scanner in builtin.go must agree with it on every input.
-func referenceJWTFind(src string) []Span {
-	var spans []Span
-	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], jwtHeaderPrefix)
-		if i < 0 {
-			break
-		}
-		start := offset + i
-		offset = start + 1
-
-		dot := start
-		for dot < len(src) && isBase64URLByte(src[dot]) {
-			dot++
-		}
-		if dot == len(src) || src[dot] != '.' {
-			continue
-		}
-
-		decoded, err := base64.RawURLEncoding.DecodeString(src[start:dot])
-		if err != nil {
-			continue
-		}
-		if len(decoded) < len(`{"a":0}`) || decoded[0] != '{' || decoded[1] != '"' {
-			continue
-		}
-		if !closesObject(decoded) || !bytes.Contains(decoded, algName) {
-			continue
-		}
-
-		signed := segmentsEnd(src, dot, signedSegments)
-		if !signed.ok {
-			continue
-		}
-		end := signed.end
-		if encrypted := segmentsEnd(src, dot, encryptedSegments); encrypted.ok && bytes.Contains(decoded, encName) {
-			end = encrypted.end
-		}
-		spans = append(spans, Span{Start: start, End: end})
-		offset = end
-	}
-	return spans
-}
-
 // fuzzAgainstReference holds find to ref on every input f reaches it with.
 //
-// Each pattern keeps a fuzz target of its own rather than every pattern being
-// driven from one: the corpus under testdata/fuzz is keyed on the name of the
-// target, and a failure is minimized against the single pattern that carries
-// it. Only the body the targets share lives here.
+// Each pattern keeps a fuzz target of its own, beside the pattern, rather than
+// every pattern being driven from one: the corpus under testdata/fuzz is keyed
+// on the name of the target, and a failure is minimized against the single
+// pattern that carries it. Only the body the targets share lives here.
 func fuzzAgainstReference(f *testing.F, find, ref func(string) []Span) {
 	f.Fuzz(func(t *testing.T, src string) {
 		// slices.Equal holds nothing reported as an empty slice and nothing
@@ -187,67 +143,4 @@ func fuzzAgainstReference(f *testing.F, find, ref func(string) []Span) {
 			t.Fatalf("Find(%q) = %v, reference gives %v", src, got, want)
 		}
 	})
-}
-
-// FuzzJWT_matchesReference guards the cursor, the cheap checks and the decode
-// the scanner remembers between candidates: none of them may change which
-// tokens are located.
-func FuzzJWT_matchesReference(f *testing.F) {
-	f.Add("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
-	f.Add("eyJ.eyJ.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
-	f.Add("eyIwIjoxLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
-	f.Add("eyLDqSI6MSwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
-	f.Add("eyeyeyey.a.b")
-	f.Add("eyJhYiI6fQ.a.b")
-	f.Add("eyJhbGci!!!.a.b")
-	f.Add(strings.Repeat("eyJ", 8) + "aad9.a.b")
-	f.Add(strings.Repeat("eyJ", 8) + "!aad9.a.b")
-	f.Add("eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.k.iv.ct.tag")
-	f.Add("eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY123.iv12345.0123456789abcdef")
-	f.Add("eyJhbGciOiJIUzI1NiJ9.eyJhbGciOiJIUzI1NiJ9.0123456789abcdef.a.b")
-	f.Add("eyMiYWxnIjoieCJ9.payload.0123456789abcdef")
-	f.Add("eyJeyJeyJ..eyJ..")
-
-	fuzzAgainstReference(f, JWT().Find, referenceJWTFind)
-}
-
-// referenceGitHubToken is the expression the scanner in builtin.go reads by
-// hand: the statement of what a GitHub token is, kept here so that the scan can
-// be held to it. Go matches an alternation leftmost-first rather than
-// leftmost-longest, which is why the stateless installation token comes before
-// the classic one it opens like.
-var referenceGitHubToken = MustRegexp(
-	"github-token",
-	`ghs_[0-9A-Za-z]+_`+jwtHeaderPrefix+`[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+`+
-		`|gh[pousr]_[0-9A-Za-z]{36,}`+
-		`|`+githubPATPrefix+`[0-9A-Za-z_]{82,}`,
-)
-
-// FuzzGitHubToken_matchesReference guards the hand-written scan: the cursor it
-// keeps over the JWT of a stateless installation token, the order it tries the
-// alternatives in and the run it shares between them may none of them change
-// which tokens are located.
-func FuzzGitHubToken_matchesReference(f *testing.F) {
-	f.Add("nothing to see here")
-	f.Add("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz")
-	f.Add("TOKEN_ghp_0123456789abcdefghijklmnopqrstuvwxyz_suffix")
-	f.Add("ghp_0123456789abcdefghijklmnopqrstuvwxy")  // one short of a classic token
-	f.Add("ghq_0123456789abcdefghijklmnopqrstuvwxyz") // not a token kind
-	f.Add("gh0123456789abcdefghijklmnopqrstuvwxyz")   // no kind and no underscore
-	f.Add("github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789")
-	f.Add("github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678") // one short
-	f.Add("github_pat_github_pat_github_pat_github_pat_github_pat_github_pat_github_pat_github_pat_")     // the prefix inside the body
-	f.Add("ghs_11223344_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
-	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJhbGciOiJIUzI1NiJ9.a.b") // an app id long enough to look classic
-	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz_config.json.bak")          // dots after a classic token
-	f.Add("ghs__ey1.a.b")                                                      // no app id
-	f.Add("ghs_a_ey.a.b")                                                      // no character after ey
-	f.Add("ghs_a_ey1..b")                                                      // an empty segment
-	f.Add("ghs_a_ey1.a")                                                       // one segment short
-	f.Add("ghs_a_eyghp_0123456789abcdefghijklmnopqrstuvwxyz")                  // a classic token inside the JWT run
-	f.Add("gghs_a_ey1.a.b")
-	f.Add(strings.Repeat("ghs_a_ey", 16)) // candidates crowded in one run
-	f.Add(strings.Repeat("ghs_a_ey", 16) + ".a.b")
-
-	fuzzAgainstReference(f, GitHubToken().Find, referenceGitHubToken.Find)
 }

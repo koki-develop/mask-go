@@ -9,15 +9,16 @@ import (
 )
 
 // builtinPatterns is what every built-in pattern is held to, one entry a
-// pattern. A pattern added to builtins in builtin.go is added here as well, and
-// the tests below then hold it to the properties every built-in shares, so that
-// it arrives with them already in force rather than with each one written out
-// by hand.
+// pattern. A pattern added to builtins in builtins.go is added here as well,
+// and the tests below then hold it to the properties every built-in shares, so
+// that it arrives with them already in force rather than with each one written
+// out by hand.
 //
 // The samples say only "this is one of these", which is all the properties
 // need. What exactly is located, and what is left alone, is written out case by
-// case in builtin_test.go instead; the tables there stay the statement of
-// behaviour and each of their cases still carries its own input.
+// case in the builtin_<name>_test.go beside the pattern instead; the tables
+// there stay the statement of behaviour and each of their cases still carries
+// its own input.
 var builtinPatterns = []struct {
 	name    string              // what Name() must report
 	pattern func() Pattern      // the exported accessor
@@ -123,7 +124,7 @@ func Test_builtins_entriesAreFilledIn(t *testing.T) {
 }
 
 func Test_builtins_matchDefaultPatterns(t *testing.T) {
-	// The table above and the registry in builtin.go must name the same
+	// The table above and the registry in builtins.go must name the same
 	// patterns in the same order. A pattern added to one and forgotten in the
 	// other would otherwise either go untested or go unreported by
 	// DefaultPatterns, and neither shows anywhere else.
@@ -135,6 +136,14 @@ func Test_builtins_matchDefaultPatterns(t *testing.T) {
 		if got[i] != b.pattern() {
 			t.Errorf("DefaultPatterns()[%d] is %q, the table holds %q", i, got[i].Name(), b.name)
 		}
+	}
+}
+
+func Test_DefaultPatterns_freshEachCall(t *testing.T) {
+	first := DefaultPatterns()
+	first[0] = fixed("replaced")
+	if second := DefaultPatterns(); second[0] == first[0] {
+		t.Error("modifying the returned slice changed what a later call returns")
 	}
 }
 
@@ -231,7 +240,7 @@ func Test_builtins_reportUsableSpans(t *testing.T) {
 }
 
 func Test_builtins_matchTheirReference(t *testing.T) {
-	// The fuzz targets in fuzz_test.go hold each scan to its reference on
+	// The fuzz target each pattern keeps holds its scan to its reference on
 	// generated input, which only a run with -fuzz reaches beyond the corpus.
 	// The same holds on the samples and their prefixes under a plain go test,
 	// so that a reference wired up to the wrong pattern, or one left behind by

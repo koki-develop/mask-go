@@ -2,7 +2,33 @@
 
 A Go library that redacts credentials (API keys, access tokens) from text.
 Public surface: `Masker` (`mask.go`), `Pattern` (`pattern.go`), `Redactor`
-(`redactor.go`), `Option` (`option.go`), built-in patterns (`builtin.go`).
+(`redactor.go`), `Option` (`option.go`), built-in patterns (`builtins.go` and
+the `builtin_*.go` beside it).
+
+## Layout
+
+One built-in pattern to a file: `builtin_<name>.go` with a
+`builtin_<name>_test.go` beside it, holding the pattern, its scan, the helpers
+only that scan reads, its behaviour tables, its reference and its fuzz target.
+`builtins.go` is the registry alone, `builtin_scan.go` holds what more than one
+scan reads (`segments`, `isBase64URLByte`), `builtins_test.go` holds what every
+built-in is held to, and `fuzz_test.go` holds the `Masker` targets and the body
+the per-pattern targets share. Adding a pattern should touch the registry, the
+property table and two new files — nothing else. Keep it that way rather than
+letting a shared `builtin.go` grow back.
+
+One pattern may read another's declarations where the credentials themselves
+nest: `builtin_github_token.go` reads `jwtHeaderPrefix` and `signedSegments`
+from `builtin_jwt.go`, because a stateless installation token carries a JWT and
+what that is stays the JWT pattern's to define. Such a borrowing belongs where
+it is defined, not in `builtin_scan.go`, and the file doing the borrowing says
+so — deleting the JWT pattern would break the GitHub one.
+
+The built-ins are not in an `internal` package and should not be moved into one:
+they need `Pattern`, `Span` and `NewPattern`, which the root package holds, so
+an `internal` package importing them would close a cycle. Breaking it means
+either aliasing `Span` to an internal type, which strips its documentation from
+pkg.go.dev, or converting spans on every `Find`, which allocates.
 
 ## Commands
 
@@ -22,7 +48,7 @@ Tools are pinned in `mise.toml`. `mise run bootstrap` installs the git hooks.
 - Table-driven, one `name` per case, and each case writes out its own data
   literally rather than sharing fixtures or computing it.
 - Adding a built-in pattern means two declarations: the pattern in `builtins`
-  (`builtin.go`), which is what `DefaultPatterns` reports, and an entry in
+  (`builtins.go`), which is what `DefaultPatterns` reports, and an entry in
   `builtinPatterns` (`builtins_test.go`), which is what holds it to the
   properties every built-in shares — its name and the convention `Pattern.Name`
   asks for, one value per accessor, usable spans, no false positive on prose,
@@ -35,23 +61,25 @@ Tools are pinned in `mise.toml`. `mise run bootstrap` installs the git hooks.
 - The `samples` a `builtinPatterns` entry carries are the one place fixtures are
   shared. They say only "this is one of these", which is all the properties
   need; what exactly is located, and what is left alone, stays written out case
-  by case in `builtin_test.go`. Inputs crafted against what one scan remembers
-  stay with that scan too, as `Test_JWT_scanIsLinear` does.
-- Both built-in scanners are checked against a reference in `fuzz_test.go`:
-  `referenceJWTFind`, a plain implementation of the same rules, and
-  `referenceGitHubToken`, the regular expression the GitHub token scan reads by
-  hand. Change scanner and reference together, and keep the corpus in
-  `testdata/fuzz/`. The targets share their body through
-  `fuzzAgainstReference` but keep a name apiece, because the corpus is keyed on
-  the name of the target.
+  by case in the pattern's own `builtin_<name>_test.go`. Inputs crafted against
+  what one scan remembers stay with that scan too, as `Test_JWT_scanIsLinear`
+  does.
+- Both built-in scanners are checked against a reference kept beside them:
+  `referenceJWTFind` (`builtin_jwt_test.go`), a plain implementation of the same
+  rules, and `referenceGitHubToken` (`builtin_github_token_test.go`), the
+  regular expression the GitHub token scan reads by hand. Change scanner and
+  reference together, and keep the corpus in `testdata/fuzz/`. The targets share
+  their body through `fuzzAgainstReference` (`fuzz_test.go`) but keep a name
+  apiece, because the corpus is keyed on the name of the target — so never
+  rename a target without moving its corpus directory.
 - Behaviour that differs under the race detector is branched on `raceEnabled`
   (`race_test.go` / `norace_test.go`), not skipped.
 
 ## Style
 
 - Doc comments on every exported identifier. Comments explain *why* — the
-  scanner rationale in `builtin.go` is load-bearing, so update it rather than
-  dropping it.
+  scanner rationale in each `builtin_<name>.go` is load-bearing, so update it
+  rather than dropping it.
 - `Pattern` and `Redactor` implementations must be safe for concurrent use.
 - `Masker.locate` and both built-in scanners are deliberately linear-time and
   allocation-conscious; the cursors they keep over a run of base64url
