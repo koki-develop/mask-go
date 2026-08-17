@@ -32,12 +32,21 @@ func GitHubToken() Pattern { return githubToken }
 // whole match, not merely trim it, where a token abuts a word character, and a
 // token written as TOKEN_ghp_... would go unredacted. What may follow a token
 // is held back by the character classes instead.
+//
+// Go matches an alternation leftmost-first rather than leftmost-longest, so the
+// stateless installation token comes before the classic one it opens like.
+// Written the other way round, an app id of thirty-six characters or more is
+// taken for a whole classic token and the rest of the token is left to the JWT
+// pattern, which leaves the underscore between them unredacted.
 var githubToken = MustRegexp(
 	"github-token",
-	// Classic tokens, forty characters in all.
-	`gh[pousr]_[0-9A-Za-z]{36,}`+
-		// The stateless installation token, which holds a JWT.
-		`|ghs_[0-9A-Za-z]+_[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+`+
+	// The stateless installation token, which holds a JWT. The JWT is
+	// anchored on the ey its header opens with, without which an underscore
+	// and two dots written after a classic token, as in a file name, would be
+	// drawn in by this alternative before the classic one is reached.
+	`ghs_[0-9A-Za-z]+_`+jwtHeaderPrefix+`[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+`+
+		// Classic tokens, forty characters in all.
+		`|gh[pousr]_[0-9A-Za-z]{36,}`+
 		// Fine grained personal access tokens.
 		`|github_pat_[0-9A-Za-z_]{82,}`,
 )

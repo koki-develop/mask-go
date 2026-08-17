@@ -54,6 +54,15 @@ func Test_GitHubToken(t *testing.T) {
 			src:  "ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 			want: []Span{{0, 83}},
 		},
+		{
+			// An app id of thirty-six characters or more opens like a whole
+			// classic token, and the alternation must still prefer the
+			// stateless form: matched the other way round, the underscore
+			// after the app id is left behind.
+			name: "stateless installation token with a long app id",
+			src:  "ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: []Span{{0, 117}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -212,9 +221,49 @@ func Test_GitHubToken_leavesWhatFollowsAlone(t *testing.T) {
 			src:  "the token is ghp_0123456789abcdefghijklmnopqrstuvwxyz.",
 			want: "the token is ****************************************.",
 		},
+		{
+			// An underscore and two dots after a classic ghs_ token are the
+			// shape of the stateless form, which is tried first. Only a JWT
+			// may follow the underscore, so this file name does not join the
+			// token.
+			name: "file name after a classic installation token",
+			src:  "ghs_0123456789abcdefghijklmnopqrstuvwxyz_backup.tar.gz",
+			want: "****************************************_backup.tar.gz",
+		},
 	}
 
 	m := New(WithPatterns(GitHubToken()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
+	// Both built-in patterns fire on a stateless installation token, and the
+	// app id, the underscore after it and the JWT must all go, however long
+	// the app id is.
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "short app id",
+			src:  "ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: "***********************************************************************************",
+		},
+		{
+			name: "app id as long as a classic token",
+			src:  "ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: "*********************************************************************************************************************",
+		},
+	}
+
+	m := New(WithPatterns(DefaultPatterns()...))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
