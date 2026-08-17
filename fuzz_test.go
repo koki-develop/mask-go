@@ -73,6 +73,7 @@ func FuzzMasker_Mask(f *testing.F) {
 	f.Add("eyJ.eyJ.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
 	f.Add("eyJx.a.beyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
 	f.Add("eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY.iv12.ciphertext.authTAG")
+	f.Add("eyIwIjoxLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
 	f.Add("eyJ..eyJ..eyJ..eyJ..")
 
 	m := New(WithPatterns(DefaultPatterns()...))
@@ -139,6 +140,9 @@ func referenceJWTFind(src string) []Span {
 func FuzzJWT_matchesReference(f *testing.F) {
 	f.Add("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
 	f.Add("eyJ.eyJ.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
+	f.Add("eyIwIjoxLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
+	f.Add("eyLDqSI6MSwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
+	f.Add("eyeyeyey.a.b")
 	f.Add("eyJhYiI6fQ.a.b")
 	f.Add("eyJhbGci!!!.a.b")
 	f.Add(strings.Repeat("eyJ", 8) + "aad9.a.b")

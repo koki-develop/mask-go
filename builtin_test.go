@@ -276,6 +276,21 @@ func Test_JWT(t *testing.T) {
 			want: []Span{{0, 82}},
 		},
 		{
+			// The header decodes to {"0":1,"alg":"HS256"}. A member name
+			// opening with a digit puts I where a letter would put J, and the
+			// scan has to admit both.
+			name: "member name opening with a digit",
+			src:  "eyIwIjoxLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: []Span{{0, 64}},
+		},
+		{
+			// The header decodes to {"\u00e9":1,"alg":"HS256"}, written in
+			// UTF-8. A name opening past ASCII puts L there.
+			name: "member name opening past ascii",
+			src:  "eyLDqSI6MSwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: []Span{{0, 66}},
+		},
+		{
 			// The header decodes to {"alg":"HS256"} followed by a space, which
 			// JSON allows after the object.
 			name: "header ends in space",
@@ -318,6 +333,20 @@ func Test_JWT(t *testing.T) {
 		{
 			name: "header holds characters base64url has no place for",
 			src:  "eyJ!!!!!fQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
+		{
+			// The header decodes to { "alg":"HS256"}. A header is read as the
+			// compact JSON an encoder emits, so one holding space before the
+			// member name is not located.
+			name: "space between the brace and the member name",
+			src:  "eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
+		{
+			// ey is not a header on its own, whatever follows it.
+			name: "the prefix without a third character",
+			src:  "ey",
 			want: nil,
 		},
 		{
@@ -457,10 +486,12 @@ func Test_JWT_scanIsLinear(t *testing.T) {
 	// the input more than once. The bound here is far above a linear scan
 	// and far below a quadratic one.
 	sources := map[string]string{
-		"many rejected candidates":     strings.Repeat("eyJ..", 200000),
-		"overlapping candidate starts": strings.Repeat("eyJ", 200000) + "..",
-		"dense starts with a near dot": strings.Repeat(strings.Repeat("eyJ", 300)+".", 600),
-		"one long run before a dot":    strings.Repeat("eyJ", 200000) + ".a.b",
+		"many rejected candidates":                strings.Repeat("eyJ..", 200000),
+		"overlapping candidate starts":            strings.Repeat("eyJ", 200000) + "..",
+		"overlapping starts of the other opening": strings.Repeat("eyI", 200000) + "..",
+		"a run of the prefix alone":               strings.Repeat("ey", 300000) + "..",
+		"dense starts with a near dot":            strings.Repeat(strings.Repeat("eyJ", 300)+".", 600),
+		"one long run before a dot":               strings.Repeat("eyJ", 200000) + ".a.b",
 		// A header that reads as JSON until its very end once cost a full
 		// parse at every candidate behind it.
 		"header that parses to the end":     nestedHeader(60000, false) + ".a.b",

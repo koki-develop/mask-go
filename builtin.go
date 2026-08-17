@@ -50,12 +50,26 @@ var githubToken = MustRegexp(
 // JSON object naming an algorithm in alg, and enc where the token is encrypted.
 // Text that carries none of them is left alone.
 //
+// The header must open directly with a member name, as the compact JSON an
+// encoder emits does. One written with space between the brace and the name is
+// not located.
+//
 // Its name is "jwt".
 func JWT() Pattern { return jsonWebToken }
 
-// A JWT header is compact JSON, so its bytes open with {" and a key name,
-// which base64url turns into eyJ.
-const jwtHeaderPrefix = "eyJ"
+// A JWT header is compact JSON, so its bytes open with {" and a member name,
+// which base64url turns into ey and one further character.
+const jwtHeaderPrefix = "ey"
+
+// opensJOSEHeader reports whether c, the character following jwtHeaderPrefix,
+// can be the third of an encoded {" and a member name.
+//
+// That character carries the two highest bits of the byte after the quote, so
+// it is one of the four the base64url alphabet holds at indices 8 to 11. A
+// name opening with a letter, as nearly every one does, gives J; one opening
+// with a digit gives I, which the scan would pass over were it to look for eyJ
+// alone.
+func opensJOSEHeader(c byte) bool { return 'I' <= c && c <= 'L' }
 
 var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 	var spans []Span
@@ -82,6 +96,11 @@ var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 		// can still begin further along inside what was examined, so the scan
 		// resumes just past the start rather than past the candidate.
 		offset = start + 1
+
+		third := start + len(jwtHeaderPrefix)
+		if third >= len(src) || !opensJOSEHeader(src[third]) {
+			continue
+		}
 
 		if start >= runEnd {
 			runEnd = start
@@ -158,8 +177,12 @@ func (d *headerDecoder) joseHeader(src string, start, dot int) (encrypted, ok bo
 	if held == nil {
 		return false, false
 	}
-	if len(decoded) < len(`{"a":0}`) || decoded[0] != '{' || decoded[1] != '"' {
-		return false, false // a JSON object opening with a member name
+	// The prefix the scan looks for leaves the opening bytes no choice but {",
+	// so what a candidate has yet to show is the length of an object naming a
+	// member. referenceJWTFind reads those bytes rather than reason about
+	// them, and the fuzz test holds the two to the same answer.
+	if len(decoded) < len(`{"a":0}`) {
+		return false, false
 	}
 	if !held.closed || held.alg < at {
 		return false, false
