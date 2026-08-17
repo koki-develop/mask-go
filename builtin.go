@@ -34,23 +34,157 @@ func GitHubToken() Pattern { return githubToken }
 // token written as TOKEN_ghp_... would go unredacted. What may follow a token
 // is held back by the character classes instead.
 //
-// Go matches an alternation leftmost-first rather than leftmost-longest, so the
-// stateless installation token comes before the classic one it opens like.
-// Written the other way round, an app id of thirty-six characters or more is
-// taken for a whole classic token and the rest of the token is left to the JWT
-// pattern, which leaves the underscore between them unredacted.
-var githubToken = MustRegexp(
-	"github-token",
-	// The stateless installation token, which holds a JWT. The JWT is
-	// anchored on the ey its header opens with, without which an underscore
-	// and two dots written after a classic token, as in a file name, would be
-	// drawn in by this alternative before the classic one is reached.
-	`ghs_[0-9A-Za-z]+_`+jwtHeaderPrefix+`[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+`+
+// The scan reads the same grammar a regular expression would, written out by
+// hand because regexp costs three times what the byte tests below do on a line
+// holding no token, and six times on a line of them. referenceGitHubToken in
+// fuzz_test.go keeps the expression as the statement of what is located, and
+// the fuzz test holds the two to the same answer.
+var githubToken = NewPattern("github-token", func(src string) []Span {
+	var spans []Span
+
+	// The JWT a stateless installation token holds ends where its run of
+	// base64url characters and the segments after it end. Every candidate
+	// crowded inside one run reaches the same end, and the positions asked
+	// about only ever move forward, so the run is worked out once and
+	// remembered. Working it out again at each candidate would cost time
+	// quadratic in the length of a line of ghs_a_ey written over and over,
+	// which nothing else here rules out: a failed candidate consumes nothing,
+	// and the underscores such a line is built from are base64url characters.
+	runEnd := -1
+	var jwt segments
+
+	for offset := 0; offset < len(src); {
+		i := strings.IndexByte(src[offset:], 'g')
+		if i < 0 {
+			break
+		}
+		start := offset + i
+
+		// Only this starting point is ruled out by a failure below. A token
+		// can still begin further along inside what was examined, so the scan
+		// resumes just past the start rather than past the candidate.
+		offset = start + 1
+
+		if strings.HasPrefix(src[start:], githubPATPrefix) {
+			body := start + len(githubPATPrefix)
+			end := body
+			for end < len(src) && isGitHubPATByte(src[end]) {
+				end++
+			}
+			if end-body < githubPATChars {
+				continue
+			}
+			spans = append(spans, Span{Start: start, End: end})
+			offset = end
+			continue
+		}
+
+		if start+4 > len(src) || src[start+1] != 'h' || !isGitHubTokenKind(src[start+2]) || src[start+3] != '_' {
+			continue
+		}
+
+		// Both of the alternatives left read the same run, so it is scanned
+		// once. Either it runs to the length a classic token needs, in which
+		// case the scan consumes what it read, or it is shorter than that
+		// length and the reading is bounded.
+		body := start + 4
+		end := body
+		for end < len(src) && isGitHubTokenByte(src[end]) {
+			end++
+		}
+
+		// The stateless installation token comes first, as it does in the
+		// expression: an app id of thirty-six characters or more would
+		// otherwise be taken for a whole classic token, leaving the rest of
+		// the token to the JWT pattern and the underscore between them
+		// unredacted. Its JWT is anchored on the ey its header opens with,
+		// without which an underscore and two dots written after a classic
+		// token, as in a file name, would be drawn in before the classic
+		// alternative is reached.
+		//
+		// A token clipped before its second dot, as a log line cut to a column
+		// limit leaves one, is deliberately not located: what authenticates a
+		// stateless token is its signature, and a token cut that early carries
+		// none of it. One surviving signature character is already enough to
+		// have the whole token located. Reaching that remnant would mean
+		// keying on the prefix and a run of characters, as GitHub's own advice
+		// does, and admitting the dot into that run draws in the file name
+		// written after a classic token, which the ey holds back.
+		if src[start+2] == 's' && end > body && end < len(src) &&
+			src[end] == '_' && strings.HasPrefix(src[end+1:], jwtHeaderPrefix) {
+			header := end + 1 + len(jwtHeaderPrefix)
+			if header >= runEnd {
+				runEnd = header
+				for runEnd < len(src) && isBase64URLByte(src[runEnd]) {
+					runEnd++
+				}
+				jwt = segments{}
+				if runEnd > header && runEnd < len(src) && src[runEnd] == '.' {
+					jwt = githubJWTEnd(src, runEnd)
+				}
+			}
+			if jwt.ok {
+				spans = append(spans, Span{Start: start, End: jwt.end})
+				offset = jwt.end
+				continue
+			}
+		}
+
 		// Classic tokens, forty characters in all.
-		`|gh[pousr]_[0-9A-Za-z]{36,}`+
-		// Fine grained personal access tokens.
-		`|github_pat_[0-9A-Za-z_]{82,}`,
+		if end-body >= githubClassicChars {
+			spans = append(spans, Span{Start: start, End: end})
+			offset = end
+		}
+	}
+	return spans
+})
+
+// The literal a fine grained personal access token opens with, and the counts
+// the two token bodies must reach. GitHub documents no length, so these are
+// the shortest bodies seen rather than exact sizes.
+const (
+	githubPATPrefix    = "github_pat_"
+	githubPATChars     = 82
+	githubClassicChars = 36
 )
+
+// isGitHubTokenKind reports whether c, the character after gh, names one of the
+// token kinds: personal access (p), OAuth app (o), GitHub App user (u),
+// installation (s) and refresh (r).
+func isGitHubTokenKind(c byte) bool {
+	return c == 'p' || c == 'o' || c == 'u' || c == 's' || c == 'r'
+}
+
+func isGitHubTokenByte(c byte) bool {
+	return '0' <= c && c <= '9' ||
+		'A' <= c && c <= 'Z' ||
+		'a' <= c && c <= 'z'
+}
+
+func isGitHubPATByte(c byte) bool { return isGitHubTokenByte(c) || c == '_' }
+
+// githubJWTEnd returns where the two segments a signed token carries after its
+// header end, and whether both are there. Unlike segmentsEnd, which serves the
+// JWT pattern, a segment here must hold at least one character: the expression
+// this scan reads spells them with a plus, so that the two dots of a file name
+// written after a token do not stand in for them.
+func githubJWTEnd(src string, dot int) segments {
+	i := dot
+	for range signedSegments {
+		if i == len(src) || src[i] != '.' {
+			return segments{}
+		}
+		i++
+		start := i
+		for i < len(src) && isBase64URLByte(src[i]) {
+			i++
+		}
+		if i == start {
+			return segments{}
+		}
+	}
+	return segments{end: i, ok: true}
+}
 
 // JWT locates JSON Web Tokens in compact serialization: a base64url encoded
 // header, followed by the two segments of a signed token or the four of an

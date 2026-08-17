@@ -200,3 +200,51 @@ func FuzzJWT_matchesReference(f *testing.F) {
 		}
 	})
 }
+
+// referenceGitHubToken is the expression the scanner in builtin.go reads by
+// hand: the statement of what a GitHub token is, kept here so that the scan can
+// be held to it. Go matches an alternation leftmost-first rather than
+// leftmost-longest, which is why the stateless installation token comes before
+// the classic one it opens like.
+var referenceGitHubToken = MustRegexp(
+	"github-token",
+	`ghs_[0-9A-Za-z]+_`+jwtHeaderPrefix+`[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+`+
+		`|gh[pousr]_[0-9A-Za-z]{36,}`+
+		`|`+githubPATPrefix+`[0-9A-Za-z_]{82,}`,
+)
+
+// FuzzGitHubToken_matchesReference guards the hand-written scan: the cursor it
+// keeps over the JWT of a stateless installation token, the order it tries the
+// alternatives in and the run it shares between them may none of them change
+// which tokens are located.
+func FuzzGitHubToken_matchesReference(f *testing.F) {
+	f.Add("nothing to see here")
+	f.Add("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz")
+	f.Add("TOKEN_ghp_0123456789abcdefghijklmnopqrstuvwxyz_suffix")
+	f.Add("ghp_0123456789abcdefghijklmnopqrstuvwxy")  // one short of a classic token
+	f.Add("ghq_0123456789abcdefghijklmnopqrstuvwxyz") // not a token kind
+	f.Add("gh0123456789abcdefghijklmnopqrstuvwxyz")   // no kind and no underscore
+	f.Add("github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789")
+	f.Add("github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678") // one short
+	f.Add("github_pat_github_pat_github_pat_github_pat_github_pat_github_pat_github_pat_github_pat_")     // the prefix inside the body
+	f.Add("ghs_11223344_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
+	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJhbGciOiJIUzI1NiJ9.a.b") // an app id long enough to look classic
+	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz_config.json.bak")          // dots after a classic token
+	f.Add("ghs__ey1.a.b")                                                      // no app id
+	f.Add("ghs_a_ey.a.b")                                                      // no character after ey
+	f.Add("ghs_a_ey1..b")                                                      // an empty segment
+	f.Add("ghs_a_ey1.a")                                                       // one segment short
+	f.Add("ghs_a_eyghp_0123456789abcdefghijklmnopqrstuvwxyz")                  // a classic token inside the JWT run
+	f.Add("gghs_a_ey1.a.b")
+	f.Add(strings.Repeat("ghs_a_ey", 16)) // candidates crowded in one run
+	f.Add(strings.Repeat("ghs_a_ey", 16) + ".a.b")
+
+	f.Fuzz(func(t *testing.T, src string) {
+		// slices.Equal holds nothing reported as an empty slice and nothing
+		// reported at all the same, which Find is free to choose between.
+		got, want := GitHubToken().Find(src), referenceGitHubToken.Find(src)
+		if !slices.Equal(got, want) {
+			t.Fatalf("Find(%q) = %v, reference gives %v", src, got, want)
+		}
+	})
+}
