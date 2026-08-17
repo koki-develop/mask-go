@@ -13,11 +13,28 @@ func BenchmarkMasker_Mask(b *testing.B) {
 		name string
 		src  string
 	}{
-		{name: "no value", src: line},
-		{name: "one value", src: line + "token=" + legacyToken("ghp_")},
-		{name: "one value in a long line", src: strings.Repeat(line, 32) + "token=" + legacyToken("ghp_")},
-		{name: "many values", src: strings.Repeat(line+"token="+legacyToken("ghp_")+"\n", 32)},
-		{name: "overlapping values", src: "token=" + statelessToken()},
+		{
+			name: "no value",
+			src:  line,
+		},
+		{
+			name: "one value",
+			src:  line + "token=ghp_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			name: "one value in a long line",
+			src:  strings.Repeat(line, 32) + "token=ghp_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			name: "many values",
+			src:  strings.Repeat(line+"token=ghp_0123456789abcdefghijklmnopqrstuvwxyz\n", 32),
+		},
+		{
+			// The stateless installation token holds a JWT, so both built-in
+			// patterns fire on it.
+			name: "overlapping values",
+			src:  "token=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+		},
 	}
 
 	for _, bm := range benchmarks {

@@ -2,24 +2,14 @@ package mask
 
 import (
 	"encoding/base64"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 )
 
-// Bodies made only of ordered characters: valid in shape, obviously not real.
-const (
-	alnum36 = "0123456789abcdefghijklmnopqrstuvwxyz"
-	jwtBody = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"
-)
-
-func legacyToken(prefix string) string { return prefix + alnum36 }
-
-func fineGrainedToken() string { return "github_pat_" + strings.Repeat(alnum36, 3)[:82] }
-
-// statelessToken builds the ghs_APPID_JWT form GitHub moved installation
-// tokens to in 2026.
-func statelessToken() string { return "ghs_123456_" + jwtBody }
+// The tokens written out below are made only of ordered characters: valid in
+// shape, obviously not real.
 
 func Test_GitHubToken(t *testing.T) {
 	tests := []struct {
@@ -27,42 +17,49 @@ func Test_GitHubToken(t *testing.T) {
 		src  string
 		want []Span
 	}{
-		{name: "classic personal access token", src: legacyToken("ghp_")},
-		{name: "oauth app access token", src: legacyToken("gho_")},
-		{name: "app user access token", src: legacyToken("ghu_")},
-		{name: "app installation access token", src: legacyToken("ghs_")},
-		{name: "app refresh token", src: legacyToken("ghr_")},
-		{name: "fine grained personal access token", src: fineGrainedToken()},
-		{name: "stateless installation token", src: statelessToken()},
+		{
+			name: "classic personal access token",
+			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: []Span{{0, 40}},
+		},
+		{
+			name: "oauth app access token",
+			src:  "gho_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: []Span{{0, 40}},
+		},
+		{
+			name: "app user access token",
+			src:  "ghu_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: []Span{{0, 40}},
+		},
+		{
+			name: "app installation access token",
+			src:  "ghs_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: []Span{{0, 40}},
+		},
+		{
+			name: "app refresh token",
+			src:  "ghr_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: []Span{{0, 40}},
+		},
+		{
+			name: "fine grained personal access token",
+			src:  "github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789",
+			want: []Span{{0, 93}},
+		},
+		{
+			// The ghs_APPID_JWT form GitHub moved installation tokens to in
+			// 2026.
+			name: "stateless installation token",
+			src:  "ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: []Span{{0, 83}},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GitHubToken().Find(tt.src); len(got) != 1 || got[0] != (Span{0, len(tt.src)}) {
-				t.Errorf("Find(%q) = %v, want one span covering the whole token", tt.src, got)
-			}
-		})
-	}
-}
-
-func Test_GitHubToken_inContext(t *testing.T) {
-	token := legacyToken("ghp_")
-	tests := []struct {
-		name string
-		src  string
-		want string
-	}{
-		{name: "assignment", src: "GITHUB_TOKEN=" + token, want: "GITHUB_TOKEN=" + strings.Repeat("*", len(token))},
-		{name: "quoted", src: `"` + token + `"`, want: `"` + strings.Repeat("*", len(token)) + `"`},
-		{name: "header", src: "Authorization: token " + token, want: "Authorization: token " + strings.Repeat("*", len(token))},
-		{name: "twice", src: token + " " + token, want: strings.Repeat("*", len(token)) + " " + strings.Repeat("*", len(token))},
-	}
-
-	m := New(WithPatterns(GitHubToken()))
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := m.Mask(tt.src); got != tt.want {
-				t.Errorf("Mask() = %q, want %q", got, tt.want)
+			if got := GitHubToken().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}
@@ -73,13 +70,36 @@ func Test_GitHubToken_noMatch(t *testing.T) {
 		name string
 		src  string
 	}{
-		{name: "prefix alone", src: "ghp_"},
-		{name: "body too short", src: "ghp_" + alnum36[:35]},
-		{name: "unknown prefix letter", src: "ghx_" + alnum36},
-		{name: "prefix without separator", src: "ghp" + alnum36},
-		{name: "fine grained body too short", src: "github_pat_" + strings.Repeat(alnum36, 3)[:81]},
-		{name: "an identifier that starts like the prefix", src: "github_pattern_for_matching"},
-		{name: "plain prose", src: "there is no credential in this sentence"},
+		{
+			name: "prefix alone",
+			src:  "ghp_",
+		},
+		{
+			// Thirty-five characters where the pattern asks for thirty-six.
+			name: "body one character too short",
+			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxy",
+		},
+		{
+			name: "unknown prefix letter",
+			src:  "ghx_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			name: "prefix without separator",
+			src:  "ghp0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			// Eighty-one characters where the pattern asks for eighty-two.
+			name: "fine grained body one character too short",
+			src:  "github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678",
+		},
+		{
+			name: "an identifier that starts like the prefix",
+			src:  "github_pattern_for_matching",
+		},
+		{
+			name: "plain prose",
+			src:  "there is no credential in this sentence",
+		},
 	}
 
 	for _, tt := range tests {
@@ -91,76 +111,271 @@ func Test_GitHubToken_noMatch(t *testing.T) {
 	}
 }
 
+func Test_GitHubToken_inContext(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "assignment",
+			src:  "GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: "GITHUB_TOKEN=****************************************",
+		},
+		{
+			name: "quoted",
+			src:  `"ghp_0123456789abcdefghijklmnopqrstuvwxyz"`,
+			want: `"****************************************"`,
+		},
+		{
+			name: "header",
+			src:  "Authorization: token ghp_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: "Authorization: token ****************************************",
+		},
+		{
+			name: "twice",
+			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxyz ghp_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: "**************************************** ****************************************",
+		},
+	}
+
+	m := New(WithPatterns(GitHubToken()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_GitHubToken_nextToWordCharacters(t *testing.T) {
+	// A word boundary either side of the pattern would not trim these matches
+	// but drop them, letting the token through whole.
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "underscore after",
+			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxyz_x",
+			want: "****************************************_x",
+		},
+		{
+			name: "word character before",
+			src:  "xghp_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: "x****************************************",
+		},
+		{
+			name: "underscore before",
+			src:  "TOKEN_ghp_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: "TOKEN_****************************************",
+		},
+		{
+			name: "underscore before a fine grained token",
+			src:  "X_github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789",
+			want: "X_*********************************************************************************************",
+		},
+	}
+
+	m := New(WithPatterns(GitHubToken()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_GitHubToken_leavesWhatFollowsAlone(t *testing.T) {
+	// Only the stateless installation token carries dots and dashes, so a
+	// classic one must not draw in the host or word written after it.
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "host",
+			src:  "host=ghp_0123456789abcdefghijklmnopqrstuvwxyz.example.com",
+			want: "host=****************************************.example.com",
+		},
+		{
+			name: "dashed word",
+			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxyz-suffix",
+			want: "****************************************-suffix",
+		},
+		{
+			name: "sentence",
+			src:  "the token is ghp_0123456789abcdefghijklmnopqrstuvwxyz.",
+			want: "the token is ****************************************.",
+		},
+	}
+
+	m := New(WithPatterns(GitHubToken()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_GitHubToken_name(t *testing.T) {
 	if got := GitHubToken().Name(); got != "github-token" {
 		t.Errorf("Name() = %q, want %q", got, "github-token")
 	}
 }
 
-func Test_JWT(t *testing.T) {
-	// Header, payload and signature, each base64url without padding.
-	const (
-		header    = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" // {"alg":"HS256","typ":"JWT"}
-		payload   = "eyJzdWIiOiJhYmMifQ"                   // {"sub":"abc"}
-		signature = "0123456789abcdef"
-	)
+func Test_GitHubToken_sameValueEachCall(t *testing.T) {
+	// Match carries the Pattern itself, so a caller comparing one against a
+	// built-in must get the same value every call.
+	if GitHubToken() != GitHubToken() {
+		t.Error("GitHubToken() returned a different value on a second call")
+	}
+}
 
+func Test_JWT(t *testing.T) {
 	tests := []struct {
-		name  string
-		src   string
-		found bool
+		name string
+		src  string
+		want []Span
 	}{
-		{name: "signed token", src: header + "." + payload + "." + signature, found: true},
-		{name: "unsecured token has an empty signature", src: header + "." + payload + ".", found: true},
-		{name: "base64url may hold - and _", src: header + "." + "eyJzdWIiOiJhLWJfYyJ9" + "." + "ab-cd_ef", found: true},
-		{name: "header is too short to be an object", src: "eyJhZ" + "." + payload + "." + signature},
-		{name: "header is not a base64url length", src: "eyJhbGciO" + "." + payload + "." + signature},
-		// {"ab":} opens and closes an object but names no algorithm.
-		{name: "header names no algorithm", src: "eyJhYiI6fQ" + "." + payload + "." + signature},
-		// The final group holds characters base64url has no place for.
-		{name: "header ends in undecodable characters", src: "eyJhbGci!!!" + "." + payload + "." + signature},
-		{name: "only two segments", src: header + "." + payload},
-		{name: "an empty segment is still a token", src: header + ".." + signature, found: true},
-		{name: "does not start with the header marker", src: "abcdefgh." + payload + "." + signature},
+		{
+			// {"alg":"HS256","typ":"JWT"}, then {"sub":"abc"}, then a
+			// signature, each base64url without padding.
+			name: "signed token",
+			src:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: []Span{{0, 72}},
+		},
+		{
+			name: "unsecured token has an empty signature",
+			src:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.",
+			want: []Span{{0, 56}},
+		},
+		{
+			// The payload decodes to {"sub":"a-b_c"}.
+			name: "base64url may hold - and _",
+			src:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhLWJfYyJ9.ab-cd_ef",
+			want: []Span{{0, 66}},
+		},
+		{
+			name: "an empty segment is still a token",
+			src:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..0123456789abcdef",
+			want: []Span{{0, 54}},
+		},
+		{
+			// The header decodes to {"alg":"dir","enc":"A128GCM"}. An
+			// encrypted token carries five segments rather than three, and
+			// none of them may survive.
+			name: "encrypted token",
+			src:  "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY123.iv12345.ciphertextABC.authTAGxyz",
+			want: []Span{{0, 82}},
+		},
+		{
+			// The header decodes to {"alg":"HS256"} followed by a space, which
+			// JSON allows after the object.
+			name: "header ends in space",
+			src:  "eyJhbGciOiJIUzI1NiJ9IA.payload.signature",
+			want: []Span{{0, 40}},
+		},
+		{
+			// eyJh decodes to {"a, which is shorter than the smallest object
+			// naming a member.
+			name: "header is too short to be an object",
+			src:  "eyJh.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
+		{
+			// Nine base64url characters are not a whole number of groups, so
+			// the header does not decode at all.
+			name: "header is not a base64url length",
+			src:  "eyJhbGciO.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
+		{
+			// {"ab":} opens and closes an object but names no algorithm.
+			name: "header names no algorithm",
+			src:  "eyJhYiI6fQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
+		{
+			// The header decodes to {"alg":"HS256", which never closes.
+			name: "header does not close the object",
+			src:  "eyJhbGciOiJIUzI1NiI.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
+		{
+			// The run of base64url characters stops at the first !, so what
+			// follows it is not the dot that ends a header.
+			name: "header ends in characters base64url has no place for",
+			src:  "eyJhbGci!!!.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
+		{
+			name: "header holds characters base64url has no place for",
+			src:  "eyJ!!!!!fQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
+		{
+			name: "only two segments",
+			src:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ",
+			want: nil,
+		},
+		{
+			name: "does not start with the header marker",
+			src:  "abcdefgh.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := JWT().Find(tt.src)
-			if tt.found {
-				if len(got) != 1 || got[0] != (Span{0, len(tt.src)}) {
-					t.Errorf("Find(%q) = %v, want one span covering the whole token", tt.src, got)
-				}
-				return
-			}
-			if len(got) != 0 {
-				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
+			if got := JWT().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}
 }
 
 func Test_JWT_afterRejectedCandidate(t *testing.T) {
-	// A candidate whose header is not JSON must not consume what it covered:
-	// a real token can begin inside it.
-	for _, prefix := range []string{"eyJ.eyJ.", "eyJx.a.b"} {
-		src := prefix + jwtBody
-		got := JWT().Find(src)
-		if len(got) != 1 {
-			t.Fatalf("Find(%q) = %v, want one span", src, got)
-		}
-		if located := src[got[0].Start:got[0].End]; located != jwtBody {
-			t.Errorf("Find(%q) located %q, want %q", src, located, jwtBody)
-		}
+	// A candidate whose header is not JSON must not consume what it covered: a
+	// real token can begin inside it. Both tokens below start at offset 8.
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			name: "rejected candidates before the token",
+			src:  "eyJ.eyJ.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: []Span{{8, 80}},
+		},
+		{
+			name: "a rejected candidate with segments of its own",
+			src:  "eyJx.a.beyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: []Span{{8, 80}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := JWT().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
 	}
 }
 
-func Test_JWT_encryptedToken(t *testing.T) {
-	// An encrypted token carries five segments rather than three, and none of
-	// them may survive.
-	const jwe = "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY123.iv12345.ciphertextABC.authTAGxyz"
-	if got := JWT().Find(jwe); len(got) != 1 || got[0] != (Span{0, len(jwe)}) {
-		t.Errorf("Find(%q) = %v, want one span covering the whole token", jwe, got)
+func Test_JWT_inContext(t *testing.T) {
+	m := New(WithPatterns(JWT()))
+	src := "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"
+	want := "Authorization: Bearer ************************************************************************"
+	if got := m.Mask(src); got != want {
+		t.Errorf("Mask(%q) = %q, want %q", src, got, want)
 	}
 }
 
@@ -174,13 +389,13 @@ func Test_JWT_leavesWhatFollowsAlone(t *testing.T) {
 	}{
 		{
 			name: "sentence",
-			src:  "see " + jwtBody + ". Next one.",
-			want: "see " + strings.Repeat("*", len(jwtBody)) + ". Next one.",
+			src:  "see eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef. Next one.",
+			want: "see ************************************************************************. Next one.",
 		},
 		{
 			name: "file extension",
-			src:  jwtBody + ".json",
-			want: strings.Repeat("*", len(jwtBody)) + ".json",
+			src:  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef.json",
+			want: "************************************************************************.json",
 		},
 	}
 
@@ -188,167 +403,20 @@ func Test_JWT_leavesWhatFollowsAlone(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
-				t.Errorf("Mask() = %q, want %q", got, tt.want)
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
 			}
 		})
-	}
-}
-
-func Test_GitHubToken_nextToWordCharacters(t *testing.T) {
-	// A word boundary either side of the pattern would not trim these matches
-	// but drop them, letting the token through whole.
-	token := legacyToken("ghp_")
-	fine := fineGrainedToken()
-	tests := []struct {
-		name string
-		src  string
-		want string
-	}{
-		{name: "underscore after", src: token + "_x", want: strings.Repeat("*", len(token)) + "_x"},
-		{name: "word character before", src: "x" + token, want: "x" + strings.Repeat("*", len(token))},
-		{name: "underscore before", src: "TOKEN_" + token, want: "TOKEN_" + strings.Repeat("*", len(token))},
-		{name: "underscore before a fine grained token", src: "X_" + fine, want: "X_" + strings.Repeat("*", len(fine))},
-	}
-
-	m := New(WithPatterns(GitHubToken()))
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := m.Mask(tt.src)
-			if strings.Contains(got, token) || strings.Contains(got, fine) {
-				t.Fatalf("Mask(%q) = %q, which still holds the token", tt.src, got)
-			}
-			if got != tt.want {
-				t.Errorf("Mask() = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_GitHubToken_leavesWhatFollowsAlone(t *testing.T) {
-	// Only the stateless installation token carries dots and dashes, so a
-	// classic one must not draw in the host or word written after it.
-	token := legacyToken("ghp_")
-	stars := strings.Repeat("*", len(token))
-	tests := []struct {
-		name string
-		src  string
-		want string
-	}{
-		{name: "host", src: "host=" + token + ".example.com", want: "host=" + stars + ".example.com"},
-		{name: "dashed word", src: token + "-suffix", want: stars + "-suffix"},
-		{name: "sentence", src: "the token is " + token + ".", want: "the token is " + stars + "."},
-	}
-
-	m := New(WithPatterns(GitHubToken()))
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := m.Mask(tt.src); got != tt.want {
-				t.Errorf("Mask() = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_JWT_inContext(t *testing.T) {
-	m := New(WithPatterns(JWT()))
-	src := "Authorization: Bearer " + jwtBody
-	want := "Authorization: Bearer " + strings.Repeat("*", len(jwtBody))
-	if got := m.Mask(src); got != want {
-		t.Errorf("Mask() = %q, want %q", got, want)
-	}
-}
-
-func Test_JWT_name(t *testing.T) {
-	if got := JWT().Name(); got != "jwt" {
-		t.Errorf("Name() = %q, want %q", got, "jwt")
-	}
-}
-
-func Test_DefaultPatterns(t *testing.T) {
-	got := DefaultPatterns()
-	want := []Pattern{GitHubToken(), JWT()}
-	if len(got) != len(want) {
-		t.Fatalf("DefaultPatterns() = %v, want %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("DefaultPatterns()[%d] = %v, want %v", i, got[i], want[i])
-		}
-	}
-}
-
-func Test_DefaultPatterns_freshEachCall(t *testing.T) {
-	first := DefaultPatterns()
-	first[0] = fixed("replaced")
-	if second := DefaultPatterns(); second[0] == first[0] {
-		t.Error("modifying the returned slice changed what a later call returns")
-	}
-}
-
-// Match carries the Pattern itself, so a caller comparing one against a
-// built-in must get the same value every call.
-
-func Test_GitHubToken_sameValueEachCall(t *testing.T) {
-	if GitHubToken() != GitHubToken() {
-		t.Error("GitHubToken() returned a different value on a second call")
-	}
-}
-
-func Test_JWT_sameValueEachCall(t *testing.T) {
-	if JWT() != JWT() {
-		t.Error("JWT() returned a different value on a second call")
 	}
 }
 
 // jwtHeaderOf returns a base64url encoded header of n bytes of JSON, padded out
-// in x5c the way a header carrying a certificate chain is.
+// in x5c the way a header carrying a certificate chain is:
+//
+//	{"alg":"RS256","x5c":["aaa...aaa"]}
 func jwtHeaderOf(n int) string {
 	const open, shut = `{"alg":"RS256","x5c":["`, `"]}`
 	json := open + strings.Repeat("a", n-len(open)-len(shut)) + shut
 	return base64.RawURLEncoding.EncodeToString([]byte(json))
-}
-
-func Test_closesObject(t *testing.T) {
-	tests := []struct {
-		name string
-		in   string
-		want bool
-	}{
-		{name: "object", in: `{"alg":"none"}`, want: true},
-		{name: "object then space", in: `{"alg":"none"} `, want: true},
-		{name: "object then the other spaces", in: "{}\t\n\r", want: true},
-		{name: "no closing brace", in: `{"alg":"none"`},
-		{name: "value after the brace", in: `{} x`},
-		{name: "nothing", in: ""},
-		{name: "only space", in: "  \t\n"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := closesObject([]byte(tt.in)); got != tt.want {
-				t.Errorf("closesObject(%q) = %v, want %v", tt.in, got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_JWT_headerEndsInSpace(t *testing.T) {
-	// JSON allows space after the object, so a header written with any is
-	// still a header.
-	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256"} `))
-	src := header + ".payload.signature"
-	if got := JWT().Find(src); len(got) != 1 || got[0] != (Span{0, len(src)}) {
-		t.Errorf("Find(%q) = %v, want one span covering the whole token", src, got)
-	}
-}
-
-func Test_JWT_headerHoldsNonBase64Characters(t *testing.T) {
-	// The run of base64url characters stops at the !, so what follows is not
-	// the dot that ends a header.
-	const src = "eyJ!!!!!fQ.payload.signature"
-	if got := JWT().Find(src); len(got) != 0 {
-		t.Errorf("Find(%q) = %v, want no span", src, got)
-	}
 }
 
 func Test_JWT_longHeader(t *testing.T) {
@@ -357,11 +425,28 @@ func Test_JWT_longHeader(t *testing.T) {
 	for _, bytes := range []int{768, 6144, 65536} {
 		header := jwtHeaderOf(bytes)
 		src := header + ".payload.signature"
-		got := JWT().Find(src)
-		if len(got) != 1 || got[0] != (Span{0, len(src)}) {
-			t.Errorf("Find(header of %d characters) = %v, want one span covering the whole token", len(header), got)
+		want := []Span{{0, len(src)}}
+		if got := JWT().Find(src); !slices.Equal(got, want) {
+			t.Errorf("Find(header of %d bytes of JSON + %q) = %v, want %v", bytes, ".payload.signature", got, want)
 		}
 	}
+}
+
+// nestedHeader returns a header whose decode reads as JSON far into its length:
+//
+//	{"a":{"a":{"a":...0
+//
+// closing wraps it so that it ends with a brace and names an algorithm, giving
+//
+//	{"alg":"x",{"a":{"a":...0}
+//
+// which nothing short of parsing it can tell is not a header.
+func nestedHeader(depth int, closing bool) string {
+	json := strings.Repeat(`{"a":`, depth) + "0"
+	if closing {
+		json = `{"alg":"x",` + json + "}"
+	}
+	return base64.RawURLEncoding.EncodeToString([]byte(json))
 }
 
 func Test_JWT_scanIsLinear(t *testing.T) {
@@ -397,13 +482,61 @@ func Test_JWT_scanIsLinear(t *testing.T) {
 	}
 }
 
-// nestedHeader returns a header whose decode reads as JSON far into its length.
-// closing makes it end with a brace and name an algorithm, so that nothing
-// short of parsing it can tell it is not a header.
-func nestedHeader(depth int, closing bool) string {
-	json := strings.Repeat(`{"a":`, depth) + "0"
-	if closing {
-		json = `{"alg":"x",` + json + "}"
+func Test_JWT_name(t *testing.T) {
+	if got := JWT().Name(); got != "jwt" {
+		t.Errorf("Name() = %q, want %q", got, "jwt")
 	}
-	return base64.RawURLEncoding.EncodeToString([]byte(json))
+}
+
+func Test_JWT_sameValueEachCall(t *testing.T) {
+	// Match carries the Pattern itself, so a caller comparing one against a
+	// built-in must get the same value every call.
+	if JWT() != JWT() {
+		t.Error("JWT() returned a different value on a second call")
+	}
+}
+
+func Test_DefaultPatterns(t *testing.T) {
+	got := DefaultPatterns()
+	want := []Pattern{GitHubToken(), JWT()}
+	if len(got) != len(want) {
+		t.Fatalf("DefaultPatterns() = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("DefaultPatterns()[%d] = %v, want %v", i, got[i], want[i])
+		}
+	}
+}
+
+func Test_DefaultPatterns_freshEachCall(t *testing.T) {
+	first := DefaultPatterns()
+	first[0] = fixed("replaced")
+	if second := DefaultPatterns(); second[0] == first[0] {
+		t.Error("modifying the returned slice changed what a later call returns")
+	}
+}
+
+func Test_closesObject(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want bool
+	}{
+		{name: "object", in: `{"alg":"none"}`, want: true},
+		{name: "object then space", in: `{"alg":"none"} `, want: true},
+		{name: "object then the other spaces", in: "{}\t\n\r", want: true},
+		{name: "no closing brace", in: `{"alg":"none"`, want: false},
+		{name: "value after the brace", in: `{} x`, want: false},
+		{name: "nothing", in: "", want: false},
+		{name: "only space", in: "  \t\n", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := closesObject([]byte(tt.in)); got != tt.want {
+				t.Errorf("closesObject(%q) = %v, want %v", tt.in, got, tt.want)
+			}
+		})
+	}
 }

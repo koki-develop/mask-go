@@ -215,22 +215,14 @@ func TestMasker_Mask_attribution(t *testing.T) {
 }
 
 func TestMasker_Mask_coversEveryLocatedByte(t *testing.T) {
-	// Whatever the overlap, no byte reported by any pattern may survive.
-	src := "abcdefghij"
-	spans := []Span{{0, 4}, {2, 6}, {5, 9}}
+	// Whatever the overlap, no byte reported by any pattern may survive. The
+	// three spans below chain from 0 to 9, so only the last byte of the input
+	// is left.
 	m := New(
-		WithPatterns(fixed("p", spans...)),
+		WithPatterns(fixed("p", Span{0, 4}, Span{2, 6}, Span{5, 9})),
 		WithRedactor(NewRedactor(func(Match) string { return "" })),
 	)
-	got := m.Mask(src)
-	for _, s := range spans {
-		for i := s.Start; i < s.End; i++ {
-			if strings.ContainsRune(got, rune(src[i])) {
-				t.Errorf("byte %d (%q) of a located value survived in %q", i, src[i], got)
-			}
-		}
-	}
-	if want := "j"; got != want {
+	if got, want := m.Mask("abcdefghij"), "j"; got != want {
 		t.Errorf("Mask() = %q, want %q", got, want)
 	}
 }
@@ -257,8 +249,8 @@ func TestMasker_Mask_withoutMatchDoesNotAllocate(t *testing.T) {
 
 func TestMasker_Mask_concurrentUse(t *testing.T) {
 	m := New(WithPatterns(DefaultPatterns()...))
-	src := "GITHUB_TOKEN=" + legacyToken("ghp_")
-	want := m.Mask(src)
+	src := "GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+	want := "GITHUB_TOKEN=****************************************"
 
 	var wg sync.WaitGroup
 	for range 32 {
@@ -284,13 +276,13 @@ func Test_New_defaultRedactor(t *testing.T) {
 }
 
 func TestMasker_Mask_overlappingBuiltinPatterns(t *testing.T) {
-	// The stateless form holds a JWT, so both built-in patterns fire on it and
-	// the overlap must leave nothing of the token behind.
+	// The stateless installation token holds a JWT, so both built-in patterns
+	// fire on it and the overlap must leave nothing of the token behind.
 	m := New(WithPatterns(DefaultPatterns()...))
-	token := statelessToken()
-	got := m.Mask("token=" + token)
-	if want := "token=" + strings.Repeat("*", len(token)); got != want {
-		t.Errorf("Mask() = %q, want %q", got, want)
+	src := "token=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"
+	want := "token=***********************************************************************************"
+	if got := m.Mask(src); got != want {
+		t.Errorf("Mask(%q) = %q, want %q", src, got, want)
 	}
 }
 
