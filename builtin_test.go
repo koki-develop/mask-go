@@ -808,7 +808,7 @@ func Test_opensJOSEHeader(t *testing.T) {
 	//
 	// Every byte is put to it, so that a class grown or shrunk by one is
 	// caught either side.
-	for c := 0; c < 256; c++ {
+	for c := range 256 {
 		// The byte goes in as itself. string(rune(c)) would encode the bytes
 		// past ASCII as the two UTF-8 stands for, leaving the group five
 		// characters long and undecodable whatever the byte, so that half the
@@ -824,7 +824,7 @@ func Test_opensJOSEHeader(t *testing.T) {
 	// The loop above passes were both sides wrong together, so the class it
 	// agrees on is written out as well.
 	var admitted []byte
-	for c := 0; c < 256; c++ {
+	for c := range 256 {
 		if opensJOSEHeader(byte(c)) {
 			admitted = append(admitted, byte(c))
 		}

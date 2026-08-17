@@ -3,6 +3,7 @@ package mask
 import (
 	"bytes"
 	"encoding/base64"
+	"slices"
 	"strings"
 )
 
@@ -262,8 +263,8 @@ var (
 // closesObject reports whether b ends with the } that closes a JSON object,
 // which JSON allows to be followed by space.
 func closesObject(b []byte) bool {
-	for i := len(b) - 1; i >= 0; i-- {
-		switch b[i] {
+	for _, v := range slices.Backward(b) {
+		switch v {
 		case ' ', '\t', '\n', '\r':
 		case '}':
 			return true
