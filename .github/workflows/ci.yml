@@ -24,7 +24,7 @@ jobs:
           persist-credentials: false
           submodules: true
       - uses: ./.github/actions/setup
-      - run: go test ./...
+      - run: go test -race ./...
 
   build:
     timeout-minutes: 10
