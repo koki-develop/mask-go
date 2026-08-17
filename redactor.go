@@ -1,5 +1,10 @@
 package mask
 
+import (
+	"strings"
+	"unicode/utf8"
+)
+
 // Match is a sensitive value located by a Pattern.
 type Match struct {
 	// Pattern is the pattern that located the value.
@@ -29,20 +34,29 @@ type Redactor interface {
 //
 // redact must be safe for concurrent use by multiple goroutines.
 func NewRedactor(redact func(m Match) string) Redactor {
-	panic("not implemented")
+	return &funcRedactor{redact: redact}
 }
+
+type funcRedactor struct {
+	redact func(m Match) string
+}
+
+func (r *funcRedactor) Redact(m Match) string { return r.redact(m) }
 
 // Fixed redacts every value to s. Neither the content nor the length of the
 // original survives:
 //
 //	mask.Fixed("[REDACTED]")
 func Fixed(s string) Redactor {
-	panic("not implemented")
+	return &funcRedactor{redact: func(Match) string { return s }}
 }
 
 // Fill redacts every value to r repeated once per rune of the original, so the
 // length of the original survives. A Masker uses Fill('*') unless given another
 // redactor.
 func Fill(r rune) Redactor {
-	panic("not implemented")
+	fill := string(r)
+	return &funcRedactor{redact: func(m Match) string {
+		return strings.Repeat(fill, utf8.RuneCountInString(m.Value))
+	}}
 }
