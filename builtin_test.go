@@ -1,6 +1,7 @@
 package mask
 
 import (
+	"bytes"
 	"encoding/base64"
 	"slices"
 	"strings"
@@ -325,6 +326,23 @@ func Test_JWT(t *testing.T) {
 			want: []Span{{0, 82}},
 		},
 		{
+			// The same header, but with the two segments of a signed token
+			// behind it rather than the four of an encrypted one. Nothing
+			// stops a signed token from naming a content encryption
+			// algorithm, so this is read as signed and located whole.
+			name: "encrypted header with the segments of a signed token",
+			src:  "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY123.0123456789abcdef",
+			want: []Span{{0, 66}},
+		},
+		{
+			// Three segments, where an encrypted token wants four. The count
+			// falls back to the two of a signed token, so the third segment is
+			// left alone rather than the whole run being drawn in.
+			name: "encrypted header one segment short of an encrypted token",
+			src:  "eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY123.iv12345.0123456789abcdef",
+			want: []Span{{0, 57}},
+		},
+		{
 			// The header decodes to {"0":1,"alg":"HS256"}. A member name
 			// opening with a digit puts I where a letter would put J, and the
 			// scan has to admit both.
@@ -345,6 +363,22 @@ func Test_JWT(t *testing.T) {
 			name: "header ends in space",
 			src:  "eyJhbGciOiJIUzI1NiJ9IA.payload.signature",
 			want: []Span{{0, 40}},
+		},
+		{
+			// The payload of this token is itself a header, so a scan that
+			// resumed inside a located token would report a second, overlapping
+			// one. The cursor moves to the end of the token instead, and the
+			// two segments the token does not reach are left alone.
+			name: "payload opens like a header",
+			src:  "eyJhbGciOiJIUzI1NiJ9.eyJhbGciOiJIUzI1NiJ9.0123456789abcdef.a.b",
+			want: []Span{{0, 58}},
+		},
+		{
+			// The cursor must not carry past the token it ended, or the second
+			// of two tokens written side by side goes unlocated.
+			name: "two tokens side by side",
+			src:  "eyJhbGciOiJIUzI1NiJ9.a.0123456789abcdef eyJhbGciOiJIUzI1NiJ9.c.0123456789abcdef",
+			want: []Span{{0, 39}, {40, 79}},
 		},
 		{
 			// eyJh decodes to {"a, which is shorter than the smallest object
@@ -390,6 +424,22 @@ func Test_JWT(t *testing.T) {
 			// member name is not located.
 			name: "space between the brace and the member name",
 			src:  "eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
+		{
+			// The header decodes to {#"alg":"x"}, whose second byte is not the
+			// quote a member name opens with. That byte puts M in the third
+			// character, one past the four the scan admits, and everything
+			// else about this candidate would pass.
+			name: "third character one past the class",
+			src:  "eyMiYWxnIjoieCJ9.payload.0123456789abcdef",
+			want: nil,
+		},
+		{
+			// The same the other way: {!\xc3"alg":"x"} puts H there, one short
+			// of the four.
+			name: "third character one short of the class",
+			src:  "eyHDImFsZyI6IngifQ.payload.0123456789abcdef",
 			want: nil,
 		},
 		{
@@ -594,6 +644,193 @@ func Test_DefaultPatterns_freshEachCall(t *testing.T) {
 	first[0] = fixed("replaced")
 	if second := DefaultPatterns(); second[0] == first[0] {
 		t.Error("modifying the returned slice changed what a later call returns")
+	}
+}
+
+func Test_headerDecoder_decode(t *testing.T) {
+	// The decoder hands the candidates crowded behind one dot a single decode
+	// to share, and tells each of them where its own header begins in it. No
+	// input reaches Find that can tell a mistake here apart from the checks
+	// that follow it, so the sharing is put to the test on its own.
+	const json = `{"alg":"HS256","enc":"A128GCM","x":"y"}`
+	header := base64.RawURLEncoding.EncodeToString([]byte(json))
+	src := header + ".payload.signature"
+	dot := len(header)
+
+	steps := []struct {
+		name      string
+		start     int
+		dot       int
+		decodes   bool // whether the alignment start falls in can decode
+		at        int  // where start begins in the decode the alignment holds
+		heldStart int  // the candidate that decode was made for
+	}{
+		{
+			name:  "the first candidate of an alignment decodes its own header",
+			start: 0, dot: dot, decodes: true, at: 0, heldStart: 0,
+		},
+		{
+			// Four characters on is three bytes on, and the two headers end
+			// together, so the second is a suffix of the first.
+			name:  "the next candidate of that alignment shares the decode",
+			start: 4, dot: dot, decodes: true, at: 3, heldStart: 0,
+		},
+		{
+			name:  "and the one behind it",
+			start: 8, dot: dot, decodes: true, at: 6, heldStart: 0,
+		},
+		{
+			// A candidate a character along ends the same number of
+			// characters past a multiple of four as no other seen so far, so
+			// it decodes for itself.
+			name:  "another alignment decodes separately",
+			start: 1, dot: dot, decodes: true, at: 0, heldStart: 1,
+		},
+		{
+			name:  "an alignment that is no whole number of groups long cannot decode",
+			start: 3, dot: dot, decodes: false,
+		},
+		{
+			name:  "nor can a candidate behind it",
+			start: 7, dot: dot, decodes: false,
+		},
+		{
+			// The decoder holds one dot at a time; reaching another throws
+			// away everything worked out for the last.
+			name:  "a further dot starts the decoder over",
+			start: 0, dot: dot - 4, decodes: true, at: 0, heldStart: 0,
+		},
+	}
+
+	// What the decoder carries from one call to the next is the thing under
+	// test, so the steps are one walk rather than a subtest apiece: a step run
+	// on its own would meet a decoder that had never seen the steps before it,
+	// and fail for want of them. Each failure names the step it came from.
+	var d headerDecoder
+	for _, s := range steps {
+		held, at, decoded := d.decode(src, s.start, s.dot)
+		if !s.decodes {
+			if held != nil {
+				t.Errorf("%s: decode(%d, %d) = %v, want no decode", s.name, s.start, s.dot, held)
+			}
+			if at != 0 || decoded != nil {
+				t.Errorf("%s: decode(%d, %d) = _, %d, %v, want 0 and no bytes", s.name, s.start, s.dot, at, decoded)
+			}
+			continue
+		}
+		if held == nil {
+			t.Errorf("%s: decode(%d, %d) reported no decode, want one", s.name, s.start, s.dot)
+			continue
+		}
+		if at != s.at {
+			t.Errorf("%s: decode(%d, %d) put the header at %d, want %d", s.name, s.start, s.dot, at, s.at)
+		}
+		if held.start != s.heldStart {
+			t.Errorf("%s: decode(%d, %d) holds the decode of %d, want %d", s.name, s.start, s.dot, held.start, s.heldStart)
+		}
+		if !bytes.Equal(decoded, held.decoded[at:]) {
+			t.Errorf("%s: decode(%d, %d) = %q, want the held bytes from %d, %q", s.name, s.start, s.dot, decoded, at, held.decoded[at:])
+		}
+
+		// What the sharing must come to: the bytes a candidate is handed are
+		// the ones it would get were its header decoded alone.
+		want, err := base64.RawURLEncoding.DecodeString(src[s.start:s.dot])
+		if err != nil {
+			t.Errorf("%s: the header at %d does not decode on its own: %v", s.name, s.start, err)
+			continue
+		}
+		if !bytes.Equal(decoded, want) {
+			t.Errorf("%s: decode(%d, %d) = %q, want %q", s.name, s.start, s.dot, decoded, want)
+		}
+	}
+}
+
+func Test_headerDecoder_decode_recordsWhatTheHeaderNames(t *testing.T) {
+	tests := []struct {
+		name   string
+		json   string
+		closed bool
+		alg    int
+		enc    int
+	}{
+		{
+			name: "an algorithm and a content encryption algorithm",
+			json: `{"alg":"dir","enc":"A128GCM"}`, closed: true, alg: 1, enc: 13,
+		},
+		{
+			name: "an algorithm alone",
+			json: `{"alg":"HS256"}`, closed: true, alg: 1, enc: -1,
+		},
+		{
+			// Only the last of a name counts, so that a candidate beginning
+			// past an earlier one is not credited with it.
+			name: "an algorithm named twice",
+			json: `{"alg":"HS256","alg":"none"}`, closed: true, alg: 15, enc: -1,
+		},
+		{
+			name: "neither",
+			json: `{"typ":"JWT"}`, closed: true, alg: -1, enc: -1,
+		},
+		{
+			name: "an object that never closes",
+			json: `{"alg":"HS256"`, closed: false, alg: 1, enc: -1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			header := base64.RawURLEncoding.EncodeToString([]byte(tt.json))
+			var d headerDecoder
+			held, _, _ := d.decode(header+".a.b", 0, len(header))
+			if held == nil {
+				t.Fatalf("decode(%q) reported no decode", tt.json)
+			}
+			if held.closed != tt.closed {
+				t.Errorf("closed = %v, want %v", held.closed, tt.closed)
+			}
+			if held.alg != tt.alg {
+				t.Errorf("alg = %d, want %d", held.alg, tt.alg)
+			}
+			if held.enc != tt.enc {
+				t.Errorf("enc = %d, want %d", held.enc, tt.enc)
+			}
+		})
+	}
+}
+
+func Test_opensJOSEHeader(t *testing.T) {
+	// The character opensJOSEHeader reads is the third of an encoded header,
+	// and it is admitted exactly when the bytes behind it can be the { and the
+	// " a header opens with. Rather than repeat the reasoning that arrives at
+	// I to L, the answer is taken from the decoder: ey, the character, and a
+	// filler make one whole base64 group, and the bytes that group decodes to
+	// say whether the character belongs.
+	//
+	// Every byte is put to it, so that a class grown or shrunk by one is
+	// caught either side.
+	for c := 0; c < 256; c++ {
+		// The byte goes in as itself. string(rune(c)) would encode the bytes
+		// past ASCII as the two UTF-8 stands for, leaving the group five
+		// characters long and undecodable whatever the byte, so that half the
+		// range would be answered no for a reason of the test's own making.
+		group := jwtHeaderPrefix + string([]byte{byte(c)}) + "A"
+		decoded, err := base64.RawURLEncoding.DecodeString(group)
+		want := err == nil && len(decoded) >= 2 && decoded[0] == '{' && decoded[1] == '"'
+		if got := opensJOSEHeader(byte(c)); got != want {
+			t.Errorf("opensJOSEHeader(%q) = %v, want %v", byte(c), got, want)
+		}
+	}
+
+	// The loop above passes were both sides wrong together, so the class it
+	// agrees on is written out as well.
+	var admitted []byte
+	for c := 0; c < 256; c++ {
+		if opensJOSEHeader(byte(c)) {
+			admitted = append(admitted, byte(c))
+		}
+	}
+	if got, want := string(admitted), "IJKL"; got != want {
+		t.Errorf("opensJOSEHeader admits %q, want %q", got, want)
 	}
 }
 

@@ -1,7 +1,7 @@
 package mask
 
 import (
-	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -16,7 +16,7 @@ func Test_NewPattern(t *testing.T) {
 	if p.Name() != "custom" {
 		t.Errorf("Name() = %q, want %q", p.Name(), "custom")
 	}
-	if spans := p.Find("abcdef"); !reflect.DeepEqual(spans, want) {
+	if spans := p.Find("abcdef"); !slices.Equal(spans, want) {
 		t.Errorf("Find() = %v, want %v", spans, want)
 	}
 	if got != "abcdef" {
@@ -55,10 +55,12 @@ func Test_MustRegexp_find(t *testing.T) {
 			want: []Span{{1, 2}, {3, 5}, {6, 9}},
 		},
 		{
+			// Find is free to report nothing as an empty slice or as none at
+			// all, so the comparison here holds the two the same.
 			name: "no match",
 			expr: `\d+`,
 			src:  "abc",
-			want: []Span{},
+			want: nil,
 		},
 		{
 			name: "mask group narrows the span",
@@ -101,7 +103,7 @@ func Test_MustRegexp_find(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := MustRegexp("p", tt.expr).Find(tt.src)
-			if !reflect.DeepEqual(got, tt.want) {
+			if !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})

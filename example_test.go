@@ -14,6 +14,41 @@ func Example() {
 	// Output: GITHUB_TOKEN=****************************************
 }
 
+func ExampleDefaultPatterns() {
+	// The built-in patterns are given to a Masker together, and each of them
+	// scans for what it knows.
+	m := mask.New(mask.WithPatterns(mask.DefaultPatterns()...))
+
+	fmt.Println(m.Mask("token=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"))
+	// Output: token=**************************************** jwt=************************************************************************
+}
+
+func ExampleGitHubToken() {
+	m := mask.New(mask.WithPatterns(mask.GitHubToken()))
+
+	fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
+	// Output: GITHUB_TOKEN=****************************************
+}
+
+func ExampleJWT() {
+	m := mask.New(mask.WithPatterns(mask.JWT()))
+
+	fmt.Println(m.Mask("Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"))
+	// Output: Authorization: Bearer ************************************************************************
+}
+
+func ExampleWithPatterns() {
+	// Repeated options accumulate, so the built-in patterns and one of your
+	// own can be given separately.
+	m := mask.New(
+		mask.WithPatterns(mask.DefaultPatterns()...),
+		mask.WithPatterns(mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`)),
+	)
+
+	fmt.Println(m.Mask("github=ghp_0123456789abcdefghijklmnopqrstuvwxyz internal=INT-0123456789abcdef0123456789abcdef"))
+	// Output: github=**************************************** internal=************************************
+}
+
 func ExampleMustRegexp() {
 	m := mask.New(mask.WithPatterns(
 		mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`),

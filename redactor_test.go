@@ -23,6 +23,9 @@ func Test_Fill(t *testing.T) {
 		{name: "one rune per rune, not per byte", fill: '*', value: "日本語", want: "***"},
 		{name: "multi-byte fill rune", fill: '●', value: "abc", want: "●●●"},
 		{name: "invalid utf-8 counts as one rune per bad byte", fill: '*', value: "\xff\xfe", want: "**"},
+		// Fill does not vet the rune it is given; Go turns one outside Unicode
+		// into the replacement character.
+		{name: "a rune outside unicode", fill: rune(-1), value: "abc", want: "\ufffd\ufffd\ufffd"},
 	}
 
 	for _, tt := range tests {
@@ -31,6 +34,15 @@ func Test_Fill(t *testing.T) {
 				t.Errorf("Redact(%q) = %q, want %q", tt.value, got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_Fixed_empty(t *testing.T) {
+	// Fixed("") leaves nothing at all where the value was, which is how a
+	// caller drops a value rather than marking it.
+	m := New(WithPatterns(fixed("p", Span{2, 4})), WithRedactor(Fixed("")))
+	if got, want := m.Mask("abcdef"), "abef"; got != want {
+		t.Errorf("Mask() = %q, want %q", got, want)
 	}
 }
 

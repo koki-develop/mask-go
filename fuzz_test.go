@@ -4,28 +4,63 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
-	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
+
+// reportedSpans reads the spans a fuzz input asks the pattern to report: two
+// signed sixteen bit offsets a span, most significant byte first. Anything left
+// over at the end is dropped.
+func reportedSpans(raw []byte) []Span {
+	var spans []Span
+	for len(raw) >= 4 {
+		spans = append(spans, Span{
+			Start: int(int16(binary.BigEndian.Uint16(raw))),
+			End:   int(int16(binary.BigEndian.Uint16(raw[2:]))),
+		})
+		raw = raw[4:]
+	}
+	return spans
+}
+
+// spanBytes writes spans the way reportedSpans reads them, so that a seed says
+// what it means. Written out by hand these take four bytes a span, and a seed
+// that gives one byte an offset asks for spans far past the input, which are
+// ignored: seeds meant to cover the resolution rules then cover nothing.
+func spanBytes(spans ...Span) []byte {
+	raw := make([]byte, 0, 4*len(spans))
+	for _, s := range spans {
+		raw = binary.BigEndian.AppendUint16(raw, uint16(int16(s.Start)))
+		raw = binary.BigEndian.AppendUint16(raw, uint16(int16(s.End)))
+	}
+	return raw
+}
 
 // FuzzLocate checks the guarantees Mask relies on: the values it walks are
 // ordered, never overlap, and between them still cover every span a pattern
 // reported.
 func FuzzMasker_locate(f *testing.F) {
-	f.Add("abcdef", []byte{0, 2, 4, 6})
-	f.Add("abcdef", []byte{0, 4, 2, 6})
-	f.Add("abcdef", []byte{0, 6, 2, 4})
-	f.Add("", []byte{0, 1})
-	f.Add("日本語abc", []byte{0, 9, 3, 12})
+	f.Add("abcdef", spanBytes(Span{0, 2}, Span{4, 6}))  // apart
+	f.Add("abcdef", spanBytes(Span{0, 4}, Span{2, 6}))  // overlapping
+	f.Add("abcdef", spanBytes(Span{0, 6}, Span{2, 4}))  // one inside the other
+	f.Add("abcdef", spanBytes(Span{4, 6}, Span{0, 2}))  // out of order
+	f.Add("abcdef", spanBytes(Span{0, 2}, Span{2, 4}))  // adjacent
+	f.Add("abcdef", spanBytes(Span{0, 2}, Span{0, 2}))  // the same span twice
+	f.Add("abcdef", spanBytes(Span{0, 6}))              // the whole input
+	f.Add("abcdef", spanBytes(Span{3, 3}))              // empty
+	f.Add("abcdef", spanBytes(Span{4, 2}))              // reversed
+	f.Add("abcdef", spanBytes(Span{-1, 2}))             // starting before the input
+	f.Add("abcdef", spanBytes(Span{4, 7}))              // reaching past it
+	f.Add("abcdef", spanBytes(Span{3, 3}, Span{0, 2}))  // empty beside a value
+	f.Add("abcdef", spanBytes(Span{4, 7}, Span{0, 2}))  // unusable beside a value
+	f.Add("", spanBytes(Span{0, 1}))                    // no input to locate in
+	f.Add("日本語abc", spanBytes(Span{0, 9}, Span{3, 12})) // overlapping, multi-byte
+	f.Add("abcdef", []byte{0})                          // too few bytes for a span
+	f.Add("abcdef", []byte{0, 0, 0, 2, 0})              // a trailing byte is dropped
 
 	f.Fuzz(func(t *testing.T, src string, raw []byte) {
-		var reported []Span
-		for len(raw) >= 4 {
-			s := Span{Start: int(int16(binary.BigEndian.Uint16(raw))), End: int(int16(binary.BigEndian.Uint16(raw[2:])))}
-			reported = append(reported, s)
-			raw = raw[4:]
-		}
+		reported := reportedSpans(raw)
 
 		m := New(WithPatterns(fixed("p", reported...)))
 		got := m.locate(src)
@@ -73,6 +108,8 @@ func FuzzMasker_Mask(f *testing.F) {
 	f.Add("eyJ.eyJ.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
 	f.Add("eyJx.a.beyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
 	f.Add("eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY.iv12.ciphertext.authTAG")
+	f.Add("eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY123.iv12345.0123456789abcdef")
+	f.Add("eyJhbGciOiJIUzI1NiJ9.eyJhbGciOiJIUzI1NiJ9.0123456789abcdef.a.b")
 	f.Add("eyIwIjoxLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
 	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
 	f.Add("eyJ..eyJ..eyJ..eyJ..")
@@ -149,14 +186,16 @@ func FuzzJWT_matchesReference(f *testing.F) {
 	f.Add(strings.Repeat("eyJ", 8) + "aad9.a.b")
 	f.Add(strings.Repeat("eyJ", 8) + "!aad9.a.b")
 	f.Add("eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.k.iv.ct.tag")
+	f.Add("eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY123.iv12345.0123456789abcdef")
+	f.Add("eyJhbGciOiJIUzI1NiJ9.eyJhbGciOiJIUzI1NiJ9.0123456789abcdef.a.b")
+	f.Add("eyMiYWxnIjoieCJ9.payload.0123456789abcdef")
 	f.Add("eyJeyJeyJ..eyJ..")
 
 	f.Fuzz(func(t *testing.T, src string) {
+		// slices.Equal holds nothing reported as an empty slice and nothing
+		// reported at all the same, which Find is free to choose between.
 		got, want := JWT().Find(src), referenceJWTFind(src)
-		if len(got) == 0 && len(want) == 0 {
-			return
-		}
-		if !reflect.DeepEqual(got, want) {
+		if !slices.Equal(got, want) {
 			t.Fatalf("Find(%q) = %v, reference gives %v", src, got, want)
 		}
 	})

@@ -113,35 +113,51 @@ func TestMasker_Mask(t *testing.T) {
 			src:      "abcdef",
 			want:     "Xcdef",
 		},
+		// The redactor below stands in for Fill('*') wherever a span is meant
+		// to be ignored. Fill redacts an empty span to nothing, so an empty
+		// span let through would leave the output untouched and the case would
+		// pass on a Masker that ignores nothing at all.
 		{
 			name:     "empty span is ignored",
 			patterns: []Pattern{fixed("p", Span{2, 2})},
+			redactor: Fixed("X"),
 			src:      "abcdef",
 			want:     "abcdef",
 		},
 		{
 			name:     "reversed span is ignored",
 			patterns: []Pattern{fixed("p", Span{4, 2})},
+			redactor: Fixed("X"),
 			src:      "abcdef",
 			want:     "abcdef",
 		},
 		{
 			name:     "span starting before the input is ignored",
 			patterns: []Pattern{fixed("p", Span{-1, 2})},
+			redactor: Fixed("X"),
 			src:      "abcdef",
 			want:     "abcdef",
 		},
 		{
 			name:     "span reaching past the input is ignored",
 			patterns: []Pattern{fixed("p", Span{4, 7})},
+			redactor: Fixed("X"),
 			src:      "abcdef",
 			want:     "abcdef",
 		},
 		{
+			name:     "an empty span among values is ignored",
+			patterns: []Pattern{fixed("p", Span{0, 2}, Span{3, 3}, Span{4, 6})},
+			redactor: Fixed("X"),
+			src:      "abcdef",
+			want:     "XcdX",
+		},
+		{
 			name:     "an ignored span leaves the others alone",
 			patterns: []Pattern{fixed("p", Span{4, 7}, Span{0, 2})},
+			redactor: Fixed("X"),
 			src:      "abcdef",
-			want:     "**cdef",
+			want:     "Xcdef",
 		},
 		{
 			name:     "empty input",
@@ -248,9 +264,70 @@ func TestMasker_Mask_withoutMatchDoesNotAllocate(t *testing.T) {
 }
 
 func TestMasker_Mask_concurrentUse(t *testing.T) {
-	m := New(WithPatterns(DefaultPatterns()...))
-	src := "GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"
-	want := "GITHUB_TOKEN=****************************************"
+	// A Masker is fixed once created and documented safe for concurrent use,
+	// which everything it holds must hold up in turn. The JWT scanner keeps a
+	// cursor and a decoder as it goes, and both belong to the one scan; a
+	// pattern and a redactor written by a caller are driven here as well, so
+	// that the paths through the Masker are not only the built-in ones.
+	const secret = "s3cr3t-value"
+	shared := NewPattern("shared-secret", func(src string) []Span {
+		var spans []Span
+		for i := 0; ; {
+			j := strings.Index(src[i:], secret)
+			if j < 0 {
+				return spans
+			}
+			spans = append(spans, Span{Start: i + j, End: i + j + len(secret)})
+			i += j + len(secret)
+		}
+	})
+
+	m := New(
+		WithPatterns(DefaultPatterns()...),
+		WithPatterns(MustRegexp("internal-token", `INT-[0-9a-f]{32}`), shared),
+		WithRedactor(naming),
+	)
+
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "nothing to redact",
+			src:  "the quick brown fox",
+			want: "the quick brown fox",
+		},
+		{
+			name: "a github token",
+			src:  "GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: "GITHUB_TOKEN=<github-token>",
+		},
+		{
+			name: "a jwt",
+			src:  "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: "Authorization: Bearer <jwt>",
+		},
+		{
+			// Both built-in patterns fire here, so the merge runs concurrently
+			// too.
+			name: "a stateless installation token",
+			src:  "token=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: "token=<github-token>",
+		},
+		{
+			name: "a pattern given by the caller",
+			src:  "INT-0123456789abcdef0123456789abcdef and password=s3cr3t-value",
+			want: "<internal-token> and password=<shared-secret>",
+		},
+		{
+			// A run dense in header prefixes drives the decoder hard without
+			// any token coming of it.
+			name: "many rejected jwt candidates",
+			src:  strings.Repeat("eyJ", 200) + ".a.b",
+			want: strings.Repeat("eyJ", 200) + ".a.b",
+		},
+	}
 
 	var wg sync.WaitGroup
 	for range 32 {
@@ -258,14 +335,26 @@ func TestMasker_Mask_concurrentUse(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for range 32 {
-				if got := m.Mask(src); got != want {
-					t.Errorf("Mask() = %q, want %q", got, want)
-					return
+				for _, tt := range tests {
+					if got := m.Mask(tt.src); got != tt.want {
+						t.Errorf("Mask(%s) = %q, want %q", tt.name, got, tt.want)
+						return
+					}
 				}
 			}
 		}()
 	}
 	wg.Wait()
+}
+
+func Test_New_noOptions(t *testing.T) {
+	// A Masker given nothing scans with no patterns, so it redacts nothing and
+	// reaches for no redactor along the way. That the redactor New falls back
+	// to is the one it says is Test_New_defaultRedactor below, which needs a
+	// pattern to show it.
+	if got, want := New().Mask("abcdef"), "abcdef"; got != want {
+		t.Errorf("Mask() = %q, want %q", got, want)
+	}
 }
 
 func Test_New_defaultRedactor(t *testing.T) {
