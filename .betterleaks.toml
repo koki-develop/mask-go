@@ -1,0 +1,15 @@
+# The tests of a masking library have to carry values shaped like real
+# credentials, and betterleaks reports them as it should. Every such value in a
+# test is built from the ordered run 0123456789abcdef, which no real credential
+# is, so those alone are allowed. A credential written any other way is still
+# reported, in a test as anywhere else.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "credentials made of ordered characters, written into a test"
+condition = "AND"
+paths = ['''_test\.go$''']
+regexTarget = "secret"
+regexes = ['''0123456789abcdef''']
