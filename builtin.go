@@ -14,8 +14,14 @@ import (
 // The set grows as patterns are added to this package. The returned slice is
 // freshly allocated and may be modified by the caller.
 func DefaultPatterns() []Pattern {
-	return []Pattern{GitHubToken(), JWT()}
+	return slices.Clone(builtins)
 }
+
+// builtins is every built-in pattern, in the order DefaultPatterns reports
+// them. A pattern added to this package is added here, and that is the one
+// place which puts it in DefaultPatterns and under the properties every
+// built-in is held to in builtins_test.go.
+var builtins = []Pattern{githubToken, jsonWebToken}
 
 // GitHubToken locates GitHub credentials that carry a token prefix: personal
 // access tokens (ghp_, github_pat_), OAuth app access tokens (gho_), GitHub App

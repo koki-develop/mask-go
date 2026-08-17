@@ -172,6 +172,23 @@ func referenceJWTFind(src string) []Span {
 	return spans
 }
 
+// fuzzAgainstReference holds find to ref on every input f reaches it with.
+//
+// Each pattern keeps a fuzz target of its own rather than every pattern being
+// driven from one: the corpus under testdata/fuzz is keyed on the name of the
+// target, and a failure is minimized against the single pattern that carries
+// it. Only the body the targets share lives here.
+func fuzzAgainstReference(f *testing.F, find, ref func(string) []Span) {
+	f.Fuzz(func(t *testing.T, src string) {
+		// slices.Equal holds nothing reported as an empty slice and nothing
+		// reported at all the same, which Find is free to choose between.
+		got, want := find(src), ref(src)
+		if !slices.Equal(got, want) {
+			t.Fatalf("Find(%q) = %v, reference gives %v", src, got, want)
+		}
+	})
+}
+
 // FuzzJWT_matchesReference guards the cursor, the cheap checks and the decode
 // the scanner remembers between candidates: none of them may change which
 // tokens are located.
@@ -191,14 +208,7 @@ func FuzzJWT_matchesReference(f *testing.F) {
 	f.Add("eyMiYWxnIjoieCJ9.payload.0123456789abcdef")
 	f.Add("eyJeyJeyJ..eyJ..")
 
-	f.Fuzz(func(t *testing.T, src string) {
-		// slices.Equal holds nothing reported as an empty slice and nothing
-		// reported at all the same, which Find is free to choose between.
-		got, want := JWT().Find(src), referenceJWTFind(src)
-		if !slices.Equal(got, want) {
-			t.Fatalf("Find(%q) = %v, reference gives %v", src, got, want)
-		}
-	})
+	fuzzAgainstReference(f, JWT().Find, referenceJWTFind)
 }
 
 // referenceGitHubToken is the expression the scanner in builtin.go reads by
@@ -239,12 +249,5 @@ func FuzzGitHubToken_matchesReference(f *testing.F) {
 	f.Add(strings.Repeat("ghs_a_ey", 16)) // candidates crowded in one run
 	f.Add(strings.Repeat("ghs_a_ey", 16) + ".a.b")
 
-	f.Fuzz(func(t *testing.T, src string) {
-		// slices.Equal holds nothing reported as an empty slice and nothing
-		// reported at all the same, which Find is free to choose between.
-		got, want := GitHubToken().Find(src), referenceGitHubToken.Find(src)
-		if !slices.Equal(got, want) {
-			t.Fatalf("Find(%q) = %v, reference gives %v", src, got, want)
-		}
-	})
+	fuzzAgainstReference(f, GitHubToken().Find, referenceGitHubToken.Find)
 }

@@ -274,20 +274,6 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 	}
 }
 
-func Test_GitHubToken_name(t *testing.T) {
-	if got := GitHubToken().Name(); got != "github-token" {
-		t.Errorf("Name() = %q, want %q", got, "github-token")
-	}
-}
-
-func Test_GitHubToken_sameValueEachCall(t *testing.T) {
-	// Match carries the Pattern itself, so a caller comparing one against a
-	// built-in must get the same value every call.
-	if GitHubToken() != GitHubToken() {
-		t.Error("GitHubToken() returned a different value on a second call")
-	}
-}
-
 func Test_JWT(t *testing.T) {
 	tests := []struct {
 		name string
@@ -612,32 +598,9 @@ func Test_JWT_scanIsLinear(t *testing.T) {
 	}
 }
 
-func Test_JWT_name(t *testing.T) {
-	if got := JWT().Name(); got != "jwt" {
-		t.Errorf("Name() = %q, want %q", got, "jwt")
-	}
-}
-
-func Test_JWT_sameValueEachCall(t *testing.T) {
-	// Match carries the Pattern itself, so a caller comparing one against a
-	// built-in must get the same value every call.
-	if JWT() != JWT() {
-		t.Error("JWT() returned a different value on a second call")
-	}
-}
-
-func Test_DefaultPatterns(t *testing.T) {
-	got := DefaultPatterns()
-	want := []Pattern{GitHubToken(), JWT()}
-	if len(got) != len(want) {
-		t.Fatalf("DefaultPatterns() = %v, want %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("DefaultPatterns()[%d] = %v, want %v", i, got[i], want[i])
-		}
-	}
-}
+// What DefaultPatterns reports, and that each built-in reports the name and the
+// value it is documented to, is held to in builtins_test.go, which drives every
+// built-in from one table rather than a pair of tests apiece.
 
 func Test_DefaultPatterns_freshEachCall(t *testing.T) {
 	first := DefaultPatterns()
