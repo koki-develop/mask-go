@@ -46,8 +46,9 @@ out:  GITHUB_TOKEN=«github-token»
 ## Where a case goes
 
 `builtin_github_token.txt` and `builtin_jwt.txt` (one pattern each),
-`builtins_together.txt` (all of them at once), `custom_patterns.txt`
-(`MustRegexp`, `NewPattern`, and no pattern at all), `overlap_and_attribution.txt`
+`builtins_together.txt` (all of them at once, and the values two of them read
+differently), `custom_patterns.txt` (`MustRegexp`, `NewPattern`, and no pattern
+at all), `overlap_and_attribution.txt`
 (how overlapping values merge and which pattern the result is attributed to),
 `unusable_spans.txt` (the spans `Find` is documented to ignore),
 `text_shapes.txt` (log lines, JSON, command lines, and the credentials this

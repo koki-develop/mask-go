@@ -99,3 +99,36 @@ out:  «jwt».«github-token»
 case: a token and a jwt with a single dot between them
 in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  «github-token».«jwt»
+
+# Where the two patterns disagree about a stateless installation token. The
+# GitHub pattern asks for an app id, a single underscore, and a JWT whose every
+# segment holds at least one character; the JWT pattern asks a token only for
+# its segments, empty or not. So a stateless token the first declines can still
+# be a JWT to the second, and what is then left in the text is the ghs_ and the
+# app id, which authenticate nothing on their own.
+
+case: a stateless installation token whose jwt has an empty signature
+in:   ghs_123456_eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.
+out:  ghs_123456_«jwt»
+
+case: a stateless installation token with no app id
+in:   ghs__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ghs__«jwt»
+
+case: a stateless installation token whose app id is separated by two underscores
+in:   ghs_123456__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ghs_123456__«jwt»
+
+case: a stateless installation token carrying an encrypted jwt
+in:   ghs_123456_eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.0123456789abcdef.0123456789.0123456789abcdef.0123456789abcdef
+out:  «github-token»
+
+# And the one shape neither pattern takes anything from. A stateless token cut
+# before its second dot carries no signature, which the GitHub pattern declines
+# it for and which leaves the JWT pattern a segment short of a token. It is the
+# shape a log line cut to a column limit leaves, and it comes through whole: an
+# app id, a header and a payload, none of which authenticates a request.
+
+case: a stateless installation token cut before its signature
+in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
+out:  ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ

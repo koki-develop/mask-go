@@ -30,12 +30,14 @@ in:   ghr_0123456789abcdefghijklmnopqrstuvwxyz
 out:  «github-token»
 
 case: a fine grained personal access token
-in:   github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789
+in:   github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 out:  «github-token»
 
 # The lengths either side of what each kind must reach. GitHub gives no length,
 # so what the library accepts is the shortest body it has seen, and the pair of
-# cases below is where that choice is written down.
+# cases below is where that choice is written down. The fine grained pair is
+# written without the underscore a real body carries, because it is the count
+# that decides here and not the shape.
 
 case: a classic body of thirty-six characters is a token
 in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz
@@ -83,7 +85,7 @@ case: an app id followed by something that is not a jwt
 in:   ghs_123456_0123456789abcdef.0123456789.0123456789
 out:  ghs_123456_0123456789abcdef.0123456789.0123456789
 
-case: a classic token followed by a file name is not drawn into one span
+case: an installation token followed by a file name is not drawn into one span
 in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_backup.tar.gz
 out:  «github-token»_backup.tar.gz
 
@@ -93,7 +95,7 @@ out:  «github-token»_backup.tar.gz
 # quote leaves behind them — so a file name reaches no further into a token
 # than any other word does.
 
-case: a classic token followed by a file name beginning with the letters a header opens with
+case: an installation token followed by a file name beginning with the letters a header opens with
 in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyes.tar.gz
 out:  «github-token»_eyes.tar.gz
 
@@ -265,15 +267,12 @@ case: a classic token whose body carries capitals in an environment assignment
 in:   GITHUB_TOKEN=ghp_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
 out:  GITHUB_TOKEN=«github-token»
 
-# The fine grained token as GitHub issues it: github_pat_, twenty-two
-# characters, an underscore, and fifty-nine more — ninety-three in all. The
-# underscore inside the body is the part no case above states, and it is there
-# on purpose: GitHub picked a character base64 does not hold so that a random
-# string could not be mistaken for a token.
-
-case: a fine grained token in the form github issues
-in:   github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  «github-token»
+# The fine grained token where it is written down. Its form — github_pat_,
+# twenty-two characters, an underscore, and fifty-nine more, ninety-three in
+# all — is stated with the other kinds at the top of this file. The underscore
+# inside the body is there on purpose: GitHub picked a character base64 does not
+# hold so that a random string could not be mistaken for a token, and the runs
+# either side of it are what the last cases here are written against.
 
 case: a fine grained token in an environment assignment
 in:   GITHUB_TOKEN=github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
@@ -469,9 +468,20 @@ case: a token preceded immediately by japanese
 in:   トークンはghp_0123456789abcdefghijklmnopqrstuvwxyz
 out:  トークンは«github-token»
 
+# Tokens with nothing between them. GitHub documents no length, so the body of
+# the first is read as far as its alphabet runs: it swallows the gh and the kind
+# of the token behind it, which then begins inside the first value. The scan
+# comes back for every start it read over, so each of them is located and the
+# values overlap. One resuming past a value would leave every token but the
+# first whole.
+
 case: two tokens run together with nothing between them
 in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzgho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
-out:  «github-token»_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
+out:  «github-token»
+
+case: three tokens run together with nothing between them
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzgho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZghu_0123456789abcdefABCDEFghijKLMNopqrST
+out:  «github-token»
 
 case: a token inside a longer word
 in:   prefixghp_0123456789abcdefghijklmnopqrstuvwxyzsuffix

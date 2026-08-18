@@ -24,6 +24,11 @@ func GitHubToken() Pattern { return githubToken }
 // holding no token, and six times on a line of them. referenceGitHubToken in
 // builtin_github_token_test.go keeps the expression as the statement of what is
 // located, and the fuzz target beside it holds the two to the same answer.
+//
+// Only the grammar is the expression's; how often it is tried is not. A value
+// this scan locates may hold the start of the next one, so the expression is
+// tried at every byte rather than handed to FindAllStringIndex, which would
+// resume past a match and step over the token inside it.
 var githubToken = NewPattern("github-token", func(src string) []Span {
 	var spans []Span
 
@@ -33,10 +38,19 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 	// about only ever move forward, so the run is worked out once and
 	// remembered. Working it out again at each candidate would cost time
 	// quadratic in the length of a line of ghs_a_ey written over and over,
-	// which nothing else here rules out: a failed candidate consumes nothing,
+	// which nothing else here rules out: no candidate consumes what it read,
 	// and the underscores such a line is built from are base64url characters.
 	runEnd := -1
 	var jwt segments
+
+	// The body of a fine grained token is read the same way, and needs a
+	// cursor of its own because its alphabet holds the underscore: the prefix
+	// can be written inside a body, so a run can hold a candidate for every
+	// eleven characters it has, and each of them reads the run to its end.
+	// The bodies of the other kinds admit no underscore and so cannot hold a
+	// whole prefix, which leaves at most one candidate to a run and nothing
+	// for a cursor to save.
+	patRunEnd := -1
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], 'g')
@@ -45,22 +59,29 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		}
 		start := offset + i
 
-		// Only this starting point is ruled out by a failure below. A token
-		// can still begin further along inside what was examined, so the scan
-		// resumes just past the start rather than past the candidate.
+		// The scan resumes here whether this candidate becomes a token or
+		// not: only the starting point is settled by what follows, never the
+		// stretch of text it reaches over, and a token can begin anywhere
+		// inside that stretch. Consuming a match would step over such a token
+		// and leave it in the output whole — GitHub documents no length, so
+		// the body is read as far as its alphabet runs and swallows the
+		// prefix of a token written straight after it, ghp_ and gho_ with
+		// nothing between them among them. The two spans then overlap, which
+		// a Masker resolves into one.
 		offset = start + 1
 
 		if strings.HasPrefix(src[start:], githubPATPrefix) {
 			body := start + len(githubPATPrefix)
-			end := body
-			for end < len(src) && isGitHubPATByte(src[end]) {
-				end++
+			if body >= patRunEnd {
+				patRunEnd = body
+				for patRunEnd < len(src) && isGitHubPATByte(src[patRunEnd]) {
+					patRunEnd++
+				}
 			}
-			if end-body < githubPATChars {
+			if patRunEnd-body < githubPATChars {
 				continue
 			}
-			spans = append(spans, Span{Start: start, End: end})
-			offset = end
+			spans = append(spans, Span{Start: start, End: patRunEnd})
 			continue
 		}
 
@@ -69,9 +90,13 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		}
 
 		// Both of the alternatives left read the same run, so it is scanned
-		// once. Either it runs to the length a classic token needs, in which
-		// case the scan consumes what it read, or it is shorter than that
-		// length and the reading is bounded.
+		// once. No cursor is kept over it, and none is needed: a candidate
+		// asks for an underscore four characters in and this alphabet holds
+		// none, so the underscore of the next candidate can be no earlier
+		// than the byte that ends this run, and the run that candidate reads
+		// therefore begins past this one. Successive candidates read runs
+		// that do not overlap, and reading all of them comes to the length of
+		// the input.
 		body := start + 4
 		end := body
 		for end < len(src) && isGitHubTokenByte(src[end]) {
@@ -130,7 +155,6 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 			}
 			if jwt.ok {
 				spans = append(spans, Span{Start: start, End: jwt.end})
-				offset = jwt.end
 				continue
 			}
 		}
@@ -138,7 +162,6 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		// Classic tokens, forty characters in all.
 		if end-body >= githubClassicChars {
 			spans = append(spans, Span{Start: start, End: end})
-			offset = end
 		}
 	}
 	return spans

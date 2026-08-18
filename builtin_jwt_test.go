@@ -99,13 +99,15 @@ func Test_JWT(t *testing.T) {
 			want: []Span{{0, 40}},
 		},
 		{
-			// The payload of this token is itself a header, so a scan that
-			// resumed inside a located token would report a second, overlapping
-			// one. The cursor moves to the end of the token instead, and the
-			// two segments the token does not reach are left alone.
+			// The payload of this token is itself a header, and the segments
+			// behind it are a token of its own, so the scan reports that one
+			// too and the spans overlap. It is the price of coming back for
+			// every start inside a match, which is what locates the case
+			// below, and nothing in the bytes tells the two apart. A Masker
+			// resolves the overlap into one value.
 			name: "payload opens like a header",
 			src:  "eyJhbGciOiJIUzI1NiJ9.eyJhbGciOiJIUzI1NiJ9.0123456789abcdef.a.b",
-			want: []Span{{0, 58}},
+			want: []Span{{0, 58}, {21, 60}},
 		},
 		{
 			// The cursor must not carry past the token it ended, or the second
@@ -113,6 +115,16 @@ func Test_JWT(t *testing.T) {
 			name: "two tokens side by side",
 			src:  "eyJhbGciOiJIUzI1NiJ9.a.0123456789abcdef eyJhbGciOiJIUzI1NiJ9.c.0123456789abcdef",
 			want: []Span{{0, 39}, {40, 79}},
+		},
+		{
+			// The same two with nothing between them. A signature is a run of
+			// base64url characters, so it swallows the header of the token
+			// written after it and that token begins inside the first match:
+			// a scan resuming past a match would step over it and leave a
+			// whole token in the output.
+			name: "two tokens with nothing between them",
+			src:  "eyJhbGciOiJIUzI1NiJ9.a.0123456789abcdefeyJhbGciOiJIUzI1NiJ9.c.0123456789abcdef",
+			want: []Span{{0, 59}, {39, 78}},
 		},
 		{
 			// eyJh decodes to {"a, which is shorter than the smallest object
@@ -594,7 +606,10 @@ func Test_closesObject(t *testing.T) {
 
 // referenceJWTFind locates tokens the plain way: every header prefix in turn,
 // decoded and read in full, with no cursor and nothing remembered between
-// candidates. The scanner in builtin_jwt.go must agree with it on every input.
+// candidates. Every one of them is a starting point in its own right, a match
+// included, because a signature run swallows the header of a token written
+// straight after it and the second token then begins inside the first match.
+// The scanner in builtin_jwt.go must agree with it on every input.
 func referenceJWTFind(src string) []Span {
 	var spans []Span
 	for offset := 0; offset < len(src); {
@@ -633,14 +648,13 @@ func referenceJWTFind(src string) []Span {
 			end = encrypted.end
 		}
 		spans = append(spans, Span{Start: start, End: end})
-		offset = end
 	}
 	return spans
 }
 
-// FuzzJWT_matchesReference guards the cursor, the cheap checks and the decode
-// the scanner remembers between candidates: none of them may change which
-// tokens are located.
+// FuzzJWT_matchesReference guards the cursor, the cheap checks, the decode the
+// scanner remembers between candidates and the byte it resumes at: none of
+// them may change which tokens are located.
 func FuzzJWT_matchesReference(f *testing.F) {
 	f.Add("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
 	f.Add("eyJ.eyJ.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
@@ -656,6 +670,10 @@ func FuzzJWT_matchesReference(f *testing.F) {
 	f.Add("eyJhbGciOiJIUzI1NiJ9.eyJhbGciOiJIUzI1NiJ9.0123456789abcdef.a.b")
 	f.Add("eyMiYWxnIjoieCJ9.payload.0123456789abcdef")
 	f.Add("eyJeyJeyJ..eyJ..")
+	// A token beginning inside the match before it, which a scan resuming past
+	// a match steps over. The payload that is a header in its own right, which
+	// is what such a scan is bought with, is already seeded above.
+	f.Add("eyJhbGciOiJIUzI1NiJ9.a.0123456789abcdefeyJhbGciOiJIUzI1NiJ9.c.0123456789abcdef")
 
 	fuzzAgainstReference(f, JWT().Find, referenceJWTFind)
 }

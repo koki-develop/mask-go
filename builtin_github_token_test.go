@@ -1,6 +1,7 @@
 package mask
 
 import (
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -50,8 +51,13 @@ func Test_GitHubToken(t *testing.T) {
 			want: []Span{{0, 40}},
 		},
 		{
+			// The form GitHub issues: github_pat_, twenty-two characters, an
+			// underscore, and fifty-nine more. The underscore inside the body
+			// is a character base64 does not hold, picked so that a random
+			// string could not be mistaken for a token, and the alphabet the
+			// body is read in has to admit it.
 			name: "fine grained personal access token",
-			src:  "github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789",
+			src:  "github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW",
 			want: []Span{{0, 93}},
 		},
 		{
@@ -69,6 +75,31 @@ func Test_GitHubToken(t *testing.T) {
 			name: "stateless installation token with a long app id",
 			src:  "ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 			want: []Span{{0, 117}},
+		},
+		{
+			// GitHub documents no length, so a body is read as far as its
+			// alphabet runs: the first token here swallows the gho of the
+			// second, whose start the first match therefore covers. A scan
+			// resuming past a match would step over it and leave a whole
+			// token in the output. The spans overlap, which a Masker resolves
+			// into one.
+			name: "two tokens with nothing between them",
+			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxyzgho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ",
+			want: []Span{{0, 43}, {40, 80}},
+		},
+		{
+			// Admitting the underscore into a fine grained body lets the
+			// prefix be written inside one, so a run holds a candidate every
+			// eleven characters and each of them reads that same run to its
+			// end. Every candidate with eighty-two characters left in front
+			// of it is a token; the run cursor is what keeps the reading from
+			// being paid for again at each.
+			name: "the fine grained prefix written inside a fine grained body",
+			src:  strings.Repeat("github_pat_", 16),
+			want: []Span{
+				{0, 176}, {11, 176}, {22, 176}, {33, 176},
+				{44, 176}, {55, 176}, {66, 176}, {77, 176},
+			},
 		},
 	}
 
@@ -190,7 +221,7 @@ func Test_GitHubToken_nextToWordCharacters(t *testing.T) {
 		},
 		{
 			name: "underscore before a fine grained token",
-			src:  "X_github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789",
+			src:  "X_github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW",
 			want: "X_*********************************************************************************************",
 		},
 	}
@@ -290,17 +321,53 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 // which opensJOSEHeader admits and this expression spells out: a run written
 // as ey and anything at all draws in a file name written after an app id,
 // ghs_1_eyes.tar.gz among them.
-var referenceGitHubToken = MustRegexp(
-	"github-token",
-	`ghs_[0-9A-Za-z]+_`+jwtHeaderPrefix+`[I-L][0-9A-Za-z_-]*\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+`+
-		`|gh[pousr]_[0-9A-Za-z]{36,}`+
-		`|`+githubPATPrefix+`[0-9A-Za-z_]{82,}`,
+var referenceGitHubToken = regexp.MustCompile(
+	`ghs_[0-9A-Za-z]+_` + jwtHeaderPrefix + `[I-L][0-9A-Za-z_-]*\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+` +
+		`|gh[pousr]_[0-9A-Za-z]{36,}` +
+		`|` + githubPATPrefix + `[0-9A-Za-z_]{82,}`,
 )
 
-// FuzzGitHubToken_matchesReference guards the hand-written scan: the cursor it
-// keeps over the JWT of a stateless installation token, the order it tries the
-// alternatives in and the run it shares between them may none of them change
-// which tokens are located.
+// referenceGitHubTokenFind locates tokens the plain way: the leftmost match of
+// the expression above, then the leftmost one beginning after that match's
+// first byte, over and over, with no cursor and nothing remembered between
+// them. It is the control flow of the scan spelled with a regexp in place of
+// the byte tests.
+//
+// FindAllStringIndex would be the shorter way to write this and the wrong one.
+// It resumes past a match, and a token can begin inside one: a body is read as
+// far as its alphabet runs, so it swallows the prefix of a token written
+// straight after it and hides that token from every starting point the engine
+// would go on to try. The scan finds both, and reports the two spans
+// overlapping for a Masker to resolve, so the reference must ask about both.
+//
+// Resuming a byte along is what the run cursors save the scan from, so this
+// costs time quadratic in the length of a run the fine grained prefix can be
+// written inside: every candidate in such a run matches, so nothing about the
+// bytes lets the engine skip one, and eighty kilobytes of github_pat_ written
+// over and over take seconds here against half a millisecond in the scan. It
+// is the price of a reference with no cursor to be wrong about, and the reason
+// the seeds below keep that shape to a hundred and thirty bytes rather than
+// inviting the mutator to grow it. Test_builtins_scanIsLinear is where the
+// cost the scan pays is held down.
+func referenceGitHubTokenFind(src string) []Span {
+	var spans []Span
+	for i := 0; i < len(src); {
+		loc := referenceGitHubToken.FindStringIndex(src[i:])
+		if loc == nil {
+			break
+		}
+		start := i + loc[0]
+		spans = append(spans, Span{Start: start, End: i + loc[1]})
+		i = start + 1
+	}
+	return spans
+}
+
+// FuzzGitHubToken_matchesReference guards the hand-written scan: the two
+// cursors it keeps, over the JWT of a stateless installation token and over
+// the body of a fine grained one, the order it tries the alternatives in, the
+// run it shares between them and the byte it resumes at may none of them
+// change which tokens are located.
 //
 // The seeds below spell the anchor of that JWT in full, ey and the character
 // behind it. One written as ey and anything at all reaches no further than the
@@ -331,6 +398,13 @@ func FuzzGitHubToken_matchesReference(f *testing.F) {
 	f.Add("gghs_a_eyJ1.a.b")
 	f.Add(strings.Repeat("ghs_a_eyJ", 16)) // candidates crowded in one run
 	f.Add(strings.Repeat("ghs_a_eyJ", 16) + ".a.b")
+	// A token beginning inside the match before it, which a scan resuming
+	// past a match steps over, and a run holding a candidate for every eleven
+	// characters it has, which is what the fine grained cursor is for.
+	f.Add("ghp_0123456789abcdefghijklmnopqrstuvwxyzgho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ")
+	f.Add("ghs_1_eyJ1.a.bghs_2_eyJ2.c.d")
+	f.Add(strings.Repeat("github_pat_", 12))
+	f.Add(strings.Repeat("github_pat_", 12) + "!")
 
-	fuzzAgainstReference(f, GitHubToken().Find, referenceGitHubToken.Find)
+	fuzzAgainstReference(f, GitHubToken().Find, referenceGitHubTokenFind)
 }

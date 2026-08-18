@@ -81,9 +81,15 @@ var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 		}
 		start := offset + i
 
-		// Only this starting point is ruled out by a failure below. A token
-		// can still begin further along inside what was examined, so the scan
-		// resumes just past the start rather than past the candidate.
+		// The scan resumes here whether this candidate becomes a token or
+		// not: only the starting point is settled by what follows, never the
+		// stretch of text it reaches over, and a token can begin anywhere
+		// inside that stretch. Consuming a match would step over such a
+		// token and leave it in the output whole — the signature of a signed
+		// token is a run of base64url characters, so a second token written
+		// straight after the first has its header swallowed by that run and
+		// begins inside the match. The two spans then overlap, which a Masker
+		// resolves into one.
 		offset = start + 1
 
 		if !opensJOSEHeaderAt(src, start) {
@@ -120,7 +126,6 @@ var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 		}
 
 		spans = append(spans, Span{Start: start, End: end})
-		offset = end
 	}
 	return spans
 })

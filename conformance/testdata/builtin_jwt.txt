@@ -451,9 +451,25 @@ case: the same token twice on one line
 in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef again
 out:  «jwt» and «jwt» again
 
+# Tokens with nothing between them. A signature is a run of base64url
+# characters, so it swallows the header of the token behind it, which then
+# begins inside the first value. The scan comes back for every start it read
+# over, so both are located and the values overlap; one resuming past a value
+# would leave the second whole.
+#
+# The case after states what that rule costs. A payload is base64url too, so
+# one that decodes to a header of its own is a token to this pattern wherever
+# the segments behind it reach, and nothing in the bytes tells it apart from
+# the token above. The redaction then runs a segment further than the outer
+# token does.
+
 case: two tokens with nothing between them
 in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdefeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «jwt».eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a token whose payload is a header in its own right
+in:   eyJhbGciOiJIUzI1NiJ9.eyJhbGciOiJIUzI1NiJ9.0123456789abcdef.a.b
+out:  «jwt».b
 
 case: a token in a curl command broken over two lines
 in:   curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef" \\\n  https://api.example.com/v1/user
@@ -493,7 +509,14 @@ case: base64url that decodes to a json array of numbers
 in:   WzEsMiwzXQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  WzEsMiwzXQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: base64url that decodes to bytes that are not utf-8
+# The header below decodes to a brace, a quote and one byte more, which is
+# shorter than the smallest object naming a member. That those bytes are not
+# valid UTF-8 is not what settles it: a header is read for the marks RFC 7515
+# asks of one and for nothing else, so the header further up this file whose
+# first member name opens with a byte no character opens with — bytes no more
+# valid than these — is a token.
+
+case: a header too short to name an algorithm
 in:   eyL_.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  eyL_.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 

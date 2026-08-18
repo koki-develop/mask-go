@@ -80,13 +80,17 @@ Tools are pinned in `mise.toml`. `mise run bootstrap` installs the git hooks.
   what one scan remembers stay with that scan too, as `Test_JWT_scanIsLinear`
   does.
 - Both built-in scanners are checked against a reference kept beside them:
-  `referenceJWTFind` (`builtin_jwt_test.go`), a plain implementation of the same
-  rules, and `referenceGitHubToken` (`builtin_github_token_test.go`), the
-  regular expression the GitHub token scan reads by hand. Change scanner and
-  reference together, and keep the corpus in `testdata/fuzz/`. The targets share
-  their body through `fuzzAgainstReference` (`fuzz_test.go`) but keep a name
-  apiece, because the corpus is keyed on the name of the target — so never
-  rename a target without moving its corpus directory.
+  `referenceJWTFind` (`builtin_jwt_test.go`) and `referenceGitHubTokenFind`
+  (`builtin_github_token_test.go`), plain implementations of the same rules.
+  The second tries `referenceGitHubToken`, the regular expression the GitHub
+  token scan reads by hand, at every byte rather than handing it to
+  `FindAllStringIndex`: a value either scan locates can hold the start of the
+  next one, so a reference that resumed past a match would miss what the scan
+  finds. Change scanner and reference together, and keep the corpus in
+  `testdata/fuzz/`. The targets share their body through
+  `fuzzAgainstReference` (`fuzz_test.go`) but keep a name apiece, because the
+  corpus is keyed on the name of the target — so never rename a target without
+  moving its corpus directory.
 - Behaviour that differs under the race detector is branched on `raceEnabled`
   (`race_test.go` / `norace_test.go`), not skipped.
 
@@ -96,9 +100,18 @@ Tools are pinned in `mise.toml`. `mise run bootstrap` installs the git hooks.
   scanner rationale in each `builtin_<name>.go` is load-bearing, so update it
   rather than dropping it.
 - `Pattern` and `Redactor` implementations must be safe for concurrent use.
+- Both built-in scans resume one byte past the start of a candidate whether it
+  became a value or not. A body and a signature are read as far as their
+  alphabet runs, so either swallows the opening of a credential written
+  straight after it, and consuming a match would step over that credential and
+  leave it in the output whole. The cost is that a value nested in another —
+  a JWT payload that is itself a header — is located too; the spans overlap and
+  `Masker.locate` resolves them.
 - `Masker.locate` and both built-in scanners are deliberately linear-time and
-  allocation-conscious; the cursors they keep over a run of base64url
-  characters are what rule out quadratic inputs. Compare benchmarks before and
-  after touching them.
+  allocation-conscious. Resuming one byte along means a run can hold a
+  candidate for every character it has, and the cursors the scans keep over a
+  run — of base64url characters, and of the alphabet a fine grained token body
+  is written in — are what rule out quadratic inputs. Compare benchmarks before
+  and after touching them.
 - Published library: any change to an exported name, signature or behaviour is
   breaking. Keep `README.md` in sync with the exported API.
