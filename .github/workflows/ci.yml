@@ -24,7 +24,56 @@ jobs:
           persist-credentials: false
           submodules: true
       - uses: ./.github/actions/setup
+      # Both, deliberately. The race detector allocates on paths that otherwise
+      # do not, so the tests that hold this library to allocating nothing stand
+      # down under it; without a run of its own they would never run at all.
+      - run: go test ./...
       - run: go test -race ./...
+
+  fuzz:
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: true
+      - uses: ./.github/actions/setup
+      # A plain go test runs a fuzz target over its corpus alone, which is the
+      # inputs someone thought of. Every target is given a little time to look
+      # for the ones nobody did.
+      - name: Fuzz every target
+        shell: bash
+        run: |
+          # A loop iterating over what a command substitution produced is where
+          # errexit does not reach: the substitution can fail and the loop simply
+          # runs no times. Both listings are therefore assigned first and their
+          # status checked, and the count catches what is left — a pattern that
+          # stops matching any target at all.
+          if ! packages=$(go list ./...); then
+            echo "listing the packages failed" >&2
+            exit 1
+          fi
+          fuzzed=0
+          for pkg in $packages; do
+            if ! listed=$(go test -list '^Fuzz' "$pkg"); then
+              echo "listing the fuzz targets of $pkg failed" >&2
+              exit 1
+            fi
+            for target in $(echo "$listed" | grep '^Fuzz'); do
+              echo "::group::$target ($pkg)"
+              go test -run '^$' -fuzz "^${target}$" -fuzztime 30s "$pkg"
+              echo "::endgroup::"
+              fuzzed=$((fuzzed + 1))
+            done
+          done
+          if [ "$fuzzed" -eq 0 ]; then
+            echo "no fuzz target was run" >&2
+            exit 1
+          fi
+          echo "fuzzed $fuzzed target(s)"
 
   build:
     timeout-minutes: 10

@@ -1,0 +1,168 @@
+# What GitHub credentials the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is.
+
+patterns: github-token
+
+# The kinds of token that carry a prefix. GitHub documents the prefixes but no
+# length, so each kind is stated once rather than being assumed to follow from
+# another.
+
+case: a personal access token in an environment assignment
+in:   GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  GITHUB_TOKEN=«github-token»
+
+case: an oauth app access token on its own
+in:   gho_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «github-token»
+
+case: a github app user access token
+in:   ghu_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «github-token»
+
+case: an installation access token in its classic form
+in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «github-token»
+
+case: a refresh token
+in:   ghr_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «github-token»
+
+case: a fine grained personal access token
+in:   github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789
+out:  «github-token»
+
+# The lengths either side of what each kind must reach. GitHub gives no length,
+# so what the library accepts is the shortest body it has seen, and the pair of
+# cases below is where that choice is written down.
+
+case: a classic body of thirty-six characters is a token
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «github-token»
+
+case: a classic body of thirty-five characters is not
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxy
+out:  ghp_0123456789abcdefghijklmnopqrstuvwxy
+
+case: a classic body longer than thirty-six characters is redacted whole
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz0123456789
+out:  «github-token»
+
+case: a fine grained body of eighty-two characters is a token
+in:   github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789
+out:  «github-token»
+
+case: a fine grained body of eighty-one characters is not
+in:   github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678
+out:  github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678
+
+# The stateless installation token, which carries a JWT after the app id.
+
+case: a stateless installation token
+in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token»
+
+case: a stateless installation token with a long app id
+in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token»
+
+case: an app id as long as a whole classic token body
+in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token»
+
+case: a stateless installation token cut before its signature is not redacted
+in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
+out:  ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
+
+case: one character of signature is enough for the whole token
+in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0
+out:  «github-token»
+
+case: an app id followed by something that is not a jwt
+in:   ghs_123456_0123456789abcdef.0123456789.0123456789
+out:  ghs_123456_0123456789abcdef.0123456789.0123456789
+
+case: a classic token followed by a file name is not drawn into one span
+in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_backup.tar.gz
+out:  «github-token»_backup.tar.gz
+
+# Where a token sits.
+
+case: a token in a json body
+in:   {"token":"ghp_0123456789abcdefghijklmnopqrstuvwxyz","scope":"repo"}
+out:  {"token":"«github-token»","scope":"repo"}
+
+case: a token in an authorization header
+in:   Authorization: token ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  Authorization: token «github-token»
+
+case: a token exported by a shell
+in:   export GITHUB_TOKEN="ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+out:  export GITHUB_TOKEN="«github-token»"
+
+case: a token in a clone url
+in:   git clone https://x-access-token:ghs_0123456789abcdefghijklmnopqrstuvwxyz@github.com/koki-develop/mask-go.git
+out:  git clone https://x-access-token:«github-token»@github.com/koki-develop/mask-go.git
+
+case: a token run together with the word before it
+in:   TOKEN_ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  TOKEN_«github-token»
+
+case: a token ending a sentence keeps the full stop
+in:   the token is ghp_0123456789abcdefghijklmnopqrstuvwxyz.
+out:  the token is «github-token».
+
+case: two tokens on one line
+in:   old=ghp_0123456789abcdefghijklmnopqrstuvwxyz new=gho_0123456789abcdefghijklmnopqrstuvwxyz
+out:  old=«github-token» new=«github-token»
+
+case: a classic token and a fine grained one
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789
+out:  «github-token» «github-token»
+
+case: a token at the very start and another at the very end
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz in between gho_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «github-token» in between «github-token»
+
+# What is not a token.
+
+case: prose mentioning a ghost
+in:   the ghost of a token haunts this line
+out:  the ghost of a token haunts this line
+
+case: a prefix with no body
+in:   ghp_
+out:  ghp_
+
+case: a prefix naming no kind of token
+in:   ghx_0123456789abcdefghijklmnopqrstuvwxyz
+out:  ghx_0123456789abcdefghijklmnopqrstuvwxyz
+
+case: a prefix written with a hyphen
+in:   ghp-0123456789abcdefghijklmnopqrstuvwxyz
+out:  ghp-0123456789abcdefghijklmnopqrstuvwxyz
+
+case: a prefix missing its kind
+in:   gh_0123456789abcdefghijklmnopqrstuvwxyz
+out:  gh_0123456789abcdefghijklmnopqrstuvwxyz
+
+case: a prefix in capitals
+in:   GHP_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:  GHP_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+case: a body broken by a hyphen
+in:   ghp_0123456789abcdef-ghijklmnopqrstuvwxyz0123456
+out:  ghp_0123456789abcdef-ghijklmnopqrstuvwxyz0123456
+
+case: an environment assignment with nothing after it
+in:   GITHUB_TOKEN=
+out:  GITHUB_TOKEN=
+
+case: a git command line
+in:   git push origin main --force-with-lease
+out:  git push origin main --force-with-lease
+
+case: a fine grained prefix with a classic length body
+in:   github_pat_0123456789abcdefghijklmnopqrstuvwxyz
+out:  github_pat_0123456789abcdefghijklmnopqrstuvwxyz

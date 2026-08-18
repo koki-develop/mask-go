@@ -1,0 +1,136 @@
+# What JSON Web Tokens the library redacts, and what it leaves alone.
+#
+# A token is read for the marks RFC 7515 and RFC 7516 require of a header: a
+# JSON object naming an algorithm in alg, and enc where the token is encrypted.
+# The headers below are written out in the case names, since base64url hides
+# them.
+
+patterns: jwt
+
+# Signed tokens.
+
+case: a bearer token in an authorization header
+in:   Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  Authorization: Bearer «jwt»
+
+case: a token whose header names nothing but the algorithm
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a token whose header names the algorithm last
+in:   eyJ0eXAiOiJKV1QiLCJraWQiOiJrZXktMSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header whose first member name opens with a digit
+in:   eyIwIjoxLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header carrying an object of its own
+in:   eyJhbGciOiJIUzI1NiIsIngiOnsieSI6InoifX0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header closed with space after the brace
+in:   eyJhbGciOiJIUzI1NiJ9IA.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a token with an empty signature
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.
+out:  «jwt»
+
+case: a header followed by two empty segments
+in:   eyJhbGciOiJIUzI1NiJ9..
+out:  «jwt»
+
+case: a token whose payload carries a name with a space
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6ImEgYiJ9.0123456789abcdef
+out:  «jwt»
+
+# Encrypted tokens, which RFC 7516 gives five parts.
+
+case: an encrypted token
+in:   eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.0123456789abcdef.0123456789.0123456789abcdef.0123456789abcdef
+out:  «jwt»
+
+case: a header naming a content encryption algorithm without the parts of an encrypted token
+in:   eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+# Where a token sits.
+
+case: a token in a json body
+in:   {"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef","token_type":"Bearer"}
+out:  {"access_token":"«jwt»","token_type":"Bearer"}
+
+case: a token in a url query string
+in:   https://example.com/callback?id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef&state=abc
+out:  https://example.com/callback?id_token=«jwt»&state=abc
+
+case: a token in a cookie
+in:   Cookie: session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef; Path=/
+out:  Cookie: session=«jwt»; Path=/
+
+case: a token ending a sentence keeps the full stop
+in:   the token is eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef.
+out:  the token is «jwt».
+
+case: two tokens on one line
+in:   old=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef new=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4eXoifQ.0123456789abcdef
+out:  old=«jwt» new=«jwt»
+
+case: a token after a candidate that is not a header
+in:   eyJx.a.beyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJx.a.b«jwt»
+
+case: a token whose header sits inside a longer run of base64url characters
+in:   xxxxeyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  xxxx«jwt»
+
+# What is not a token.
+
+case: a header prefix alone
+in:   eyJ
+out:  eyJ
+
+case: a header with no segments after it
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+out:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+
+case: a header and a payload with no signature
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
+out:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
+
+case: a header naming no algorithm
+in:   eyJ0eXAiOiJKV1QiLCJraWQiOiIxIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJ0eXAiOiJKV1QiLCJraWQiOiIxIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header that never closes its object
+in:   eyJhbGciOiJIUzI1NiI.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJhbGciOiJIUzI1NiI.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header written with a space after the opening brace
+in:   eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a third character that cannot open a member name
+in:   eyZhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyZhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: base64url that decodes to no json at all
+in:   aGVsbG8gd29ybGQ.aGVsbG8.aGVsbG8
+out:  aGVsbG8gd29ybGQ.aGVsbG8.aGVsbG8
+
+case: dots between header prefixes
+in:   eyJ.eyJ.eyJ
+out:  eyJ.eyJ.eyJ
+
+case: prose holding the letters a header opens with
+in:   they eyed the key and said nothing
+out:  they eyed the key and said nothing
+
+case: a token broken across two lines
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header prefix repeated
+in:   eyJeyJeyJeyJeyJeyJeyJeyJeyJeyJ
+out:  eyJeyJeyJeyJeyJeyJeyJeyJeyJeyJ

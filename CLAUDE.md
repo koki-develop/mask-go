@@ -14,8 +14,8 @@ only that scan reads, its behaviour tables, its reference and its fuzz target.
 scan reads (`segments`, `isBase64URLByte`), `builtins_test.go` holds what every
 built-in is held to, and `fuzz_test.go` holds the `Masker` targets and the body
 the per-pattern targets share. Adding a pattern should touch the registry, the
-property table and two new files — nothing else. Keep it that way rather than
-letting a shared `builtin.go` grow back.
+property table, two new files and the conformance corpus — nothing else. Keep it
+that way rather than letting a shared `builtin.go` grow back.
 
 One pattern may read another's declarations where the credentials themselves
 nest: `builtin_github_token.go` reads `jwtHeaderPrefix` and `signedSegments`
@@ -23,6 +23,11 @@ from `builtin_jwt.go`, because a stateless installation token carries a JWT and
 what that is stays the JWT pattern's to define. Such a borrowing belongs where
 it is defined, not in `builtin_scan.go`, and the file doing the borrowing says
 so — deleting the JWT pattern would break the GitHub one.
+
+`conformance/` states the library end to end: a corpus of cases and one harness
+holding each of them to every property masking must have, through the public API
+alone. It has a `CLAUDE.md` of its own — read that before touching anything
+there.
 
 The built-ins are not in an `internal` package and should not be moved into one:
 they need `Pattern`, `Span` and `NewPattern`, which the root package holds, so
@@ -34,10 +39,15 @@ pkg.go.dev, or converting spans on every `Find`, which allocates.
 
 Tools are pinned in `mise.toml`. `mise run bootstrap` installs the git hooks.
 
-- `go test ./...` — tests. Also `go test -race ./...` and
-  `go test -fuzz FuzzJWT_matchesReference` (targets: `FuzzMasker_locate`,
-  `FuzzMasker_Mask`, `FuzzJWT_matchesReference`,
-  `FuzzGitHubToken_matchesReference`).
+- `go test ./...` — tests. Run it without `-race` as well as with: the tests
+  holding `Mask` to allocating nothing stand down under the race detector, so
+  the two runs do not cover the same thing, and CI does both.
+- `go test ./conformance -update` — regenerate the conformance corpus and check
+  it in the same run (`conformance/CLAUDE.md`).
+- `go test -fuzz FuzzJWT_matchesReference .` — fuzzing. Targets in the root
+  package: `FuzzMasker_locate`, `FuzzMasker_Mask`, `FuzzJWT_matchesReference`,
+  `FuzzGitHubToken_matchesReference`. In `conformance`: `FuzzMask`,
+  `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30 seconds.
 - `go test -bench . -benchmem` — benchmarks.
 - `golangci-lint run` — lint (no config file; defaults).
 - `modernize -fix ./...` — apply modern Go idioms.
@@ -47,7 +57,9 @@ Tools are pinned in `mise.toml`. `mise run bootstrap` installs the git hooks.
 
 - Table-driven, one `name` per case, and each case writes out its own data
   literally rather than sharing fixtures or computing it.
-- Adding a built-in pattern means two declarations: the pattern in `builtins`
+- Adding a built-in pattern means three declarations: the two below, and cases
+  in the conformance corpus (`conformance/CLAUDE.md`).
+- The first two are: the pattern in `builtins`
   (`builtins.go`), which is what `DefaultPatterns` reports, and an entry in
   `builtinPatterns` (`builtins_test.go`), which is what holds it to the
   properties every built-in shares — its name and the convention `Pattern.Name`

@@ -1,0 +1,41 @@
+# The built-in patterns as a caller has them: all of them at once, which is what
+# DefaultPatterns hands out.
+#
+# A value one pattern locates whole can be one another locates in part — a
+# stateless installation token carries a JWT — so what matters here is that the
+# patterns do not take pieces out of each other's values, and that a line
+# holding several kinds of credential loses all of them.
+
+patterns: default
+
+case: a stateless installation token is one value, not a token and a jwt
+in:   token=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  token=«github-token»
+
+case: a personal access token and a jwt on one line
+in:   token=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  token=«github-token» jwt=«jwt»
+
+case: a jwt before a personal access token
+in:   jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef token=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  jwt=«jwt» token=«github-token»
+
+case: a stateless installation token beside a jwt of its own
+in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4eXoifQ.0123456789abcdef
+out:  «github-token» and «jwt»
+
+case: every kind of credential this library knows
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token» «github-token» «jwt»
+
+case: a fine grained token holding a run that opens like a header
+in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
+out:  «github-token»
+
+case: neither pattern finds anything in a log line
+in:   time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user
+out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user
+
+case: neither pattern finds anything in prose
+in:   there is no credential in this sentence
+out:  there is no credential in this sentence

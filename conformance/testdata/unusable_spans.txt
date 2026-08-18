@@ -1,0 +1,66 @@
+# The spans Find is documented to have ignored: a span reaching outside the
+# text, and a span whose Start is not less than its End.
+#
+# The patterns here report the spans they are built with whatever text they are
+# handed, which is the only way to state a rule about a span a pattern must not
+# be trusted with. Every case is written against a text of six bytes, and none
+# of them is held to what follows a value around: nothing moves for these
+# patterns when the text around a value grows, because they never look at it.
+
+spans: reported
+
+patterns: span-empty
+
+case: an empty span is ignored
+in:   abcdef
+out:  abcdef
+
+patterns: span-reversed
+
+case: a span whose start is past its end is ignored
+in:   abcdef
+out:  abcdef
+
+patterns: span-negative
+
+case: a span starting before the text is ignored
+in:   abcdef
+out:  abcdef
+
+patterns: span-past-the-end
+
+case: a span reaching past the text is ignored
+in:   abcdef
+out:  abcdef
+
+case: the same span in a text long enough to hold it is used
+in:   abcdefgh
+out:  abcd«past-the-end»h
+
+patterns: span-unusable-beside-a-value
+
+case: an unusable span leaves the usable ones alone
+in:   abcdef
+out:  «mixed»cdef
+
+patterns: span-unordered
+
+case: spans reported out of order are sorted
+in:   abcdef
+out:  «unordered»cd«unordered»
+
+patterns: span-duplicated
+
+case: the same span reported twice is redacted once
+in:   abcdef
+out:  «duplicated»cdef
+
+patterns: span-whole-input
+
+case: a span over the whole text
+in:   abcdef
+out:  «whole»
+
+case: a span over the whole text of an empty text is ignored
+in:
+out:

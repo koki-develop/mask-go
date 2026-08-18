@@ -3,6 +3,11 @@
 # test is built from the ordered run 0123456789abcdef, which no real credential
 # is, so those alone are allowed. A credential written any other way is still
 # reported, in a test as anywhere else.
+#
+# The conformance corpus carries them too. It is a test in every sense but the
+# file extension — the cases under conformance/testdata are what the package
+# beside them is driven with — so the same rule covers it, and covers nothing
+# else: a value built any other way is reported there as well.
 
 [extend]
 useDefault = true
@@ -10,6 +15,24 @@ useDefault = true
 [[allowlists]]
 description = "credentials made of ordered characters, written into a test"
 condition = "AND"
-paths = ['''_test\.go$''']
+paths = ['''_test\.go$''', '''conformance/testdata/[^/]+\.txt$''']
 regexTarget = "secret"
 regexes = ['''0123456789abcdef''']
+
+# A fuzz corpus is the one place the ordered run cannot be asked for. What is
+# under testdata/fuzz is written by the fuzzer, not by anyone: an input that
+# found a failure is kept so that it is checked from then on, and it is whatever
+# the fuzzer arrived at — which, for targets seeded from the corpus above, is
+# credential shaped often enough that a failure worth keeping could not be
+# committed at all.
+#
+# What is asked for instead is the shape of the line go test writes an input on:
+# string(...) or []byte(...). That covers every input a fuzzer kept and nothing
+# else, so a credential dropped into one of these directories by hand is still
+# reported.
+[[allowlists]]
+description = "inputs a fuzz target kept, which nobody wrote"
+condition = "AND"
+paths = ['''(^|/)testdata/fuzz/''']
+regexTarget = "line"
+regexes = ['''^\s*(string|\[\]byte)\(''']

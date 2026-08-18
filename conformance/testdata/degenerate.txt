@@ -1,0 +1,97 @@
+# Text a scan reading one byte at a time can trip over: nothing at all, a single
+# byte, punctuation, bytes that are not valid UTF-8, and the runs that a scan
+# resuming one byte along would work through candidate after candidate.
+
+patterns: default
+
+case: no text at all
+in:
+out:
+
+case: one letter
+in:   a
+out:  a
+
+case: one space
+in:   \x20
+out:  \x20
+
+case: a run of dots
+in:   ....
+out:  ....
+
+case: a run of underscores
+in:   ____________________
+out:  ____________________
+
+case: a run of hyphens
+in:   ----------------------------------------
+out:  ----------------------------------------
+
+case: a run of base64url characters
+in:   0123456789abcdefghijklmnopqrstuvwxyz-_0123456789abcdefghijklmnopqrstuvwxyz-_
+out:  0123456789abcdefghijklmnopqrstuvwxyz-_0123456789abcdefghijklmnopqrstuvwxyz-_
+
+case: control bytes
+in:   \x00\x01\x02
+out:  \x00\x01\x02
+
+case: bytes that are not valid utf-8
+in:   \xff\xfe
+out:  \xff\xfe
+
+case: text in japanese
+in:   日本語
+out:  日本語
+
+case: a lone carriage return and newline
+in:   \r\n
+out:  \r\n
+
+case: header prefixes with nothing behind them
+in:   eyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJ
+out:  eyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJeyJ
+
+case: header prefixes ending in something that is not a token
+in:   eyJeyJeyJeyJeyJeyJeyJeyJeyJeyJ.a.b
+out:  eyJeyJeyJeyJeyJeyJeyJeyJeyJeyJ.a.b
+
+case: token prefixes that never complete
+in:   ghs_a_eyghs_a_eyghs_a_eyghs_a_eyghs_a_eyghs_a_eyghs_a_eyghs_a_ey
+out:  ghs_a_eyghs_a_eyghs_a_eyghs_a_eyghs_a_eyghs_a_eyghs_a_eyghs_a_ey
+
+case: dots between empty segments
+in:   eyJ..eyJ..eyJ..eyJ..
+out:  eyJ..eyJ..eyJ..eyJ..
+
+case: a token wrapped in control bytes
+in:   \x00ghp_0123456789abcdefghijklmnopqrstuvwxyz\x00
+out:  \x00«github-token»\x00
+
+case: a token followed by a carriage return and newline
+in:   token=ghp_0123456789abcdefghijklmnopqrstuvwxyz\r\n
+out:  token=«github-token»\r\n
+
+case: a token between tabs
+in:   \tghp_0123456789abcdefghijklmnopqrstuvwxyz\t
+out:  \t«github-token»\t
+
+case: a token followed by bytes that are not valid utf-8
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz\xff\xfe
+out:  «github-token»\xff\xfe
+
+case: a token broken by a control byte
+in:   ghp_0123456789abcdef\x00ghijklmnopqrstuvwxyz0123456789abcdef
+out:  ghp_0123456789abcdef\x00ghijklmnopqrstuvwxyz0123456789abcdef
+
+case: a token between multi-byte text
+in:   日本語ghp_0123456789abcdefghijklmnopqrstuvwxyz日本語
+out:  日本語«github-token»日本語
+
+case: a jwt between multi-byte text
+in:   日本語eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef日本語
+out:  日本語«jwt»日本語
+
+case: a space at either end of the text
+in:   \x20ghp_0123456789abcdefghijklmnopqrstuvwxyz\x20
+out:  \x20«github-token»\x20
