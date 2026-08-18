@@ -36,6 +36,30 @@ const jwtHeaderPrefix = "ey"
 // alone.
 func opensJOSEHeader(c byte) bool { return 'I' <= c && c <= 'L' }
 
+// opensJOSEHeaderAt reports whether the base64url of a JOSE header begins at i
+// in src: the ey it opens with, and a third character that can carry the {"
+// behind it.
+//
+// This is the whole of what anchors a header without decoding one, and it is
+// the strongest such anchor there is: the two characters say the first byte is
+// {, and the third says the byte after it can be the quote a member name opens
+// with. Nothing further follows from the bytes alone.
+//
+// Both scans read it. A stateless installation token carries a JWT, so what
+// anchors one there is what anchors one here, and a scan spelling the anchor
+// again is a scan that can come to disagree with this one about what opens a
+// header. builtin_github_token.go did: it looked for the ey and not the
+// character behind it, so a file name written after an app id was drawn into a
+// token wherever it opened with those two letters, and ghs_1_eyes.tar.gz was
+// redacted whole while ghs_1_export.tar.gz was left alone.
+func opensJOSEHeaderAt(src string, i int) bool {
+	if !strings.HasPrefix(src[i:], jwtHeaderPrefix) {
+		return false
+	}
+	third := i + len(jwtHeaderPrefix)
+	return third < len(src) && opensJOSEHeader(src[third])
+}
+
 var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 	var spans []Span
 
@@ -62,8 +86,7 @@ var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 		// resumes just past the start rather than past the candidate.
 		offset = start + 1
 
-		third := start + len(jwtHeaderPrefix)
-		if third >= len(src) || !opensJOSEHeader(src[third]) {
+		if !opensJOSEHeaderAt(src, start) {
 			continue
 		}
 

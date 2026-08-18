@@ -285,9 +285,14 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 // scan can be held to it. Go matches an alternation leftmost-first rather than
 // leftmost-longest, which is why the stateless installation token comes before
 // the classic one it opens like.
+//
+// The class after the header prefix is the third character of a JOSE header,
+// which opensJOSEHeader admits and this expression spells out: a run written
+// as ey and anything at all draws in a file name written after an app id,
+// ghs_1_eyes.tar.gz among them.
 var referenceGitHubToken = MustRegexp(
 	"github-token",
-	`ghs_[0-9A-Za-z]+_`+jwtHeaderPrefix+`[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+`+
+	`ghs_[0-9A-Za-z]+_`+jwtHeaderPrefix+`[I-L][0-9A-Za-z_-]*\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+`+
 		`|gh[pousr]_[0-9A-Za-z]{36,}`+
 		`|`+githubPATPrefix+`[0-9A-Za-z_]{82,}`,
 )
@@ -296,6 +301,12 @@ var referenceGitHubToken = MustRegexp(
 // keeps over the JWT of a stateless installation token, the order it tries the
 // alternatives in and the run it shares between them may none of them change
 // which tokens are located.
+//
+// The seeds below spell the anchor of that JWT in full, ey and the character
+// behind it. One written as ey and anything at all reaches no further than the
+// anchor, so a seed aimed at the segments or at the run behind them would sit
+// in the corpus testing nothing — and there is no checked-in corpus for this
+// target, so what the seeds reach is all a cold run starts from.
 func FuzzGitHubToken_matchesReference(f *testing.F) {
 	f.Add("nothing to see here")
 	f.Add("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz")
@@ -309,14 +320,17 @@ func FuzzGitHubToken_matchesReference(f *testing.F) {
 	f.Add("ghs_11223344_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
 	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJhbGciOiJIUzI1NiJ9.a.b") // an app id long enough to look classic
 	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz_config.json.bak")          // dots after a classic token
-	f.Add("ghs__ey1.a.b")                                                      // no app id
-	f.Add("ghs_a_ey.a.b")                                                      // no character after ey
-	f.Add("ghs_a_ey1..b")                                                      // an empty segment
-	f.Add("ghs_a_ey1.a")                                                       // one segment short
-	f.Add("ghs_a_eyghp_0123456789abcdefghijklmnopqrstuvwxyz")                  // a classic token inside the JWT run
-	f.Add("gghs_a_ey1.a.b")
-	f.Add(strings.Repeat("ghs_a_ey", 16)) // candidates crowded in one run
-	f.Add(strings.Repeat("ghs_a_ey", 16) + ".a.b")
+	f.Add("ghs__eyJ1.a.b")                                                     // no app id
+	f.Add("ghs_a_eyJ.a.b")                                                     // a header of nothing but the anchor
+	f.Add("ghs_a_eyes.tar.gz")                                                 // a file name opening with the two letters alone
+	f.Add("ghs_a_eyA.a.b")                                                     // a third character just below the four
+	f.Add("ghs_a_eyM.a.b")                                                     // and just above them
+	f.Add("ghs_a_eyJ1..b")                                                     // an empty segment
+	f.Add("ghs_a_eyJ1.a")                                                      // one segment short
+	f.Add("ghs_a_eyJghp_0123456789abcdefghijklmnopqrstuvwxyz")                 // a classic token inside the JWT run
+	f.Add("gghs_a_eyJ1.a.b")
+	f.Add(strings.Repeat("ghs_a_eyJ", 16)) // candidates crowded in one run
+	f.Add(strings.Repeat("ghs_a_eyJ", 16) + ".a.b")
 
 	fuzzAgainstReference(f, GitHubToken().Find, referenceGitHubToken.Find)
 }

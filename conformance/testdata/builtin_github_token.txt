@@ -88,22 +88,22 @@ in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_backup.tar.gz
 out:  «github-token»_backup.tar.gz
 
 # The same file name, beginning with the two letters a JOSE header opens with.
-# The scan anchors the JWT of a stateless installation token on those letters
-# alone, where the JWT pattern beside it asks for a third — so a file name that
-# opens with them stands in for the token, and the two dots of its extension
-# stand in for the segments.
+# What anchors the JWT of a stateless installation token is what anchors one
+# for the JWT pattern beside it — those two letters and the third character a
+# quote leaves behind them — so a file name reaches no further into a token
+# than any other word does.
 
 case: a classic token followed by a file name beginning with the letters a header opens with
 in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyes.tar.gz
-out:  «github-token»
+out:  «github-token»_eyes.tar.gz
 
 case: an app id followed by a file name beginning with those letters
 in:   ghs_1_eyes.tar.gz
-out:  «github-token»
+out:  ghs_1_eyes.tar.gz
 
 case: a file name of two extensions after an app id
 in:   ghs_123456_eyeball.jpg.bak
-out:  «github-token»
+out:  ghs_123456_eyeball.jpg.bak
 
 case: the same file name after a kind of token that carries no jwt
 in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz_eyes.tar.gz
@@ -113,11 +113,16 @@ case: a file name with one extension after an app id
 in:   ghs_1_eyes.tar
 out:  ghs_1_eyes.tar
 
-# The third character of the header, which the JWT pattern beside this one
-# reads and this one does not. Each of the four a header leaves is stated here,
-# and the character either side of them, so that what anchors the JWT of a
-# stateless installation token can be read from the corpus rather than from the
-# scan.
+# The third character of the header, which both patterns read. Each of the four
+# a header leaves is stated here, and the character either side of them, so
+# that what anchors the JWT of a stateless installation token can be read from
+# the corpus rather than from the scan.
+#
+# Nothing past the anchor is read: GitHub signs this JWT with an issuer of its
+# own and says a client neither can nor should validate it, so a run that opens
+# a header and carries the segments is redacted whether or not it decodes to
+# one. That is why the four below are tokens though none of them holds a header
+# the JWT pattern would accept.
 
 case: a stateless installation token whose header opens on a digit
 in:   ghs_123456_eyI0123456789abcdef.0123456789abcdef.0123456789abcdef
@@ -137,11 +142,11 @@ out:  «github-token»
 
 case: an app id followed by a run one character below the third a header leaves
 in:   ghs_123456_eyH0123456789abcdef.0123456789abcdef.0123456789abcdef
-out:  «github-token»
+out:  ghs_123456_eyH0123456789abcdef.0123456789abcdef.0123456789abcdef
 
 case: an app id followed by a run one character above it
 in:   ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
-out:  «github-token»
+out:  ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
 
 # Where a token sits.
 

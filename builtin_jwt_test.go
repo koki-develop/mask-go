@@ -533,6 +533,41 @@ func Test_opensJOSEHeader(t *testing.T) {
 	}
 }
 
+func Test_opensJOSEHeaderAt(t *testing.T) {
+	// The predicate both scans read. What it adds to opensJOSEHeader is the
+	// arithmetic that reaches the third character, so what is written out here
+	// is where that character falls: at the end of the text, one past it, and
+	// inside text that carries no header at all.
+	tests := []struct {
+		name string
+		src  string
+		i    int
+		want bool
+	}{
+		{name: "a header at the start", src: "eyJhbGciOiJIUzI1NiJ9", i: 0, want: true},
+		{name: "a header further along", src: "ghs_1_eyJhbGciOiJIUzI1NiJ9", i: 6, want: true},
+		{name: "the third character alone", src: "eyJ", i: 0, want: true},
+		{name: "the lowest third character", src: "eyI", i: 0, want: true},
+		{name: "the highest third character", src: "eyL", i: 0, want: true},
+		{name: "one below the lowest", src: "eyH", i: 0, want: false},
+		{name: "one above the highest", src: "eyM", i: 0, want: false},
+		{name: "a file name opening with the prefix", src: "eyes.tar.gz", i: 0, want: false},
+		{name: "the prefix with no third character", src: "ey", i: 0, want: false},
+		{name: "the prefix at the very end", src: "ghs_1_ey", i: 6, want: false},
+		{name: "one character of the prefix", src: "e", i: 0, want: false},
+		{name: "the end of the text", src: "eyJ", i: 3, want: false},
+		{name: "text holding no prefix", src: "ghp_0123", i: 0, want: false},
+		{name: "the prefix in capitals", src: "EYJhbGci", i: 0, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := opensJOSEHeaderAt(tt.src, tt.i); got != tt.want {
+				t.Errorf("opensJOSEHeaderAt(%q, %d) = %v, want %v", tt.src, tt.i, got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_closesObject(t *testing.T) {
 	tests := []struct {
 		name string

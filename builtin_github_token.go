@@ -82,10 +82,27 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		// expression: an app id of thirty-six characters or more would
 		// otherwise be taken for a whole classic token, leaving the rest of
 		// the token to the JWT pattern and the underscore between them
-		// unredacted. Its JWT is anchored on the ey its header opens with,
-		// without which an underscore and two dots written after a classic
-		// token, as in a file name, would be drawn in before the classic
-		// alternative is reached.
+		// unredacted. Its JWT is anchored on what opens a JOSE header, which
+		// opensJOSEHeaderAt in builtin_jwt.go states, and without which an
+		// underscore and two dots written after a classic token, as in a file
+		// name, would be drawn in before the classic alternative is reached.
+		//
+		// That anchor is the whole of what is read of the JWT. It asks the
+		// header for the bytes { and a quote and decodes nothing past them:
+		// GitHub signs this JWT with an issuer of its own and says a client
+		// neither can nor should validate it, so a run that opens a header
+		// and carries the segments is redacted whether or not it decodes to
+		// one. Reading it for alg would cost the token itself the day GitHub
+		// writes a header this pattern does not recognise.
+		//
+		// The shape the anchor does ask for is not free, and what it costs is
+		// stated rather than passed over: a header written with space after
+		// the brace leaves a third character outside the four, so a stateless
+		// token carrying one is not located at all. That is the header the
+		// JWT pattern declines as well, for the same reason, and a signer
+		// emitting compact JSON never writes it. The alternative is the
+		// anchor this scan had, which asked for the ey alone and drew a file
+		// name written after an app id into a token.
 		//
 		// A token clipped before its second dot, as a log line cut to a column
 		// limit leaves one, is deliberately not located: what authenticates a
@@ -94,9 +111,9 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		// have the whole token located. Reaching that remnant would mean
 		// keying on the prefix and a run of characters, as GitHub's own advice
 		// does, and admitting the dot into that run draws in the file name
-		// written after a classic token, which the ey holds back.
+		// written after a classic token, which the anchor holds back.
 		if src[start+2] == 's' && end > body && end < len(src) &&
-			src[end] == '_' && strings.HasPrefix(src[end+1:], jwtHeaderPrefix) {
+			src[end] == '_' && opensJOSEHeaderAt(src, end+1) {
 			header := end + 1 + len(jwtHeaderPrefix)
 			if header >= runEnd {
 				runEnd = header
@@ -104,7 +121,10 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 					runEnd++
 				}
 				jwt = segments{}
-				if runEnd > header && runEnd < len(src) && src[runEnd] == '.' {
+				// The run holds at least the character the anchor read, so
+				// where it ends is where the header ends; only a dot there
+				// begins the segments.
+				if runEnd < len(src) && src[runEnd] == '.' {
 					jwt = githubJWTEnd(src, runEnd)
 				}
 			}
@@ -154,10 +174,11 @@ func isGitHubPATByte(c byte) bool { return isGitHubTokenByte(c) || c == '_' }
 // character: the expression this scan reads spells them with a plus, so that
 // the two dots of a file name written after a token do not stand in for them.
 //
-// This and the scan above read jwtHeaderPrefix and signedSegments from that
-// file rather than spelling them again. A stateless installation token carries
-// a JWT, so what this scan knows of one is the JWT pattern's to define; only
-// where the two read it differently is written out here.
+// This and the scan above read opensJOSEHeaderAt, jwtHeaderPrefix and
+// signedSegments from that file rather than spelling them again. A stateless
+// installation token carries a JWT, so what this scan knows of one is the JWT
+// pattern's to define; only where the two read it differently is written out
+// here.
 func githubJWTEnd(src string, dot int) segments {
 	i := dot
 	for range signedSegments {
