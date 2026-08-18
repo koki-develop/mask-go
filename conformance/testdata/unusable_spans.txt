@@ -3,9 +3,12 @@
 #
 # The patterns here report the spans they are built with whatever text they are
 # handed, which is the only way to state a rule about a span a pattern must not
-# be trusted with. Every case is written against a text of six bytes, and none
-# of them is held to what follows a value around: nothing moves for these
-# patterns when the text around a value grows, because they never look at it.
+# be trusted with. A case here hands a text of six bytes to the span beside it
+# unless its name says otherwise, and two of them do: one hands a longer text
+# to a span reaching past six, and one hands an empty text to a span over the
+# whole of it. None of these cases is held to what follows a value around:
+# nothing moves for these patterns when the text around a value grows, because
+# they never look at it.
 
 spans: reported
 

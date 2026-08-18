@@ -43,6 +43,26 @@ out:  GITHUB_TOKEN=«github-token»
   allowlist covers `conformance/testdata/*.txt` on that condition alone, so a
   value written any other way fails the secret scan.
 
+## What a comment may say
+
+The comments between cases are the one thing here that is neither generated nor
+checked. An `out` that drifts from the library fails on the next run; a comment
+that overstates drifts in silence, and reads as a guarantee for as long as
+nobody measures it. Two rules keep one honest:
+
+- **A comment states what the cases under it show, and stops there.** Where a
+  rule narrows a problem rather than ending it, say what is left over **and
+  write a case for it** — the case is what holds the sentence to the scan the
+  next time the scan changes.
+- **Count before writing `every`, `only`, `the one`, `no input at all`**, or
+  write the sentence without them. A claim about the corpus is as easy to get
+  wrong as a claim about the library, and it is the file's own cases that
+  contradict it.
+
+A case name carries the same weight as a comment and drifts the same way. Name a
+case for the rule the scan reads, not for a property of the input that happens
+to move with it: no `out` can contradict a name.
+
 ## Where a case goes
 
 `builtin_github_token.txt` and `builtin_jwt.txt` (one pattern each),

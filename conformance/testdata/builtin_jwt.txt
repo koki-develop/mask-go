@@ -284,6 +284,14 @@ out:  eydhbGcnOidIUzI1Nid9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
 # The base64url of the segments themselves. RFC 7515 asks for base64url with
 # no padding, which is what a token carries; text does not always oblige.
+#
+# Where the padding falls is what decides how much survives, so all three
+# places are stated. An equals sign ends the run of base64url characters a
+# segment is read as, and a segment that ends early is a segment the dot after
+# it never follows: padding in the header or the payload leaves the pattern
+# short of the three segments it asks for and the whole token comes through,
+# signature and all. Padding after the signature ends nothing the pattern still
+# needs, so the token is redacted and the equals sign is left where it was.
 
 case: a header padded to a multiple of four
 in:   eyJhbGciOiJIUzI1NiIsImsiOiIwIn0=.eyJzdWIiOiJhYmMifQ.0123456789abcdef
@@ -292,6 +300,10 @@ out:  eyJhbGciOiJIUzI1NiIsImsiOiIwIn0=.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 case: a payload padded to a multiple of four
 in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmNkIn0=.0123456789abcdef
 out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmNkIn0=.0123456789abcdef
+
+case: a signature padded to a multiple of four
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef=
+out:  «jwt»=
 
 case: a header carrying the hyphen and underscore base64url is built from
 in:   eyJhbGciOiJIUzI1NiIsIngiOiI_Pj8-In0.eyJzdWIiOiJhYmMifQ.0123456789abcdef

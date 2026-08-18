@@ -4,7 +4,8 @@
 # A value one pattern locates whole can be one another locates in part — a
 # stateless installation token carries a JWT — so what matters here is that the
 # patterns do not take pieces out of each other's values, and that a line
-# holding several kinds of credential loses all of them.
+# holding several kinds of credential loses all of them. The block that closes
+# this file is where the second of those stops holding, and says why.
 
 patterns: default
 
@@ -123,12 +124,33 @@ case: a stateless installation token carrying an encrypted jwt
 in:   ghs_123456_eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.0123456789abcdef.0123456789.0123456789abcdef.0123456789abcdef
 out:  «github-token»
 
-# And the one shape neither pattern takes anything from. A stateless token cut
-# before its second dot carries no signature, which the GitHub pattern declines
-# it for and which leaves the JWT pattern a segment short of a token. It is the
-# shape a log line cut to a column limit leaves, and it comes through whole: an
-# app id, a header and a payload, none of which authenticates a request.
+# And the shapes neither pattern takes anything from. Each pattern states its
+# own reason for declining both of them, in the files beside this one; what
+# only the two patterns together show is what is left in the text when neither
+# steps in, and that is not the same for the two shapes.
+#
+# The first is harmless. A stateless token cut before its second dot carries no
+# signature, which the GitHub pattern declines it for and which leaves the JWT
+# pattern a segment short of a token. It is the shape a log line cut to a
+# column limit leaves, and it comes through whole: an app id, a header and a
+# payload, none of which authenticates a request.
+#
+# The second is not. A JOSE header written with a space between the brace and
+# the first member name encodes to a third character outside the four the
+# GitHub pattern anchors on, and it is the header the JWT pattern declines for
+# the same reason — so a whole stateless installation token, signature and all,
+# comes through in the clear and would authenticate a request as it stands.
+# What the two patterns are written against is the compact JSON an encoder
+# emits, which JWT's own documentation says in as many words, so nothing that
+# writes a JOSE header is expected to reach this. The case is here because
+# neither reason states what the two of them come to when both patterns are
+# enabled, and a credential surviving whole is what a reader has to be able to
+# look up rather than arrive at.
 
 case: a stateless installation token cut before its signature
 in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
 out:  ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
+
+case: a stateless installation token whose header is written with a space after the brace
+in:   ghs_123456_eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ghs_123456_eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef

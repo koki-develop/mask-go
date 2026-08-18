@@ -125,9 +125,9 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		// the brace leaves a third character outside the four, so a stateless
 		// token carrying one is not located at all. That is the header the
 		// JWT pattern declines as well, for the same reason, and a signer
-		// emitting compact JSON never writes it. The alternative is the
-		// anchor this scan had, which asked for the ey alone and drew a file
-		// name written after an app id into a token.
+		// emitting compact JSON never writes it. The alternative costs more:
+		// an anchor asking for the ey alone draws a file name written after
+		// an app id into a token wherever the name opens with those letters.
 		//
 		// A token clipped before its second dot, as a log line cut to a column
 		// limit leaves one, is deliberately not located: what authenticates a

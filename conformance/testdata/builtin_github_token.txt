@@ -92,8 +92,18 @@ out:  «github-token»_backup.tar.gz
 # The same file name, beginning with the two letters a JOSE header opens with.
 # What anchors the JWT of a stateless installation token is what anchors one
 # for the JWT pattern beside it — those two letters and the third character a
-# quote leaves behind them — so a file name reaches no further into a token
-# than any other word does.
+# quote leaves behind them — and under that anchor eyes.tar.gz is a file name
+# and not a JWT.
+#
+# The third character is the whole of what does that. eyes.tar.gz carries the
+# two dots the segments of a signed token need, and only its third character
+# stands between it and a token; the four characters that can stand there are
+# enumerated further down this file, and a name carrying one of them and two
+# dots is a token to this pattern still. The last two cases of this block are
+# such names. What a reader should take from the block is which names the
+# anchor holds back, not that file names as a kind are held back — nothing in
+# the bytes tells eyJson.min.js from a header, and this pattern redacts what it
+# cannot tell apart rather than leave a credential in the output.
 
 case: an installation token followed by a file name beginning with the letters a header opens with
 in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyes.tar.gz
@@ -114,6 +124,14 @@ out:  «github-token»_eyes.tar.gz
 case: a file name with one extension after an app id
 in:   ghs_1_eyes.tar
 out:  ghs_1_eyes.tar
+
+case: an app id followed by a file name whose third character a header leaves
+in:   ghs_123456_eyJson.min.js
+out:  «github-token»
+
+case: an installation token followed by such a file name is drawn into one span
+in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js
+out:  «github-token»
 
 # The third character of the header, which both patterns read. Each of the four
 # a header leaves is stated here, and the character either side of them, so
@@ -149,6 +167,21 @@ out:  ghs_123456_eyH0123456789abcdef.0123456789abcdef.0123456789abcdef
 case: an app id followed by a run one character above it
 in:   ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
 out:  ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
+
+# And what asking for those four costs. A JOSE header written with a space
+# between the brace and the first member name encodes to a third character
+# outside them, so a stateless installation token carrying one is not located
+# at all — not shortened, not partly redacted, left whole. It is the header the
+# JWT pattern declines as well, for the same reason, so the token comes through
+# in the clear with both patterns enabled; builtins_together.txt states that
+# where the two can be read side by side. What the anchor is written against is
+# the compact JSON an encoder emits, which JWT's own documentation says in as
+# many words, and what it trades this header for is the file names the block
+# further up would otherwise draw in.
+
+case: a stateless installation token whose header is written with a space after the brace
+in:   ghs_123456_eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ghs_123456_eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
 # Where a token sits.
 
@@ -232,8 +265,13 @@ out:  github_pat_0123456789abcdefghijklmnopqrstuvwxyz
 
 # The body of a real token is base62: GitHub encodes 30 characters of randomness
 # and a six character CRC32 checksum, so capitals are as ordinary in one as
-# lowercase. Every body above this line is lowercase and digits alone, which is
-# the one alphabet a real token is least likely to be written in.
+# lowercase. Every classic body above this line is lowercase and digits alone,
+# which is the one alphabet a real token is least likely to be written in, so
+# the kinds are stated again below with capitals in them. The fine grained
+# token is written out with capitals where its form is stated at the top of
+# this file, and a stateless token carries them whatever its app id is written
+# in: the third character of an encoded JOSE header is one of four, and all
+# four are capitals.
 
 case: a classic token whose body carries capitals
 in:   ghp_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
@@ -271,8 +309,16 @@ out:  GITHUB_TOKEN=«github-token»
 # twenty-two characters, an underscore, and fifty-nine more, ninety-three in
 # all — is stated with the other kinds at the top of this file. The underscore
 # inside the body is there on purpose: GitHub picked a character base64 does not
-# hold so that a random string could not be mistaken for a token, and the runs
-# either side of it are what the last cases here are written against.
+# hold so that a random string could not be mistaken for a token.
+#
+# The scan reads that underscore as one more character of the body and asks
+# nothing else of it: it counts what the body holds and never asks where the
+# underscore falls in it. The two cases below say so: both are written with a
+# first run of twenty-one characters, which no token GitHub issues has, and
+# they part on the count alone — the one whose second run is fifty-nine comes
+# to eighty-one and is not a token, and the one whose second run is sixty comes
+# to eighty-two and is. The count is what decides, as it does for the pair at
+# the top of this file, and the lengths of the runs decide nothing.
 
 case: a fine grained token in an environment assignment
 in:   GITHUB_TOKEN=github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
@@ -290,20 +336,12 @@ case: two fine grained tokens on one line
 in:   old=github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW new=github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVZ
 out:  old=«github-token» new=«github-token»
 
-case: a fine grained token whose first run is one character short
+case: a fine grained body of eighty-one characters, the underscore counted, is not a token
 in:   github_pat_0123456789abcdefABCDE_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 out:  github_pat_0123456789abcdefABCDE_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 
-case: a fine grained token whose first run is one character long
-in:   github_pat_0123456789abcdefABCDEFZ_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  «github-token»
-
-case: a fine grained token whose second run is one character short
-in:   github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV
-out:  github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUV
-
-case: a fine grained token whose second run is one character long
-in:   github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZ
+case: a fine grained body of eighty-two whose runs are not the lengths github issues
+in:   github_pat_0123456789abcdefABCDE_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZ
 out:  «github-token»
 
 case: a fine grained token whose body carries a second underscore
@@ -314,7 +352,18 @@ case: a fine grained token with a hyphen where the underscore goes
 in:   github_pat_0123456789abcdefABCDEF-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 out:  github_pat_0123456789abcdefABCDEF-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 
-case: a fine grained token followed by an underscore and a word
+# And what the underscore costs at the other end of the body. The body is read
+# as far as its alphabet runs and that alphabet holds the underscore, so a word
+# written after a fine grained token with an underscore between them is read as
+# more body and redacted along with it: the redaction reaches past the
+# credential and takes text that was never one. A classic token has no
+# underscore in its alphabet, stops at one, and leaves the word beside it
+# whole. The two are the pair to read together, the second of them under "what
+# stands either side of a token" further down this file. What a body swallows
+# where its alphabet does run on is stated for the classic kinds too, under
+# "tokens with nothing between them" below that.
+
+case: a fine grained token followed by an underscore and a word, which goes with it
 in:   github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW_backup
 out:  «github-token»
 
@@ -412,7 +461,7 @@ case: a token followed by a hyphen and a word
 in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz-backup
 out:  «github-token»-backup
 
-case: a token followed by an underscore and a word
+case: a token followed by an underscore and a word, which stays where it is
 in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz_backup
 out:  «github-token»_backup
 

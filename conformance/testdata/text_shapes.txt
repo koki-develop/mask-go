@@ -3,9 +3,10 @@
 # depend on the punctuation around it, and the text around it must come through
 # byte for byte.
 #
-# The last few cases say what this library does not redact. A credential of a
-# kind no pattern here knows is not masked, and stating that is what keeps the
-# scope of the built-in patterns readable rather than assumed.
+# This file is written in two halves, and the cases closing each of them say
+# what this library does not redact. A credential of a kind no pattern here
+# knows is not masked, and stating that is what keeps the scope of the built-in
+# patterns readable rather than assumed.
 
 patterns: default
 

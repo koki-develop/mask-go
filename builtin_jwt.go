@@ -48,10 +48,10 @@ func opensJOSEHeader(c byte) bool { return 'I' <= c && c <= 'L' }
 // Both scans read it. A stateless installation token carries a JWT, so what
 // anchors one there is what anchors one here, and a scan spelling the anchor
 // again is a scan that can come to disagree with this one about what opens a
-// header. builtin_github_token.go did: it looked for the ey and not the
-// character behind it, so a file name written after an app id was drawn into a
-// token wherever it opened with those two letters, and ghs_1_eyes.tar.gz was
-// redacted whole while ghs_1_export.tar.gz was left alone.
+// header. The disagreement that costs the most is dropping the third
+// character: ey alone says only that a run begins with two letters, which any
+// word beginning ey satisfies, so a scan asking for that draws a file name
+// written after an app id into a token wherever the name opens with them.
 func opensJOSEHeaderAt(src string, i int) bool {
 	if !strings.HasPrefix(src[i:], jwtHeaderPrefix) {
 		return false

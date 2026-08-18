@@ -1,11 +1,15 @@
 # How values that overlap are resolved, and which pattern the redaction is
 # attributed to.
 #
-# No built-in pattern states these rules: two of them overlap on one shape of
-# input and nowhere else, and no input at all makes one contain another the way
-# the rules describe. The patterns here look for a given substring instead, so
-# that the input a case is written against can be read at a glance. The letters
-# say where the values are; nothing about them is a credential.
+# No built-in pattern states these rules. Two of them do overlap, and one value
+# does contain another — a stateless installation token carries a JWT, and the
+# signature of a JWT swallows a token written after it — but no input makes two
+# of them start together or cover the same span, so the rules that decide
+# attribution when they do, the longest and then the one added first, have no
+# built-in input at all. The patterns here look for a given substring instead,
+# so that the input a case is written against can be read at a glance rather
+# than decoded. The letters say where the values are; nothing about them is a
+# credential.
 #
 # Values that overlap are redacted together as one, and the combined text is
 # attributed to the pattern that located the value starting earliest; among

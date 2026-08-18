@@ -22,10 +22,10 @@ nest: `builtin_github_token.go` reads `opensJOSEHeaderAt`, `jwtHeaderPrefix` and
 `signedSegments` from `builtin_jwt.go`, because a stateless installation token
 carries a JWT and what that is stays the JWT pattern's to define. A scan
 spelling the anchor again is a scan that can come to disagree about what opens a
-header, and one did: the GitHub scan looked for the `ey` and not the character
-behind it, and drew a file name into a token. Such a borrowing belongs where it
-is defined, not in `builtin_scan.go`, and the file doing the borrowing says so —
-deleting the JWT pattern would break the GitHub one.
+header — drop the character behind the `ey` and a file name is drawn into a
+token. Such a borrowing belongs where it is defined, not in `builtin_scan.go`,
+and the file doing the borrowing says so — deleting the JWT pattern would break
+the GitHub one.
 
 `conformance/` states the library end to end: a corpus of cases and one harness
 holding each of them to every property masking must have, through the public API
