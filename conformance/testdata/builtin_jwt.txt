@@ -115,6 +115,28 @@ case: a third character that cannot open a member name
 in:   eyZhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  eyZhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
+# The third character in full. It carries the two highest bits of the byte
+# after the quote, so the four it may be are the four the first character of a
+# member name leaves: a digit, a letter, and the two a character outside ASCII
+# leaves. Either side of those four is a candidate that does not open an object
+# and a member name at all.
+
+case: a header whose first member name opens with a character outside ascii
+in:   eyLjgYIiOiJ4IiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header whose first member name opens with a byte no character opens with
+in:   eyKAIjoieCIsImFsZyI6IkhTMjU2In0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a candidate one character below the third character a header leaves
+in:   eyHDqSJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyHDqSJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a candidate one character above it
+in:   eyMiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyMiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
 case: base64url that decodes to no json at all
 in:   aGVsbG8gd29ybGQ.aGVsbG8.aGVsbG8
 out:  aGVsbG8gd29ybGQ.aGVsbG8.aGVsbG8
@@ -134,3 +156,359 @@ out:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
 case: a header prefix repeated
 in:   eyJeyJeyJeyJeyJeyJeyJeyJeyJeyJ
 out:  eyJeyJeyJeyJeyJeyJeyJeyJeyJeyJ
+
+# What a header may carry. RFC 7515 asks a JOSE header for alg and nothing
+# else about the members beside it, so each of the registered parameters a real
+# token carries is stated here rather than assumed to follow from the short
+# headers above.
+
+case: a header naming alg none with an empty signature, the unsecured token of rfc 7519
+in:   eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.
+out:  «jwt»
+
+case: a header naming alg none with a signature after it
+in:   eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header carrying a key id
+in:   eyJhbGciOiJIUzI1NiIsImtpZCI6IjAxMjM0NTY3ODlhYmNkZWYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header carrying a jwk set url
+in:   eyJhbGciOiJSUzI1NiIsImprdSI6Imh0dHBzOi8vZXhhbXBsZS5jb20va2V5cy5qc29uIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header carrying a certificate chain
+in:   eyJhbGciOiJSUzI1NiIsIng1YyI6WyJNSUlDMDEyMzQ1Njc4OWFiY2RlZiJdfQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header carrying crit
+in:   eyJhbGciOiJIUzI1NiIsImNyaXQiOlsiZXhwIl0sImV4cCI6MX0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header naming the content type as jwt, which rfc 7519 asks of a nested token
+in:   eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIiwiY3R5IjoiSldUIn0.0123456789abcdef.0123456789.0123456789abcdef.0123456789abcdef
+out:  «jwt»
+
+case: a header whose typ is the access token type of rfc 9068
+in:   eyJhbGciOiJSUzI1NiIsInR5cCI6ImF0K2p3dCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header carrying a member whose value is a number
+in:   eyJhbGciOiJIUzI1NiIsIm4iOjF9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header carrying a member whose value is null
+in:   eyJhbGciOiJIUzI1NiIsIngiOm51bGx9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header carrying a member whose value is a boolean
+in:   eyJhbGciOiJIUzI1NiIsIngiOnRydWV9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header carrying an array before the algorithm
+in:   eyJ0eXAiOiJKV1QiLCJ4IjpbMSwyLDNdLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header naming the algorithm twice
+in:   eyJhbGciOiJIUzI1NiIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header naming an algorithm no registry holds
+in:   eyJhbGciOiJYWDk5OSJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header whose algorithm is the empty string
+in:   eyJhbGciOiIifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header whose algorithm is a number
+in:   eyJhbGciOjI1Nn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header whose algorithm is null
+in:   eyJhbGciOm51bGx9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header carrying a non ascii value
+in:   eyJhbGciOiJIUzI1NiIsIngiOiLjgYIifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+# The JSON of a header, written the ways JSON allows. A header is base64url,
+# so none of this is visible in the token: it is the difference between reading
+# the bytes as JSON and matching them as text.
+
+case: a header with a space either side of the colon
+in:   eyJhbGciIDogIkhTMjU2In0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header with a tab after the colon
+in:   eyJhbGciOgkiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header written over three lines
+in:   ewoiYWxnIjoiSFMyNTYiCn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ewoiYWxnIjoiSFMyNTYiCn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header naming alg through a unicode escape
+in:   eyJcdTAwNjFsZyI6IkhTMjU2In0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJcdTAwNjFsZyI6IkhTMjU2In0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header whose algorithm is written through unicode escapes
+in:   eyJhbGciOiJIU1x1MDAzMlx1MDAzNVx1MDAzNiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header naming alg in capitals, which is another member entirely
+in:   eyJBbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJBbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header that is an empty object
+in:   e30.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  e30.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header that is an array of objects
+in:   W3siYWxnIjoiSFMyNTYifV0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  W3siYWxnIjoiSFMyNTYifV0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header that is a json string
+in:   ImFsZyI.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ImFsZyI.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header with a comma before the closing brace
+in:   eyJhbGciOiJIUzI1NiIsfQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header written with single quotes
+in:   eydhbGcnOidIUzI1Nid9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eydhbGcnOidIUzI1Nid9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+# The base64url of the segments themselves. RFC 7515 asks for base64url with
+# no padding, which is what a token carries; text does not always oblige.
+
+case: a header padded to a multiple of four
+in:   eyJhbGciOiJIUzI1NiIsImsiOiIwIn0=.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJhbGciOiJIUzI1NiIsImsiOiIwIn0=.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a payload padded to a multiple of four
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmNkIn0=.0123456789abcdef
+out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmNkIn0=.0123456789abcdef
+
+case: a header carrying the hyphen and underscore base64url is built from
+in:   eyJhbGciOiJIUzI1NiIsIngiOiI_Pj8-In0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header written in the standard base64 alphabet, with a slash and a plus
+in:   eyJhbGciOiJIUzI1NiIsIngiOiI/Pj8+In0=.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJhbGciOiJIUzI1NiIsIngiOiI/Pj8+In0=.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a signature carrying hyphens and underscores
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef-_ABC
+out:  «jwt»
+
+case: a payload carrying hyphens and underscores
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.0123456789abcdef-_ABC.0123456789abcdef
+out:  «jwt»
+
+case: a signature of a single hyphen
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.-
+out:  «jwt»
+
+case: a signature of a single underscore
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ._
+out:  «jwt»
+
+# How many segments there are. RFC 7515 gives a signed token three and RFC
+# 7516 gives an encrypted one five; what carries some other number is stated
+# here rather than left to follow from either.
+
+case: a signed token whose payload is empty, as a detached payload leaves it
+in:   eyJhbGciOiJIUzI1NiJ9..0123456789abcdef
+out:  «jwt»
+
+case: an encrypted token whose key is empty, as the dir algorithm leaves it
+in:   eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0..0123456789.0123456789abcdef.0123456789abcdef
+out:  «jwt»
+
+case: an encrypted token whose every segment after the header is empty
+in:   eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0....
+out:  «jwt»
+
+case: a token of four segments
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef.0123456789
+out:  «jwt».0123456789
+
+case: a token of six segments
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef.0123456789.0123456789.0123456789
+out:  «jwt».0123456789.0123456789.0123456789
+
+case: a token whose header segment is empty
+in:   .eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  .eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header followed by a single dot and nothing else
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+out:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+
+case: a header followed by three dots
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+out:  «jwt».
+
+case: a header naming enc but no algorithm
+in:   eyJlbmMiOiJBMTI4R0NNIn0.0123456789abcdef.0123456789.0123456789abcdef.0123456789abcdef
+out:  eyJlbmMiOiJBMTI4R0NNIn0.0123456789abcdef.0123456789.0123456789abcdef.0123456789abcdef
+
+case: a very long payload
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTIzNDU2Nzg5YWJjZGVmIiwic2NvcGUiOiJyZXBvOnJlYWQgcmVwbzpyZWFkIHJlcG86cmVhZCByZXBvOnJlYWQgcmVwbzpyZWFkIHJlcG86cmVhZCByZXBvOnJlYWQgcmVwbzpyZWFkIHJlcG86cmVhZCByZXBvOnJlYWQgcmVwbzpyZWFkIHJlcG86cmVhZCByZXBvOnJlYWQgcmVwbzpyZWFkIHJlcG86cmVhZCByZXBvOnJlYWQgcmVwbzpyZWFkIHJlcG86cmVhZCByZXBvOnJlYWQgcmVwbzpyZWFkICJ9.0123456789abcdef
+out:  «jwt»
+
+case: a very long signature
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «jwt»
+
+# Where a token sits.
+
+case: a token in a proxy authorization header
+in:   Proxy-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  Proxy-Authorization: Bearer «jwt»
+
+case: a token in a header of its own
+in:   X-Auth-Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  X-Auth-Token: «jwt»
+
+case: a token in an authorization header written in lower case
+in:   authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  authorization: bearer «jwt»
+
+case: a token in an environment file
+in:   JWT_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  JWT_TOKEN=«jwt»
+
+case: a token in a fragment of yaml
+in:   auth:\n  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  auth:\n  token: «jwt»
+
+case: a token in a fragment of toml
+in:   [auth]\ntoken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"
+out:  [auth]\ntoken = "«jwt»"
+
+case: a token in a markdown code span
+in:   paste `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef` into the box
+out:  paste `«jwt»` into the box
+
+case: a token in a markdown link
+in:   [decode it](https://jwt.io/#debugger-io?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef)
+out:  [decode it](https://jwt.io/#debugger-io?token=«jwt»)
+
+case: a token in a url fragment
+in:   https://example.com/#id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  https://example.com/#id_token=«jwt»
+
+case: a token preceded by a full stop
+in:   see this.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  see this.«jwt»
+
+case: a token followed by a comma
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef, and the next one
+out:  «jwt», and the next one
+
+case: a token in parentheses
+in:   (eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef)
+out:  («jwt»)
+
+case: a token in single quotes
+in:   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef'
+out:  '«jwt»'
+
+case: a token on a line a diff adds
+in:   +JWT_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  +JWT_TOKEN=«jwt»
+
+case: a token followed immediately by japanese
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdefです
+out:  «jwt»です
+
+case: a token preceded immediately by japanese
+in:   トークンはeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  トークンは«jwt»
+
+case: a token between tabs
+in:   jwt\teyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\tvalid
+out:  jwt\t«jwt»\tvalid
+
+case: a token followed by a carriage return and a newline
+in:   JWT_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\r\nHOME=/root
+out:  JWT_TOKEN=«jwt»\r\nHOME=/root
+
+case: a token in a json array
+in:   {"tokens":["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef","eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4eXoifQ.0123456789abcdef"]}
+out:  {"tokens":["«jwt»","«jwt»"]}
+
+case: three tokens on one line
+in:   a=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef b=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4eXoifQ.0123456789abcdef c=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwcXIifQ.0123456789abcdef
+out:  a=«jwt» b=«jwt» c=«jwt»
+
+case: the same token twice on one line
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef again
+out:  «jwt» and «jwt» again
+
+case: two tokens with nothing between them
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdefeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt».eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a token in a curl command broken over two lines
+in:   curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef" \\\n  https://api.example.com/v1/user
+out:  curl -H "Authorization: Bearer «jwt»" \\\n  https://api.example.com/v1/user
+
+# What is not a token.
+
+case: a header carrying every mark but the algorithm
+in:   eyJ0eXAiOiJKV1QiLCJjdHkiOiJKV1QiLCJraWQiOiIwMTIzNDU2Nzg5YWJjZGVmIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJ0eXAiOiJKV1QiLCJjdHkiOiJKV1QiLCJraWQiOiIwMTIzNDU2Nzg5YWJjZGVmIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a domain name
+in:   api.github.com
+out:  api.github.com
+
+case: a version number
+in:   v1.2.3
+out:  v1.2.3
+
+case: a file path with two dots in it
+in:   0123456789abcdef.tar.gz
+out:  0123456789abcdef.tar.gz
+
+case: a three part identifier that is not base64url
+in:   one.two.three!
+out:  one.two.three!
+
+case: a header prefix in lower case
+in:   eyj.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyj.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header prefix followed by a character base64url does not hold
+in:   eyJ!.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJ!.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: base64url that decodes to a json array of numbers
+in:   WzEsMiwzXQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  WzEsMiwzXQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: base64url that decodes to bytes that are not utf-8
+in:   eyL_.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyL_.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header with a space instead of a dot after it
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9 eyJzdWIiOiJhYmMifQ 0123456789abcdef
+out:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9 eyJzdWIiOiJhYmMifQ 0123456789abcdef
+
+case: a token whose dots are commas
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9,eyJzdWIiOiJhYmMifQ,0123456789abcdef
+out:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9,eyJzdWIiOiJhYmMifQ,0123456789abcdef
+
+case: a token whose dots are colons
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9:eyJzdWIiOiJhYmMifQ:0123456789abcdef
+out:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9:eyJzdWIiOiJhYmMifQ:0123456789abcdef
+
+case: prose holding the word key twice
+in:   the key to the key is not a key at all
+out:  the key to the key is not a key at all

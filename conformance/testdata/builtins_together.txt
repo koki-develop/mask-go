@@ -39,3 +39,63 @@ out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.git
 case: neither pattern finds anything in prose
 in:   there is no credential in this sentence
 out:  there is no credential in this sentence
+
+# Where one kind of credential is written inside another, and where one ends
+# exactly where the other begins. Neither pattern may take a piece out of the
+# other's value, and neither may leave a piece of its own behind.
+
+case: a jwt whose payload decodes to a personal access token
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMiLCJ0b2tlbiI6ImdocF8wMTIzNDU2Nzg5YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoifQ.0123456789abcdef
+out:  «jwt»
+
+case: a jwt directly followed by a personal access token
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdefghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «jwt»
+
+case: a personal access token directly followed by a jwt
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token»
+
+case: a jwt whose signature opens like a token prefix
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «jwt»
+
+case: a jwt whose header segment carries a token prefix before it
+in:   ghp_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ghp_«jwt»
+
+case: a fine grained token whose second run opens like a header
+in:   github_pat_0123456789abcdefABCDEF_eyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLM
+out:  «github-token»
+
+case: a stateless installation token whose app id is a classic token body
+in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token»
+
+case: a stateless installation token whose inner jwt names alg none
+in:   ghs_123456_eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token»
+
+case: a stateless installation token, a fine grained token and a jwt on one line
+in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token» «github-token» «jwt»
+
+case: a json body holding a classic token, a fine grained token and a jwt
+in:   {"classic":"ghp_0123456789abcdefghijklmnopqrstuvwxyz","fine":"github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW","jwt":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"}
+out:  {"classic":"«github-token»","fine":"«github-token»","jwt":"«jwt»"}
+
+case: a token in an authorization header and a jwt in a cookie on one line
+in:   Authorization: token ghp_0123456789abcdefghijklmnopqrstuvwxyz; Cookie: session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  Authorization: token «github-token»; Cookie: session=«jwt»
+
+case: a url carrying a token in its userinfo and a jwt in its query
+in:   https://x-access-token:ghs_0123456789abcdefghijklmnopqrstuvwxyz@example.com/callback?id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  https://x-access-token:«github-token»@example.com/callback?id_token=«jwt»
+
+case: a jwt and a token with a single dot between them
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef.ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «jwt».«github-token»
+
+case: a token and a jwt with a single dot between them
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token».«jwt»
