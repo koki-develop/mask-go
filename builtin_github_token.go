@@ -113,21 +113,24 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		// name, would be drawn in before the classic alternative is reached.
 		//
 		// That anchor is the whole of what is read of the JWT. It asks the
-		// header for the bytes { and a quote and decodes nothing past them:
-		// GitHub signs this JWT with an issuer of its own and says a client
-		// neither can nor should validate it, so a run that opens a header
-		// and carries the segments is redacted whether or not it decodes to
-		// one. Reading it for alg would cost the token itself the day GitHub
-		// writes a header this pattern does not recognise.
+		// header for the brace a JSON object opens with and the byte behind
+		// it, and decodes nothing past them: GitHub signs this JWT with an
+		// issuer of its own and says a client neither can nor should validate
+		// it, so a run that opens a header and carries the segments is
+		// redacted whether or not it decodes to one. Reading it for alg would
+		// cost the token itself the day GitHub writes a header this pattern
+		// does not recognise.
 		//
 		// The shape the anchor does ask for is not free, and what it costs is
-		// stated rather than passed over: a header written with space after
-		// the brace leaves a third character outside the four, so a stateless
-		// token carrying one is not located at all. That is the header the
-		// JWT pattern declines as well, for the same reason, and a signer
-		// emitting compact JSON never writes it. The alternative costs more:
-		// an anchor asking for the ey alone draws a file name written after
-		// an app id into a token wherever the name opens with those letters.
+		// stated rather than passed over: the whitespace JSON allows behind
+		// the brace beside the space — a tab, a carriage return and a newline
+		// — leaves a header that does not open with ey at all, so a stateless
+		// token carrying one is not located — not shortened, not partly
+		// redacted, left whole. It is the header
+		// the JWT pattern declines as well, for the same reason. Asking for
+		// less is worse rather than better: an anchor reading the ey alone
+		// draws a file name written after an app id into a token wherever the
+		// name opens with those letters.
 		//
 		// A token clipped before its second dot, as a log line cut to a column
 		// limit leaves one, is deliberately not located: what authenticates a

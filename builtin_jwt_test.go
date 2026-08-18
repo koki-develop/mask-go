@@ -165,27 +165,53 @@ func Test_JWT(t *testing.T) {
 			want: nil,
 		},
 		{
-			// The header decodes to { "alg":"HS256"}. A header is read as the
-			// compact JSON an encoder emits, so one holding space before the
-			// member name is not located.
+			// The header decodes to { "alg":"HS256"}, the space JSON allows
+			// between the brace and the member name. It puts A in the third
+			// character rather than J.
 			name: "space between the brace and the member name",
 			src:  "eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: []Span{{0, 58}},
+		},
+		{
+			// The whitespace JSON allows there beside the space is not the
+			// scan's to admit or decline: {\t"alg":"HS256"} opens with ew, so
+			// the prefix the scan searches for is not in the text and no
+			// candidate begins here at all.
+			name: "tab between the brace and the member name",
+			src:  "ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 			want: nil,
 		},
 		{
-			// The header decodes to {#"alg":"x"}, whose second byte is not the
-			// quote a member name opens with. That byte puts M in the third
-			// character, one past the four the scan admits, and everything
-			// else about this candidate would pass.
-			name: "third character one past the class",
+			// {\r"alg":"HS256"}, which opens with ew for the same reason. The
+			// newline is stated by the conformance corpus.
+			name: "carriage return between the brace and the member name",
+			src:  "ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
+		{
+			// The header decodes to {#"alg":"x"}, whose second byte is neither
+			// the quote a member name opens with nor the space before one.
+			// That byte puts M in the third character, one past the four the
+			// quote leaves, and everything else about this candidate would
+			// pass.
+			name: "third character one past the class the quote leaves",
 			src:  "eyMiYWxnIjoieCJ9.payload.0123456789abcdef",
 			want: nil,
 		},
 		{
 			// The same the other way: {!\xc3"alg":"x"} puts H there, one short
-			// of the four.
-			name: "third character one short of the class",
+			// of those four.
+			name: "third character one short of the class the quote leaves",
 			src:  "eyHDImFsZyI6IngifQ.payload.0123456789abcdef",
+			want: nil,
+		},
+		{
+			// The class the space leaves is bounded above the same way, by
+			// the same byte: {!"alg":"x"} puts E in the third character, one
+			// past D. Below A there is nothing to write, A being the first
+			// character of the alphabet.
+			name: "third character one past the class the space leaves",
+			src:  "eyEiYWxnIjoieCJ9.payload.0123456789abcdef",
 			want: nil,
 		},
 		{
@@ -511,11 +537,12 @@ func Test_headerDecoder_decode_recordsWhatTheHeaderNames(t *testing.T) {
 
 func Test_opensJOSEHeader(t *testing.T) {
 	// The character opensJOSEHeader reads is the third of an encoded header,
-	// and it is admitted exactly when the bytes behind it can be the { and the
-	// " a header opens with. Rather than repeat the reasoning that arrives at
-	// I to L, the answer is taken from the decoder: ey, the character, and a
-	// filler make one whole base64 group, and the bytes that group decodes to
-	// say whether the character belongs.
+	// and it is admitted exactly when the bytes behind it can be the { a
+	// header opens with and either byte JSON allows after one: the quote of a
+	// member name, or the space before it. Rather than repeat the reasoning
+	// that arrives at A to D and I to L, the answer is taken from the decoder:
+	// ey, the character, and a filler make one whole base64 group, and the
+	// bytes that group decodes to say whether the character belongs.
 	//
 	// Every byte is put to it, so that a class grown or shrunk by one is
 	// caught either side.
@@ -526,7 +553,15 @@ func Test_opensJOSEHeader(t *testing.T) {
 		// range would be answered no for a reason of the test's own making.
 		group := jwtHeaderPrefix + string([]byte{byte(c)}) + "A"
 		decoded, err := base64.RawURLEncoding.DecodeString(group)
-		want := err == nil && len(decoded) >= 2 && decoded[0] == '{' && decoded[1] == '"'
+		// The decoder skips carriage return and newline rather than
+		// refusing them, so those two bytes decode as though they were not
+		// there and the group behind them answers for a character neither
+		// of them is. Encoding the bytes again is what catches it: a group
+		// of four characters comes back as itself, and one that was three
+		// characters and a skipped byte does not.
+		want := err == nil && len(decoded) >= 2 &&
+			base64.RawURLEncoding.EncodeToString(decoded) == group &&
+			decoded[0] == '{' && (decoded[1] == '"' || decoded[1] == ' ')
 		if got := opensJOSEHeader(byte(c)); got != want {
 			t.Errorf("opensJOSEHeader(%q) = %v, want %v", byte(c), got, want)
 		}
@@ -540,7 +575,7 @@ func Test_opensJOSEHeader(t *testing.T) {
 			admitted = append(admitted, byte(c))
 		}
 	}
-	if got, want := string(admitted), "IJKL"; got != want {
+	if got, want := string(admitted), "ABCDIJKL"; got != want {
 		t.Errorf("opensJOSEHeader admits %q, want %q", got, want)
 	}
 }
@@ -559,10 +594,13 @@ func Test_opensJOSEHeaderAt(t *testing.T) {
 		{name: "a header at the start", src: "eyJhbGciOiJIUzI1NiJ9", i: 0, want: true},
 		{name: "a header further along", src: "ghs_1_eyJhbGciOiJIUzI1NiJ9", i: 6, want: true},
 		{name: "the third character alone", src: "eyJ", i: 0, want: true},
-		{name: "the lowest third character", src: "eyI", i: 0, want: true},
-		{name: "the highest third character", src: "eyL", i: 0, want: true},
-		{name: "one below the lowest", src: "eyH", i: 0, want: false},
-		{name: "one above the highest", src: "eyM", i: 0, want: false},
+		{name: "the lowest third character a quote leaves", src: "eyI", i: 0, want: true},
+		{name: "the highest a quote leaves", src: "eyL", i: 0, want: true},
+		{name: "one below the four a quote leaves", src: "eyH", i: 0, want: false},
+		{name: "one above them", src: "eyM", i: 0, want: false},
+		{name: "the lowest third character a space leaves", src: "eyA", i: 0, want: true},
+		{name: "the highest a space leaves", src: "eyD", i: 0, want: true},
+		{name: "one above the four a space leaves", src: "eyE", i: 0, want: false},
 		{name: "a file name opening with the prefix", src: "eyes.tar.gz", i: 0, want: false},
 		{name: "the prefix with no third character", src: "ey", i: 0, want: false},
 		{name: "the prefix at the very end", src: "ghs_1_ey", i: 6, want: false},
@@ -632,7 +670,7 @@ func referenceJWTFind(src string) []Span {
 		if err != nil {
 			continue
 		}
-		if len(decoded) < len(`{"a":0}`) || decoded[0] != '{' || decoded[1] != '"' {
+		if len(decoded) < len(`{"a":0}`) || decoded[0] != '{' || decoded[1] != '"' && decoded[1] != ' ' {
 			continue
 		}
 		if !closesObject(decoded) || !bytes.Contains(decoded, algName) {
@@ -669,6 +707,10 @@ func FuzzJWT_matchesReference(f *testing.F) {
 	f.Add("eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY123.iv12345.0123456789abcdef")
 	f.Add("eyJhbGciOiJIUzI1NiJ9.eyJhbGciOiJIUzI1NiJ9.0123456789abcdef.a.b")
 	f.Add("eyMiYWxnIjoieCJ9.payload.0123456789abcdef")
+	f.Add("eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
+	f.Add("ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
+	f.Add("ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
+	f.Add("eyEiYWxnIjoieCJ9.payload.0123456789abcdef")
 	f.Add("eyJeyJeyJ..eyJ..")
 	// A token beginning inside the match before it, which a scan resuming past
 	// a match steps over. The payload that is a header in its own right, which

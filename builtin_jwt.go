@@ -15,35 +15,51 @@ import (
 // JSON object naming an algorithm in alg, and enc where the token is encrypted.
 // Text that carries none of them is left alone.
 //
-// The header must open directly with a member name, as the compact JSON an
-// encoder emits does. One written with space between the brace and the name is
-// not located.
+// The header may be written with a space between the brace and the first
+// member name, which JSON allows though the compact JSON an encoder emits
+// carries none. One written with a tab, a carriage return or a newline there
+// is not located.
 //
 // Its name is "jwt".
 func JWT() Pattern { return jsonWebToken }
 
-// A JWT header is compact JSON, so its bytes open with {" and a member name,
-// which base64url turns into ey and one further character.
+// A JWT header is a JSON object, so its bytes open with a brace and the quote
+// a member name opens with, which base64url turns into ey and one further
+// character. A space between the two, which JSON allows, leaves the ey where
+// it is and changes only that character.
 const jwtHeaderPrefix = "ey"
 
 // opensJOSEHeader reports whether c, the character following jwtHeaderPrefix,
-// can be the third of an encoded {" and a member name.
+// can be the third of an encoded brace and the opening of a member name.
 //
-// That character carries the two highest bits of the byte after the quote, so
-// it is one of the four the base64url alphabet holds at indices 8 to 11. A
-// name opening with a letter, as nearly every one does, gives J; one opening
-// with a digit gives I, which the scan would pass over were it to look for eyJ
-// alone.
-func opensJOSEHeader(c byte) bool { return 'I' <= c && c <= 'L' }
+// That character carries the low four bits of the byte behind the brace and
+// the two highest of the byte behind that, so each byte the prefix leaves
+// standing behind the brace takes four characters of its own. The prefix
+// leaves sixteen, the bytes 0x20 to 0x2f, and JSON allows two of them after a
+// brace: the quote a member name opens with, at indices 8 to 11, and the space
+// before one, at 0 to 3. Both are admitted, which is every byte that can
+// follow the brace of a header opening with ey.
+//
+// The four the quote leaves are told apart by the name behind it. One opening
+// with a letter, as nearly every name does, gives J; one opening with a digit
+// gives I, which the scan would pass over were it to look for eyJ alone.
+//
+// What is left over is the whitespace the prefix itself rules out. The three
+// bytes JSON allows there beside the space — a tab, a carriage return and a
+// newline — each put w in the second character rather than y, so a header
+// written with one is not located at all, whatever this reports. The
+// conformance corpus states that.
+func opensJOSEHeader(c byte) bool { return 'A' <= c && c <= 'D' || 'I' <= c && c <= 'L' }
 
 // opensJOSEHeaderAt reports whether the base64url of a JOSE header begins at i
-// in src: the ey it opens with, and a third character that can carry the {"
-// behind it.
+// in src: the ey it opens with, and a third character that can carry the brace
+// and the opening of a member name behind it.
 //
 // This is the whole of what anchors a header without decoding one, and it is
 // the strongest such anchor there is: the two characters say the first byte is
-// {, and the third says the byte after it can be the quote a member name opens
-// with. Nothing further follows from the bytes alone.
+// {, and the third says the byte after it is the quote a member name opens
+// with or the space JSON allows before one. Nothing further follows from the
+// bytes alone.
 //
 // Both scans read it. A stateless installation token carries a JWT, so what
 // anchors one there is what anchors one here, and a scan spelling the anchor
@@ -165,10 +181,13 @@ func (d *headerDecoder) joseHeader(src string, start, dot int) (encrypted, ok bo
 	if held == nil {
 		return false, false
 	}
-	// The prefix the scan looks for leaves the opening bytes no choice but {",
+	// The prefix the scan looks for leaves the opening bytes no choice but a
+	// brace and the quote of a member name, or a space in the quote's place,
 	// so what a candidate has yet to show is the length of an object naming a
-	// member. referenceJWTFind reads those bytes rather than reason about
-	// them, and the fuzz test holds the two to the same answer.
+	// member — the shorter of the two openings, since this only rules out what
+	// is too short to be one at all. referenceJWTFind reads those bytes rather
+	// than reason about them, and the fuzz test holds the two to the same
+	// answer.
 	if len(decoded) < len(`{"a":0}`) {
 		return false, false
 	}

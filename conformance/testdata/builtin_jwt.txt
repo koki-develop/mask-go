@@ -107,19 +107,18 @@ case: a header that never closes its object
 in:   eyJhbGciOiJIUzI1NiI.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  eyJhbGciOiJIUzI1NiI.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: a header written with a space after the opening brace
-in:   eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-
-case: a third character that cannot open a member name
+case: a byte behind the brace that is neither a quote nor a space
 in:   eyZhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  eyZhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-# The third character in full. It carries the two highest bits of the byte
-# after the quote, so the four it may be are the four the first character of a
-# member name leaves: a digit, a letter, and the two a character outside ASCII
-# leaves. Either side of those four is a candidate that does not open an object
-# and a member name at all.
+# The third character in full. It carries the low four bits of the byte behind
+# the brace and the two highest of the byte behind that, so every byte that may
+# stand behind a brace takes four characters of its own: four where the quote of
+# a member name stands there, and four where the space JSON allows before one
+# does. The four below are what the first character of a member name leaves
+# behind a quote: a digit, a letter, and the two a character outside ASCII
+# leaves. Either side of them is a candidate whose brace is followed by neither
+# a quote nor a space.
 
 case: a header whose first member name opens with a character outside ascii
 in:   eyLjgYIiOiJ4IiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
@@ -129,13 +128,17 @@ case: a header whose first member name opens with a byte no character opens with
 in:   eyKAIjoieCIsImFsZyI6IkhTMjU2In0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  «jwt»
 
-case: a candidate one character below the third character a header leaves
+case: a candidate one character below the four a quote leaves
 in:   eyHDqSJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  eyHDqSJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: a candidate one character above it
+case: a candidate one character above them
 in:   eyMiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  eyMiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a candidate one character above the four a space leaves
+in:   eyEiYWxnIjoieCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyEiYWxnIjoieCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
 case: base64url that decodes to no json at all
 in:   aGVsbG8gd29ybGQ.aGVsbG8.aGVsbG8
@@ -245,6 +248,26 @@ out:  «jwt»
 case: a header with a tab after the colon
 in:   eyJhbGciOgkiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  «jwt»
+
+# Space between the brace and the first member name is the one place the JSON
+# of a header decides whether a token is found at all. Everywhere else it is
+# behind the anchor and reached by decoding; there it is the anchor. A space
+# leaves the ey the scan searches for where it is and moves only the character
+# after it, so a header written with one is a token. The three bytes JSON
+# allows there beside the space each put w in place of that y, so the prefix is
+# not in the text and no candidate begins at all.
+
+case: a header written with a space after the opening brace
+in:   eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «jwt»
+
+case: a header written with a tab after the opening brace
+in:   ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a header written with a carriage return after the opening brace
+in:   ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
 case: a header written over three lines
 in:   ewoiYWxnIjoiSFMyNTYiCn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef

@@ -61,6 +61,15 @@ func Test_GitHubToken(t *testing.T) {
 			want: []Span{{0, 93}},
 		},
 		{
+			// A header written with the space JSON allows between the brace
+			// and the first member name, which decodes to
+			// { "alg":"HS256"}. The anchor reads the byte behind the brace
+			// and admits the space as well as the quote.
+			name: "stateless installation token whose header opens with a space",
+			src:  "ghs_123456_eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: []Span{{0, 69}},
+		},
+		{
 			// The ghs_APPID_JWT form GitHub moved installation tokens to in
 			// 2026.
 			name: "stateless installation token",
@@ -138,6 +147,20 @@ func Test_GitHubToken_noMatch(t *testing.T) {
 			// Eighty-one characters where the pattern asks for eighty-two.
 			name: "fine grained body one character too short",
 			src:  "github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678",
+		},
+		{
+			// The whitespace JSON allows there beside the space is out of the
+			// anchor's reach: {\t"alg":"HS256"} encodes to ew rather than ey,
+			// so the header prefix is not in the text and the token is left
+			// whole.
+			name: "stateless installation token whose header opens with a tab",
+			src:  "ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+		},
+		{
+			// {\r"alg":"HS256"}, and the newline beside it, which the
+			// conformance corpus states.
+			name: "stateless installation token whose header opens with a carriage return",
+			src:  "ghs_123456_ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 		},
 		{
 			name: "an identifier that starts like the prefix",
@@ -318,11 +341,12 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 // the classic one it opens like.
 //
 // The class after the header prefix is the third character of a JOSE header,
-// which opensJOSEHeader admits and this expression spells out: a run written
-// as ey and anything at all draws in a file name written after an app id,
-// ghs_1_eyes.tar.gz among them.
+// which opensJOSEHeader admits and this expression spells out: the four the
+// quote of a member name leaves, and the four the space JSON allows before one
+// leaves. A run written as ey and anything at all draws in a file name written
+// after an app id, ghs_1_eyes.tar.gz among them.
 var referenceGitHubToken = regexp.MustCompile(
-	`ghs_[0-9A-Za-z]+_` + jwtHeaderPrefix + `[I-L][0-9A-Za-z_-]*\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+` +
+	`ghs_[0-9A-Za-z]+_` + jwtHeaderPrefix + `[A-DI-L][0-9A-Za-z_-]*\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+` +
 		`|gh[pousr]_[0-9A-Za-z]{36,}` +
 		`|` + githubPATPrefix + `[0-9A-Za-z_]{82,}`,
 )
@@ -385,16 +409,20 @@ func FuzzGitHubToken_matchesReference(f *testing.F) {
 	f.Add("github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678") // one short
 	f.Add("github_pat_github_pat_github_pat_github_pat_github_pat_github_pat_github_pat_github_pat_")     // the prefix inside the body
 	f.Add("ghs_11223344_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
-	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJhbGciOiJIUzI1NiJ9.a.b") // an app id long enough to look classic
-	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz_config.json.bak")          // dots after a classic token
-	f.Add("ghs__eyJ1.a.b")                                                     // no app id
-	f.Add("ghs_a_eyJ.a.b")                                                     // a header of nothing but the anchor
-	f.Add("ghs_a_eyes.tar.gz")                                                 // a file name opening with the two letters alone
-	f.Add("ghs_a_eyA.a.b")                                                     // a third character just below the four
-	f.Add("ghs_a_eyM.a.b")                                                     // and just above them
-	f.Add("ghs_a_eyJ1..b")                                                     // an empty segment
-	f.Add("ghs_a_eyJ1.a")                                                      // one segment short
-	f.Add("ghs_a_eyJghp_0123456789abcdefghijklmnopqrstuvwxyz")                 // a classic token inside the JWT run
+	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJhbGciOiJIUzI1NiJ9.a.b")     // an app id long enough to look classic
+	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz_config.json.bak")              // dots after a classic token
+	f.Add("ghs__eyJ1.a.b")                                                         // no app id
+	f.Add("ghs_a_eyJ.a.b")                                                         // a header of nothing but the anchor
+	f.Add("ghs_a_eyes.tar.gz")                                                     // a file name opening with the two letters alone
+	f.Add("ghs_a_eyA.a.b")                                                         // the third character a space leaves
+	f.Add("ghs_a_eyE.a.b")                                                         // just above those four
+	f.Add("ghs_a_eyH.a.b")                                                         // and just below the four a quote leaves
+	f.Add("ghs_a_eyM.a.b")                                                         // and just above them
+	f.Add("ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef") // a tab behind the brace, which is no ey at all
+	f.Add("ghs_123456_ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef") // and a carriage return
+	f.Add("ghs_a_eyJ1..b")                                                         // an empty segment
+	f.Add("ghs_a_eyJ1.a")                                                          // one segment short
+	f.Add("ghs_a_eyJghp_0123456789abcdefghijklmnopqrstuvwxyz")                     // a classic token inside the JWT run
 	f.Add("gghs_a_eyJ1.a.b")
 	f.Add(strings.Repeat("ghs_a_eyJ", 16)) // candidates crowded in one run
 	f.Add(strings.Repeat("ghs_a_eyJ", 16) + ".a.b")

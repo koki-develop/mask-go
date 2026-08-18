@@ -133,10 +133,12 @@ case: an installation token followed by such a file name is drawn into one span
 in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js
 out:  «github-token»
 
-# The third character of the header, which both patterns read. Each of the four
-# a header leaves is stated here, and the character either side of them, so
-# that what anchors the JWT of a stateless installation token can be read from
-# the corpus rather than from the scan.
+# The third character of the header, which both patterns read. It says which
+# byte stands behind the brace a JSON object opens with: four of the characters
+# answer the quote a member name opens with, and four answer the space JSON
+# allows before one. Each of the four a quote leaves is stated here, and the
+# character either side of them, so that what anchors the JWT of a stateless
+# installation token can be read from the corpus rather than from the scan.
 #
 # Nothing past the anchor is read: GitHub signs this JWT with an issuer of its
 # own and says a client neither can nor should validate it, so a run that opens
@@ -160,28 +162,46 @@ case: a stateless installation token whose header opens outside ascii
 in:   ghs_123456_eyL0123456789abcdef.0123456789abcdef.0123456789abcdef
 out:  «github-token»
 
-case: an app id followed by a run one character below the third a header leaves
+case: an app id followed by a run one character below the four a quote leaves
 in:   ghs_123456_eyH0123456789abcdef.0123456789abcdef.0123456789abcdef
 out:  ghs_123456_eyH0123456789abcdef.0123456789abcdef.0123456789abcdef
 
-case: an app id followed by a run one character above it
+case: an app id followed by a run one character above them
 in:   ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
 out:  ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
 
-# And what asking for those four costs. A JOSE header written with a space
-# between the brace and the first member name encodes to a third character
-# outside them, so a stateless installation token carrying one is not located
-# at all — not shortened, not partly redacted, left whole. It is the header the
-# JWT pattern declines as well, for the same reason, so the token comes through
-# in the clear with both patterns enabled; builtins_together.txt states that
-# where the two can be read side by side. What the anchor is written against is
-# the compact JSON an encoder emits, which JWT's own documentation says in as
-# many words, and what it trades this header for is the file names the block
-# further up would otherwise draw in.
+# And the four a space leaves, which are admitted the same way: JSON allows a
+# space between the brace and the first member name, and the anchor reads the
+# byte standing there rather than assume the compact JSON an encoder emits.
+#
+# What asking for the brace costs is the other whitespace JSON allows there. A
+# tab, a carriage return and a newline each put w in the second character
+# rather than y, so the prefix both patterns search for is not in the text and
+# a stateless token carrying such a header is not located at all — not shortened, not partly
+# redacted, left whole. It is the header the JWT pattern declines as well, for
+# the same reason, so the token comes through in the clear with both patterns
+# enabled; builtins_together.txt states that where the two can be read side by
+# side.
 
 case: a stateless installation token whose header is written with a space after the brace
 in:   ghs_123456_eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghs_123456_eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token»
+
+case: a stateless installation token whose header is written with a tab after the brace
+in:   ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a stateless installation token whose header is written with a carriage return after the brace
+in:   ghs_123456_ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ghs_123456_ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a stateless installation token whose header is written over three lines
+in:   ghs_123456_ewoiYWxnIjoiSFMyNTYiCn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ghs_123456_ewoiYWxnIjoiSFMyNTYiCn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: an app id followed by a run one character above the four a space leaves
+in:   ghs_123456_eyE0123456789abcdef.0123456789abcdef.0123456789abcdef
+out:  ghs_123456_eyE0123456789abcdef.0123456789abcdef.0123456789abcdef
 
 # Where a token sits.
 
