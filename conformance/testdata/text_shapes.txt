@@ -6,7 +6,9 @@
 # This file is written in two halves, and the cases closing each of them say
 # what this library does not redact. A credential of a kind no pattern here
 # knows is not masked, and stating that is what keeps the scope of the built-in
-# patterns readable rather than assumed.
+# patterns readable rather than assumed. The block closing the file says as
+# much of a kind a pattern here does know, written into the text in an encoding
+# of its own.
 
 patterns: default
 
@@ -184,3 +186,16 @@ out:  Authorization: Basic dXNlcjowMTIzNDU2Nzg5YWJjZGVm
 case: a github app client secret is not one of the kinds this library knows
 in:   GITHUB_CLIENT_SECRET=0123456789abcdef0123456789abcdef01234567
 out:  GITHUB_CLIENT_SECRET=0123456789abcdef0123456789abcdef01234567
+
+# And a credential of a kind a pattern here does know, encoded on its way into
+# the text. The scan reads the bytes it is handed and decodes nothing, so a
+# token written into base64 shares no run of characters with the token itself
+# and is not located: it comes through whole, and is a credential still to
+# whoever decodes it. The basic authorization header further up this file
+# carries a password, which is no kind this library knows however it is
+# written; the one below carries a classic token, which it does know, and is
+# what states what the encoding costs.
+
+case: a classic token encoded into base64 is not located
+in:   Authorization: Basic eC1hY2Nlc3MtdG9rZW46Z2hwXzAxMjM0NTY3ODlhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==
+out:  Authorization: Basic eC1hY2Nlc3MtdG9rZW46Z2hwXzAxMjM0NTY3ODlhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==

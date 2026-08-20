@@ -170,18 +170,28 @@ case: an app id followed by a run one character above them
 in:   ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
 out:  ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
 
-# And the four a space leaves, which are admitted the same way: JSON allows a
-# space between the brace and the first member name, and the anchor reads the
+# And the character a space leaves, which is admitted the same way: JSON allows
+# a space between the brace and the first member name, and the anchor reads the
 # byte standing there rather than assume the compact JSON an encoder emits.
+#
+# One case states it where the quote took four, and the encoding is why. The
+# third character carries the two highest bits of the byte behind the space,
+# and JSON gives a member name no opening but the quote, whose two are zero, so
+# a header written with a space reaches the first of the four and no other. Of
+# the three left over, one stands for the } an empty object closes with, which
+# names no algorithm, and two for bytes JSON does not allow behind a brace at
+# all.
+# The anchor admits them because reading the bits costs nothing, not because a
+# header can be written to carry them.
 #
 # What asking for the brace costs is the other whitespace JSON allows there. A
 # tab, a carriage return and a newline each put w in the second character
 # rather than y, so the prefix both patterns search for is not in the text and
-# a stateless token carrying such a header is not located at all — not shortened, not partly
-# redacted, left whole. It is the header the JWT pattern declines as well, for
-# the same reason, so the token comes through in the clear with both patterns
-# enabled; builtins_together.txt states that where the two can be read side by
-# side.
+# a stateless token carrying such a header is not located at all — not
+# shortened, not partly redacted, left whole. It is the header the JWT pattern
+# declines as well, for the same reason, so the token comes through in the
+# clear with both patterns enabled; builtins_together.txt states that where the
+# two can be read side by side.
 
 case: a stateless installation token whose header is written with a space after the brace
 in:   ghs_123456_eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef

@@ -127,7 +127,7 @@ out:  «github-token»
 # And the shapes neither pattern takes anything from. Each pattern states its
 # own reason for declining both of them, in the files beside this one; what
 # only the two patterns together show is what is left in the text when neither
-# steps in, and that is not the same for the two shapes.
+# steps in, and that is not the same for the three shapes.
 #
 # The first is harmless. A stateless token cut before its second dot carries no
 # signature, which the GitHub pattern declines it for and which leaves the JWT
@@ -146,6 +146,18 @@ out:  «github-token»
 # neither reason states what the two of them come to when both patterns are
 # enabled, and a credential surviving whole is what a reader has to be able to
 # look up rather than arrive at.
+#
+# The third leaves the credential whole as well, with one byte standing in the
+# middle of it. A run of base64url characters ends at a line break, so a token
+# written across one leaves the GitHub pattern short of the segments it asks
+# for and the JWT pattern short of a token, and neither locates anything: every
+# byte of the token is in the text, and a newline is the whole of what stands
+# between them. builtin_jwt.txt states that a JWT broken across two lines is
+# not located; what only the two patterns together show is that a stateless
+# installation token broken the same way is not located either, by either of
+# them, and that taking the break out gives a credential that would
+# authenticate a request. The case below breaks it after the dot that ends the
+# header.
 
 case: a stateless installation token cut before its signature
 in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
@@ -154,3 +166,7 @@ out:  ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
 case: a stateless installation token whose header is written with a tab after the brace
 in:   ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a stateless installation token written across a line break
+in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
