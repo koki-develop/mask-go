@@ -10,8 +10,7 @@ steps easiest to lose.
 
 ## 1. Pin down the grammar
 
-Verify the token's exact format against current official sources (`find-docs`,
-then web search): prefix, alphabet, length, checksum, and every variant sharing
+Verify the token's exact format against current official sources: prefix, alphabet, length, checksum, and every variant sharing
 the prefix. Do not work from memory — formats change, and the scanner rationale
 comment in `builtin_<name>.go` is written from what this step establishes.
 
