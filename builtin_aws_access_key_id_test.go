@@ -84,15 +84,18 @@ func Test_AWSAccessKeyID(t *testing.T) {
 }
 
 func Test_AWSAccessKeyID_capitalsThatAreNotCredentials(t *testing.T) {
-	// What the pattern over-matches on, held to being what the rationale in
-	// builtin_aws_access_key_id.go says it is rather than left to be
-	// discovered. ASIA is an English word where AKIA is not, so a run of
-	// twenty unbroken capitals opening with it is redacted whether it is a
-	// credential or not, and these are the runs that fall that way.
+	// Text that is a key's format without being a key. ASIA is an English
+	// word where AKIA is not, so a run of twenty unbroken capitals opening
+	// with it is redacted whether anyone issued it or not, and these are the
+	// runs that fall that way.
 	//
-	// The point of the table is that these cases move together with the scan.
-	// A change that stops locating one of them has changed the grammar, and
-	// that is a decision to be taken rather than noticed afterwards.
+	// They are held to being redacted rather than to being spared. Nothing in
+	// the text tells them from a key — they are the same twenty bytes — so a
+	// scan that let these through would let a real key through with them,
+	// which builtin_aws_access_key_id.go sets out. What the table is for is
+	// that the cases move with the scan: one of them ceasing to be located
+	// means the grammar changed, and that is a decision to be taken rather
+	// than noticed afterwards.
 	tests := []struct {
 		name string
 		src  string

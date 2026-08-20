@@ -75,6 +75,17 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   — being wrong about one of those costs the reader nothing. A grammar that
   admits a git SHA, an MD5 or a word of prose does not qualify, however rarely
   it would fire.
+- What that rules out is the loose grammar, not the unlucky one. The question
+  to ask of an over-match is whether the pattern could have been tighter: a
+  bare forty hex characters, or `SK` and thirty-two, casts a net over values
+  that carry meaning when a tighter net was available and was not taken. Where
+  instead the grammar is already as tight as the vendor's own format and text
+  still lands inside it, that text is indistinguishable from a credential —
+  there is nothing left to read it by — and redacting is right, because
+  declining it would mean declining every real credential of the same shape. A
+  pattern relying on this states the collision in its own file and pins it with
+  cases, so that it is a decision on the record rather than something the next
+  reader discovers.
 - Adding a built-in pattern means three declarations: the two below, and cases
   in the conformance corpus (`conformance/CLAUDE.md`).
 - The first two are: the pattern in `builtins`
@@ -124,7 +135,7 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   became a value or not, because in each of them a value can begin inside the
   one before it. A GitHub body and a JWT signature are read as far as their
   alphabet runs, so either swallows the opening of a credential written straight
-  after it; an AWS access key ID has a documented length and swallows nothing,
+  after it; an AWS access key ID is read to a fixed count and swallows nothing,
   but its two prefixes overlap one another — the `A` closing `ASIA` opens the
   `AKIA` three characters along. Consuming a match would step over such a
   value and leave it in the output whole. The cost is that a value nested in
@@ -135,7 +146,7 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   candidate for every character it has, and the cursors the JWT and GitHub scans
   keep over a run — of base64url characters, and of the alphabet a fine grained
   token body is written in — are what rule out quadratic inputs there. The
-  AWS scan keeps no cursor and needs none: a documented length means a candidate
+  AWS scan keeps no cursor and needs none: a fixed count means a candidate
   reads a bounded number of bytes and stops, which is the same guarantee bought
   without state. Compare benchmarks before and after touching any of them.
 - Published library: any change to an exported name, signature or behaviour is

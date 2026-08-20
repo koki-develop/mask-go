@@ -100,14 +100,18 @@ case: an access key id at the end of a sentence
 in:   the key is AKIA0123456789ABCDEF.
 out:  the key is «aws-access-key-id».
 
-# What this pattern redacts that is not a credential. ASIA is an English word
-# where AKIA is not, so an unbroken run of twenty uppercase letters and digits
-# that opens with it is redacted whether or not anyone issued it. A space, a
-# hyphen or a lowercase letter ends the run, so prose as it is ordinarily
-# written is out of reach — the two cases below have to be written in unbroken
-# capitals to fall this way, and the third is the same text with the spaces
-# left in. The pattern's own file says why this is admitted rather than
-# narrowed; these are the cases that keep the sentence honest.
+# What this pattern redacts that nobody issued. ASIA is an English word where
+# AKIA is not, so an unbroken run of twenty uppercase letters and digits that
+# opens with it is redacted whether or not anyone issued it — and that is the
+# answer rather than a fault in it, because such a run is a key's format
+# exactly and nothing in the text tells the two apart. Sparing these would
+# spare a real key written the same way.
+#
+# A space, a hyphen or a lowercase letter ends the run, so prose as it is
+# ordinarily written is out of reach: the two cases below have to be written in
+# unbroken capitals to fall this way, and the third is the same text with the
+# spaces left in. The pattern's own file weighs the tightenings that were
+# available and what each would have cost.
 
 case: a word of twenty capitals opening with the temporary prefix
 in:   ASIAPACIFICSOUTHEAST

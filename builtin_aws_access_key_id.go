@@ -104,15 +104,24 @@ func AWSAccessKeyID() Pattern { return awsAccessKeyID }
 // cannot. The tables in builtin_aws_access_key_id_test.go and the corpus
 // beside it pin that behaviour so it cannot move unnoticed.
 //
-// It is admitted because the ways out are worse for a library whose job is to
-// redact. Asking the body for at least one digit would tell these apart, and
-// would also drop every real key whose sixteen characters happen to be all
-// letters — a share of them large enough to matter under any reading of how a
-// key is generated, and not one this file is in a position to put a number on,
-// since AWS documents neither the alphabet nor how the characters are drawn.
-// Asking for a boundary behind the match would drop ASIANELEPHANTCONSERVATION
-// and leave ASIAPACIFICSOUTHEAST, which is twenty characters exactly, so it
-// buys part of the case at the price of every key written against a capital.
+// It is admitted, and not merely tolerated. Twenty unbroken capitals opening
+// with ASIA are a key's format exactly, so there is nothing left in the text
+// to read them by: a real key and a word written that way are the same twenty
+// bytes, and a pattern that let one through would let the other through too.
+// Redacting both is the answer that keeps the credential; keeping the word
+// would cost the credential. CLAUDE.md's gate is about the loose grammar
+// rather than this one — the grammar here is already the format AWS states,
+// and tightening it is not on offer.
+//
+// The two tightenings that look available buy less than they cost. Asking the
+// body for at least one digit would tell these apart, and would also drop
+// every real key whose sixteen characters happen to be all letters — a share
+// large enough to matter under any reading of how a key is generated, and not
+// one this file is in a position to put a number on, since AWS documents
+// neither the alphabet nor how the characters are drawn. Asking for a boundary
+// behind the match would drop ASIANELEPHANTCONSERVATION and leave
+// ASIAPACIFICSOUTHEAST, which is twenty characters exactly, so it buys part of
+// the case at the price of every key written against a capital.
 //
 // referenceAWSAccessKeyID in builtin_aws_access_key_id_test.go keeps the
 // grammar as a regular expression, spelling the prefixes and the count again so
