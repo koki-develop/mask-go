@@ -40,7 +40,7 @@ pkg.go.dev, or converting spans on every `Find`, which allocates.
 
 ## Commands
 
-Tools are pinned in `mise.toml`. `mise run bootstrap` installs the git hooks.
+Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
 
 - `go test ./...` — tests. Run it without `-race` as well as with: the tests
   holding `Mask` to allocating nothing stand down under the race detector, so
