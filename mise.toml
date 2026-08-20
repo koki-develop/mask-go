@@ -1,7 +1,6 @@
 [tools]
 betterleaks = "1.7.4"
 go = "1.26.6"
-"go:golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize" = "0.23.0"
 golangci-lint = "2.12.2"
 lefthook = "2.1.10"
 

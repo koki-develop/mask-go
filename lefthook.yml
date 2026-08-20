@@ -4,6 +4,9 @@ pre-commit:
       stage_fixed: true
       glob: "*.go"
       run: go fmt ./...
+    fix:
+      glob: "*.go"
+      run: go fix -diff ./...
     lint:
       glob: "*.go"
       run: golangci-lint run

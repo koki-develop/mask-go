@@ -53,7 +53,14 @@ Tools are pinned in `mise.toml`. `mise run bootstrap` installs the git hooks.
   `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30 seconds.
 - `go test -bench . -benchmem` — benchmarks.
 - `golangci-lint run` — lint (no config file; defaults).
-- `modernize -fix ./...` — apply modern Go idioms.
+- `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
+  analyzer-driven fixer that supersedes the standalone `modernize`, so it
+  ships with the pinned toolchain rather than needing a pin of its own.
+  `go fix -diff ./...` reports without applying and exits non-zero when there
+  is anything to apply, and that is what the pre-commit hook runs: a rewrite
+  into `strings.Builder` or `slices.Contains` inside a scan is a change to a
+  hot path, so it wants benchmarks either side of it rather than to be applied
+  and staged behind your back.
 - `betterleaks git` — secret scan.
 
 ## Tests
