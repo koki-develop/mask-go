@@ -13,6 +13,14 @@ case: a stateless installation token is one value, not a token and a jwt
 in:   token=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  token=«github-token»
 
+case: a stateless user access token is one value, not a token and a jwt
+in:   token=ghu_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  token=«github-token»
+
+case: a personal access token prefix in the stateless form leaves the prefix behind
+in:   token=ghp_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  token=ghp_123456_«jwt»
+
 case: a personal access token and a jwt on one line
 in:   token=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  token=«github-token» jwt=«jwt»

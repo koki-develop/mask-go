@@ -86,6 +86,38 @@ func Test_GitHubToken(t *testing.T) {
 			want: []Span{{0, 117}},
 		},
 		{
+			// The same form under the other kind that reaches it. GitHub has
+			// said the format of user access tokens is to change and has
+			// named no shape for it, and isGitHubStatelessKind admits the
+			// kind on that much.
+			name: "stateless user access token",
+			src:  "ghu_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: []Span{{0, 83}},
+		},
+		{
+			// And a kind that does not reach it. The classic alternative is
+			// all that is left, and an app id of six characters is far short
+			// of what that asks for, so nothing is located at all.
+			name: "a personal access token prefix in the stateless form",
+			src:  "ghp_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: nil,
+		},
+		{
+			// What admitting a kind costs. A file name written after a body
+			// of thirty-six characters opens like a JOSE header and carries
+			// the two dots the segments need, so it is drawn into the span
+			// under a kind that reaches the stateless form and left where it
+			// is under one that does not.
+			name: "a file name after a user access token, which goes with it",
+			src:  "ghu_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js",
+			want: []Span{{0, 54}},
+		},
+		{
+			name: "the same file name after a personal access token, which stays",
+			src:  "ghp_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js",
+			want: []Span{{0, 40}},
+		},
+		{
 			// GitHub documents no length, so a body is read as far as its
 			// alphabet runs: the first token here swallows the gho of the
 			// second, whose start the first match therefore covers. A scan
@@ -304,9 +336,9 @@ func Test_GitHubToken_leavesWhatFollowsAlone(t *testing.T) {
 }
 
 func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
-	// Both built-in patterns fire on a stateless installation token, and the
-	// app id, the underscore after it and the JWT must all go, however long
-	// the app id is.
+	// Both built-in patterns fire on a token written in the stateless form,
+	// and the app id, the underscore after it and the JWT must all go,
+	// however long the app id is and whichever kind reaches that form.
 	tests := []struct {
 		name string
 		src  string
@@ -315,6 +347,11 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 		{
 			name: "short app id",
 			src:  "ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+			want: "***********************************************************************************",
+		},
+		{
+			name: "user access token",
+			src:  "ghu_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 			want: "***********************************************************************************",
 		},
 		{
@@ -337,8 +374,13 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 // referenceGitHubToken is the expression the scan in builtin_github_token.go
 // reads by hand: the statement of what a GitHub token is, kept here so that the
 // scan can be held to it. Go matches an alternation leftmost-first rather than
-// leftmost-longest, which is why the stateless installation token comes before
-// the classic one it opens like.
+// leftmost-longest, which is why the stateless form comes before the classic
+// one it opens like.
+//
+// The kinds spelled into that first alternative are the ones
+// isGitHubStatelessKind admits, and the two have to be changed together: a
+// kind added to one and not the other is a kind the scan and the reference
+// disagree about, which is what the fuzz target below is for.
 //
 // The class after the header prefix is the third character of a JOSE header,
 // which opensJOSEHeader admits and this expression spells out: the four the
@@ -346,7 +388,7 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 // leaves. A run written as ey and anything at all draws in a file name written
 // after an app id, ghs_1_eyes.tar.gz among them.
 var referenceGitHubToken = regexp.MustCompile(
-	`ghs_[0-9A-Za-z]+_` + jwtHeaderPrefix + `[A-DI-L][0-9A-Za-z_-]*\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+` +
+	`gh[su]_[0-9A-Za-z]+_` + jwtHeaderPrefix + `[A-DI-L][0-9A-Za-z_-]*\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+` +
 		`|gh[pousr]_[0-9A-Za-z]{36,}` +
 		`|` + githubPATPrefix + `[0-9A-Za-z_]{82,}`,
 )
@@ -388,7 +430,7 @@ func referenceGitHubTokenFind(src string) []Span {
 }
 
 // FuzzGitHubToken_matchesReference guards the hand-written scan: the two
-// cursors it keeps, over the JWT of a stateless installation token and over
+// cursors it keeps, over the JWT of a token in the stateless form and over
 // the body of a fine grained one, the order it tries the alternatives in, the
 // run it shares between them and the byte it resumes at may none of them
 // change which tokens are located.
@@ -420,12 +462,19 @@ func FuzzGitHubToken_matchesReference(f *testing.F) {
 	f.Add("ghs_a_eyM.a.b")                                                         // and just above them
 	f.Add("ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef") // a tab behind the brace, which is no ey at all
 	f.Add("ghs_123456_ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef") // and a carriage return
+	f.Add("ghu_123456_eyJhbGciOiJIUzI1NiJ9.a.b")                                   // the other kind that reaches the stateless form
+	f.Add("ghp_123456_eyJhbGciOiJIUzI1NiJ9.a.b")                                   // a kind that does not
+	f.Add("ghr_123456_eyJhbGciOiJIUzI1NiJ9.a.b")                                   // nor this one
+	f.Add("ghu_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js")                // a file name drawn in under a stateless kind
+	f.Add("ghp_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js")                // and left where it is under one that is not
 	f.Add("ghs_a_eyJ1..b")                                                         // an empty segment
 	f.Add("ghs_a_eyJ1.a")                                                          // one segment short
 	f.Add("ghs_a_eyJghp_0123456789abcdefghijklmnopqrstuvwxyz")                     // a classic token inside the JWT run
 	f.Add("gghs_a_eyJ1.a.b")
 	f.Add(strings.Repeat("ghs_a_eyJ", 16)) // candidates crowded in one run
 	f.Add(strings.Repeat("ghs_a_eyJ", 16) + ".a.b")
+	f.Add(strings.Repeat("ghu_a_eyJ", 16)) // the same run under the other stateless kind
+	f.Add(strings.Repeat("ghu_a_eyJ", 16) + ".a.b")
 	// A token beginning inside the match before it, which a scan resuming
 	// past a match steps over, and a run holding a candidate for every eleven
 	// characters it has, which is what the fine grained cursor is for.

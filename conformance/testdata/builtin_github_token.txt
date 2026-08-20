@@ -60,10 +60,39 @@ in:   github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopq
 out:  github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678
 
 # The stateless installation token, which carries a JWT after the app id.
+#
+# GitHub moved installation tokens to that form in 2026, and has said the
+# format of user access tokens is to change while naming no shape for it, so
+# those two kinds are read for it — the second on what has been said, not on a
+# form GitHub has published.
+#
+# The three kinds that announcement leaves out are read for the classic form
+# alone, and are written out below rather than left to follow from one another.
+# Each is written with the six character app id the cases above carry, which is
+# far short of the thirty-six characters the classic form asks for, so none of
+# them is located at all; where the run before the underscore is long enough to
+# be a classic body, that body is what is located, which the block on file
+# names below states.
 
 case: a stateless installation token
 in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  «github-token»
+
+case: a stateless user access token
+in:   ghu_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token»
+
+case: a personal access token prefix in the stateless form
+in:   ghp_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ghp_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: an oauth app access token prefix in the stateless form
+in:   gho_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  gho_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a refresh token prefix in the stateless form
+in:   ghr_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  ghr_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
 case: a stateless installation token with a long app id
 in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
@@ -99,11 +128,18 @@ out:  «github-token»_backup.tar.gz
 # two dots the segments of a signed token need, and only its third character
 # stands between it and a token; the four characters that can stand there are
 # enumerated further down this file, and a name carrying one of them and two
-# dots is a token to this pattern still. The last two cases of this block are
-# such names. What a reader should take from the block is which names the
+# dots is a token to this pattern still, where the kind written before it
+# reaches the stateless form at all. The last four cases of this block carry
+# such a name; three of them are drawn in for it, and the paragraph below is
+# about the fourth. What a reader should take from the block is which names the
 # anchor holds back, not that file names as a kind are held back — nothing in
 # the bytes tells eyJson.min.js from a header, and this pattern redacts what it
 # cannot tell apart rather than leave a credential in the output.
+#
+# What holds that cost down is which kinds reach the stateless form at all. The
+# last two cases are the same name after a kind that does and a kind that does
+# not: the first goes into the span, the second is left where it is and the
+# token beside it is redacted on its own.
 
 case: an installation token followed by a file name beginning with the letters a header opens with
 in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyes.tar.gz
@@ -132,6 +168,14 @@ out:  «github-token»
 case: an installation token followed by such a file name is drawn into one span
 in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js
 out:  «github-token»
+
+case: a user access token followed by such a file name is drawn in as well
+in:   ghu_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js
+out:  «github-token»
+
+case: the same file name after a kind read for the classic form alone
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js
+out:  «github-token»_eyJson.min.js
 
 # The third character of the header, which both patterns read. It says which
 # byte stands behind the brace a JSON object opens with: four of the characters

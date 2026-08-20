@@ -9,7 +9,11 @@ import "strings"
 //
 // GitHub documents the prefixes but no token length, and changed installation
 // tokens in 2026 from 40 characters to a longer format holding a JWT. This
-// pattern therefore keys on the prefix rather than on an exact length.
+// pattern therefore keys on the prefix rather than on an exact length. That
+// longer format is read for installation tokens, which carry it, and for user
+// access tokens, whose format GitHub has said is to change without saying what
+// to; the kinds that announcement leaves out are read for the classic form
+// alone.
 //
 // Its name is "github-token".
 func GitHubToken() Pattern { return githubToken }
@@ -32,7 +36,7 @@ func GitHubToken() Pattern { return githubToken }
 var githubToken = NewPattern("github-token", func(src string) []Span {
 	var spans []Span
 
-	// The JWT a stateless installation token holds ends where its run of
+	// The JWT a token in the stateless form holds ends where its run of
 	// base64url characters and the segments after it end. Every candidate
 	// crowded inside one run reaches the same end, and the positions asked
 	// about only ever move forward, so the run is worked out once and
@@ -40,6 +44,8 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 	// quadratic in the length of a line of ghs_a_ey written over and over,
 	// which nothing else here rules out: no candidate consumes what it read,
 	// and the underscores such a line is built from are base64url characters.
+	// The cursor is shared by every kind isGitHubStatelessKind admits, so
+	// ghu_a_ey written over and over is the same input under another name.
 	runEnd := -1
 	var jwt segments
 
@@ -103,11 +109,12 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 			end++
 		}
 
-		// The stateless installation token comes first, as it does in the
-		// expression: an app id of thirty-six characters or more would
-		// otherwise be taken for a whole classic token, leaving the rest of
-		// the token to the JWT pattern and the underscore between them
-		// unredacted. Its JWT is anchored on what opens a JOSE header, which
+		// The stateless form comes first, as it does in the expression: an
+		// app id of thirty-six characters or more would otherwise be taken
+		// for a whole classic token, leaving the rest of the token to the JWT
+		// pattern and the underscore between them unredacted. Which kinds
+		// reach this alternative at all is isGitHubStatelessKind's to say.
+		// Its JWT is anchored on what opens a JOSE header, which
 		// opensJOSEHeaderAt in builtin_jwt.go states, and without which an
 		// underscore and two dots written after a classic token, as in a file
 		// name, would be drawn in before the classic alternative is reached.
@@ -140,7 +147,7 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		// keying on the prefix and a run of characters, as GitHub's own advice
 		// does, and admitting the dot into that run draws in the file name
 		// written after a classic token, which the anchor holds back.
-		if src[start+2] == 's' && end > body && end < len(src) &&
+		if isGitHubStatelessKind(src[start+2]) && end > body && end < len(src) &&
 			src[end] == '_' && opensJOSEHeaderAt(src, end+1) {
 			header := end + 1 + len(jwtHeaderPrefix)
 			if header >= runEnd {
@@ -185,6 +192,33 @@ const (
 func isGitHubTokenKind(c byte) bool {
 	return c == 'p' || c == 'o' || c == 'u' || c == 's' || c == 'r'
 }
+
+// isGitHubStatelessKind reports whether c, the character after gh, names a kind
+// of token read for the form GitHub writes as a prefix, an app id and a JWT:
+// installation (s), which moved to that form in 2026, and user (u), which has
+// not.
+//
+// The user kind is admitted on what GitHub has said and no more, which is less
+// than the shape. The changelog announcing the installation format scopes the
+// rollout to installation tokens alone and says of the rest only that format
+// changes for user-to-server tokens are planned — it names no shape for them,
+// so admitting the kind is a wager that the next shape is the one already
+// shipped beside it.
+//
+// What the wager costs is bounded, which is why it is taken. A body followed
+// by an underscore and a run opening like a JOSE header is drawn into one
+// span, so the file name in
+// ghu_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js goes with the token
+// beside it: the redaction reaches past the value and takes text that was
+// never one. Against that stands a whole user access token left in the output
+// the day such a format lands. The kinds that announcement leaves out
+// altogether are read for the classic form alone, where the same cost would
+// buy nothing.
+//
+// referenceGitHubToken in builtin_github_token_test.go spells these kinds
+// again, so the two are changed together or the fuzz target beside it reports
+// them apart.
+func isGitHubStatelessKind(c byte) bool { return c == 's' || c == 'u' }
 
 func isGitHubTokenByte(c byte) bool {
 	return '0' <= c && c <= '9' ||
