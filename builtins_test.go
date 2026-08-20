@@ -26,6 +26,17 @@ var builtinPatterns = []struct {
 	samples []string            // inputs holding a value of this kind
 }{
 	{
+		name:    "aws-access-key-id",
+		pattern: AWSAccessKeyID,
+		ref:     referenceAWSAccessKeyIDFind,
+		samples: []string{
+			"AWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF",
+			"ASIA0123456789ABCDEF",
+			"ASIAKIA0123456789ABCDEF",
+			"AKIA0123456789ABCDEFASIA0123456789ABCDEF",
+		},
+	},
+	{
 		name:    "github-token",
 		pattern: GitHubToken,
 		ref:     referenceGitHubTokenFind,

@@ -62,9 +62,10 @@ var patternSets = map[string][]mask.Pattern{
 	// The built-in patterns, together and one at a time. A pattern alone is
 	// what says the pattern locates a value on its own; the whole set is what
 	// says the sets do not interfere.
-	"default":      mask.AllBuiltinPatterns(),
-	"github-token": {mask.GitHubToken()},
-	"jwt":          {mask.JWT()},
+	"default":           mask.AllBuiltinPatterns(),
+	"aws-access-key-id": {mask.AWSAccessKeyID()},
+	"github-token":      {mask.GitHubToken()},
+	"jwt":               {mask.JWT()},
 
 	// No pattern at all: a Masker given none redacts nothing.
 	"none": {},

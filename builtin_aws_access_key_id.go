@@ -1,0 +1,207 @@
+package mask
+
+import "strings"
+
+// AWSAccessKeyID locates AWS access key IDs: twenty characters opening with
+// AKIA, which AWS gives the long-term key of an IAM user or of the account root
+// user, or ASIA, which it gives the temporary credentials AWS STS issues. Those
+// are the two prefixes AWS documents for an access key ID, and STS tells the
+// two apart by them.
+//
+// The secret access key that goes with one is not located, and cannot be by a
+// pattern of this kind: AWS gives it no prefix and no length that tells it
+// apart from any other forty characters of base64, so the only thing marking
+// one is the name written in front of it, which this library does not read. A
+// caller who needs those redacted has to say so with a pattern of their own.
+//
+// The other prefixes IAM documents are left alone. AIDA for a user, AROA for a
+// role, AGPA for a group and the rest are unique identifiers rather than
+// credentials: they authenticate nothing, and they are written into policy
+// documents and CloudTrail records precisely so that a reader can match one up,
+// so redacting one takes something from the reader and keeps nothing from
+// anyone. Every unique identifier AWS shows is twenty-one characters rather
+// than twenty, which is an observation of the examples and not something AWS
+// states, so it is not what the scan turns on — the prefix is. ABIA, an
+// AWS STS service bearer token, and ACCA, a context-specific credential, are
+// credentials, but AWS documents no shape for either beyond the prefix itself,
+// and a pattern for them would be keyed on a guess rather than on a format.
+//
+// A key is located wherever it is written, with no word boundary either side,
+// and exactly twenty characters of it are. So an unbroken run of twenty
+// uppercase letters and digits opening with one of the prefixes is redacted
+// whether or not AWS issued it, which ASIA, being a word, makes reachable:
+// ASIAPACIFICSOUTHEAST is redacted, and ASIANELEPHANTCONSERVATION loses its
+// first twenty characters. A space, a hyphen or a lowercase letter ends the
+// run, so text as it is ordinarily written is not affected.
+//
+// Its name is "aws-access-key-id".
+func AWSAccessKeyID() Pattern { return awsAccessKeyID }
+
+// The prefix is what anchors these, with no boundary on either side of the
+// match. A word boundary in front would drop the whole match rather than trim
+// it wherever a key is written against a word character, as
+// AWS_ACCESS_KEY_ID_AKIA... is, and one behind it would drop a key followed by
+// an uppercase letter or a digit. What may stand either side is held back by
+// the character classes alone.
+//
+// Unlike the GitHub scan beside it, this one counts the characters after the
+// prefix rather than running out their alphabet. What that rests on is worth
+// separating into what AWS states and what it only shows, because the two do
+// not agree and the second is the one being relied on.
+//
+// What AWS states, in the only place it states a length at all, is the
+// AccessKeyId field of the IAM and STS API references: sixteen to a hundred
+// and twenty-eight characters matching [\w]+. That is the filter the API puts
+// on what a caller may send, not a description of what the service issues —
+// it admits lowercase and the underscore, which no key AWS has published
+// carries, so a scan reading it as the format would have to widen its alphabet
+// to match and would then fire on any sixteen word characters. It is not read
+// as the format here.
+//
+// What AWS shows is twenty characters, without exception, in every access key
+// ID in its documentation — AKIAIOSFODNN7EXAMPLE and AKIAI44QH8DHBEXAMPLE on
+// the GetAccessKeyInfo page among them — and twenty-one in every unique
+// identifier beside them. Twenty is therefore an observation of the examples
+// rather than a documented format, and the count below is only as good as that
+// observation. The wager is bounded and stated: were AWS to issue a key longer
+// than twenty, the characters past the twentieth would be left in the output.
+// Against that stands what a floor would cost, which the ASIA paragraph below
+// is about, and which bites on text that exists today rather than on text that
+// might.
+//
+// So the sixteen behind the prefix are a count and not a floor, and a longer
+// run of the alphabet is not one longer key but a key with something written
+// after it. Only the key is redacted, and the cost of that is stated rather
+// than passed over: AKIA0123456789ABCDEFGHIJ leaves GHIJ in the output. Those
+// four characters are part of no credential if the twenty in front of them are
+// a key, and the alternatives are worse in the direction that matters. Asking
+// for a boundary there would leave that key in the output whole; running the
+// alphabet out instead would redact every character of the run, which is what
+// makes the ASIA below cost a reader a whole word rather than twenty
+// characters of one.
+//
+// The alphabet is the uppercase letters and the ten digits, which is every
+// character AWS has shown in a key. It is wider than what the keys are thought
+// to be built from: the characters of a real key are reported to come from the
+// base32 alphabet ABCDEFGHIJKLMNOPQRSTUVWXYZ234567, which holds no 0, 1, 8 or
+// 9. That report is other people's reading of issued keys, not something AWS
+// documents, so it is not what the scan turns on — a scan keyed on it would
+// leave a whole key in the output the day one of those four digits appears in
+// one, on the strength of a claim AWS never made. Admitting the ten widens
+// what is located by nothing a reader can read: what reaches a span either way
+// is twenty uppercase characters and digits opening with AKIA or ASIA.
+//
+// What this pattern over-matches on, which the gate in CLAUDE.md asks to be
+// weighed rather than assumed: ASIA is an English word, and AKIA is not. So an
+// unbroken run of twenty uppercase letters and digits that opens with those
+// four is redacted whether or not it is a credential: written in capitals and
+// unbroken, ASIA PACIFIC SOUTHEAST is exactly twenty characters and is
+// redacted whole, and ASIAN ELEPHANT CONSERVATION is longer, so its first
+// twenty go and ATION stays. What reaches a span is never prose as a reader
+// writes it — a space, a hyphen or a lowercase letter ends the run, so the
+// text has to be twenty characters of unbroken capitals before the question
+// arises — but it can be a word, which the git SHA and the MD5 the gate names
+// cannot. The tables in builtin_aws_access_key_id_test.go and the corpus
+// beside it pin that behaviour so it cannot move unnoticed.
+//
+// It is admitted because the ways out are worse for a library whose job is to
+// redact. Asking the body for at least one digit would tell these apart, and
+// would also drop every real key whose sixteen characters happen to be all
+// letters — a share of them large enough to matter under any reading of how a
+// key is generated, and not one this file is in a position to put a number on,
+// since AWS documents neither the alphabet nor how the characters are drawn.
+// Asking for a boundary behind the match would drop ASIANELEPHANTCONSERVATION
+// and leave ASIAPACIFICSOUTHEAST, which is twenty characters exactly, so it
+// buys part of the case at the price of every key written against a capital.
+//
+// referenceAWSAccessKeyID in builtin_aws_access_key_id_test.go keeps the
+// grammar as a regular expression, spelling the prefixes and the count again so
+// that the two are changed together, and the fuzz target beside it holds this
+// scan to that expression.
+var awsAccessKeyID = NewPattern("aws-access-key-id", func(src string) []Span {
+	var spans []Span
+
+	for offset := 0; offset < len(src); {
+		i := strings.IndexByte(src[offset:], awsAccessKeyIDFirstByte)
+		if i < 0 {
+			break
+		}
+		start := offset + i
+
+		// The scan resumes here whether this candidate became a key or not.
+		// The two prefixes overlap one another: ASIAKIA0123456789ABCDEF holds
+		// an AKIA three characters into an ASIA candidate, so a key can begin
+		// inside the span of the key before it, and consuming a match would
+		// step over that key and leave it in the output whole. The two spans
+		// then overlap, which a Masker resolves into one.
+		offset = start + 1
+
+		if end := start + awsAccessKeyIDChars; end <= len(src) && isAWSAccessKeyID(src[start:end]) {
+			spans = append(spans, Span{Start: start, End: end})
+		}
+	}
+	return spans
+})
+
+// awsAccessKeyIDPrefixes are the two prefixes AWS documents for an access key
+// ID: AKIA for a long-term key and ASIA for temporary credentials from AWS STS.
+//
+// Both are awsAccessKeyIDPrefixChars characters and both open with
+// awsAccessKeyIDFirstByte, which is what the scan searches the input for. A
+// prefix added here that did neither would be a prefix the scan never reaches
+// or never finishes reading, so Test_awsAccessKeyIDPrefixes holds every entry
+// to both.
+var awsAccessKeyIDPrefixes = [...]string{"AKIA", "ASIA"}
+
+const (
+	// awsAccessKeyIDFirstByte is the byte every prefix opens with, and the
+	// one candidate positions are found by.
+	awsAccessKeyIDFirstByte = 'A'
+
+	// The counts an access key ID is written to. Every one AWS shows is
+	// twenty characters, and AWS states no length of its own, so unlike the
+	// GitHub bodies these are exact rather than the shortest seen — on an
+	// observation rather than a specification, which the rationale above
+	// weighs.
+	awsAccessKeyIDPrefixChars = 4
+	awsAccessKeyIDBodyChars   = 16
+	awsAccessKeyIDChars       = awsAccessKeyIDPrefixChars + awsAccessKeyIDBodyChars
+)
+
+// isAWSAccessKeyID reports whether s is an access key ID: exactly
+// awsAccessKeyIDChars characters, one of the documented prefixes, and the rest
+// of them in the alphabet a body is written in.
+//
+// It is handed the candidate whole rather than the body alone so that the count
+// is checked here and not left to the caller to have cut correctly.
+func isAWSAccessKeyID(s string) bool {
+	if len(s) != awsAccessKeyIDChars || !opensAWSAccessKeyID(s) {
+		return false
+	}
+	for i := awsAccessKeyIDPrefixChars; i < len(s); i++ {
+		if !isAWSAccessKeyIDByte(s[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// opensAWSAccessKeyID reports whether s opens with one of the documented
+// prefixes.
+func opensAWSAccessKeyID(s string) bool {
+	for _, prefix := range awsAccessKeyIDPrefixes {
+		if strings.HasPrefix(s, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// isAWSAccessKeyIDByte reports whether c belongs to the alphabet the characters
+// behind the prefix are written in: the uppercase letters and the digits, which
+// is every character AWS has shown in a key. Lowercase is not admitted — no key
+// AWS has published carries one, and admitting it would turn every word of
+// twenty characters opening with akia into a candidate.
+func isAWSAccessKeyIDByte(c byte) bool {
+	return '0' <= c && c <= '9' || 'A' <= c && c <= 'Z'
+}

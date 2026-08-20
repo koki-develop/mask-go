@@ -2,7 +2,8 @@
 # AllBuiltinPatterns hands out.
 #
 # A value one pattern locates whole can be one another locates in part — a
-# stateless installation token carries a JWT — so what matters here is that the
+# stateless installation token carries a JWT, and an access key ID can be
+# written inside either without ending it — so what matters here is that the
 # patterns do not take pieces out of each other's values, and that a line
 # holding several kinds of credential loses all of them. The block that closes
 # this file is where the second of those stops holding, and says why.
@@ -34,24 +35,24 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token» «github-token» «jwt»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
 out:  «github-token»
 
-case: neither pattern finds anything in a log line
+case: no pattern finds anything in a log line
 in:   time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user
 out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user
 
-case: neither pattern finds anything in prose
+case: no pattern finds anything in prose
 in:   there is no credential in this sentence
 out:  there is no credential in this sentence
 
 # Where one kind of credential is written inside another, and where one ends
-# exactly where the other begins. Neither pattern may take a piece out of the
-# other's value, and neither may leave a piece of its own behind.
+# exactly where the other begins. No pattern may take a piece out of another's
+# value, and none may leave a piece of its own behind.
 
 case: a jwt whose payload decodes to a personal access token
 in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMiLCJ0b2tlbiI6ImdocF8wMTIzNDU2Nzg5YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoifQ.0123456789abcdef
@@ -109,12 +110,48 @@ case: a token and a jwt with a single dot between them
 in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  «github-token».«jwt»
 
-# Where the two patterns disagree about a stateless installation token. The
-# GitHub pattern asks for an app id, a single underscore, and a JWT whose every
-# segment holds at least one character; the JWT pattern asks a token only for
-# its segments, empty or not. So a stateless token the first declines can still
-# be a JWT to the second, and what is then left in the text is the ghs_ and the
-# app id, which authenticate nothing on their own.
+# An access key ID inside a value of another kind. The alphabet a key is
+# written in — uppercase letters and digits — is inside the alphabet of a
+# GitHub token body and inside base64url, so a key can be written into either
+# without ending it, and the AWS pattern locates it there whether or not the
+# characters around it are a credential of their own. Where they are, the two
+# spans overlap and are redacted as one; the surrounding value is what starts
+# earliest, so that is what the redaction is attributed to.
+
+case: an access key id inside a classic token body
+in:   ghp_AKIA0123456789ABCDEF0123456789abcdef
+out:  «github-token»
+
+case: an access key id inside the app id of a stateless installation token
+in:   ghs_AKIA0123456789ABCDEF_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «github-token»
+
+case: an access key id inside the signature of a jwt
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.AKIA0123456789ABCDEF
+out:  «jwt»
+
+case: an access key id directly after a jwt
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdefAKIA0123456789ABCDEF
+out:  «jwt»
+
+case: an access key id directly after a classic token
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzAKIA0123456789ABCDEF
+out:  «github-token»
+
+case: an access key id and a jwt with a single dot between them
+in:   AKIA0123456789ABCDEF.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «aws-access-key-id».«jwt»
+
+case: an access key id in an environment file beside a github token
+in:   AWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  AWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+
+# Where the GitHub and JWT patterns disagree about a stateless installation
+# token. The GitHub pattern asks for an app id, a single underscore, and a JWT
+# whose every segment holds at least one character; the JWT pattern asks a
+# token only for its segments, empty or not. So a stateless token the first
+# declines can still be a JWT to the second, and what is then left in the text
+# is the ghs_ and the app id, which authenticate nothing on their own.
 
 case: a stateless installation token whose jwt has an empty signature
 in:   ghs_123456_eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.
@@ -132,10 +169,12 @@ case: a stateless installation token carrying an encrypted jwt
 in:   ghs_123456_eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.0123456789abcdef.0123456789.0123456789abcdef.0123456789abcdef
 out:  «github-token»
 
-# And the shapes neither pattern takes anything from. Each pattern states its
-# own reason for declining both of them, in the files beside this one; what
-# only the two patterns together show is what is left in the text when neither
-# steps in, and that is not the same for the three shapes.
+# And the shapes no pattern takes anything from. Each of the three shapes below
+# is a GitHub credential the GitHub and JWT patterns each decline for a reason
+# of their own, stated in the files beside this one, and that the AWS pattern
+# has nothing to say about at all; what only the patterns together show is what
+# is left in the text when none of them steps in, and that is not the same for
+# the three.
 #
 # The first is harmless. A stateless token cut before its second dot carries no
 # signature, which the GitHub pattern declines it for and which leaves the JWT

@@ -1,0 +1,180 @@
+# What AWS credentials the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789ABCDEF, which no real
+# credential is. That run is sixteen characters and so is a whole key body, and
+# it carries 0, 1, 8 and 9 — the four digits missing from the base32 alphabet
+# issued keys are reported to be drawn from. So every key below is one this
+# library locates and, if that report is right, no generator would produce.
+# That is the pattern's alphabet decision written into the data: it admits
+# every character AWS has shown in a key rather than the narrower set other
+# people have read off issued ones.
+
+patterns: aws-access-key-id
+
+# The two prefixes AWS documents for an access key ID. AKIA belongs to an IAM
+# user or to the account root user and does not expire; ASIA is issued by AWS
+# STS along with a session token and does. Each is stated once rather than being
+# assumed to follow from the other.
+
+case: a long term access key id in an environment assignment
+in:   AWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF
+out:  AWS_ACCESS_KEY_ID=«aws-access-key-id»
+
+case: a temporary access key id from sts
+in:   ASIA0123456789ABCDEF
+out:  «aws-access-key-id»
+
+case: an access key id in a shared credentials file
+in:   [default]\naws_access_key_id = AKIA0123456789ABCDEF
+out:  [default]\naws_access_key_id = «aws-access-key-id»
+
+case: an access key id in the json sts writes
+in:   {"AccessKeyId":"ASIA0123456789ABCDEF","Expiration":"2026-08-17T00:00:00Z"}
+out:  {"AccessKeyId":"«aws-access-key-id»","Expiration":"2026-08-17T00:00:00Z"}
+
+case: an access key id on a command line
+in:   aws sts get-access-key-info --access-key-id AKIA0123456789ABCDEF
+out:  aws sts get-access-key-info --access-key-id «aws-access-key-id»
+
+# The lengths either side of twenty. AWS states no length for an access key ID
+# anywhere the pattern's author could find; what it states is the AccessKeyId
+# field of the IAM and STS APIs, sixteen to a hundred and twenty-eight
+# characters — and the pattern's own file says why that is read as the API's
+# input filter rather than as the format. Twenty is what every access key ID in
+# AWS's documentation is. Unlike the GitHub bodies, which are the shortest
+# seen and so a floor, it is used here as a count: nineteen characters are not
+# a key, and twenty-four are a key and four
+# characters that belong to no credential. The second of those is the price of
+# having no boundary behind the match, and the case below is where it is
+# written down — a boundary there would drop this key rather than trim it, and
+# a real key written against an uppercase letter would come through whole.
+
+case: a body of sixteen characters is a key
+in:   AKIA0123456789ABCDEF
+out:  «aws-access-key-id»
+
+case: a body of fifteen characters is not
+in:   AKIA0123456789ABCDE
+out:  AKIA0123456789ABCDE
+
+case: an alphabet run longer than a key is a key and what follows it
+in:   AKIA0123456789ABCDEFGHIJ
+out:  «aws-access-key-id»GHIJ
+
+# What a key may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a key keeps its span whatever
+# word character it abuts.
+
+case: an access key id after an underscore
+in:   AWS_ACCESS_KEY_ID_AKIA0123456789ABCDEF
+out:  AWS_ACCESS_KEY_ID_«aws-access-key-id»
+
+case: an access key id after a letter
+in:   xAKIA0123456789ABCDEF
+out:  x«aws-access-key-id»
+
+case: an access key id before an underscore
+in:   AKIA0123456789ABCDEF_x
+out:  «aws-access-key-id»_x
+
+# Two keys written together. The A that closes ASIA is the A that opens AKIA
+# three characters along, so a key can begin inside the span of the one before
+# it; the two spans overlap and are redacted as one. Written without that
+# overlap the two are separate values, and both go.
+
+case: a key beginning inside the key before it
+in:   ASIAKIA0123456789ABCDEF
+out:  «aws-access-key-id»
+
+case: two keys with nothing between them
+in:   AKIA0123456789ABCDEFASIA0123456789ABCDEF
+out:  «aws-access-key-id»«aws-access-key-id»
+
+# Punctuation ends a key, so nothing written after one joins it.
+
+case: an access key id before a host name
+in:   host=AKIA0123456789ABCDEF.example.com
+out:  host=«aws-access-key-id».example.com
+
+case: an access key id at the end of a sentence
+in:   the key is AKIA0123456789ABCDEF.
+out:  the key is «aws-access-key-id».
+
+# What this pattern redacts that is not a credential. ASIA is an English word
+# where AKIA is not, so an unbroken run of twenty uppercase letters and digits
+# that opens with it is redacted whether or not anyone issued it. A space, a
+# hyphen or a lowercase letter ends the run, so prose as it is ordinarily
+# written is out of reach — the two cases below have to be written in unbroken
+# capitals to fall this way, and the third is the same text with the spaces
+# left in. The pattern's own file says why this is admitted rather than
+# narrowed; these are the cases that keep the sentence honest.
+
+case: a word of twenty capitals opening with the temporary prefix
+in:   ASIAPACIFICSOUTHEAST
+out:  «aws-access-key-id»
+
+case: a longer word of capitals loses the twenty a key would be
+in:   ASIANELEPHANTCONSERVATION
+out:  «aws-access-key-id»ATION
+
+case: the same words with the spaces a reader would write
+in:   ASIA PACIFIC SOUTHEAST and ASIAN ELEPHANT CONSERVATION
+out:  ASIA PACIFIC SOUTHEAST and ASIAN ELEPHANT CONSERVATION
+
+# And what this pattern leaves alone.
+#
+# The first three are the alphabet and the count. The rest are prefixes: IAM
+# documents twelve, and the two above are the only two that name an access key
+# ID. AIDA, AROA, AGPA, AIPA, ANPA, ANVA, APKA and ASCA are unique identifiers
+# for a user, a role, a group, an instance profile, a policy, a policy version,
+# a public key and a certificate: written into policy documents and CloudTrail
+# records so that a reader can match one up, and authenticating nothing. Every
+# one AWS shows is twenty-one characters rather than twenty, but AWS states no
+# length for them either, so it is the prefix and not the count that keeps them
+# out. ABIA and ACCA are credentials, a service bearer token and a
+# context-specific credential, but AWS documents no shape for either beyond the
+# prefix. AROA and ABIA stand for those two groups here.
+
+case: a body one character too short
+in:   AKIA0123456789ABCDE
+out:  AKIA0123456789ABCDE
+
+case: a lowercase body
+in:   AKIA0123456789abcdef
+out:  AKIA0123456789abcdef
+
+case: a hyphen where the body would be
+in:   AKIA-123456789ABCDEF
+out:  AKIA-123456789ABCDEF
+
+case: twenty uppercase characters that open with no prefix
+in:   ABCDEFGHIJKLMNOPQRST
+out:  ABCDEFGHIJKLMNOPQRST
+
+case: a unique identifier for a role is not an access key id
+in:   AROA0123456789ABCDEFG
+out:  AROA0123456789ABCDEFG
+
+case: a service bearer token has no documented shape
+in:   ABIA0123456789ABCDEF
+out:  ABIA0123456789ABCDEF
+
+case: prose in capitals
+in:   THERE IS NO CREDENTIAL IN THIS SENTENCE
+out:  THERE IS NO CREDENTIAL IN THIS SENTENCE
+
+# And the half of an AWS access key this library cannot reach. The secret
+# access key is forty characters of base64 with no prefix and no length that
+# tells it from any other forty, so nothing in the value says what it is and
+# only the name written in front of it does, which no pattern here reads. It
+# comes through whole on its own, and it comes through whole beside the key ID
+# it belongs to — the case below is the pair as a credentials file holds it,
+# and what is left in the text after masking is the secret and the name.
+
+case: a secret access key on its own
+in:   aws_secret_access_key = 0123456789abcdef0123456789abcdef01234567
+out:  aws_secret_access_key = 0123456789abcdef0123456789abcdef01234567
+
+case: a secret access key beside the key id it belongs to
+in:   [default]\naws_access_key_id = AKIA0123456789ABCDEF\naws_secret_access_key = 0123456789abcdef0123456789abcdef01234567
+out:  [default]\naws_access_key_id = «aws-access-key-id»\naws_secret_access_key = 0123456789abcdef0123456789abcdef01234567

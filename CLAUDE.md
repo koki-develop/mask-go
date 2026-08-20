@@ -49,8 +49,9 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   it in the same run (`conformance/CLAUDE.md`).
 - `go test -fuzz FuzzJWT_matchesReference .` — fuzzing. Targets in the root
   package: `FuzzMasker_locate`, `FuzzMasker_Mask`, `FuzzJWT_matchesReference`,
-  `FuzzGitHubToken_matchesReference`. In `conformance`: `FuzzMask`,
-  `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30 seconds.
+  `FuzzGitHubToken_matchesReference` and `FuzzAWSAccessKeyID_matchesReference`.
+  In `conformance`: `FuzzMask`, `FuzzMask_customPatterns`, `FuzzText`. CI gives
+  each of them 30 seconds.
 - `go test -bench . -benchmem` — benchmarks.
 - `golangci-lint run` — lint (no config file; defaults).
 - `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
@@ -93,14 +94,19 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   by case in the pattern's own `builtin_<name>_test.go`. Inputs crafted against
   what one scan remembers stay with that scan too, as `Test_JWT_scanIsLinear`
   does.
-- Both built-in scanners are checked against a reference kept beside them:
-  `referenceJWTFind` (`builtin_jwt_test.go`) and `referenceGitHubTokenFind`
-  (`builtin_github_token_test.go`), plain implementations of the same rules.
-  The second tries `referenceGitHubToken`, the regular expression the GitHub
-  token scan reads by hand, at every byte rather than handing it to
+- Every built-in scanner is checked against a reference kept beside it:
+  `referenceJWTFind` (`builtin_jwt_test.go`), `referenceGitHubTokenFind`
+  (`builtin_github_token_test.go`) and `referenceAWSAccessKeyIDFind`
+  (`builtin_aws_access_key_id_test.go`), plain implementations of the same
+  rules. The second tries `referenceGitHubToken`, the regular expression the
+  GitHub token scan reads by hand, at every byte rather than handing it to
   `FindAllStringIndex`: a value either scan locates can hold the start of the
   next one, so a reference that resumed past a match would miss what the scan
-  finds. Change scanner and reference together, and keep the corpus in
+  finds. The third does the same for the same reason, an access key ID being
+  able to begin three characters into the one before it. A reference spells the
+  prefixes and counts its scan reads out again rather than sharing the
+  declarations, so that the two can disagree and the fuzz target report it.
+  Change scanner and reference together, and keep the corpus in
   `testdata/fuzz/`. The targets share their body through
   `fuzzAgainstReference` (`fuzz_test.go`) but keep a name apiece, because the
   corpus is keyed on the name of the target — so never rename a target without
@@ -114,18 +120,23 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   scanner rationale in each `builtin_<name>.go` is load-bearing, so update it
   rather than dropping it.
 - `Pattern` and `Redactor` implementations must be safe for concurrent use.
-- Both built-in scans resume one byte past the start of a candidate whether it
-  became a value or not. A body and a signature are read as far as their
-  alphabet runs, so either swallows the opening of a credential written
-  straight after it, and consuming a match would step over that credential and
-  leave it in the output whole. The cost is that a value nested in another —
-  a JWT payload that is itself a header — is located too; the spans overlap and
-  `Masker.locate` resolves them.
-- `Masker.locate` and both built-in scanners are deliberately linear-time and
+- Every built-in scan resumes one byte past the start of a candidate whether it
+  became a value or not, because in each of them a value can begin inside the
+  one before it. A GitHub body and a JWT signature are read as far as their
+  alphabet runs, so either swallows the opening of a credential written straight
+  after it; an AWS access key ID has a documented length and swallows nothing,
+  but its two prefixes overlap one another — the `A` closing `ASIA` opens the
+  `AKIA` three characters along. Consuming a match would step over such a
+  value and leave it in the output whole. The cost is that a value nested in
+  another — a JWT payload that is itself a header — is located too; the spans
+  overlap and `Masker.locate` resolves them.
+- `Masker.locate` and every built-in scanner are deliberately linear-time and
   allocation-conscious. Resuming one byte along means a run can hold a
-  candidate for every character it has, and the cursors the scans keep over a
-  run — of base64url characters, and of the alphabet a fine grained token body
-  is written in — are what rule out quadratic inputs. Compare benchmarks before
-  and after touching them.
+  candidate for every character it has, and the cursors the JWT and GitHub scans
+  keep over a run — of base64url characters, and of the alphabet a fine grained
+  token body is written in — are what rule out quadratic inputs there. The
+  AWS scan keeps no cursor and needs none: a documented length means a candidate
+  reads a bounded number of bytes and stops, which is the same guarantee bought
+  without state. Compare benchmarks before and after touching any of them.
 - Published library: any change to an exported name, signature or behaviour is
   breaking. Keep `README.md` in sync with the exported API.

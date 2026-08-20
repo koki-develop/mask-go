@@ -23,6 +23,13 @@ func ExampleAllBuiltinPatterns() {
 	// Output: token=**************************************** jwt=************************************************************************
 }
 
+func ExampleAWSAccessKeyID() {
+	m := mask.New(mask.WithPatterns(mask.AWSAccessKeyID()))
+
+	fmt.Println(m.Mask("AWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF"))
+	// Output: AWS_ACCESS_KEY_ID=********************
+}
+
 func ExampleGitHubToken() {
 	m := mask.New(mask.WithPatterns(mask.GitHubToken()))
 

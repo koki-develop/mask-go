@@ -24,6 +24,7 @@ returns every pattern in the table below, and grows as patterns are added:
 
 | Pattern | Locates |
 | --- | --- |
+| `AWSAccessKeyID()` | `AKIA…`, `ASIA…` |
 | `GitHubToken()` | `ghp_…`, `gho_…`, `ghu_…`, `ghs_…`, `ghr_…`, `github_pat_…` |
 | `JWT()` | JSON Web Tokens |
 

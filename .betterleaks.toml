@@ -4,6 +4,12 @@
 # is, so those alone are allowed. A credential written any other way is still
 # reported, in a test as anywhere else.
 #
+# The run is allowed in either case, because the case is the credential's to
+# choose: an AWS access key ID is written in uppercase and digits alone, so a
+# value of that kind built from the run carries 0123456789ABCDEF and could not
+# carry the other. Both spellings are the same sixteen ordered characters, and
+# a value built from neither is reported as before.
+#
 # The conformance corpus carries them too. It is a test in every sense but the
 # file extension — the cases under conformance/testdata are what the package
 # beside them is driven with — so the same rule covers it, and covers nothing
@@ -17,7 +23,7 @@ description = "credentials made of ordered characters, written into a test"
 condition = "AND"
 paths = ['''_test\.go$''', '''conformance/testdata/[^/]+\.txt$''']
 regexTarget = "secret"
-regexes = ['''0123456789abcdef''']
+regexes = ['''0123456789abcdef''', '''0123456789ABCDEF''']
 
 # A fuzz corpus is the one place the ordered run cannot be asked for. What is
 # under testdata/fuzz is written by the fuzzer, not by anyone: an input that

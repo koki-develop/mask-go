@@ -28,6 +28,10 @@ case: a file of environment variables
 in:   HOME=/root\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz\nPATH=/usr/bin
 out:  HOME=/root\nGITHUB_TOKEN=«github-token»\nPATH=/usr/bin
 
+case: a shared credentials file
+in:   [default]\naws_access_key_id = AKIA0123456789ABCDEF\nregion = us-east-1
+out:  [default]\naws_access_key_id = «aws-access-key-id»\nregion = us-east-1
+
 case: several credentials over several lines
 in:   github: ghp_0123456789abcdefghijklmnopqrstuvwxyz\njwt: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\nnothing: here
 out:  github: «github-token»\njwt: «jwt»\nnothing: here
@@ -91,10 +95,6 @@ out:  request_id=0123456789ab-cdef-0123-4567-89abcdef0123
 case: a hexadecimal digest
 in:   sha256=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:  sha256=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-
-case: an aws access key id is not one of the kinds this library knows
-in:   AWS_ACCESS_KEY_ID=AKIA0123456789abcdef
-out:  AWS_ACCESS_KEY_ID=AKIA0123456789abcdef
 
 case: a slack token is not one of the kinds this library knows
 in:   SLACK_TOKEN=xoxb-0123456789abcdef-0123456789abcdef
@@ -162,6 +162,14 @@ out:  アクセストークンは «jwt» です
 case: a comment in source code
 in:   // TODO: stop hard coding ghp_0123456789abcdefghijklmnopqrstuvwxyz here
 out:  // TODO: stop hard coding «github-token» here
+
+case: a line of a ci job log
+in:   $ aws sts assume-role --role-arn arn:aws:iam::012345678901:role/deploy\n{"AccessKeyId":"ASIA0123456789ABCDEF"}
+out:  $ aws sts assume-role --role-arn arn:aws:iam::012345678901:role/deploy\n{"AccessKeyId":"«aws-access-key-id»"}
+
+case: an aws secret access key is not one of the kinds this library knows
+in:   AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567
+out:  AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567
 
 case: an openai api key is not one of the kinds this library knows
 in:   OPENAI_API_KEY=sk-0123456789abcdef0123456789abcdef0123456789abcdef

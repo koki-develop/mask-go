@@ -39,9 +39,11 @@ out:  GITHUB_TOKEN=«github-token»
 - `in` may not hold `«` or `»`. Escapes are `\n`, `\r`, `\t`, `\\` and `\xNN`; a
   field is read with the space around it trimmed, so whitespace at either end
   has to be escaped.
-- Credentials are built from the ordered run `0123456789abcdef`. The betterleaks
-  allowlist covers `conformance/testdata/*.txt` on that condition alone, so a
-  value written any other way fails the secret scan.
+- Credentials are built from the ordered run `0123456789abcdef`, in the case
+  the kind of credential is written in: `0123456789ABCDEF` where its alphabet
+  is uppercase, as an AWS access key ID's is. The betterleaks allowlist covers
+  `conformance/testdata/*.txt` on that condition alone, so a value written any
+  other way fails the secret scan.
 
 ## What a comment may say
 
@@ -65,7 +67,8 @@ to move with it: no `out` can contradict a name.
 
 ## Where a case goes
 
-`builtin_github_token.txt` and `builtin_jwt.txt` (one pattern each),
+`builtin_aws_access_key_id.txt`, `builtin_github_token.txt` and
+`builtin_jwt.txt` (one pattern each),
 `builtins_together.txt` (all of them at once, and the values two of them read
 differently), `custom_patterns.txt` (`MustRegexp`, `NewPattern`, and no pattern
 at all), `overlap_and_attribution.txt`
