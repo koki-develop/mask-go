@@ -66,6 +66,7 @@ var patternSets = map[string][]mask.Pattern{
 	"aws-access-key-id": {mask.AWSAccessKeyID()},
 	"github-token":      {mask.GitHubToken()},
 	"jwt":               {mask.JWT()},
+	"slack-token":       {mask.SlackToken()},
 
 	// No pattern at all: a Masker given none redacts nothing.
 	"none": {},

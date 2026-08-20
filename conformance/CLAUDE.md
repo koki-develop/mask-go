@@ -67,8 +67,8 @@ to move with it: no `out` can contradict a name.
 
 ## Where a case goes
 
-`builtin_aws_access_key_id.txt`, `builtin_github_token.txt` and
-`builtin_jwt.txt` (one pattern each),
+`builtin_aws_access_key_id.txt`, `builtin_github_token.txt`,
+`builtin_jwt.txt` and `builtin_slack_token.txt` (one pattern each),
 `builtins_together.txt` (all of them at once, and the values two of them read
 differently), `custom_patterns.txt` (`MustRegexp`, `NewPattern`, and no pattern
 at all), `overlap_and_attribution.txt`

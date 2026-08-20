@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -145,6 +145,39 @@ out:  «aws-access-key-id».«jwt»
 case: an access key id in an environment file beside a github token
 in:   AWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 out:  AWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+
+# A Slack token beside the other kinds, and inside them. A Slack body is read
+# as letters, digits and the hyphen its parts are joined with, so an access key
+# ID can be written into one without ending it and is located there as well;
+# the two values overlap and are redacted as one, attributed to what starts
+# earliest. The underscore and the dot end a Slack body instead, which is what
+# keeps a GitHub token and a JWT written after a prefix out of it — and leaves
+# the prefix and the identifier in front of them in the text, which authenticate
+# nothing on their own.
+
+case: a slack token beside a github token and a jwt
+in:   slack=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  slack=«slack-token» github=«github-token» jwt=«jwt»
+
+case: an access key id inside a slack token body
+in:   xoxb-0123456789ab-AKIA0123456789ABCDEF
+out:  «slack-token»
+
+case: an access key id directly after a slack token
+in:   xoxb-0123456789ab-0123456789abcdefghijklmnAKIA0123456789ABCDEF
+out:  «slack-token»
+
+case: a github token after a slack prefix, which the underscore keeps apart
+in:   xoxb-0123456789ab_ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  xoxb-0123456789ab_«github-token»
+
+case: a jwt directly after a slack token, which the dot keeps apart
+in:   xoxb-0123456789ab-0123456789abcdefgh.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «slack-token».«jwt»
+
+case: an environment file holding one of each
+in:   SLACK_BOT_TOKEN=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  SLACK_BOT_TOKEN=«slack-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # Where the GitHub and JWT patterns disagree about a stateless installation
 # token. The GitHub pattern asks for an app id, a single underscore, and a JWT

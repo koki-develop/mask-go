@@ -27,6 +27,7 @@ returns every pattern in the table below, and grows as patterns are added:
 | `AWSAccessKeyID()` | `AKIA…`, `ASIA…` |
 | `GitHubToken()` | `ghp_…`, `gho_…`, `ghu_…`, `ghs_…`, `ghr_…`, `github_pat_…` |
 | `JWT()` | JSON Web Tokens |
+| `SlackToken()` | `xoxb-…`, `xoxp-…`, `xapp-…`, `xwfp-…`, `xoxe-…`, `xoxe.xoxb-…`, `xoxe.xoxp-…` |
 
 `MustRegexp` builds a pattern from a regular expression:
 

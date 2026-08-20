@@ -60,6 +60,20 @@ var builtinPatterns = []struct {
 			"eyIwIjoxLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 		},
 	},
+	{
+		name:    "slack-token",
+		pattern: SlackToken,
+		ref:     referenceSlackTokenFind,
+		samples: []string{
+			"SLACK_BOT_TOKEN=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn",
+			"xoxp-0123456789ab-0123456789abc-0123456789abcd-0123456789abcdef0123456789abcdef",
+			"xapp-1-A0123456789-0123456789abc-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"xwfp-0123456789ab-0123456789abcdefghijklmn",
+			"xoxe-1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"xoxe.xoxb-1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"xoxb-xoxb-xoxb-xoxb-0123456789abcdefghijklmn",
+		},
+	},
 }
 
 // noValueInputs is text no built-in pattern has anything to find in: ordinary

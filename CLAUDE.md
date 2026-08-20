@@ -49,7 +49,8 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   it in the same run (`conformance/CLAUDE.md`).
 - `go test -fuzz FuzzJWT_matchesReference .` — fuzzing. Targets in the root
   package: `FuzzMasker_locate`, `FuzzMasker_Mask`, `FuzzJWT_matchesReference`,
-  `FuzzGitHubToken_matchesReference` and `FuzzAWSAccessKeyID_matchesReference`.
+  `FuzzGitHubToken_matchesReference`, `FuzzAWSAccessKeyID_matchesReference` and
+  `FuzzSlackToken_matchesReference`.
   In `conformance`: `FuzzMask`, `FuzzMask_customPatterns`, `FuzzText`. CI gives
   each of them 30 seconds.
 - `go test -bench . -benchmem` — benchmarks.
@@ -107,16 +108,21 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   does.
 - Every built-in scanner is checked against a reference kept beside it:
   `referenceJWTFind` (`builtin_jwt_test.go`), `referenceGitHubTokenFind`
-  (`builtin_github_token_test.go`) and `referenceAWSAccessKeyIDFind`
-  (`builtin_aws_access_key_id_test.go`), plain implementations of the same
+  (`builtin_github_token_test.go`), `referenceAWSAccessKeyIDFind`
+  (`builtin_aws_access_key_id_test.go`) and `referenceSlackTokenFind`
+  (`builtin_slack_token_test.go`), plain implementations of the same
   rules. The second tries `referenceGitHubToken`, the regular expression the
   GitHub token scan reads by hand, at every byte rather than handing it to
   `FindAllStringIndex`: a value either scan locates can hold the start of the
   next one, so a reference that resumed past a match would miss what the scan
   finds. The third does the same for the same reason, an access key ID being
-  able to begin three characters into the one before it. A reference spells the
-  prefixes and counts its scan reads out again rather than sharing the
-  declarations, so that the two can disagree and the fuzz target report it.
+  able to begin three characters into the one before it. The first and the
+  fourth are written out rather than built on a regular expression, because
+  what they read of a candidate — a decoded JOSE header, a run divided into
+  segments — is not what an expression states compactly. A reference spells the
+  prefixes, the counts and the character classes its scan reads out again rather
+  than sharing the declarations, so that the two can disagree and the fuzz
+  target report it.
   Change scanner and reference together, and keep the corpus in
   `testdata/fuzz/`. The targets share their body through
   `fuzzAgainstReference` (`fuzz_test.go`) but keep a name apiece, because the

@@ -1,0 +1,272 @@
+# What Slack credentials the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is, cut into the parts a Slack token is written in: identifiers of
+# twelve and thirteen characters, and a secret of twenty-four, of thirty-two or
+# of sixty-four, which are the lengths Slack's own examples carry.
+#
+# Slack publishes the prefix of each kind of token and nothing else — no length,
+# no alphabet, no count of the parts. So the shape below is read off the tokens
+# Slack shows rather than off a format Slack states, and the pattern's own file
+# says what that rests on.
+
+patterns: slack-token
+
+# The kinds of token Slack documents, each stated once rather than assumed to
+# follow from the one above it.
+
+case: a bot token in an environment assignment
+in:   SLACK_BOT_TOKEN=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn
+out:  SLACK_BOT_TOKEN=«slack-token»
+
+case: a user token
+in:   xoxp-0123456789ab-0123456789abc-0123456789abcd-0123456789abcdef0123456789abcdef
+out:  «slack-token»
+
+case: an app-level token
+in:   xapp-1-A0123456789-0123456789abc-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «slack-token»
+
+case: a workflow token
+in:   xwfp-0123456789ab-0123456789abcdefghijklmn
+out:  «slack-token»
+
+case: a refresh token from token rotation
+in:   xoxe-1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «slack-token»
+
+# A rotatable access token is a bot or user token written behind xoxe., and the
+# pattern reads both prefixes: the whole of what Slack writes, and the token
+# inside it. The dot in front of the inner prefix is neither a letter nor a
+# digit, so that prefix opens a token as well. The two values end together and
+# are redacted as one.
+
+case: a rotatable bot access token
+in:   xoxe.xoxb-1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «slack-token»
+
+case: a rotatable user access token
+in:   xoxe.xoxp-1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «slack-token»
+
+# A token as the text around it is ordinarily written.
+
+case: a bot token in the json oauth.v2.access returns
+in:   {"ok":true,"access_token":"xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn","team":{"id":"T0123456789"}}
+out:  {"ok":true,"access_token":"«slack-token»","team":{"id":"T0123456789"}}
+
+case: a bot token in an authorization header
+in:   Authorization: Bearer xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn
+out:  Authorization: Bearer «slack-token»
+
+case: a bot token on a command line
+in:   curl -H "Authorization: Bearer xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn" https://slack.com/api/auth.test
+out:  curl -H "Authorization: Bearer «slack-token»" https://slack.com/api/auth.test
+
+case: a bot token in a log line
+in:   time=2026-08-17T00:00:00Z level=error msg="slack api failed" token=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn
+out:  time=2026-08-17T00:00:00Z level=error msg="slack api failed" token=«slack-token»
+
+# What makes a part of the run a secret. Slack states no length and no alphabet
+# for any part of a token, so what the pattern asks is that some part reach
+# eighteen characters and carry a letter. Eighteen is below every secret Slack
+# or anyone else has published and above what a hyphenated word is; the letter
+# is what separates a secret from an identifier, a timestamp or an id, which
+# Slack writes in digits alone.
+
+case: a secret of eighteen characters is a token
+in:   xoxb-0123456789ab-0123456789abcdefgh
+out:  «slack-token»
+
+case: a secret of seventeen characters is not
+in:   xoxb-0123456789ab-0123456789abcdefg
+out:  xoxb-0123456789ab-0123456789abcdefg
+
+case: eighteen characters with no letter among them is not
+in:   xoxb-0123456789ab-012345678901234567
+out:  xoxb-0123456789ab-012345678901234567
+
+case: one letter among seventeen digits is
+in:   xoxb-0123456789ab-01234567890123456a
+out:  «slack-token»
+
+# What a token may be written against, which is not the same rule on the two
+# sides. In front of a prefix, anything but a letter or a digit: that is
+# narrower than a word boundary, which would drop rather than trim the token in
+# the first case below, and wider than no rule at all, which the block after the
+# clean cases is about. Behind the match there is no boundary, so a token
+# written against a word character keeps its span and takes that character with
+# it.
+
+case: a token after an underscore
+in:   SLACK_BOT_TOKEN_xoxb-0123456789ab-0123456789abcdefghijklmn
+out:  SLACK_BOT_TOKEN_«slack-token»
+
+case: a token after an equals sign
+in:   token=xoxb-0123456789ab-0123456789abcdefghijklmn
+out:  token=«slack-token»
+
+case: a token after a slash
+in:   https://example.com/xoxb-0123456789ab-0123456789abcdefghijklmn
+out:  https://example.com/«slack-token»
+
+case: a prefix after a letter opens nothing
+in:   xxoxb-0123456789ab-0123456789abcdefghijklmn
+out:  xxoxb-0123456789ab-0123456789abcdefghijklmn
+
+case: a prefix after a digit opens nothing
+in:   1xoxb-0123456789ab-0123456789abcdefghijklmn
+out:  1xoxb-0123456789ab-0123456789abcdefghijklmn
+
+case: a token before an underscore
+in:   xoxb-0123456789ab-0123456789abcdefghijklmn_x
+out:  «slack-token»_x
+
+case: a token before letters, which go with it
+in:   xoxb-0123456789ab-0123456789abcdefghijklmnZZZ
+out:  «slack-token»
+
+# Two tokens written together. The alphabet a body is read in holds the letters
+# a prefix is written in, so a token can begin inside the span of the one before
+# it — and the separator in front of the second is neither a letter nor a digit,
+# so it opens one. The two values overlap and are redacted as one.
+
+case: a prefix written inside a body
+in:   xoxb-xoxb-0123456789abcdefghijklmn
+out:  «slack-token»
+
+case: two tokens with a space between them
+in:   xwfp-0123456789ab-0123456789abcdefghijklmn xwfp-0123456789ab-0123456789abcdefghijklmn
+out:  «slack-token» «slack-token»
+
+# Where a body ends. The hyphen is the one punctuation a body admits, because it
+# is what a token's parts are joined with, so it is the one piece of text after
+# a token that is redacted with it. That is the price of asking for a long part
+# anywhere in the run rather than at the end of it: asked at the end, the token
+# in the last case here would not be redacted at all, because of a word written
+# after it.
+
+case: a token before a host name
+in:   host=xoxb-0123456789ab-0123456789abcdefghijklmn.example.com
+out:  host=«slack-token».example.com
+
+case: a token at the end of a sentence
+in:   the token is xoxb-0123456789ab-0123456789abcdefghijklmn.
+out:  the token is «slack-token».
+
+case: a token before a query parameter
+in:   ?token=xoxb-0123456789ab-0123456789abcdefghijklmn&pretty=1
+out:  ?token=«slack-token»&pretty=1
+
+case: a hyphenated word after a token goes with it
+in:   xoxb-0123456789ab-0123456789abcdefghijklmn-backup
+out:  «slack-token»
+
+# And what this pattern leaves alone.
+
+case: a hyphenated identifier under a prefix
+in:   xapp-frontend-integration-tests
+out:  xapp-frontend-integration-tests
+
+case: an unknown prefix letter
+in:   xoxz-0123456789ab-0123456789abcdefghijklmn
+out:  xoxz-0123456789ab-0123456789abcdefghijklmn
+
+case: a prefix without its separator
+in:   xoxb0123456789ab0123456789abcdefghijklmn
+out:  xoxb0123456789ab0123456789abcdefghijklmn
+
+case: an underscore where the separator would be
+in:   xoxb_0123456789ab_0123456789abcdefghijklmn
+out:  xoxb_0123456789ab_0123456789abcdefghijklmn
+
+case: a secret with no prefix in front of it
+in:   0123456789ab-0123456789abcdefghijklmn
+out:  0123456789ab-0123456789abcdefghijklmn
+
+case: prose
+in:   there is no credential in this sentence
+out:  there is no credential in this sentence
+
+# The text the two demands on a candidate are there for, and what each of them
+# holds back. A prefix and a run alone would have redacted every line below: the
+# hyphen is what names in build output, log lines and branches are joined with,
+# and behind one of these five letters such a name goes on to carry a digest or
+# an id long enough to be a secret. Each is a value a reader reads, which is
+# what CLAUDE.md's gate rules out where a tightening was available.
+#
+# The first three are held back by what stands in front of the prefix: xapp
+# closes linuxapp and nginxapp, and a letter there opens nothing. The last two
+# do open with a prefix, and are held back by the letter a secret must carry —
+# their long parts are all digits, so they are a timestamp and a build number
+# rather than a secret.
+
+case: an md5 after a name ending in a prefix
+in:   image: registry.example.com/linuxapp-8f14e45fceea167a5a36dedd4bea2543
+out:  image: registry.example.com/linuxapp-8f14e45fceea167a5a36dedd4bea2543
+
+case: a git sha after a branch name ending in a prefix
+in:   branch nginxapp-fix-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
+out:  branch nginxapp-fix-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
+
+case: a nanosecond timestamp after a name ending in a prefix
+in:   linuxapp-1705311000123456789.log
+out:  linuxapp-1705311000123456789.log
+
+case: a nanosecond timestamp after a prefix
+in:   span=xapp-trace-1705311000123456789 done
+out:  span=xapp-trace-1705311000123456789 done
+
+case: a build number after a prefix
+in:   xapp-build-20240115093000123456
+out:  xapp-build-20240115093000123456
+
+# The prefixes Slack no longer documents. xoxa- and xoxr- named the access and
+# refresh tokens of workspace apps, xoxs- and xoxo- the tokens of the custom
+# integrations Slack retired, and xoxc- is a value a browser session carries,
+# which Slack has never published. Each is a credential and each comes through
+# whole: Slack has withdrawn every description of them, so a pattern for one
+# would be keyed on other people's readings of tokens nobody can issue any
+# more. The fourth of them is also the word xoxo.
+
+case: a legacy workspace access token
+in:   xoxa-2-0123456789abcdef-0123456789abcdefghijklmn
+out:  xoxa-2-0123456789abcdef-0123456789abcdefghijklmn
+
+case: a legacy workspace refresh token
+in:   xoxr-2-0123456789abcdef-0123456789abcdefghijklmn
+out:  xoxr-2-0123456789abcdef-0123456789abcdefghijklmn
+
+case: a legacy session token
+in:   xoxs-0123456789abcdef-0123456789abcdefghijklmn
+out:  xoxs-0123456789abcdef-0123456789abcdefghijklmn
+
+case: a legacy token whose prefix is a word
+in:   xoxo-0123456789abcdef-0123456789abcdefghijklmn
+out:  xoxo-0123456789abcdef-0123456789abcdefghijklmn
+
+case: a browser session token
+in:   xoxc-0123456789abcdef-0123456789abcdefghijklmn
+out:  xoxc-0123456789abcdef-0123456789abcdefghijklmn
+
+# The prefixes are read in lowercase, as Slack writes them. A pattern reading
+# them either way would put XOXO in front of the same run.
+
+case: an uppercase prefix
+in:   XOXB-0123456789ab-0123456789abcdefghijklmn
+out:  XOXB-0123456789ab-0123456789abcdefghijklmn
+
+# And the Slack credentials this library does not reach by shape. A signing
+# secret is thirty-two characters with no prefix at all, so nothing in the value
+# says what it is and only the name written in front of it does, which no
+# pattern here reads. An incoming webhook carries its secret in the path of a
+# url rather than in a token, and there is no pattern for that shape here
+# either. Both come through whole.
+
+case: a signing secret on its own
+in:   SLACK_SIGNING_SECRET=0123456789abcdef0123456789abcdef
+out:  SLACK_SIGNING_SECRET=0123456789abcdef0123456789abcdef
+
+case: an incoming webhook url
+in:   https://hooks.slack.com/services/T0123456789/B0123456789/0123456789abcdef0123456789abcdef
+out:  https://hooks.slack.com/services/T0123456789/B0123456789/0123456789abcdef0123456789abcdef
