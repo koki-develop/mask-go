@@ -130,7 +130,7 @@ type namedSet struct {
 // builtinSets is what the properties are driven with: the built-in patterns
 // together, and each of them on its own.
 //
-// It is derived from DefaultPatterns rather than written out, so that a pattern
+// It is derived from AllBuiltinPatterns rather than written out, so that a pattern
 // added to the library is driven through every property below without anyone
 // remembering to add it here. A set of one is what says a pattern locates a
 // value on its own; inside the whole set another pattern's match can cover for
@@ -140,8 +140,8 @@ type namedSet struct {
 // they say what they say about the cases they were written for and nothing
 // about text derived from them.
 var builtinSets = func() []namedSet {
-	sets := []namedSet{{name: "default", patterns: mask.DefaultPatterns()}}
-	for _, p := range mask.DefaultPatterns() {
+	sets := []namedSet{{name: "default", patterns: mask.AllBuiltinPatterns()}}
+	for _, p := range mask.AllBuiltinPatterns() {
 		sets = append(sets, namedSet{name: p.Name(), patterns: []mask.Pattern{p}})
 	}
 	return sets
@@ -304,12 +304,12 @@ func TestProperties_maskerIsReusable(t *testing.T) {
 	// whole corpus through a single Masker holds what a built-in scan keeps
 	// between calls — a cursor, a decoder — to keeping nothing that outlives the
 	// call it belongs to.
-	m := mask.New(mask.WithPatterns(mask.DefaultPatterns()...))
+	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
 	cases := readableCases(t)
 
 	want := make([]string, len(cases))
 	for i, c := range cases {
-		want[i] = mask.New(mask.WithPatterns(mask.DefaultPatterns()...)).Mask(c.in)
+		want[i] = mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...)).Mask(c.in)
 	}
 	for round := range 3 {
 		for i, c := range cases {

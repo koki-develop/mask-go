@@ -6,7 +6,7 @@ import (
 )
 
 func BenchmarkMasker_Mask(b *testing.B) {
-	m := New(WithPatterns(DefaultPatterns()...))
+	m := New(WithPatterns(AllBuiltinPatterns()...))
 	line := `time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user `
 
 	benchmarks := []struct {

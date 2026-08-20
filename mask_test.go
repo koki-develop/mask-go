@@ -253,7 +253,7 @@ func TestMasker_Mask_withoutMatchDoesNotAllocate(t *testing.T) {
 	src := strings.Repeat("the quick brown fox ", 100)
 	for name, m := range map[string]*Masker{
 		"pattern finding nothing": New(WithPatterns(fixed("p"))),
-		"built-in patterns":       New(WithPatterns(DefaultPatterns()...)),
+		"built-in patterns":       New(WithPatterns(AllBuiltinPatterns()...)),
 	} {
 		t.Run(name, func(t *testing.T) {
 			if n := testing.AllocsPerRun(100, func() { _ = m.Mask(src) }); n != 0 {
@@ -283,7 +283,7 @@ func TestMasker_Mask_concurrentUse(t *testing.T) {
 	})
 
 	m := New(
-		WithPatterns(DefaultPatterns()...),
+		WithPatterns(AllBuiltinPatterns()...),
 		WithPatterns(MustRegexp("internal-token", `INT-[0-9a-f]{32}`), shared),
 		WithRedactor(naming),
 	)
@@ -365,7 +365,7 @@ func Test_New_defaultRedactor(t *testing.T) {
 func TestMasker_Mask_overlappingBuiltinPatterns(t *testing.T) {
 	// The stateless installation token holds a JWT, so both built-in patterns
 	// fire on it and the overlap must leave nothing of the token behind.
-	m := New(WithPatterns(DefaultPatterns()...))
+	m := New(WithPatterns(AllBuiltinPatterns()...))
 	src := "token=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"
 	want := "token=***********************************************************************************"
 	if got := m.Mask(src); got != want {

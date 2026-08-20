@@ -55,13 +55,14 @@ func spansPattern(name string, spans ...mask.Span) mask.Pattern {
 //
 // A case that names none is masked with what the last patterns directive above
 // it named, and with "default" only where no directive stands above it — the
-// built-in patterns as DefaultPatterns reports them, which is how the library is
-// used.
+// built-in patterns as AllBuiltinPatterns reports them, which is how the
+// library is used. The name is the notation's, for the set a case falls back
+// to, and says nothing about which patterns a caller ought to reach for.
 var patternSets = map[string][]mask.Pattern{
 	// The built-in patterns, together and one at a time. A pattern alone is
 	// what says the pattern locates a value on its own; the whole set is what
 	// says the sets do not interfere.
-	"default":      mask.DefaultPatterns(),
+	"default":      mask.AllBuiltinPatterns(),
 	"github-token": {mask.GitHubToken()},
 	"jwt":          {mask.JWT()},
 
@@ -73,7 +74,7 @@ var patternSets = map[string][]mask.Pattern{
 	"regexp-mask-group": {mask.MustRegexp("user-id", `user_id=(?P<mask>\d+)`)},
 	"func":              {substringPattern("shared-secret", "s3cr3t-value")},
 	"default-and-regexp": append(
-		mask.DefaultPatterns(),
+		mask.AllBuiltinPatterns(),
 		mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`),
 	),
 
@@ -162,7 +163,7 @@ func Test_patternSets_holdEveryBuiltinAlone(t *testing.T) {
 	// case names to state what that pattern locates on its own, and what the
 	// clean cases TestCorpus_coversEveryBuiltinPattern counts are masked with —
 	// a pattern with no set of its own cannot be stated apart from the others.
-	for _, p := range mask.DefaultPatterns() {
+	for _, p := range mask.AllBuiltinPatterns() {
 		t.Run(p.Name(), func(t *testing.T) {
 			for _, set := range patternSets {
 				if len(set) == 1 && set[0] == p {
@@ -181,9 +182,9 @@ func Test_substringPattern_emptyWant(t *testing.T) {
 }
 
 func Test_patternSets_doNotShareTheirSlice(t *testing.T) {
-	// Two sets built from DefaultPatterns must not append into the same array,
-	// which is what a set built as append(DefaultPatterns(), ...) would do were
-	// DefaultPatterns to hand out the slice it keeps.
+	// Two sets built from AllBuiltinPatterns must not append into the same array,
+	// which is what a set built as append(AllBuiltinPatterns(), ...) would do were
+	// AllBuiltinPatterns to hand out the slice it keeps.
 	def := patternSets["default"]
 	both := patternSets["default-and-regexp"]
 	if len(both) != len(def)+1 {

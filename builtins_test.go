@@ -124,26 +124,26 @@ func Test_builtins_entriesAreFilledIn(t *testing.T) {
 	}
 }
 
-func Test_builtins_matchDefaultPatterns(t *testing.T) {
+func Test_builtins_matchAllBuiltinPatterns(t *testing.T) {
 	// The table above and the registry in builtins.go must name the same
 	// patterns in the same order. A pattern added to one and forgotten in the
 	// other would otherwise either go untested or go unreported by
-	// DefaultPatterns, and neither shows anywhere else.
-	got := DefaultPatterns()
+	// AllBuiltinPatterns, and neither shows anywhere else.
+	got := AllBuiltinPatterns()
 	if len(got) != len(builtinPatterns) {
-		t.Fatalf("DefaultPatterns() reports %d pattern(s), the table holds %d", len(got), len(builtinPatterns))
+		t.Fatalf("AllBuiltinPatterns() reports %d pattern(s), the table holds %d", len(got), len(builtinPatterns))
 	}
 	for i, b := range builtinPatterns {
 		if got[i] != b.pattern() {
-			t.Errorf("DefaultPatterns()[%d] is %q, the table holds %q", i, got[i].Name(), b.name)
+			t.Errorf("AllBuiltinPatterns()[%d] is %q, the table holds %q", i, got[i].Name(), b.name)
 		}
 	}
 }
 
-func Test_DefaultPatterns_freshEachCall(t *testing.T) {
-	first := DefaultPatterns()
+func Test_AllBuiltinPatterns_freshEachCall(t *testing.T) {
+	first := AllBuiltinPatterns()
 	first[0] = fixed("replaced")
-	if second := DefaultPatterns(); second[0] == first[0] {
+	if second := AllBuiltinPatterns(); second[0] == first[0] {
 		t.Error("modifying the returned slice changed what a later call returns")
 	}
 }
@@ -274,7 +274,7 @@ func Test_builtins_maskLeavesNothingToFind(t *testing.T) {
 		t.Run(b.name, func(t *testing.T) {
 			maskers := map[string]*Masker{
 				"alone":           New(WithPatterns(b.pattern())),
-				"with the others": New(WithPatterns(DefaultPatterns()...)),
+				"with the others": New(WithPatterns(AllBuiltinPatterns()...)),
 			}
 			for name, m := range maskers {
 				t.Run(name, func(t *testing.T) {

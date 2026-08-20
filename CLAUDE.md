@@ -67,10 +67,17 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
 
 - Table-driven, one `name` per case, and each case writes out its own data
   literally rather than sharing fixtures or computing it.
+- Weigh a built-in against the set before adding one, not on its own:
+  `AllBuiltinPatterns` is the whole registry, so a pattern added to `builtins`
+  changes what every caller of it redacts with no signature moving to say so.
+  That is safe while a built-in over-matches only on values opaque to a reader
+  — being wrong about one of those costs the reader nothing. A grammar that
+  admits a git SHA, an MD5 or a word of prose does not qualify, however rarely
+  it would fire.
 - Adding a built-in pattern means three declarations: the two below, and cases
   in the conformance corpus (`conformance/CLAUDE.md`).
 - The first two are: the pattern in `builtins`
-  (`builtins.go`), which is what `DefaultPatterns` reports, and an entry in
+  (`builtins.go`), which is what `AllBuiltinPatterns` reports, and an entry in
   `builtinPatterns` (`builtins_test.go`), which is what holds it to the
   properties every built-in shares — its name and the convention `Pattern.Name`
   asks for, one value per accessor, usable spans, no false positive on prose,

@@ -20,7 +20,7 @@ func FuzzMask(f *testing.F) {
 		f.Add(c.in)
 	}
 
-	patterns := mask.DefaultPatterns()
+	patterns := mask.AllBuiltinPatterns()
 	f.Fuzz(func(t *testing.T, src string) {
 		checkMasking(t, patterns, src)
 	})
@@ -37,7 +37,7 @@ func FuzzMask_customPatterns(f *testing.F) {
 	}
 
 	patterns := append(
-		mask.DefaultPatterns(),
+		mask.AllBuiltinPatterns(),
 		mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`),
 		mask.MustRegexp("user-id", `user_id=(?P<mask>\d+)`),
 		substringPattern("shared-secret", "s3cr3t-value"),

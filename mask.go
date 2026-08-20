@@ -4,7 +4,7 @@
 // A Masker scans its input with the patterns it was given and redacts every
 // value it locates:
 //
-//	m := mask.New(mask.WithPatterns(mask.DefaultPatterns()...))
+//	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
 //	fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
 //
 // Output:
@@ -12,9 +12,9 @@
 //	GITHUB_TOKEN=****************************************
 //
 // A Masker scans only with the patterns given to it; nothing is enabled
-// implicitly. DefaultPatterns returns the built-in ones, and a custom pattern
-// comes from NewPattern, MustRegexp or any implementation of the Pattern
-// interface.
+// implicitly. AllBuiltinPatterns returns the built-in ones, and a custom
+// pattern comes from NewPattern, MustRegexp or any implementation of the
+// Pattern interface.
 package mask
 
 import (

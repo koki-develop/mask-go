@@ -8,16 +8,16 @@ import (
 )
 
 func Example() {
-	m := mask.New(mask.WithPatterns(mask.DefaultPatterns()...))
+	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
 
 	fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
 	// Output: GITHUB_TOKEN=****************************************
 }
 
-func ExampleDefaultPatterns() {
+func ExampleAllBuiltinPatterns() {
 	// The built-in patterns are given to a Masker together, and each of them
 	// scans for what it knows.
-	m := mask.New(mask.WithPatterns(mask.DefaultPatterns()...))
+	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
 
 	fmt.Println(m.Mask("token=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"))
 	// Output: token=**************************************** jwt=************************************************************************
@@ -41,7 +41,7 @@ func ExampleWithPatterns() {
 	// Repeated options accumulate, so the built-in patterns and one of your
 	// own can be given separately.
 	m := mask.New(
-		mask.WithPatterns(mask.DefaultPatterns()...),
+		mask.WithPatterns(mask.AllBuiltinPatterns()...),
 		mask.WithPatterns(mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`)),
 	)
 
@@ -85,7 +85,7 @@ func ExampleNewPattern() {
 
 func ExampleFill() {
 	m := mask.New(
-		mask.WithPatterns(mask.DefaultPatterns()...),
+		mask.WithPatterns(mask.AllBuiltinPatterns()...),
 		mask.WithRedactor(mask.Fill('#')),
 	)
 
@@ -95,7 +95,7 @@ func ExampleFill() {
 
 func ExampleFixed() {
 	m := mask.New(
-		mask.WithPatterns(mask.DefaultPatterns()...),
+		mask.WithPatterns(mask.AllBuiltinPatterns()...),
 		mask.WithRedactor(mask.Fixed("[REDACTED]")),
 	)
 
@@ -105,7 +105,7 @@ func ExampleFixed() {
 
 func ExampleNewRedactor() {
 	m := mask.New(
-		mask.WithPatterns(mask.DefaultPatterns()...),
+		mask.WithPatterns(mask.AllBuiltinPatterns()...),
 		mask.WithRedactor(mask.NewRedactor(func(m mask.Match) string {
 			return "[" + strings.ToUpper(m.Pattern.Name()) + "]"
 		})),

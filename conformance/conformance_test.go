@@ -303,7 +303,7 @@ func TestConformance_oneMaskerForEveryCase(t *testing.T) {
 	// again through a single Masker over the built-in patterns. Only the cases
 	// masked with the built-in set say what must come out; the rest are here
 	// because nothing may go wrong when they are handed to it.
-	m := mask.New(mask.WithPatterns(mask.DefaultPatterns()...), mask.WithRedactor(markRedactor))
+	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...), mask.WithRedactor(markRedactor))
 
 	for _, c := range corpusCases(t) {
 		c.requireOut(t)
@@ -320,7 +320,7 @@ func TestConformance_oneMaskerForEveryCase(t *testing.T) {
 func TestCorpus_coversEveryBuiltinPattern(t *testing.T) {
 	// The corpus is the statement of what this library does, so a built-in
 	// pattern absent from it is a pattern nothing here states anything about.
-	// Adding one to DefaultPatterns therefore fails until the corpus says what
+	// Adding one to AllBuiltinPatterns therefore fails until the corpus says what
 	// it locates and what it leaves alone.
 	const least = 3
 
@@ -347,7 +347,7 @@ func TestCorpus_coversEveryBuiltinPattern(t *testing.T) {
 		}
 	}
 
-	for _, p := range mask.DefaultPatterns() {
+	for _, p := range mask.AllBuiltinPatterns() {
 		t.Run(p.Name(), func(t *testing.T) {
 			if located[p.Name()] < least {
 				t.Errorf("the corpus has %d case(s) locating a %s, want at least %d", located[p.Name()], p.Name(), least)
@@ -418,7 +418,7 @@ func TestConformance_scale(t *testing.T) {
 	}
 	src := strings.Repeat(unit, size/len(unit)+1)
 
-	m := mask.New(mask.WithPatterns(mask.DefaultPatterns()...))
+	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
 	start := time.Now()
 	masked := m.Mask(src)
 	if d := time.Since(start); d > limit {

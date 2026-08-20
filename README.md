@@ -11,7 +11,7 @@ go get github.com/koki-develop/mask-go
 ## Usage
 
 ```go
-m := mask.New(mask.WithPatterns(mask.DefaultPatterns()...))
+m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
 
 fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
 // GITHUB_TOKEN=****************************************
@@ -19,8 +19,8 @@ fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
 
 ## Patterns
 
-A `Masker` scans only with the patterns it is given. `DefaultPatterns()` returns
-all of the built-in ones:
+A `Masker` scans only with the patterns it is given. `AllBuiltinPatterns()`
+returns every pattern in the table below, and grows as patterns are added:
 
 | Pattern | Locates |
 | --- | --- |
@@ -65,7 +65,7 @@ for every rune of the original, and is the default as `Fill('*')`:
 
 ```go
 m := mask.New(
-	mask.WithPatterns(mask.DefaultPatterns()...),
+	mask.WithPatterns(mask.AllBuiltinPatterns()...),
 	mask.WithRedactor(mask.Fill('#')),
 )
 
@@ -77,7 +77,7 @@ fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
 
 ```go
 m := mask.New(
-	mask.WithPatterns(mask.DefaultPatterns()...),
+	mask.WithPatterns(mask.AllBuiltinPatterns()...),
 	mask.WithRedactor(mask.Fixed("[REDACTED]")),
 )
 
@@ -90,7 +90,7 @@ located the value:
 
 ```go
 m := mask.New(
-	mask.WithPatterns(mask.DefaultPatterns()...),
+	mask.WithPatterns(mask.AllBuiltinPatterns()...),
 	mask.WithRedactor(mask.NewRedactor(func(m mask.Match) string {
 		return "[" + strings.ToUpper(m.Pattern.Name()) + "]"
 	})),

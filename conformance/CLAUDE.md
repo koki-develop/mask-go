@@ -92,7 +92,7 @@ is not valid UTF-8).
   every pattern added to that set would inherit it. So a new built-in also needs
   an entry of its own in `patternSets`, which `Test_patternSets_holdEveryBuiltinAlone`
   asks for. The property tests need no entry: `builtinSets`
-  (`properties_test.go`) is derived from `DefaultPatterns`.
+  (`properties_test.go`) is derived from `AllBuiltinPatterns`.
 - Masking is held to being idempotent here, which `Mask` does not promise for
   every redactor: removing a value can splice the text either side of it into
   one that was not there, which `Fixed("")` makes easiest

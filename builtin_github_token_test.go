@@ -361,7 +361,7 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(DefaultPatterns()...))
+	m := New(WithPatterns(AllBuiltinPatterns()...))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {

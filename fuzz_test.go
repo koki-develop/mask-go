@@ -116,7 +116,7 @@ func FuzzMasker_Mask(f *testing.F) {
 	f.Add("ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef")
 	f.Add("eyJ..eyJ..eyJ..eyJ..")
 
-	m := New(WithPatterns(DefaultPatterns()...))
+	m := New(WithPatterns(AllBuiltinPatterns()...))
 	f.Fuzz(func(t *testing.T, src string) {
 		masked := m.Mask(src)
 		if left := m.locate(masked); len(left) != 0 {

@@ -1,5 +1,5 @@
 # The built-in patterns as a caller has them: all of them at once, which is what
-# DefaultPatterns hands out.
+# AllBuiltinPatterns hands out.
 #
 # A value one pattern locates whole can be one another locates in part — a
 # stateless installation token carries a JWT — so what matters here is that the

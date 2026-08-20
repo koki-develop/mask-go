@@ -169,7 +169,14 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 			}
 		}
 
-		// Classic tokens, forty characters in all.
+		// Classic tokens, forty characters in all. The last six characters of
+		// the body are a CRC32 checksum of the thirty before them, which this
+		// does not verify: the alphabet and the length are the whole of what
+		// is asked for, so thirty-six characters written after a prefix are
+		// located whether or not GitHub could have issued them. Checking the
+		// digits would rule out none of the revoked, example and test tokens
+		// a caller wants redacted, and would cost the scan the token itself
+		// the day GitHub changes how the checksum is computed.
 		if end-body >= githubClassicChars {
 			spans = append(spans, Span{Start: start, End: end})
 		}
