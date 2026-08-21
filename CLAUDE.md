@@ -11,11 +11,12 @@ One built-in pattern to a file: `builtin_<name>.go` with a
 `builtin_<name>_test.go` beside it, holding the pattern, its scan, the helpers
 only that scan reads, its behaviour tables, its reference and its fuzz target.
 `builtins.go` is the registry alone, `builtin_scan.go` holds what more than one
-scan reads (`segments`, `isBase64URLByte`), `builtins_test.go` holds what every
-built-in is held to, and `fuzz_test.go` holds the `Masker` targets and the body
-the per-pattern targets share. Adding a pattern should touch the registry, the
-property table, two new files and the conformance corpus — nothing else. Keep it
-that way rather than letting a shared `builtin.go` grow back.
+scan reads (`segments`, `isBase64URLByte`, `base64URLRunEnd`),
+`builtins_test.go` holds what every built-in is held to, and `fuzz_test.go`
+holds the `Masker` targets and the body the per-pattern targets share. Adding a
+pattern should touch the registry, the property table, two new files and the
+conformance corpus — nothing else. Keep it that way rather than letting a shared
+`builtin.go` grow back.
 
 One pattern may read another's declarations where the credentials themselves
 nest: `builtin_github_token.go` reads `opensJOSEHeaderAt`, `jwtHeaderPrefix` and
@@ -49,8 +50,8 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   it in the same run (`conformance/CLAUDE.md`).
 - `go test -fuzz FuzzJWT_matchesReference .` — fuzzing. Targets in the root
   package: `FuzzMasker_locate`, `FuzzMasker_Mask`, `FuzzJWT_matchesReference`,
-  `FuzzGitHubToken_matchesReference`, `FuzzAWSAccessKeyID_matchesReference` and
-  `FuzzSlackToken_matchesReference`.
+  `FuzzGitHubToken_matchesReference`, `FuzzAWSAccessKeyID_matchesReference`,
+  `FuzzSlackToken_matchesReference` and `FuzzGitLabToken_matchesReference`.
   In `conformance`: `FuzzMask`, `FuzzMask_customPatterns`, `FuzzText`. CI gives
   each of them 30 seconds.
 - `go test -bench . -benchmem` — benchmarks.
@@ -109,25 +110,26 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
 - Every built-in scanner is checked against a reference kept beside it:
   `referenceJWTFind` (`builtin_jwt_test.go`), `referenceGitHubTokenFind`
   (`builtin_github_token_test.go`), `referenceAWSAccessKeyIDFind`
-  (`builtin_aws_access_key_id_test.go`) and `referenceSlackTokenFind`
-  (`builtin_slack_token_test.go`), plain implementations of the same
+  (`builtin_aws_access_key_id_test.go`), `referenceSlackTokenFind`
+  (`builtin_slack_token_test.go`) and `referenceGitLabTokenFind`
+  (`builtin_gitlab_token_test.go`), plain implementations of the same
   rules. The second tries `referenceGitHubToken`, the regular expression the
   GitHub token scan reads by hand, at every byte rather than handing it to
   `FindAllStringIndex`: a value either scan locates can hold the start of the
   next one, so a reference that resumed past a match would miss what the scan
-  finds. The third does the same for the same reason, an access key ID being
-  able to begin three characters into the one before it. The first and the
-  fourth are written out rather than built on a regular expression, because
-  what they read of a candidate — a decoded JOSE header, a run divided into
-  segments — is not what an expression states compactly. A reference spells the
-  prefixes, the counts and the character classes its scan reads out again rather
-  than sharing the declarations, so that the two can disagree and the fuzz
-  target report it.
-  Change scanner and reference together, and keep the corpus in
-  `testdata/fuzz/`. The targets share their body through
-  `fuzzAgainstReference` (`fuzz_test.go`) but keep a name apiece, because the
-  corpus is keyed on the name of the target — so never rename a target without
-  moving its corpus directory.
+  finds. The third and the fifth do the same for the same reason — an access
+  key ID can begin three characters into the one before it, and a GitLab body
+  is written in an alphabet that holds every letter a GitLab prefix is. The
+  first and the fourth are written out rather than built on a regular
+  expression, because what they read of a candidate — a decoded JOSE header, a
+  run divided into segments — is not what an expression states compactly. A
+  reference spells the prefixes, the counts and the character classes its scan
+  reads out again rather than sharing the declarations, so that the two can
+  disagree and the fuzz target report it. Change scanner and reference
+  together, and keep the corpus in `testdata/fuzz/`. The targets share their
+  body through `fuzzAgainstReference` (`fuzz_test.go`) but keep a name apiece,
+  because the corpus is keyed on the name of the target — so never rename a
+  target without moving its corpus directory.
 - Behaviour that differs under the race detector is branched on `raceEnabled`
   (`race_test.go` / `norace_test.go`), not skipped.
 

@@ -65,6 +65,7 @@ var patternSets = map[string][]mask.Pattern{
 	"default":           mask.AllBuiltinPatterns(),
 	"aws-access-key-id": {mask.AWSAccessKeyID()},
 	"github-token":      {mask.GitHubToken()},
+	"gitlab-token":      {mask.GitLabToken()},
 	"jwt":               {mask.JWT()},
 	"slack-token":       {mask.SlackToken()},
 

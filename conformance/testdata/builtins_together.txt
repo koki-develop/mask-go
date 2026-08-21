@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -178,6 +178,38 @@ out:  «slack-token».«jwt»
 case: an environment file holding one of each
 in:   SLACK_BOT_TOKEN=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 out:  SLACK_BOT_TOKEN=«slack-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+
+# A GitLab token beside the others. Its body is read in the base64url alphabet
+# and to a count the kind fixes, which is what makes it behave unlike the Slack
+# body beside it: a value written inside a GitLab body is located there too and
+# the two are redacted as one, but a value written after one begins where the
+# count ends, so both are located and neither takes a piece out of the other.
+# The dot ends a body, which is what keeps a JWT written after a token out of
+# it.
+
+case: a gitlab token beside a github token and a jwt
+in:   gitlab=glpat-0123456789abcdefghij github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  gitlab=«gitlab-token» github=«github-token» jwt=«jwt»
+
+case: an access key id inside a gitlab token body
+in:   glpat-AKIA0123456789ABCDEF
+out:  «gitlab-token»
+
+case: an access key id where a gitlab token body ends
+in:   glpat-0123456789abcdefghijAKIA0123456789ABCDEF
+out:  «gitlab-token»«aws-access-key-id»
+
+case: a github token after a gitlab prefix, which the body alphabet draws in
+in:   glpat-ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «gitlab-token»
+
+case: a jwt directly after a gitlab token, which the dot keeps apart
+in:   glpat-0123456789abcdefghij.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «gitlab-token».«jwt»
+
+case: an environment file holding a gitlab token among the others
+in:   GITLAB_TOKEN=glpat-0123456789abcdefghij\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  GITLAB_TOKEN=«gitlab-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # Where the GitHub and JWT patterns disagree about a stateless installation
 # token. The GitHub pattern asks for an app id, a single underscore, and a JWT

@@ -151,10 +151,7 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 			src[end] == '_' && opensJOSEHeaderAt(src, end+1) {
 			header := end + 1 + len(jwtHeaderPrefix)
 			if header >= runEnd {
-				runEnd = header
-				for runEnd < len(src) && isBase64URLByte(src[runEnd]) {
-					runEnd++
-				}
+				runEnd = base64URLRunEnd(src, header)
 				jwt = segments{}
 				// The run holds at least the character the anchor read, so
 				// where it ends is where the header ends; only a dot there
@@ -254,9 +251,7 @@ func githubJWTEnd(src string, dot int) segments {
 		}
 		i++
 		start := i
-		for i < len(src) && isBase64URLByte(src[i]) {
-			i++
-		}
+		i = base64URLRunEnd(src, i)
 		if i == start {
 			return segments{}
 		}

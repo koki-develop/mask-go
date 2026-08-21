@@ -37,11 +37,25 @@ func ExampleGitHubToken() {
 	// Output: GITHUB_TOKEN=****************************************
 }
 
+func ExampleGitLabToken() {
+	m := mask.New(mask.WithPatterns(mask.GitLabToken()))
+
+	fmt.Println(m.Mask("GITLAB_TOKEN=glpat-0123456789abcdefghij"))
+	// Output: GITLAB_TOKEN=**************************
+}
+
 func ExampleJWT() {
 	m := mask.New(mask.WithPatterns(mask.JWT()))
 
 	fmt.Println(m.Mask("Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"))
 	// Output: Authorization: Bearer ************************************************************************
+}
+
+func ExampleSlackToken() {
+	m := mask.New(mask.WithPatterns(mask.SlackToken()))
+
+	fmt.Println(m.Mask("SLACK_BOT_TOKEN=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn"))
+	// Output: SLACK_BOT_TOKEN=********************************************************
 }
 
 func ExampleWithPatterns() {

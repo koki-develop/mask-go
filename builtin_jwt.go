@@ -113,10 +113,7 @@ var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 		}
 
 		if start >= runEnd {
-			runEnd = start
-			for runEnd < len(src) && isBase64URLByte(src[runEnd]) {
-				runEnd++
-			}
+			runEnd = base64URLRunEnd(src, start)
 			signed, encrypted = segments{}, segments{}
 			if runEnd < len(src) && src[runEnd] == '.' {
 				signed = segmentsEnd(src, runEnd, signedSegments)
@@ -162,8 +159,7 @@ func segmentsEnd(src string, dot, want int) segments {
 		if i == len(src) || src[i] != '.' {
 			return segments{}
 		}
-		for i++; i < len(src) && isBase64URLByte(src[i]); i++ {
-		}
+		i = base64URLRunEnd(src, i+1)
 	}
 	return segments{end: i, ok: true}
 }

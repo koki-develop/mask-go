@@ -50,6 +50,22 @@ var builtinPatterns = []struct {
 		},
 	},
 	{
+		name:    "gitlab-token",
+		pattern: GitLabToken,
+		ref:     referenceGitLabTokenFind,
+		samples: []string{
+			"GITLAB_TOKEN=glpat-0123456789abcdefghij",
+			"gldt-0123456789abcdefghij",
+			"glimt-0123456789abcdefghijklmno",
+			"gloas-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01",
+			"glcbt-0f_0123456789abcdefghij",
+			"glpat-0123456789abcdefghijklmnopq.012345678",
+			"glpat-0123456789abcdefghijklmnopq.01.012345678",
+			"glrt-t1_0123456789abcdefghijklmnopq.012345678",
+			"glpat-0123456789abcdefglpat-0123456789abcdefghij",
+		},
+	},
+	{
 		name:    "jwt",
 		pattern: JWT,
 		ref:     referenceJWTFind,

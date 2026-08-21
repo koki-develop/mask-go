@@ -183,10 +183,6 @@ case: an npm token is not one of the kinds this library knows
 in:   NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz
 out:  NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz
 
-case: a gitlab personal access token is not one of the kinds this library knows
-in:   GITLAB_TOKEN=glpat-0123456789abcdefghij
-out:  GITLAB_TOKEN=glpat-0123456789abcdefghij
-
 case: a basic authorization header is not one of the kinds this library knows
 in:   Authorization: Basic dXNlcjowMTIzNDU2Nzg5YWJjZGVm
 out:  Authorization: Basic dXNlcjowMTIzNDU2Nzg5YWJjZGVm

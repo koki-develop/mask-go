@@ -14,12 +14,30 @@ type segments struct {
 }
 
 // isBase64URLByte reports whether c belongs to the base64url alphabet of RFC
-// 4648, which encodes the parts of a JWT and the JWT a stateless GitHub
-// installation token carries. Padding is not admitted: the compact
-// serialization is defined without it.
+// 4648, which encodes the parts of a JWT, the JWT a stateless GitHub
+// installation token carries, and the body of a GitLab token. Padding is not
+// admitted: the compact serialization is defined without it, and neither is
+// the routable payload GitLab encodes.
 func isBase64URLByte(c byte) bool {
 	return '0' <= c && c <= '9' ||
 		'A' <= c && c <= 'Z' ||
 		'a' <= c && c <= 'z' ||
 		c == '-' || c == '_'
+}
+
+// base64URLRunEnd returns where the run of base64url characters beginning at i
+// in src ends, which is len(src) where the run reaches the end of the input.
+//
+// Every scan reading a base64url value reads it this way, and each of them read
+// it with a loop of their own until there were four such loops in two files.
+// What is shared is the walk alone: which run a scan reads, what it remembers
+// about where that run ended and when it may reuse what it remembered are the
+// scan's own, and differ between them. A helper taking the byte test as an
+// argument would share more and cost an indirect call for every byte of every
+// run, in the loops this package is most careful about.
+func base64URLRunEnd(src string, i int) int {
+	for i < len(src) && isBase64URLByte(src[i]) {
+		i++
+	}
+	return i
 }

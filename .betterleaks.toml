@@ -14,14 +14,22 @@
 # file extension — the cases under conformance/testdata are what the package
 # beside them is driven with — so the same rule covers it, and covers nothing
 # else: a value built any other way is reported there as well.
+#
+# So does the rationale of a built-in pattern. What each builtin_*.go says about
+# where a scan stops is written with the value it stops in the middle of, which
+# is what lets a reader check the sentence rather than take it — the four
+# characters an access key ID leaves behind are named by writing the run they
+# are the end of. Those values are built from the same ordered run for the same
+# reason, and the condition on them is the same one: a credential written any
+# other way is reported in a pattern's file as anywhere else.
 
 [extend]
 useDefault = true
 
 [[allowlists]]
-description = "credentials made of ordered characters, written into a test"
+description = "credentials made of ordered characters, written into a test or a pattern's rationale"
 condition = "AND"
-paths = ['''_test\.go$''', '''conformance/testdata/[^/]+\.txt$''']
+paths = ['''_test\.go$''', '''conformance/testdata/[^/]+\.txt$''', '''(^|/)builtin_[a-z0-9_]+\.go$''']
 regexTarget = "secret"
 regexes = ['''0123456789abcdef''', '''0123456789ABCDEF''']
 
