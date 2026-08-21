@@ -445,3 +445,62 @@ func FuzzAWSAccessKeyID_matchesReference(f *testing.F) {
 
 	fuzzAgainstReference(f, AWSAccessKeyID().Find, referenceAWSAccessKeyIDFind)
 }
+
+// awsAccessKeyIDFindBenchmarks is what this scan is timed on. The
+// builtinPatterns entry for the pattern names it, and BenchmarkBuiltins times
+// every case it holds under the pattern's own name, so that a built-in cannot
+// arrive without a benchmark. Every case is held to the count it states under
+// a plain go test as well, which is what a benchmark nobody has run yet cannot
+// be.
+func awsAccessKeyIDFindBenchmarks() []benchmarkCase {
+	// The A a prefix opens with is what the scan searches for, so the line it
+	// is driven with carries the ones a log line has anyway: the name of the
+	// call and the region. A line holding none would time strings.IndexByte
+	// alone and nothing that follows it.
+	line := `time=2026-08-17T00:00:00Z level=info msg="AssumeRole" region=AP-NORTHEAST-1 `
+	key := "AKIA0123456789ABCDEF"
+
+	return []benchmarkCase{
+		{
+			name:  "no value",
+			src:   line,
+			spans: 0,
+		},
+		{
+			// A prefix written out and a body one character short of the
+			// count: the candidate standing at each prefix reads all sixteen
+			// body positions and is turned away by the last of them, which is
+			// the most a candidate can cost here. The two capitals behind it
+			// are turned away at the prefix without a body character being
+			// read at all. This scan keeps no cursor and needs none — a fixed
+			// count bounds what a candidate reads — and this is the input that
+			// would show the bound gone.
+			name:  "candidates that are not values",
+			src:   strings.Repeat("AKIA0123456789ABCDE-", 32),
+			spans: 0,
+		},
+		{
+			// The prefixes overlapping one another, which is a key beginning
+			// three characters inside the one before it: most of these
+			// candidates become values, and the spans they report overlap.
+			name:  "values crowded in one run",
+			src:   strings.Repeat("ASIAKIA", 32),
+			spans: 59,
+		},
+		{
+			name:  "one value",
+			src:   line + "key=" + key,
+			spans: 1,
+		},
+		{
+			name:  "one value in a long line",
+			src:   strings.Repeat(line, 32) + "key=" + key,
+			spans: 1,
+		},
+		{
+			name:  "many values",
+			src:   strings.Repeat(line+"key="+key+"\n", 32),
+			spans: 32,
+		},
+	}
+}

@@ -750,3 +750,67 @@ func FuzzGitLabToken_matchesReference(f *testing.F) {
 
 	fuzzAgainstReference(f, GitLabToken().Find, referenceGitLabTokenFind)
 }
+
+// gitLabTokenFindBenchmarks is what this scan is timed on. The
+// builtinPatterns entry for the pattern names it, and BenchmarkBuiltins times
+// every case it holds under the pattern's own name, so that a built-in cannot
+// arrive without a benchmark. Every case is held to the count it states under
+// a plain go test as well, which is what a benchmark nobody has run yet cannot
+// be.
+func gitLabTokenFindBenchmarks() []benchmarkCase {
+	// Every g in the line reaches the second byte test, and every gl reaches
+	// the table of twelve prefixes behind it, so the line carries the words
+	// that do both.
+	line := `time=2026-08-17T00:00:00Z level=info msg="the global glossary" url=https://gitlab.com/api/v4/projects `
+	classic := "glpat-0123456789abcdefghij"
+	routable := "glpat-0123456789abcdefghijklmnopq.01.012345678"
+
+	return []benchmarkCase{
+		{
+			name:  "no value",
+			src:   line,
+			spans: 0,
+		},
+		{
+			// The two bytes a prefix opens with and nothing else: every
+			// candidate passes the byte test and is turned away by the table,
+			// which is where the twelve HasPrefix calls are paid.
+			name:  "candidates that name no kind",
+			src:   strings.Repeat("gl", 256),
+			spans: 0,
+		},
+		{
+			// A prefix written inside the body it opens, which the alphabet
+			// allows: a candidate every five characters, every one of them
+			// asking for the same run, which only the first of them reads. The
+			// run is long enough to be a body to nearly all of them, so the
+			// crowding is carried through to the spans rather than turned away
+			// at the count.
+			name:  "prefixes crowded in one body",
+			src:   strings.Repeat("glrt-", 128),
+			spans: 124,
+		},
+		{
+			name:  "one value",
+			src:   line + "token=" + classic,
+			spans: 1,
+		},
+		{
+			// The routable shape, which is tried before the classic one and
+			// reads the payload, the version and the fields closing it.
+			name:  "one routable value",
+			src:   line + "token=" + routable,
+			spans: 1,
+		},
+		{
+			name:  "one value in a long line",
+			src:   strings.Repeat(line, 32) + "token=" + classic,
+			spans: 1,
+		},
+		{
+			name:  "many values",
+			src:   strings.Repeat(line+"token="+classic+"\n", 32),
+			spans: 32,
+		},
+	}
+}

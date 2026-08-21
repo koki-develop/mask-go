@@ -783,3 +783,59 @@ func FuzzSlackToken_matchesReference(f *testing.F) {
 
 	fuzzAgainstReference(f, SlackToken().Find, referenceSlackTokenFind)
 }
+
+// slackTokenFindBenchmarks is what this scan is timed on. The
+// builtinPatterns entry for the pattern names it, and BenchmarkBuiltins times
+// every case it holds under the pattern's own name, so that a built-in cannot
+// arrive without a benchmark. Every case is held to the count it states under
+// a plain go test as well, which is what a benchmark nobody has run yet cannot
+// be.
+func slackTokenFindBenchmarks() []benchmarkCase {
+	// Every x in the line reaches the test on the byte in front of it, and the
+	// ones an ordinary word does not close reach the table of prefixes behind
+	// that, so the line carries both.
+	line := `time=2026-08-17T00:00:00Z level=info msg="exit box" url=https://example.com/xoxo `
+	token := "xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn"
+
+	return []benchmarkCase{
+		{
+			name:  "no value",
+			src:   line,
+			spans: 0,
+		},
+		{
+			// A prefix written inside the body it opens, which the alphabet
+			// allows: a candidate every five characters, all of them in the one
+			// run, and no segment long enough to be a secret anywhere in it.
+			// The run and its rightmost secret are read once however many
+			// candidates stand in it, and this is the input that would show
+			// that gone.
+			name:  "candidates crowded in one run",
+			src:   strings.Repeat("xoxb-", 128),
+			spans: 0,
+		},
+		{
+			// The same run closed by a secret, which makes a value of every
+			// candidate standing in front of that secret: the crowding carried
+			// through to the spans rather than turned away at the segment.
+			name:  "values crowded in one run",
+			src:   strings.Repeat("xoxb-", 128) + "0123456789abcdefgh",
+			spans: 127,
+		},
+		{
+			name:  "one value",
+			src:   line + "token=" + token,
+			spans: 1,
+		},
+		{
+			name:  "one value in a long line",
+			src:   strings.Repeat(line, 32) + "token=" + token,
+			spans: 1,
+		},
+		{
+			name:  "many values",
+			src:   strings.Repeat(line+"token="+token+"\n", 32),
+			spans: 32,
+		},
+	}
+}

@@ -719,3 +719,60 @@ func FuzzJWT_matchesReference(f *testing.F) {
 
 	fuzzAgainstReference(f, JWT().Find, referenceJWTFind)
 }
+
+// jwtFindBenchmarks is what this scan is timed on. The
+// builtinPatterns entry for the pattern names it, and BenchmarkBuiltins times
+// every case it holds under the pattern's own name, so that a built-in cannot
+// arrive without a benchmark. Every case is held to the count it states under
+// a plain go test as well, which is what a benchmark nobody has run yet cannot
+// be.
+func jwtFindBenchmarks() []benchmarkCase {
+	// The two letters a header opens with are two an English word opens with
+	// as well, so the line carries the words that reach the anchor and are
+	// turned away by the character behind them.
+	line := `time=2026-08-17T00:00:00Z level=info msg="the survey key was eyed" `
+	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"
+
+	return []benchmarkCase{
+		{
+			name:  "no value",
+			src:   line,
+			spans: 0,
+		},
+		{
+			// A candidate every three characters, all of them in one run, and
+			// no dot anywhere: each reads the run cursor and stops at the
+			// segments that are not there. This is the run walked once that
+			// the cursor is for, without the decode behind it.
+			name:  "candidates crowded in one run",
+			src:   strings.Repeat("eyJ", 128),
+			spans: 0,
+		},
+		{
+			// The same run with the segments a token carries written after it,
+			// which is what takes every one of those candidates as far as the
+			// decode. Headers ending at one dot decode to suffixes of one
+			// another four alignments over, so the decoding is bounded however
+			// many candidates stand behind the dot — and this is the input
+			// that would show the bound gone.
+			name:  "candidates crowded in one run followed by segments",
+			src:   strings.Repeat("eyJ", 128) + ".a.b",
+			spans: 0,
+		},
+		{
+			name:  "one value",
+			src:   line + "authorization=Bearer " + token,
+			spans: 1,
+		},
+		{
+			name:  "one value in a long line",
+			src:   strings.Repeat(line, 32) + "authorization=Bearer " + token,
+			spans: 1,
+		},
+		{
+			name:  "many values",
+			src:   strings.Repeat(line+"authorization=Bearer "+token+"\n", 32),
+			spans: 32,
+		},
+	}
+}

@@ -9,14 +9,15 @@ the `builtin_*.go` beside it).
 
 One built-in pattern to a file: `builtin_<name>.go` with a
 `builtin_<name>_test.go` beside it, holding the pattern, its scan, the helpers
-only that scan reads, its behaviour tables, its reference and its fuzz target.
-`builtins.go` is the registry alone, `builtin_scan.go` holds what more than one
-scan reads (`segments`, `isBase64URLByte`, `base64URLRunEnd`),
-`builtins_test.go` holds what every built-in is held to, and `fuzz_test.go`
-holds the `Masker` targets and the body the per-pattern targets share. Adding a
-pattern should touch the registry, the property table, two new files and the
-conformance corpus — nothing else. Keep it that way rather than letting a shared
-`builtin.go` grow back.
+only that scan reads, its behaviour tables, its reference, its fuzz target and
+the cases it is benchmarked on. `builtins.go` is the registry alone,
+`builtin_scan.go` holds what more than one scan reads (`segments`,
+`isBase64URLByte`, `base64URLRunEnd`), `builtins_test.go` holds what every
+built-in is held to, `fuzz_test.go` holds the `Masker` targets and the body the
+per-pattern targets share, and `benchmark_test.go` holds every benchmark there
+is. Adding a pattern should touch the registry, the property table, two new
+files and the conformance corpus — nothing else. Keep it that way rather than
+letting a shared `builtin.go` grow back.
 
 One pattern may read another's declarations where the credentials themselves
 nest: `builtin_github_token.go` reads `opensJOSEHeaderAt`, `jwtHeaderPrefix` and
@@ -54,7 +55,12 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `FuzzSlackToken_matchesReference`, `FuzzGitLabToken_matchesReference` and
   `FuzzGoogleAPIKey_matchesReference`. In `conformance`: `FuzzMask`,
   `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30 seconds.
-- `go test -bench . -benchmem` — benchmarks.
+- `go test -bench . -benchmem` — benchmarks. `BenchmarkMasker_Mask` drives every
+  pattern at once through the public API, which is what a caller pays;
+  `BenchmarkBuiltins` drives each scan alone under the name its pattern reports,
+  and that is what a change to a scan is compared against, since a regression in
+  one is a sixth of what the first reports. `go test -bench Builtins/jwt
+  -benchmem .` runs one of them.
 - `golangci-lint run` — lint (no config file; defaults).
 - `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
   analyzer-driven fixer that supersedes the standalone `modernize`, so it
@@ -96,11 +102,11 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   properties every built-in shares — its name and the convention `Pattern.Name`
   asks for, one value per accessor, usable spans, no false positive on prose,
   agreement with its reference, masking that leaves nothing to find out of
-  reach of what it redacted, concurrent use, and a linear-time scan. The two are
-  held to naming the same patterns in the same order, so neither can be
-  forgotten, and an entry is held to being
-  whole: a field left out leaves most of the properties with nothing to hold
-  rather than failing, so `Test_builtins_entriesAreFilledIn` reports the
+  reach of what it redacted, concurrent use, benchmark cases holding the values
+  they state, and a linear-time scan. The two are held to naming the same
+  patterns in the same order, so neither can be forgotten, and an entry is held
+  to being whole: a field left out leaves most of the properties with nothing to
+  hold rather than failing, so `Test_builtins_entriesAreFilledIn` reports the
   omission itself and runs first for that reason.
 - The `samples` a `builtinPatterns` entry carries are the one place fixtures are
   shared. They say only "this is one of these", which is all the properties
@@ -108,6 +114,20 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   by case in the pattern's own `builtin_<name>_test.go`. Inputs crafted against
   what one scan remembers stay with that scan too, as `Test_JWT_scanIsLinear`
   does.
+- `benchmarks` is the one field an entry names rather than carries, for that
+  reason: what is worth timing in a scan — the run its cursor walks once, the
+  candidate crowded behind another, the byte test that turns a log line away —
+  is crafted against that scan, so the cases live in the pattern's own file as
+  `<pattern>FindBenchmarks`. What times them is `BenchmarkBuiltins`
+  (`benchmark_test.go`), which reads this table and nothing else, so a pattern
+  cannot be left untimed: a benchmark written as a function a pattern could be
+  left unwritten and nothing would report it, since `go test` runs no benchmark
+  at all. Naming them here also puts every case under
+  `Test_builtins_benchmarkCasesHoldTheirValues`, which holds it to the count it
+  states — a case named "many values" whose text stopped holding one would
+  otherwise time a scan finding nothing and report it as a speedup.
+  `Test_maskerMaskBenchmarks` does the same for `maskerMaskBenchmarks`, the
+  table `BenchmarkMasker_Mask` reads.
 - Every built-in scanner is checked against a reference kept beside it:
   `referenceJWTFind` (`builtin_jwt_test.go`), `referenceGitHubTokenFind`
   (`builtin_github_token_test.go`), `referenceAWSAccessKeyIDFind`
@@ -164,6 +184,8 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   never moving back by a `Test_..._bodyNeverMovesBack` of their own. The AWS and
   Google scans keep no cursor and need none: a fixed count means a candidate
   reads a bounded number of bytes and stops, which is the same guarantee bought
-  without state. Compare benchmarks before and after touching any of them.
+  without state. Compare benchmarks before and after touching any of them —
+  that scan's cases under `BenchmarkBuiltins` as well as
+  `BenchmarkMasker_Mask`.
 - Published library: any change to an exported name, signature or behaviour is
   breaking. Keep `README.md` in sync with the exported API.

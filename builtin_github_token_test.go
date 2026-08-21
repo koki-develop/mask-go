@@ -485,3 +485,69 @@ func FuzzGitHubToken_matchesReference(f *testing.F) {
 
 	fuzzAgainstReference(f, GitHubToken().Find, referenceGitHubTokenFind)
 }
+
+// githubTokenFindBenchmarks is what this scan is timed on. The
+// builtinPatterns entry for the pattern names it, and BenchmarkBuiltins times
+// every case it holds under the pattern's own name, so that a built-in cannot
+// arrive without a benchmark. Every case is held to the count it states under
+// a plain go test as well, which is what a benchmark nobody has run yet cannot
+// be.
+func githubTokenFindBenchmarks() []benchmarkCase {
+	// Every g in the line reaches the byte tests behind the search, so the line
+	// carries the ones a log line has anyway rather than none.
+	line := `time=2026-08-17T00:00:00Z level=info msg="getting the login" url=https://github.com/login `
+	classic := "ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+	stateless := "ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"
+
+	return []benchmarkCase{
+		{
+			name:  "no value",
+			src:   line,
+			spans: 0,
+		},
+		{
+			// A candidate every nine characters, each of them anchoring a JWT
+			// in the same run of base64url characters, and no dot anywhere for
+			// the segments to begin at. The underscores are base64url
+			// characters themselves, so the whole line is that one run: this is
+			// what the cursor over it is for.
+			name:  "stateless candidates crowded in one run",
+			src:   strings.Repeat("ghs_a_eyJ", 64),
+			spans: 0,
+		},
+		{
+			// The fine grained prefix written inside the body it opens, which
+			// the underscore in that alphabet allows: a candidate every eleven
+			// characters, every one of them asking for the same run, which
+			// only the first of them reads. The run stays long enough to be a
+			// body to most of them, so the crowding is carried through to the
+			// spans rather than turned away at the count.
+			name:  "fine grained prefixes crowded in one body",
+			src:   strings.Repeat("github_pat_", 48),
+			spans: 40,
+		},
+		{
+			name:  "one value",
+			src:   line + "token=" + classic,
+			spans: 1,
+		},
+		{
+			// The stateless form, where the body is followed by an underscore,
+			// a header and the segments after it — the one alternative that
+			// reads past the body it began with.
+			name:  "one stateless value",
+			src:   line + "token=" + stateless,
+			spans: 1,
+		},
+		{
+			name:  "one value in a long line",
+			src:   strings.Repeat(line, 32) + "token=" + classic,
+			spans: 1,
+		},
+		{
+			name:  "many values",
+			src:   strings.Repeat(line+"token="+classic+"\n", 32),
+			spans: 32,
+		},
+	}
+}

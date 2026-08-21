@@ -447,3 +447,50 @@ func FuzzGoogleAPIKey_matchesReference(f *testing.F) {
 
 	fuzzAgainstReference(f, GoogleAPIKey().Find, referenceGoogleAPIKeyFind)
 }
+
+// googleAPIKeyFindBenchmarks is what this scan is timed on. The
+// builtinPatterns entry for the pattern names it, and BenchmarkBuiltins times
+// every case it holds under the pattern's own name, so that a built-in cannot
+// arrive without a benchmark. Every case is held to the count it states under
+// a plain go test as well, which is what a benchmark nobody has run yet cannot
+// be.
+func googleAPIKeyFindBenchmarks() []benchmarkCase {
+	// Nothing in an ordinary line opens the prefix, so what the line times is
+	// the search for it — which is most of what this pattern costs a caller
+	// whose text holds no key.
+	line := `time=2026-08-17T00:00:00Z level=info msg="calling the Maps API" url=https://maps.googleapis.com/maps/api/geocode/json `
+	key := "AIza0123456789abcdefghijklmnopqrstuvwxy"
+
+	return []benchmarkCase{
+		{
+			name:  "no value",
+			src:   line,
+			spans: 0,
+		},
+		{
+			// The prefix is four characters a body is written with, so a run
+			// can hold a candidate for every four it has. Here each of them
+			// reads the body as far as the character that is not one, which
+			// stands where the run ends: the crowding this pattern admits,
+			// with no value at the end of any of it.
+			name:  "candidates that are not values",
+			src:   strings.Repeat("AIzaAIzaAIzaAIzaAIzaAIzaAIzaAIza.", 16),
+			spans: 0,
+		},
+		{
+			name:  "one value",
+			src:   line + "key=" + key,
+			spans: 1,
+		},
+		{
+			name:  "one value in a long line",
+			src:   strings.Repeat(line, 32) + "key=" + key,
+			spans: 1,
+		},
+		{
+			name:  "many values",
+			src:   strings.Repeat(line+"key="+key+"\n", 32),
+			spans: 32,
+		},
+	}
+}

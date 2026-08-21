@@ -19,11 +19,21 @@ import (
 // case in the builtin_<name>_test.go beside the pattern instead; the tables
 // there stay the statement of behaviour and each of their cases still carries
 // its own input.
+//
+// The benchmarks are named rather than written out for the same reason and one
+// more: what is worth timing in a scan is crafted against what that one scan
+// remembers, so it belongs beside it, while what times it is BenchmarkBuiltins
+// reading this table. That is what holds a pattern to being timed at all — a
+// benchmark written as a function a pattern could be left unwritten for a
+// pattern and nothing would say so — and it puts every case under
+// Test_builtins_benchmarkCasesHoldTheirValues, which holds it to the count it
+// states without -bench being run.
 var builtinPatterns = []struct {
-	name    string              // what Name() must report
-	pattern func() Pattern      // the exported accessor
-	ref     func(string) []Span // the plain implementation the scan must agree with
-	samples []string            // inputs holding a value of this kind
+	name       string                 // what Name() must report
+	pattern    func() Pattern         // the exported accessor
+	ref        func(string) []Span    // the plain implementation the scan must agree with
+	samples    []string               // inputs holding a value of this kind
+	benchmarks func() []benchmarkCase // what the scan is timed on
 }{
 	{
 		name:    "aws-access-key-id",
@@ -35,6 +45,7 @@ var builtinPatterns = []struct {
 			"ASIAKIA0123456789ABCDEF",
 			"AKIA0123456789ABCDEFASIA0123456789ABCDEF",
 		},
+		benchmarks: awsAccessKeyIDFindBenchmarks,
 	},
 	{
 		name:    "github-token",
@@ -48,6 +59,7 @@ var builtinPatterns = []struct {
 			"ghu_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 			"ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 		},
+		benchmarks: githubTokenFindBenchmarks,
 	},
 	{
 		name:    "gitlab-token",
@@ -66,6 +78,7 @@ var builtinPatterns = []struct {
 			"glrt-t1_0123456789abcdefghijklmnopq.012345678",
 			"glpat-0123456789abcdefglpat-0123456789abcdefghij",
 		},
+		benchmarks: gitLabTokenFindBenchmarks,
 	},
 	{
 		name:    "google-api-key",
@@ -77,6 +90,7 @@ var builtinPatterns = []struct {
 			"AIzaAIza0123456789abcdefghijklmnopqrstuvwxy",
 			"AIza0123456789abcdefghijklmnopqrstuvwxyAIza0123456789abcdefghijklmnopqrstuvwxy",
 		},
+		benchmarks: googleAPIKeyFindBenchmarks,
 	},
 	{
 		name:    "jwt",
@@ -88,6 +102,7 @@ var builtinPatterns = []struct {
 			"eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY123.iv12345.ciphertextABC.authTAGxyz",
 			"eyIwIjoxLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 		},
+		benchmarks: jwtFindBenchmarks,
 	},
 	{
 		name:    "slack-token",
@@ -102,6 +117,7 @@ var builtinPatterns = []struct {
 			"xoxe.xoxb-1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			"xoxb-xoxb-xoxb-xoxb-0123456789abcdefghijklmn",
 		},
+		benchmarks: slackTokenFindBenchmarks,
 	},
 }
 
@@ -159,7 +175,10 @@ func Test_builtins_entriesAreFilledIn(t *testing.T) {
 	//
 	// So an entry is held to being whole here, where the omission is reported as
 	// itself. This is what the claim that a pattern arrives with the properties
-	// in force rests on.
+	// in force rests on. The benchmarks are held to being named for a reason of
+	// their own: BenchmarkBuiltins times what this table names and nothing
+	// else, so an entry naming none is a scan nobody times, and go test would
+	// not report that by itself — it runs no benchmark at all.
 	for _, b := range builtinPatterns {
 		t.Run(b.name, func(t *testing.T) {
 			if b.name == "" {
@@ -173,6 +192,9 @@ func Test_builtins_entriesAreFilledIn(t *testing.T) {
 			}
 			if len(b.samples) == 0 {
 				t.Error("the entry carries no samples")
+			}
+			if b.benchmarks == nil {
+				t.Error("the entry carries no benchmarks")
 			}
 		})
 	}
@@ -372,6 +394,37 @@ func Test_builtins_concurrentUse(t *testing.T) {
 				})
 			}
 			wg.Wait()
+		})
+	}
+}
+
+func Test_builtins_benchmarkCasesHoldTheirValues(t *testing.T) {
+	// A benchmark case states how many values its text holds, and a case whose
+	// text stopped holding them — a count the vendor changed, a character class
+	// narrowed — would time the scan finding nothing and report that as a
+	// speedup, which is the one failure a benchmark cannot report by itself.
+	//
+	// benchmarkFind checks the same thing before it starts timing, and this is
+	// what does not wait for someone to reach for -bench: go test runs no
+	// benchmark, so without this a case could be wrong for as long as nobody
+	// measured anything.
+	for _, b := range builtinPatterns {
+		t.Run(b.name, func(t *testing.T) {
+			if b.benchmarks == nil {
+				// Calling through a nil function panics, which takes the rest
+				// of the package down instead of failing this one entry.
+				t.Fatalf("the entry for %q names no benchmarks", b.name)
+			}
+			cases := b.benchmarks()
+			if len(cases) == 0 {
+				t.Fatal("the entry names a benchmark holding no case")
+			}
+			p := b.pattern()
+			for _, c := range cases {
+				if got := len(p.Find(c.src)); got != c.spans {
+					t.Errorf("%s: Find located %d value(s) in %d bytes, the case says %d", c.name, got, len(c.src), c.spans)
+				}
+			}
 		})
 	}
 }
