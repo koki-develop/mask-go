@@ -54,6 +54,16 @@ func New(opts ...Option) *Masker {
 // located value survives. The combined text is attributed to the pattern that
 // located the value starting earliest; among those, the longest; among those,
 // the one added first by WithPatterns.
+//
+// Masking is not idempotent, and what Mask is for is the text a program is
+// about to write rather than text it has already masked. A redaction is itself
+// text, and it does not read as the value it replaced: Fill('*') leaves an
+// asterisk where a letter stood, and a prefix that letter closed is then open,
+// so an AWS access key ID written against a Slack prefix is redacted on the
+// first pass and takes a Slack token with it on the second. Fixed("") takes
+// the value out altogether, splicing the text either side of it into text that
+// was never written. Either way masking again may redact more than masking
+// once did, and neither is a defect in a scan.
 func (m *Masker) Mask(src string) string {
 	found := m.locate(src)
 	if len(found) == 0 {

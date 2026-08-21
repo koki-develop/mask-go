@@ -187,7 +187,7 @@ out:  «slack-token»
 
 # And what this pattern leaves alone.
 
-case: a hyphenated identifier under a prefix
+case: an identifier whose every part is shorter than a secret
 in:   xapp-frontend-integration-tests
 out:  xapp-frontend-integration-tests
 
@@ -273,6 +273,22 @@ out:  image: registry.example.com/«slack-token»
 
 case: a digest behind a part of one character is too
 in:   xapp-1-0123456789abcdef0123456789abcdef01234567
+out:  «slack-token»
+
+# A digest is not the only text that reaches that stopping point, and the two
+# cases below are the one place this pattern takes text a reader reads. A word
+# of eighteen letters is a segment long enough to be a secret and carries the
+# letter one is asked for, so a name whose parts run that long is redacted
+# whether it is a credential or a config key. The count is the whole of what
+# holds the shorter names back — the identifier further up this file is left
+# alone because every part of it is short, not because it reads as a name.
+
+case: an english word behind a part
+in:   xapp-config-internationalization
+out:  «slack-token»
+
+case: a camel case identifier behind a part
+in:   xapp-svc-authenticationProvider
 out:  «slack-token»
 
 # The prefixes Slack no longer documents. xoxa- and xoxr- named the access and

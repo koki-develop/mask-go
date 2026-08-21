@@ -12,8 +12,8 @@ import (
 //
 // What every built-in shares — the convention its name follows, one value per
 // accessor, usable spans, no false positive on prose, agreement with the
-// reference below, exhaustive and idempotent masking, concurrent use and a
-// linear-time scan — is held to in builtins_test.go, which drives every
+// reference below, masking that leaves nothing to find out of reach of what it
+// redacted, concurrent use and a linear-time scan — is held to in builtins_test.go, which drives every
 // built-in from one table rather than a set of tests apiece.
 //
 // The keys written out below are made only of ordered characters: valid in

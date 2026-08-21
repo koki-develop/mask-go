@@ -51,6 +51,29 @@ case: a pipeline trigger token
 in:   glptt-0123456789abcdefghijklmnopqrstuvwxyzABCD
 out:  «gitlab-token»
 
+# The pipeline trigger token is the one kind GitLab's own ruleset writes two
+# counts for, twenty characters behind the prefix or forty, and both are read.
+# The case above this comment is a run of exactly forty. The four below it are a
+# run reaching only the shorter count, a run reaching past the shorter but not
+# the longer, a run reaching past the longer, and a run one character short of
+# the shorter — where nothing is located at all.
+
+case: a pipeline trigger token written to the shorter of its two counts
+in:   glptt-0123456789abcdefghij
+out:  «gitlab-token»
+
+case: a pipeline trigger token whose run falls between its two counts
+in:   glptt-0123456789abcdefghijklmnopqrst
+out:  «gitlab-token»klmnopqrst
+
+case: a pipeline trigger token whose run is longer than its longer count
+in:   glptt-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHI
+out:  «gitlab-token»EFGHI
+
+case: a pipeline trigger token one short of its shorter count
+in:   glptt-0123456789abcdefghi
+out:  glptt-0123456789abcdefghi
+
 case: an agent token
 in:   glagent-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN
 out:  «gitlab-token»

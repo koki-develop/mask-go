@@ -10,11 +10,12 @@ import "strings"
 // Kubernetes (glagent-), SCIM OAuth tokens (glsoat-) and feature flags client
 // tokens (glffct-).
 //
-// Both shapes a body is written in are read. The classic one is the count of
+// Both shapes a body is written in are read. The classic one is a count of
 // base64url characters that kind of token has carried since GitLab gave it a
-// prefix, and the count differs by kind. The routable one is what GitLab.com is
-// moving to for Cells: a longer payload carrying the routing information,
-// closed by a dot, the length of that payload and a checksum.
+// prefix; the count differs by kind, and a pipeline trigger token is written to
+// either of two. The routable one is what GitLab.com is moving to for Cells: a
+// longer payload carrying the routing information, closed by a dot, the length
+// of that payload and a checksum.
 //
 // Its name is "gitlab-token".
 func GitLabToken() Pattern { return gitLabToken }
@@ -34,25 +35,42 @@ func GitLabToken() Pattern { return gitLabToken }
 // gives no length, no alphabet and no checksum for any of them.
 //
 // What GitLab publishes beyond the prose is a detection ruleset of its own:
-// rules/mit/gitlab.toml in the secret-detection-rules project, which is what
-// GitLab's own secret detection and secret push protection run. It gives a
-// regular expression a kind, and that is where every count below comes from —
-// twenty characters behind glpat-, gldt-, glrt-, glft-, glsoat-, glffct- and
-// the underscore of a glcbt-, twenty-five behind glimt-, forty behind glptt-,
-// fifty behind glagent- and sixty-four behind gloas-; glrtr- takes glrt-'s, for
-// the reason given further down. It is GitLab's own statement of the shape
-// rather than a third party's reading of issued tokens, which is what makes it
-// something to key on; the counts are nonetheless a ruleset's and not a
-// specification's, and what that wagers is the exactness weighed below.
+// rules/mit/gitlab/gitlab.toml in the secret-detection-rules project, which is
+// what GitLab's own secret detection and secret push protection run. It gives a
+// regular expression a kind, and that is where the counts below come from —
+// twenty characters behind glpat-, gldt-, glrt-, glft-, glsoat- and the
+// underscore of a glcbt-, twenty-five behind glimt-, fifty behind glagent- and
+// sixty-four behind gloas-; glrtr- takes glrt-'s, for the reason given further
+// down. It is GitLab's own statement of the shape rather than a third party's
+// reading of issued tokens, which is what makes it something to key on; the
+// counts are nonetheless a ruleset's and not a specification's, and what that
+// wagers is the exactness weighed below.
+//
+// A pipeline trigger token is the one kind that ruleset writes two counts for,
+// twenty characters behind glptt- or forty, and both are read. Reading only the
+// forty would leave a token written to the shorter of the two in the output
+// whole, which is the direction that costs a reader something rather than the
+// direction that costs them a tail.
+//
+// One kind is not in that ruleset at all. GitLab's prefix table names glffct-
+// for a feature flags client token, and no rule of GitLab's own states what
+// stands behind it, so the twenty characters read here are gitleaks' — a third
+// party's reading of issued tokens, which is the source the paragraph above
+// prefers not to key on. It is kept, because the prefix is GitLab's own and a
+// body of twenty is what every other kind written to a single count is written
+// to. It is named here rather than left to look like the rest: the one count
+// nobody can check against GitLab should be the one a reader can find.
 //
 // The alphabet is the base64url one, isBase64URLByte in builtin_scan.go: the
 // letters of both cases, the digits, the hyphen and the underscore. That is
 // what every one of those expressions admits behind its prefix, and it is what
-// Devise.friendly_token, which GitLab generates a classic body with, emits. The
-// pipeline trigger token is narrower still — forty hexadecimal characters — and
-// is read in the wider alphabet anyway: nothing a reader can read is admitted
-// by the difference, and a scan keyed on the narrower one would lose the token
-// the day GitLab widens it.
+// Devise.friendly_token, which GitLab generates a classic body with, emits.
+// gitleaks reads a pipeline trigger token more narrowly than GitLab's own rule
+// does, as forty hexadecimal characters, and the wider alphabet is read here
+// anyway: nothing a reader can read is admitted by the difference, and a scan
+// keyed on the narrower one would lose the token the day GitLab widens it —
+// which GitLab's own rule, admitting the whole alphabet behind glptt-, has
+// already done.
 //
 // The counts are exact rather than floors, for the reason the AWS scan beside
 // this one gives: a run of the alphabet longer than the count is not one longer
@@ -235,11 +253,17 @@ var gitLabToken = NewPattern("gitlab-token", func(src string) []Span {
 })
 
 // gitLabTokenKind is one kind of token: the prefix GitLab writes it with, the
-// count of characters its classic body is written to, and whether a partition
+// counts of characters its classic body is written to, and whether a partition
 // id stands in front of that body.
+//
+// bodyChars holds more than one count where the ruleset the rationale above
+// reads states more than one, and is ordered longest first: the scan takes the
+// first count the run reaches, so a run long enough for two is the longer
+// token and what is written after it, never the shorter token and a tail left
+// in the output. Test_gitLabTokenKinds holds the order.
 type gitLabTokenKind struct {
 	prefix    string
-	bodyChars int
+	bodyChars []int
 	partition bool
 }
 
@@ -256,20 +280,20 @@ type gitLabTokenKind struct {
 //
 // The rationale above says where each count comes from.
 var gitLabTokenKinds = [...]gitLabTokenKind{
-	{prefix: "glpat-", bodyChars: 20},   // personal, project, group and impersonation access tokens
-	{prefix: "gldt-", bodyChars: 20},    // deploy tokens
-	{prefix: "glrt-", bodyChars: 20},    // runner authentication tokens
-	{prefix: "glrtr-", bodyChars: 20},   // runner authentication tokens created through a registration token
-	{prefix: "glft-", bodyChars: 20},    // feed tokens
-	{prefix: "glsoat-", bodyChars: 20},  // SCIM OAuth tokens
-	{prefix: "glffct-", bodyChars: 20},  // feature flags client tokens
-	{prefix: "glimt-", bodyChars: 25},   // incoming mail tokens
-	{prefix: "glptt-", bodyChars: 40},   // pipeline trigger tokens
-	{prefix: "glagent-", bodyChars: 50}, // agent tokens for Kubernetes
-	{prefix: "gloas-", bodyChars: 64},   // OAuth application secrets
+	{prefix: "glpat-", bodyChars: []int{20}},     // personal, project, group and impersonation access tokens
+	{prefix: "gldt-", bodyChars: []int{20}},      // deploy tokens
+	{prefix: "glrt-", bodyChars: []int{20}},      // runner authentication tokens
+	{prefix: "glrtr-", bodyChars: []int{20}},     // runner authentication tokens created through a registration token
+	{prefix: "glft-", bodyChars: []int{20}},      // feed tokens
+	{prefix: "glsoat-", bodyChars: []int{20}},    // SCIM OAuth tokens
+	{prefix: "glffct-", bodyChars: []int{20}},    // feature flags client tokens
+	{prefix: "glimt-", bodyChars: []int{25}},     // incoming mail tokens
+	{prefix: "glptt-", bodyChars: []int{40, 20}}, // pipeline trigger tokens, the one kind written to two counts
+	{prefix: "glagent-", bodyChars: []int{50}},   // agent tokens for Kubernetes
+	{prefix: "gloas-", bodyChars: []int{64}},     // OAuth application secrets
 
 	// The one kind whose classic body carries a partition id in front of it.
-	{prefix: "glcbt-", bodyChars: 20, partition: true}, // CI/CD job tokens
+	{prefix: "glcbt-", bodyChars: []int{20}, partition: true}, // CI/CD job tokens
 }
 
 const (
@@ -367,9 +391,12 @@ func gitLabTokenRoutableEnd(src string, body, runEnd int) (int, bool) {
 // begins at body in src ends, and whether one is written there. runEnd is where
 // the run of body characters ends, which the scan has already read.
 //
-// The count is exact, so a run longer than the body is a token and what is
+// A count is exact, so a run longer than the body is a token and what is
 // written after it. What the run has to be is long enough; where it ends says
-// nothing about where the token does.
+// nothing about where the token does. Where the kind names more than one count
+// the longest the run reaches is the one read, which is what the order of
+// bodyChars gives: reading the shorter first would end a pipeline trigger token
+// twenty characters in and leave the other twenty in the output.
 func gitLabTokenClassicEnd(k *gitLabTokenKind, src string, body, runEnd int) (int, bool) {
 	if k.partition {
 		i := body
@@ -385,10 +412,12 @@ func gitLabTokenClassicEnd(k *gitLabTokenKind, src string, body, runEnd int) (in
 		body = i + 1
 	}
 
-	if runEnd-body < k.bodyChars {
-		return 0, false
+	for _, n := range k.bodyChars {
+		if runEnd-body >= n {
+			return body + n, true
+		}
 	}
-	return body + k.bodyChars, true
+	return 0, false
 }
 
 // isGitLabTokenPartitionByte reports whether c may appear in the partition id

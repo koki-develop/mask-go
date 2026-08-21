@@ -105,6 +105,33 @@ func SlackToken() Pattern { return slackToken }
 // credential, and declining it would mean declining every token written the
 // same way. Test_SlackToken_aDigestBehindAPart pins the collision.
 //
+// A digest is not the only text that reaches it, and this is the one place the
+// pattern takes text a reader reads rather than text opaque to one. An English
+// word of eighteen letters or more is a segment long enough to be a secret and
+// carries the letter one is asked for, so xapp-config-internationalization is
+// redacted, and so is a camel case identifier of that length.
+// Test_SlackToken_aWordBehindAPart pins those.
+//
+// The tightening that would reach a word is a demand for a digit in the secret.
+// Slack states no alphabet, so what that would cost has to be read off the
+// shape of the secrets rather than off a document, and it is dearest where the
+// secret is shortest: nineteen characters drawn from letters and digits carry
+// no digit about one time in twenty-eight, and twenty-four about one time in
+// sixty-eight, so asking for one would leave that share of the tokens written
+// to those lengths in the output whole. Asking instead that a secret not be
+// written in letters of a single case is far cheaper — about one nineteen
+// character secret in seven million — but buys back only the words written in
+// one case, leaving every camel case identifier and every digest exactly where
+// they are.
+//
+// Neither is taken. The first trades away a share of real tokens large enough
+// to matter, which is the direction this library cannot fail in, and the AWS
+// scan beside this one declines the same tightening for the same reason. The
+// second is cheap but partial: it would leave the sentence above — that this is
+// where the pattern reaches text a reader reads — standing exactly as it is,
+// while putting a case test inside the scan that carries the cursor. The count
+// below is what holds the problem down instead.
+//
 // The second demand is on what stands in front: the byte before the prefix may
 // not be a letter or a digit. Slack's prefixes are not words, but three of
 // these five letters can close one — linuxapp- and nginxapp- end in xapp — and
@@ -153,7 +180,9 @@ func SlackToken() Pattern { return slackToken }
 // token whose every part were shorter than this, that token would be left in
 // the output whole. Against that stands what a lower count would cost: at
 // twelve, a hyphenated English identifier written after any of these prefixes
-// is redacted, letter and all.
+// is redacted, letter and all. Eighteen narrows that rather than ending it: a
+// word of eighteen letters clears the count on its own, which is what the
+// paragraph on where the tightening stops is about.
 //
 // The alphabet is the letters of both cases, the ten digits and the hyphen,
 // which is every character any published Slack token is written in. The

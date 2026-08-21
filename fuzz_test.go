@@ -99,8 +99,9 @@ func covered(got []located, s Span) bool {
 	return false
 }
 
-// FuzzMaskLeavesNothingToFind checks that masking is exhaustive: scanning the
-// output of Mask with the same patterns finds nothing left to redact.
+// FuzzMasker_Mask checks that masking is exhaustive: scanning the output of
+// Mask with the same patterns finds nothing left to redact out of reach of what
+// it redacted.
 func FuzzMasker_Mask(f *testing.F) {
 	f.Add("nothing to see here")
 	f.Add("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz")
@@ -118,13 +119,7 @@ func FuzzMasker_Mask(f *testing.F) {
 
 	m := New(WithPatterns(AllBuiltinPatterns()...))
 	f.Fuzz(func(t *testing.T, src string) {
-		masked := m.Mask(src)
-		if left := m.locate(masked); len(left) != 0 {
-			t.Fatalf("Mask(%q) = %q still holds %d value(s) to redact", src, masked, len(left))
-		}
-		if again := m.Mask(masked); again != masked {
-			t.Fatalf("Mask is not idempotent: %q then %q", masked, again)
-		}
+		checkSecondPass(t, m, src)
 	})
 }
 

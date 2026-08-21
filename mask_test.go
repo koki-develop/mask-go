@@ -1,10 +1,63 @@
 package mask
 
 import (
+	"slices"
 	"strings"
 	"sync"
 	"testing"
+	"unicode/utf8"
 )
+
+// checkSecondPass holds masking the output of masking src to locating nothing
+// out of reach of what the first pass redacted. m must redact with Fill('*'),
+// which is what the run lengths below are counted as.
+//
+// Masking is not idempotent and the doc comment on Mask says so: a redaction
+// does not read as the value it replaced, so it can open a prefix that value
+// closed — an AWS access key ID written against a Slack prefix is redacted
+// first and takes a Slack token with it second. So what a second pass locates
+// is not by itself a defect, and the property that survives is where it may
+// locate: against what the first pass wrote, or overlapping it.
+//
+// A value out of reach of every redaction is the defect this is here for. It
+// stands in text the first pass left as it found it, with the bytes either
+// side of it the ones it was written with, so nothing about it had changed
+// when the first pass read over it and declined to locate it: a scan whose
+// cursor carried past a value, or one that stopped at the first of two.
+//
+// A value the first pass located only part of is not held here, and cannot be.
+// The rest of one begins exactly where the redaction of its front ended, which
+// is where a value a redaction opened begins as well, so no position tells the
+// two apart. What holds a scan to locating a value whole is the reference
+// beside it, which Test_builtins_matchTheirReference and each pattern's fuzz
+// target drive, and the spans each builtin_<name>_test.go writes out.
+func checkSecondPass(t testing.TB, m *Masker, src string) {
+	t.Helper()
+
+	// Where the first pass wrote, in the offsets of the masked text. Mask
+	// copies the text between the values it locates and writes a rune for a
+	// rune over each of them, so the runs follow from locate alone.
+	type run struct{ start, end int }
+	var runs []run
+	at, taken := 0, 0
+	for _, f := range m.locate(src) {
+		at += f.Start - taken
+		end := at + utf8.RuneCountInString(src[f.Start:f.End])
+		runs = append(runs, run{start: at, end: end})
+		at, taken = end, f.End
+	}
+
+	masked := m.Mask(src)
+	for _, s := range m.locate(masked) {
+		// s.Start <= r.end and r.start <= s.End is overlapping or touching: a
+		// value ending where a run begins, or beginning where one ends, has a
+		// redaction for a neighbour.
+		if slices.ContainsFunc(runs, func(r run) bool { return s.Start <= r.end && r.start <= s.End }) {
+			continue
+		}
+		t.Errorf("Mask(%q) = %q, in which %q is located again at %d, with no redaction of the first pass beside it", src, masked, masked[s.Start:s.End], s.Start)
+	}
+}
 
 // fixed returns a Pattern reporting name that always locates spans, whatever
 // the input. It lets the resolution rules be tested without a regular

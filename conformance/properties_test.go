@@ -12,6 +12,7 @@ package conformance
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -106,9 +107,7 @@ func checkMasking(t testing.TB, patterns []mask.Pattern, src string) {
 	if masked != want.String() {
 		t.Fatalf("masking %q gave %q, want %q", src, masked, want.String())
 	}
-	if again := m.Mask(masked); again != masked {
-		t.Fatalf("masking %q is not idempotent: %q then %q", src, masked, again)
-	}
+	checkSecondPass(t, patterns, src, masked, kept, values)
 	// A value that was in the text once and has been redacted is not in the
 	// output at all. Where it was there more than once, some of them may have
 	// been left on purpose — a pattern locating a single letter says nothing
@@ -118,6 +117,75 @@ func checkMasking(t testing.TB, patterns []mask.Pattern, src string) {
 		if strings.Count(src, value) == 1 && strings.Contains(masked, value) {
 			t.Fatalf("masking %q gave %q, which still holds the redacted %q", src, masked, value)
 		}
+	}
+}
+
+// checkSecondPass holds masking masked, which is what masking src gave, to
+// redacting only where the first pass reached.
+//
+// Masking is not idempotent and the root package says so: a redaction reads
+// differently from the value it replaced, so it can open a prefix that value
+// closed, and an AWS access key ID written against a Slack prefix takes a Slack
+// token with it on the second pass. What survives that is not whether the
+// second pass redacts but where it may. masked is src with each of values
+// replaced by a run of asterisks and kept are the stretches of src between
+// them, so where the first pass wrote is known exactly, and a value the second
+// pass locates must either overlap one of those runs or stand against one — a
+// redaction beside it is what changed how it reads.
+//
+// A value that does neither is the defect this is here for. It sits in text the
+// first pass left as it found it, with the bytes either side of it the ones it
+// was written with, so nothing about it had changed when the first pass read
+// over it and declined to locate it: a scan whose cursor carried past a value,
+// or one that stopped at the first of two.
+func checkSecondPass(t testing.TB, patterns []mask.Pattern, src, masked string, kept, values []string) {
+	t.Helper()
+
+	// Where the first pass wrote, in the offsets of masked. Fill writes one
+	// asterisk per rune, which is what the run lengths come from.
+	type run struct{ start, end int }
+	runs := make([]run, 0, len(values))
+	at := 0
+	for i, value := range values {
+		at += len(kept[i])
+		end := at + utf8.RuneCountInString(value)
+		runs = append(runs, run{start: at, end: end})
+		at = end
+	}
+
+	sep, ok := separatorFor(masked)
+	if !ok {
+		return // text holding every byte there is; nothing can mark it
+	}
+	var found []string
+	remarked := mask.New(
+		mask.WithPatterns(patterns...),
+		mask.WithRedactor(mask.NewRedactor(func(match mask.Match) string {
+			found = append(found, match.Value)
+			return sep
+		})),
+	).Mask(masked)
+	if len(found) == 0 {
+		return
+	}
+
+	between := strings.Split(remarked, sep)
+	if len(between) != len(found)+1 {
+		t.Fatalf("masking %q redacted %d value(s) but marked %d place(s)", masked, len(found), len(between)-1)
+	}
+	at = 0
+	for i, value := range found {
+		at += len(between[i])
+		start, end := at, at+len(value)
+		at = end
+
+		// start <= r.end and r.start <= end is overlapping or touching: a
+		// value ending where a run begins, or beginning where one ends, has a
+		// redaction for a neighbour.
+		if slices.ContainsFunc(runs, func(r run) bool { return start <= r.end && r.start <= end }) {
+			continue
+		}
+		t.Fatalf("masking %q gave %q, in which %q is located again at %d, with no redaction of the first pass beside it", src, masked, value, start)
 	}
 }
 

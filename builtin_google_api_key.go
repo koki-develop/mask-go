@@ -91,13 +91,12 @@ func GoogleAPIKey() Pattern { return googleAPIKey }
 // What this pattern over-matches on: thirty-nine characters of the alphabet
 // standing inside a longer base64 value. AIza is four characters drawn from an
 // alphabet of sixty-four, so a payload written in one — a certificate, an
-// embedded image, a
-// JWT signature — carries the prefix about once in seventeen million
-// characters, and where the thirty-five behind it are all in the alphabet as
-// well, those thirty-nine are redacted. What is taken there is thirty-nine
-// characters of a value that was already opaque, and it is a key's format
-// exactly: nothing is left in the text to tell the two apart, so a pattern
-// letting that run through would let a real key through with it.
+// embedded image, a JWT signature — carries the prefix about once in seventeen
+// million characters, and where the thirty-five behind it are all in the
+// alphabet as well, those thirty-nine are redacted. What is taken there is
+// thirty-nine characters of a value that was already opaque, and it is a key's
+// format exactly: nothing is left in the text to tell the two apart, so a
+// pattern letting that run through would let a real key through with it.
 //
 // The tightening that looks available is the two characters behind the prefix.
 // Google's own example is AIzaSy..., as is nearly every key published anywhere,

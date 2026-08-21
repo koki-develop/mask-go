@@ -259,10 +259,10 @@ func parseCorpusFile(name string, data []byte) (*corpusFile, error) {
 //
 // A pattern of the second kind states what no pattern of the first can — the
 // spans a Masker must not trust — but the properties that follow a value around
-// say nothing about it: it does not follow a value around. Masking it is not
-// even idempotent, since the second pass reports the same offsets into a text
-// that has changed under them. Those properties are held back for such a case,
-// and only for such a case.
+// say nothing about it: it does not follow a value around. A second pass over
+// what masking gave reports the same offsets into a text that has changed under
+// them, so where it redacts says nothing about a scan either. Those properties
+// are held back for such a case, and only for such a case.
 func parseSpans(value string) (bool, error) {
 	switch value {
 	case "found":

@@ -34,8 +34,8 @@ out:  GITHUB_TOKEN=«github-token»
   with the built-ins. Every set must be named by some case.
 - `spans: reported` marks a case whose patterns report spans of their own rather
   than finding them in the text. It holds back the properties that follow a
-  value around — longer text, repetition, idempotence — which such a pattern
-  cannot have. Use it for those cases only.
+  value around — longer text, repetition, what a second pass may redact — which
+  such a pattern cannot have. Use it for those cases only.
 - `in` may not hold `«` or `»`. Escapes are `\n`, `\r`, `\t`, `\\` and `\xNN`; a
   field is read with the space around it trimmed, so whitespace at either end
   has to be escaped.
@@ -96,12 +96,24 @@ control bytes, text that is not valid UTF-8).
   an entry of its own in `patternSets`, which `Test_patternSets_holdEveryBuiltinAlone`
   asks for. The property tests need no entry: `builtinSets`
   (`properties_test.go`) is derived from `AllBuiltinPatterns`.
-- Masking is held to being idempotent here, which `Mask` does not promise for
-  every redactor: removing a value can splice the text either side of it into
-  one that was not there, which `Fixed("")` makes easiest
-  (`s3cr3t-s3cr3t-valuevalue` under a pattern for `s3cr3t-value`). No case does
-  that today. One that did would be failing the harness rather than the library,
-  so state that behaviour in the root package instead.
+- Masking is not held to being idempotent here, because `Mask` is not, and the
+  root package says so on `Mask` itself: a redaction does not read as the value
+  it replaced, so it can open a prefix that value closed — an AWS access key ID
+  written against a Slack prefix is redacted first and takes a Slack token with
+  it second — and `Fixed("")` splices the text either side of a value into text
+  that was never written. What is held here instead is where a second pass may
+  redact. `checkSecondPass` (`properties_test.go`) asks that every value the
+  second pass locates overlap a redaction of the first or stand against one; a
+  value out of reach of all of them stands in text nothing had changed around,
+  so the first pass read over it and declined to locate it, which is the scan
+  defect the property is for. A value the first pass located only part of is
+  not held there and cannot be — the rest of one begins where the redaction of
+  its front ended, which is where a value a redaction opened begins as well —
+  and is held instead by each case stating the spans it expects. The root
+  package keeps a `checkSecondPass` of its own (`mask_test.go`) reading spans
+  from `locate` rather than marking them. Adding an assertion that masking
+  twice gives what masking once gave puts a promise back that the library does
+  not make.
 - The fuzz corpus under `testdata/fuzz` is keyed on the name of its target, so
   never rename `FuzzMask`, `FuzzMask_customPatterns` or `FuzzText` without
   moving the directory beside it.

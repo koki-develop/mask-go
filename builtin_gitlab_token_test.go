@@ -12,8 +12,8 @@ import (
 //
 // What every built-in shares — the convention its name follows, one value per
 // accessor, usable spans, no false positive on prose, agreement with the
-// reference below, exhaustive and idempotent masking, concurrent use and a
-// linear-time scan — is held to in builtins_test.go, which drives every
+// reference below, masking that leaves nothing to find out of reach of what it
+// redacted, concurrent use and a linear-time scan — is held to in builtins_test.go, which drives every
 // built-in from one table rather than a set of tests apiece.
 //
 // The tokens written out below are made only of ordered characters: valid in
@@ -74,6 +74,25 @@ func Test_GitLabToken(t *testing.T) {
 		{
 			name: "a pipeline trigger token",
 			src:  "glptt-0123456789abcdefghijklmnopqrstuvwxyzABCD",
+			want: []Span{{0, 46}},
+		},
+		{
+			// The one kind GitLab's own ruleset writes two counts for. Both are
+			// read, and the three cases here are the run reaching only the
+			// shorter, reaching past it but not the longer, and reaching past
+			// the longer.
+			name: "a pipeline trigger token written to the shorter of its two counts",
+			src:  "glptt-0123456789abcdefghij",
+			want: []Span{{0, 26}},
+		},
+		{
+			name: "a pipeline trigger token whose run falls between its two counts",
+			src:  "glptt-0123456789abcdefghijklmnopqrst",
+			want: []Span{{0, 26}},
+		},
+		{
+			name: "a pipeline trigger token whose run is longer than its longer count",
+			src:  "glptt-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHI",
 			want: []Span{{0, 46}},
 		},
 		{
@@ -318,6 +337,10 @@ func Test_GitLabToken_noMatch(t *testing.T) {
 			src:  "glpat-0123456789abcdef.ghij",
 		},
 		{
+			name: "a pipeline trigger token one short of its shorter count",
+			src:  "glptt-0123456789abcdefghi",
+		},
+		{
 			// GitLab names the workspace token's prefix and publishes no shape
 			// for it, so this pattern reads none.
 			name: "a workspace token, whose shape GitLab does not publish",
@@ -511,8 +534,21 @@ func Test_gitLabTokenKinds(t *testing.T) {
 			if k.prefix[len(k.prefix)-1] != '-' {
 				t.Error("the prefix does not close with a hyphen, so a body would begin inside it")
 			}
-			if k.bodyChars <= 0 {
-				t.Errorf("the kind names a body of %d characters, so anything behind the prefix is one", k.bodyChars)
+			if len(k.bodyChars) == 0 {
+				t.Error("the kind names no body at all, so it can never be located")
+			}
+			for i, n := range k.bodyChars {
+				if n <= 0 {
+					t.Errorf("the kind names a body of %d characters, so anything behind the prefix is one", n)
+				}
+				// Longest first, which the scan reads as "the first count the
+				// run reaches is the longest it reaches". Written the other way
+				// round a run long enough for both would give the shorter
+				// token and leave the rest of the longer one in the output,
+				// and every other property here would still pass.
+				if i > 0 && n >= k.bodyChars[i-1] {
+					t.Errorf("the counts %v are not ordered longest first, so the scan would read the shorter body of a run long enough for both", k.bodyChars)
+				}
 			}
 		})
 	}
@@ -603,7 +639,11 @@ func Test_gitLabTokenByteClasses(t *testing.T) {
 //
 // The routable alternative comes first, as it does in the scan: its payload is
 // written in the alphabet a classic body is, so a classic alternative reached
-// first would take the opening of a payload for a whole token.
+// first would take the opening of a payload for a whole token. The forty of a
+// pipeline trigger token comes before its twenty for the same reason and in the
+// same direction the scan orders bodyChars: this expression is matched leftmost
+// first rather than leftmost longest, so the shorter alternative written first
+// would end that token twenty characters in.
 //
 // The prefixes, the counts and the character classes are spelled again rather
 // than built from gitLabTokenKinds and the constants beside it. A reference
@@ -622,6 +662,7 @@ var referenceGitLabToken = regexp.MustCompile(
 		`|glffct-[0-9A-Za-z_-]{20}` +
 		`|glimt-[0-9A-Za-z_-]{25}` +
 		`|glptt-[0-9A-Za-z_-]{40}` +
+		`|glptt-[0-9A-Za-z_-]{20}` +
 		`|glagent-[0-9A-Za-z_-]{50}` +
 		`|gloas-[0-9A-Za-z_-]{64}` +
 		`|glcbt-[0-9A-Za-z]{1,5}_[0-9A-Za-z_-]{20}`,
@@ -665,6 +706,13 @@ func FuzzGitLabToken_matchesReference(f *testing.F) {
 	f.Add("glrtr-0123456789abcdefghij") // the prefix the shorter one opens
 	f.Add("glimt-0123456789abcdefghijklmno")
 	f.Add("glptt-0123456789abcdefghijklmnopqrstuvwxyzABCD")
+	// The pipeline trigger token's two counts, and the lengths on either side
+	// of the shorter one and between the two.
+	f.Add("glptt-0123456789abcdefghij")
+	f.Add("glptt-0123456789abcdefghi")
+	f.Add("glptt-0123456789abcdefghijk")
+	f.Add("glptt-0123456789abcdefghijklmnopqrstuvwxyzABC")
+	f.Add("glptt-0123456789abcdefghijklmnopqrstuvwxyzABCDE")
 	f.Add("glagent-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN")
 	f.Add("gloas-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01")
 	// The partition id of a CI job token: present, absent, empty and too long.

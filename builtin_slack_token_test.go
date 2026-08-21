@@ -11,8 +11,8 @@ import (
 //
 // What every built-in shares — the convention its name follows, one value per
 // accessor, usable spans, no false positive on prose, agreement with the
-// reference below, exhaustive and idempotent masking, concurrent use and a
-// linear-time scan — is held to in builtins_test.go, which drives every
+// reference below, masking that leaves nothing to find out of reach of what it
+// redacted, concurrent use and a linear-time scan — is held to in builtins_test.go, which drives every
 // built-in from one table rather than a set of tests apiece.
 //
 // The tokens written out below are made only of ordered characters: valid in
@@ -224,6 +224,41 @@ func Test_SlackToken_aDigestBehindAPart(t *testing.T) {
 	}
 }
 
+func Test_SlackToken_aWordBehindAPart(t *testing.T) {
+	// The same stopping point as Test_SlackToken_aDigestBehindAPart, reached by
+	// text a reader reads rather than by a digest. A word of eighteen letters
+	// is a segment long enough to be a secret and carries the letter one is
+	// asked for, so a name whose parts run that long is redacted. The rationale
+	// in builtin_slack_token.go weighs the two tightenings that would reach
+	// these and takes neither; what holds the shorter names back is the count
+	// alone, which Test_SlackToken_identifiersThatAreNotTokens states.
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "an english word behind a part",
+			src:  "xapp-config-internationalization",
+			want: "********************************",
+		},
+		{
+			name: "a camel case identifier behind a part",
+			src:  "xapp-svc-authenticationProvider",
+			want: "*******************************",
+		},
+	}
+
+	m := New(WithPatterns(SlackToken()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_SlackToken_noMatch(t *testing.T) {
 	tests := []struct {
 		name string
@@ -260,10 +295,12 @@ func Test_SlackToken_noMatch(t *testing.T) {
 		},
 		{
 			// The tightening that keeps this pattern off text a reader can
-			// read. Every part here is a word, so no segment is long enough
-			// to be a secret, and a grammar asking only for the prefix and
-			// the run would have redacted the whole of it.
-			name: "a hyphenated identifier under a prefix",
+			// read. Every part here is shorter than a secret, so no segment is
+			// one, and a grammar asking only for the prefix and the run would
+			// have redacted the whole of it. It is the count doing that and
+			// nothing else: an identifier with a part of eighteen letters is
+			// redacted, which Test_SlackToken_aWordBehindAPart states.
+			name: "an identifier whose every part is shorter than a secret",
 			src:  "xapp-frontend-integration-tests",
 		},
 		{

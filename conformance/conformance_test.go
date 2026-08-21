@@ -111,21 +111,8 @@ func checkCase(t *testing.T, c *corpusCase) {
 		for _, r := range redactors {
 			t.Run(r.name, func(t *testing.T) {
 				masker := maskerWith(patterns, r.redactor)
-				got := masker.Mask(c.in)
-				if got != r.want {
+				if got := masker.Mask(c.in); got != r.want {
 					t.Fatalf("Mask(%q) = %q, want %q", c.in, got, r.want)
-				}
-
-				// Nothing the patterns can still find may be left, and masking
-				// what was masked must change nothing further. A pattern that
-				// reports spans of its own reports the same offsets into text
-				// that has changed under them, so the case says so and is not
-				// held to this.
-				if !c.reads {
-					return
-				}
-				if again := masker.Mask(got); again != got {
-					t.Errorf("Mask is not idempotent on %q: %q then %q", c.in, got, again)
 				}
 			})
 		}
@@ -203,11 +190,12 @@ func checkCase(t *testing.T, c *corpusCase) {
 		// corpus: mark the redactions with a separator the text does not hold,
 		// put the values back, and the input must come out.
 		//
-		// It holds masking to being idempotent along the way, which is why it
-		// sits behind the guard rather than beside the check above. A pattern
-		// reporting spans of its own is not idempotent by construction, and a
-		// case saying spans: reported is held back from every property that
-		// rests on it.
+		// It holds masking the output to reaching no further than the first
+		// pass reached along the way, which is why it sits behind the guard
+		// rather than beside the check above. A pattern reporting spans of its
+		// own reports the same offsets into text that has changed under them,
+		// so a case saying spans: reported is held back from every property
+		// that rests on where a value sits.
 		checkMasking(t, patterns, c.in)
 	})
 
@@ -308,9 +296,6 @@ func TestConformance_oneMaskerForEveryCase(t *testing.T) {
 	for _, c := range corpusCases(t) {
 		c.requireOut(t)
 		got := m.Mask(c.in)
-		if again := m.Mask(got); again != got {
-			t.Errorf("%s: Mask is not idempotent: %q then %q", c.id(), got, again)
-		}
 		if c.set == "default" && got != c.out {
 			t.Errorf("%s: Mask(%q) = %q, want %q", c.id(), c.in, got, c.out)
 		}
@@ -424,10 +409,19 @@ func TestConformance_scale(t *testing.T) {
 	if d := time.Since(start); d > limit {
 		t.Errorf("masking %d bytes took %v, want under %v", len(src), d, limit)
 	}
-	if again := m.Mask(masked); again != masked {
-		t.Error("masking a document of the whole corpus is not idempotent")
-	}
 	if got, want := utf8.RuneCountInString(masked), utf8.RuneCountInString(src); got != want {
 		t.Errorf("masking with Fill left %d runes, the input had %d", got, want)
+	}
+
+	// Masking again may redact more than masking once did, which the root
+	// package states. What it may not do is redact less: Fill writes a rune for
+	// a rune, so a run of asterisks may grow but no asterisk may turn back into
+	// text.
+	again := m.Mask(masked)
+	if got, want := utf8.RuneCountInString(again), utf8.RuneCountInString(masked); got != want {
+		t.Errorf("masking a masked document left %d runes, it had %d", got, want)
+	}
+	if got, want := strings.Count(again, "*"), strings.Count(masked, "*"); got < want {
+		t.Errorf("masking a masked document left %d asterisk(s), it had %d", got, want)
 	}
 }

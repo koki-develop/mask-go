@@ -179,6 +179,25 @@ case: an environment file holding one of each
 in:   SLACK_BOT_TOKEN=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 out:  SLACK_BOT_TOKEN=«slack-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
+# The other direction: a Slack prefix written against the end of an access key
+# ID rather than a key written into a Slack body. A prefix standing behind a
+# letter or a digit opens nothing, so the key is redacted and the bot token
+# beside it comes through whole and would authenticate a request as it stands.
+# That is what the case below shows, and it is here to be looked up rather than
+# arrived at: neither pattern's own file states what the two of them come to
+# when both are enabled.
+#
+# It is here for what comes after that, which no out field can state. Redacting
+# the key puts characters that are neither a letter nor a digit where its last
+# one stood, so the prefix a letter had closed is open to a second pass and the
+# token is redacted then. Masking is not idempotent, and the doc comment on
+# Mask says so; checkSecondPass (properties_test.go) is what holds a second
+# pass here, and this is the input it was written against.
+
+case: a slack prefix written against the end of an access key id
+in:   AKIA0123456789ABCDEFxoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn
+out:  «aws-access-key-id»xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn
+
 # A GitLab token beside the others. Its body is read in the base64url alphabet
 # and to a count the kind fixes, which is what makes it behave unlike the Slack
 # body beside it: a value written inside a GitLab body is located there too and

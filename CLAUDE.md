@@ -95,9 +95,10 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `builtinPatterns` (`builtins_test.go`), which is what holds it to the
   properties every built-in shares — its name and the convention `Pattern.Name`
   asks for, one value per accessor, usable spans, no false positive on prose,
-  agreement with its reference, exhaustive and idempotent masking, concurrent
-  use, and a linear-time scan. The two are held to naming the same patterns in
-  the same order, so neither can be forgotten, and an entry is held to being
+  agreement with its reference, masking that leaves nothing to find out of
+  reach of what it redacted, concurrent use, and a linear-time scan. The two are
+  held to naming the same patterns in the same order, so neither can be
+  forgotten, and an entry is held to being
   whole: a field left out leaves most of the properties with nothing to hold
   rather than failing, so `Test_builtins_entriesAreFilledIn` reports the
   omission itself and runs first for that reason.
