@@ -68,12 +68,12 @@ to move with it: no `out` can contradict a name.
 ## Where a case goes
 
 `builtin_aws_access_key_id.txt`, `builtin_github_token.txt`,
-`builtin_gitlab_token.txt`, `builtin_google_api_key.txt`, `builtin_jwt.txt` and
-`builtin_slack_token.txt` (one pattern each), `builtins_together.txt` (all of
-them at once, and the values two of them read differently),
-`custom_patterns.txt` (`MustRegexp`, `NewPattern`, and no pattern at all),
-`overlap_and_attribution.txt` (how overlapping values merge and which pattern
-the result is attributed to), `unusable_spans.txt` (the spans `Find` is
+`builtin_gitlab_token.txt`, `builtin_google_api_key.txt`, `builtin_jwt.txt`,
+`builtin_openai_api_key.txt` and `builtin_slack_token.txt` (one pattern each),
+`builtins_together.txt` (all of them at once, and the values two of them read
+differently), `custom_patterns.txt` (`MustRegexp`, `NewPattern`, and no pattern
+at all), `overlap_and_attribution.txt` (how overlapping values merge and which
+pattern the result is attributed to), `unusable_spans.txt` (the spans `Find` is
 documented to ignore), `text_shapes.txt` (log lines, JSON, command lines, and
 the credentials this library does not redact), `degenerate.txt` (empty text,
 control bytes, text that is not valid UTF-8).

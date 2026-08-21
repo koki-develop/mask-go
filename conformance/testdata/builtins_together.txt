@@ -274,6 +274,46 @@ case: an environment file holding a google api key among the others
 in:   GOOGLE_API_KEY=AIza0123456789abcdefghijklmnopqrstuvwxy\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 out:  GOOGLE_API_KEY=«google-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
+# An OpenAI API key beside the others, and inside them. A key is the prefix, a
+# run of base64url characters, and the marker T3BlbkFJ somewhere inside that
+# run, so it can stand inside any value read in an alphabet as wide — a GitLab
+# body, the signature of a JWT — and is located there as well; the two spans
+# overlap and are redacted as one, attributed to whichever starts earliest. The
+# same width works the other way round, and what ends a key is where its run
+# ends rather than a count, so a value of another kind written inside a key or
+# straight after it falls inside the key's own span rather than beside it. That
+# is how a classic GitHub token body behaves above and not how the GitLab and
+# Google counts do. A dot ends the run, which is what keeps a JWT written after
+# a key apart from it.
+
+case: an openai api key beside a github token and a jwt
+in:   openai=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  openai=«openai-api-key» github=«github-token» jwt=«jwt»
+
+case: an openai api key inside the signature of a jwt
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sk-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  «jwt»
+
+case: an openai api key inside a gitlab oauth application secret
+in:   gloas-sk-0123456789abcdefT3BlbkFJ0123456789abcdef0123456789abcdef01234
+out:  «gitlab-token»
+
+case: a google api key inside an openai api key run
+in:   sk-proj-AIza0123456789abcdefghijklmnopqrstuvwxyT3BlbkFJ0123456789abcdef
+out:  «openai-api-key»
+
+case: an access key id written straight after an openai api key
+in:   sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdefAKIA0123456789ABCDEF
+out:  «openai-api-key»
+
+case: a jwt directly after an openai api key, which the dot keeps apart
+in:   sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «openai-api-key».«jwt»
+
+case: an environment file holding an openai api key among the others
+in:   OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  OPENAI_API_KEY=«openai-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+
 # Where the GitHub and JWT patterns disagree about a stateless installation
 # token. The GitHub pattern asks for an app id, a single underscore, and a JWT
 # whose every segment holds at least one character; the JWT pattern asks a

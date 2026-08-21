@@ -29,6 +29,7 @@ returns every pattern in the table below, and grows as patterns are added:
 | `GitLabToken()` | `glpat-…`, `gldt-…`, `glrt-…`, `glrtr-…`, `glcbt-…`, `glptt-…`, `glft-…`, `glimt-…`, `glagent-…`, `gloas-…`, `glsoat-…`, `glffct-…` |
 | `GoogleAPIKey()` | `AIza…` |
 | `JWT()` | JSON Web Tokens |
+| `OpenAIAPIKey()` | `sk-proj-…`, `sk-svcacct-…`, `sk-admin-…`, `sk-…` |
 | `SlackToken()` | `xoxb-…`, `xoxp-…`, `xapp-…`, `xwfp-…`, `xoxe-…`, `xoxe.xoxb-…`, `xoxe.xoxp-…` |
 
 `MustRegexp` builds a pattern from a regular expression:

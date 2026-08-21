@@ -105,6 +105,20 @@ var builtinPatterns = []struct {
 		benchmarks: jwtFindBenchmarks,
 	},
 	{
+		name:    "openai-api-key",
+		pattern: OpenAIAPIKey,
+		ref:     referenceOpenAIAPIKeyFind,
+		samples: []string{
+			"OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef",
+			"sk-svcacct-0123456789abcdefT3BlbkFJ0123456789abcdef",
+			"sk-admin-0123456789abcdefT3BlbkFJ0123456789abcdef",
+			"sk-0123456789abcdefT3BlbkFJ0123456789abcdef",
+			"sk-proj-0123456789abcdef-0123456789abcdef_T3BlbkFJ0123456789abcdef",
+			"sk-sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef",
+		},
+		benchmarks: openAIAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "slack-token",
 		pattern: SlackToken,
 		ref:     referenceSlackTokenFind,

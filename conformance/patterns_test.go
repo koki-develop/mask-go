@@ -68,6 +68,7 @@ var patternSets = map[string][]mask.Pattern{
 	"gitlab-token":      {mask.GitLabToken()},
 	"google-api-key":    {mask.GoogleAPIKey()},
 	"jwt":               {mask.JWT()},
+	"openai-api-key":    {mask.OpenAIAPIKey()},
 	"slack-token":       {mask.SlackToken()},
 
 	// No pattern at all: a Masker given none redacts nothing.

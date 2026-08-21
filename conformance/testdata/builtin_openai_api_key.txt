@@ -1,0 +1,222 @@
+# What OpenAI API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is, written on either side of the marker T3BlbkFJ. Those eight
+# characters are the base64 encoding of OpenAI and they stand in every key
+# OpenAI has issued, between two runs of random characters; a real key carries
+# seventy-four or fifty-eight of those on each side, twenty for the older kind,
+# and sixteen is written here because the pattern reads them as runs rather than
+# to a count, so the shorter run states the same grammar and leaves a case that
+# fits on a line.
+#
+# The two cases under the over-match heading carry no ordered run at all. They
+# are not keys and nobody issued them: what they hold is a blob carrying the
+# prefix and the marker and nothing key shaped between the two, which is the
+# whole of what the pattern asks for.
+
+patterns: openai-api-key
+
+# The kinds of key, which differ only in the name a kind writes between the
+# prefix and its first run — and the older kind writes none at all. The pattern
+# reads that name as the opening of the run rather than from a table of names,
+# so the three kinds OpenAI issues today, the kind it issued before projects
+# existed and a kind nobody here has named are one shape in five spellings,
+# written below in the seven places a key is written.
+
+case: a project key in an environment assignment
+in:   OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  OPENAI_API_KEY=«openai-api-key»
+
+case: a project key in the authorization header a request carries it in
+in:   Authorization: Bearer sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  Authorization: Bearer «openai-api-key»
+
+case: a service account key
+in:   sk-svcacct-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  «openai-api-key»
+
+case: an admin api key on a command line
+in:   curl -H 'Authorization: Bearer sk-admin-0123456789abcdefT3BlbkFJ0123456789abcdef' https://api.openai.com/v1/organization/projects
+out:  curl -H 'Authorization: Bearer «openai-api-key»' https://api.openai.com/v1/organization/projects
+
+case: a user key with no kind behind the prefix
+in:   sk-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  «openai-api-key»
+
+case: a key naming a kind this pattern was never told about
+in:   sk-service-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  «openai-api-key»
+
+case: a key in a client side configuration object
+in:   {"apiKey":"sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef","project":"example"}
+out:  {"apiKey":"«openai-api-key»","project":"example"}
+
+# The alphabet the runs are written in. It is base64url, which is what the
+# published keys carry: a project, service account or admin key holds hyphens
+# and underscores among its letters and digits. The two characters standard
+# base64 writes in their place, the plus and the slash, are not admitted — and
+# because the run in front of the marker is what carries the prefix to it, a
+# character outside the alphabet standing between the two leaves no key at all
+# rather than a shorter one.
+
+case: a run carrying a hyphen and an underscore
+in:   sk-proj-0123456789abcdef-0123456789abcdef_T3BlbkFJ0123456789abcdef
+out:  «openai-api-key»
+
+case: a plus between the prefix and the marker
+in:   sk-proj-0123456789abcdef+T3BlbkFJ0123456789abcdef
+out:  sk-proj-0123456789abcdef+T3BlbkFJ0123456789abcdef
+
+case: a slash between the prefix and the marker
+in:   sk-proj-0123456789abcdef/T3BlbkFJ0123456789abcdef
+out:  sk-proj-0123456789abcdef/T3BlbkFJ0123456789abcdef
+
+case: a space between the prefix and the marker
+in:   sk-proj-0123456789abcdef T3BlbkFJ0123456789abcdef
+out:  sk-proj-0123456789abcdef T3BlbkFJ0123456789abcdef
+
+case: a dot between the prefix and the marker
+in:   sk-proj-0123456789abcdef.T3BlbkFJ0123456789abcdef
+out:  sk-proj-0123456789abcdef.T3BlbkFJ0123456789abcdef
+
+# How much stands either side of the marker, which is nothing the pattern asks
+# about. The two runs OpenAI writes are the same length as each other, that
+# length differs by kind, and it has already been shipped at three sizes —
+# twenty either side of an older key, fifty-eight either side of an admin key
+# and seventy-four either side of the rest. So a count is what this scan is
+# written not to read: a key whose runs are of unlike length is located whole,
+# and so is one a column limit cut off the moment the marker was written.
+
+case: runs of unlike length
+in:   sk-proj-0123456789abcdef0123456789abcdef0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  «openai-api-key»
+
+case: a key cut off at the marker
+in:   sk-proj-0123456789abcdefT3BlbkFJ
+out:  «openai-api-key»
+
+case: a key cut off inside the marker
+in:   sk-proj-0123456789abcdefT3Blb
+out:  sk-proj-0123456789abcdefT3Blb
+
+# What a key may be written against, and what it draws in. The prefix is the
+# whole of the anchor and there is no boundary on either side of it, so a key
+# keeps its span whatever word character stands in front of it. Behind it the
+# redaction reaches to the end of the run, which is the price of reading a run
+# rather than a count: a character of the key's own alphabet written straight
+# after a key is redacted with the key, and a space, a dot or a quote is not.
+
+case: a key after an underscore
+in:   OPENAI_API_KEY_sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  OPENAI_API_KEY_«openai-api-key»
+
+case: a key after a letter
+in:   xsk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  x«openai-api-key»
+
+case: a key at the end of a sentence
+in:   the key is sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef.
+out:  the key is «openai-api-key».
+
+case: a key inside quotes
+in:   export OPENAI_API_KEY="sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef"
+out:  export OPENAI_API_KEY="«openai-api-key»"
+
+case: a key before a hyphenated word
+in:   sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef-suffix
+out:  «openai-api-key»
+
+case: a key before a word
+in:   sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdefsuffix
+out:  «openai-api-key»
+
+# Two keys written together. The prefix is written in the alphabet a run is, so
+# a key can begin inside the span of the one before it; the two spans overlap
+# and are redacted as one. Written apart, both go.
+
+case: a key beginning inside the key before it
+in:   sk-sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  «openai-api-key»
+
+case: two keys separated by a space
+in:   sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-admin-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  «openai-api-key» «openai-api-key»
+
+# What this pattern redacts that nobody issued. The marker is the base64
+# encoding of OpenAI, so base64url written over bytes holding that word at a
+# position divisible by three carries those eight characters; where such a run
+# also carries the prefix somewhere in front of them, everything from the prefix
+# to the end of the run is redacted. That is the answer rather than a fault in
+# it: what is taken is a stretch of a value already opaque to a reader, and the
+# two tightenings on offer are both lists that go stale. One is a count of the
+# characters either side; the other is a table of the names a kind writes behind
+# the prefix, which would have located nothing on the day svcacct and admin were
+# added beside proj. A stale list costs a whole key, and this costs a reader
+# nothing. The pattern's own file weighs both.
+
+case: the prefix and the marker inside a longer run of the alphabet
+in:   payload=zzzzsk-zzzzT3BlbkFJzzzz
+out:  payload=zzzz«openai-api-key»
+
+case: the prefix and the marker where a signature stands
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzsk-zzzzT3BlbkFJzzzz
+out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«openai-api-key»
+
+# And what this pattern leaves alone. The first four are the marker: read in the
+# case OpenAI writes it, read in all eight of its characters, asked for at all,
+# and asked for behind the prefix rather than in front of it. The three after
+# them are the prefix, read in its own case, in all three of its characters, and
+# asked for in front of a marker that would otherwise stand alone. Of the last
+# three, the hyphenated words carry the prefix and no marker, which is the whole
+# of what turns them away; a digest carries neither, holding no hyphen for the
+# prefix and neither a T nor a J for the marker; and no word of prose is spelled
+# with either.
+
+case: a marker in the wrong case
+in:   sk-proj-0123456789abcdeft3blbkfj0123456789abcdef
+out:  sk-proj-0123456789abcdeft3blbkfj0123456789abcdef
+
+case: seven characters of the marker
+in:   sk-proj-0123456789abcdefT3BlbkF0123456789abcdef
+out:  sk-proj-0123456789abcdefT3BlbkF0123456789abcdef
+
+case: a run carrying no marker at all
+in:   sk-proj-0123456789abcdef0123456789abcdef
+out:  sk-proj-0123456789abcdef0123456789abcdef
+
+case: the marker in front of the prefix
+in:   T3BlbkFJ0123456789abcdefsk-0123456789abcdef
+out:  T3BlbkFJ0123456789abcdefsk-0123456789abcdef
+
+case: an uppercase prefix
+in:   SK-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  SK-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+
+case: an underscore where the prefix carries a hyphen
+in:   sk_proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  sk_proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+
+case: the marker with no prefix in front of it
+in:   0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  0123456789abcdefT3BlbkFJ0123456789abcdef
+
+case: a hexadecimal digest
+in:   sha1=0123456789abcdef0123456789abcdef01234567
+out:  sha1=0123456789abcdef0123456789abcdef01234567
+
+case: a line of hyphenated words
+in:   the task-list and the risk-register were both reviewed
+out:  the task-list and the risk-register were both reviewed
+
+case: prose
+in:   there is no credential in this sentence
+out:  there is no credential in this sentence
+
+# And an OpenAI credential this pattern has nothing to say about. A client
+# secret for the Realtime API is handed to a browser and lives about a minute;
+# OpenAI writes it as a value opening ek_ and states nothing else about it, so
+# there is no shape here to read one by and the string comes through whole.
+
+case: a realtime client secret
+in:   {"value":"ek_0123456789abcdef0123456789abcdef","expires_at":1735689600}
+out:  {"value":"ek_0123456789abcdef0123456789abcdef","expires_at":1735689600}
