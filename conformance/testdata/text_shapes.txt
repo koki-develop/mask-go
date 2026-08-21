@@ -96,7 +96,7 @@ case: a hexadecimal digest
 in:   sha256=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:  sha256=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a slack token is not one of the kinds this library knows
+case: a slack prefix whose every part is too short to be a secret
 in:   SLACK_TOKEN=xoxb-0123456789abcdef-0123456789abcdef
 out:  SLACK_TOKEN=xoxb-0123456789abcdef-0123456789abcdef
 
@@ -155,6 +155,14 @@ case: a url encoded form body
 in:   grant_type=refresh_token&refresh_token=ghr_0123456789abcdefghijklmnopqrstuvwxyz&client_id=Iv1.0123456789abcdef
 out:  grant_type=refresh_token&refresh_token=«github-token»&client_id=Iv1.0123456789abcdef
 
+case: an api key in the query string of a request
+in:   curl "https://maps.googleapis.com/maps/api/geocode/json?address=Tokyo&key=AIza0123456789abcdefghijklmnopqrstuvwxy"
+out:  curl "https://maps.googleapis.com/maps/api/geocode/json?address=Tokyo&key=«google-api-key»"
+
+case: an api key in a client side configuration object
+in:   const firebaseConfig = { apiKey: "AIza0123456789abcdefghijklmnopqrstuvwxy", authDomain: "example.firebaseapp.com" };
+out:  const firebaseConfig = { apiKey: "«google-api-key»", authDomain: "example.firebaseapp.com" };
+
 case: text in japanese around a jwt
 in:   アクセストークンは eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef です
 out:  アクセストークンは «jwt» です
@@ -174,10 +182,6 @@ out:  AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567
 case: an openai api key is not one of the kinds this library knows
 in:   OPENAI_API_KEY=sk-0123456789abcdef0123456789abcdef0123456789abcdef
 out:  OPENAI_API_KEY=sk-0123456789abcdef0123456789abcdef0123456789abcdef
-
-case: a google api key is not one of the kinds this library knows
-in:   GOOGLE_API_KEY=AIza0123456789abcdef0123456789abcdef012
-out:  GOOGLE_API_KEY=AIza0123456789abcdef0123456789abcdef012
 
 case: an npm token is not one of the kinds this library knows
 in:   NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz

@@ -51,9 +51,9 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
 - `go test -fuzz FuzzJWT_matchesReference .` — fuzzing. Targets in the root
   package: `FuzzMasker_locate`, `FuzzMasker_Mask`, `FuzzJWT_matchesReference`,
   `FuzzGitHubToken_matchesReference`, `FuzzAWSAccessKeyID_matchesReference`,
-  `FuzzSlackToken_matchesReference` and `FuzzGitLabToken_matchesReference`.
-  In `conformance`: `FuzzMask`, `FuzzMask_customPatterns`, `FuzzText`. CI gives
-  each of them 30 seconds.
+  `FuzzSlackToken_matchesReference`, `FuzzGitLabToken_matchesReference` and
+  `FuzzGoogleAPIKey_matchesReference`. In `conformance`: `FuzzMask`,
+  `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30 seconds.
 - `go test -bench . -benchmem` — benchmarks.
 - `golangci-lint run` — lint (no config file; defaults).
 - `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
@@ -111,15 +111,17 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `referenceJWTFind` (`builtin_jwt_test.go`), `referenceGitHubTokenFind`
   (`builtin_github_token_test.go`), `referenceAWSAccessKeyIDFind`
   (`builtin_aws_access_key_id_test.go`), `referenceSlackTokenFind`
-  (`builtin_slack_token_test.go`) and `referenceGitLabTokenFind`
-  (`builtin_gitlab_token_test.go`), plain implementations of the same
+  (`builtin_slack_token_test.go`), `referenceGitLabTokenFind`
+  (`builtin_gitlab_token_test.go`) and `referenceGoogleAPIKeyFind`
+  (`builtin_google_api_key_test.go`), plain implementations of the same
   rules. The second tries `referenceGitHubToken`, the regular expression the
   GitHub token scan reads by hand, at every byte rather than handing it to
   `FindAllStringIndex`: a value either scan locates can hold the start of the
   next one, so a reference that resumed past a match would miss what the scan
-  finds. The third and the fifth do the same for the same reason — an access
-  key ID can begin three characters into the one before it, and a GitLab body
-  is written in an alphabet that holds every letter a GitLab prefix is. The
+  finds. The third, the fifth and the sixth do the same for the same reason —
+  an access key ID can begin three characters into the one before it, a GitLab
+  body is written in an alphabet that holds every letter a GitLab prefix is,
+  and a Google API key's prefix is written in the alphabet its own body is. The
   first and the fourth are written out rather than built on a regular
   expression, because what they read of a candidate — a decoded JOSE header, a
   run divided into segments — is not what an expression states compactly. A
@@ -143,18 +145,23 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   became a value or not, because in each of them a value can begin inside the
   one before it. A GitHub body and a JWT signature are read as far as their
   alphabet runs, so either swallows the opening of a credential written straight
-  after it; an AWS access key ID is read to a fixed count and swallows nothing,
-  but its two prefixes overlap one another — the `A` closing `ASIA` opens the
-  `AKIA` three characters along. Consuming a match would step over such a
-  value and leave it in the output whole. The cost is that a value nested in
-  another — a JWT payload that is itself a header — is located too; the spans
-  overlap and `Masker.locate` resolves them.
+  after it; an AWS access key ID and a Google API key are read to a fixed count
+  and swallow nothing, but each can still be written inside the one before it —
+  the `A` closing `ASIA` opens the `AKIA` three characters along, and `AIza` is
+  four characters a key's own body may be written with. Consuming a match would
+  step over such a value and leave it in the output whole. The cost is that a
+  value nested in another — a JWT payload that is itself a header — is located
+  too; the spans overlap and `Masker.locate` resolves them.
 - `Masker.locate` and every built-in scanner are deliberately linear-time and
   allocation-conscious. Resuming one byte along means a run can hold a
-  candidate for every character it has, and the cursors the JWT and GitHub scans
-  keep over a run — of base64url characters, and of the alphabet a fine grained
-  token body is written in — are what rule out quadratic inputs there. The
-  AWS scan keeps no cursor and needs none: a fixed count means a candidate
+  candidate for every character it has, and four of the scans keep a cursor over
+  that run to rule out quadratic inputs: the JWT scan over a run of base64url
+  characters, the GitHub scan over that and over the alphabet a fine grained
+  token body is written in, the GitLab scan over a body run, and the Slack scan
+  over a body run and the rightmost part of it able to be a secret. Each of
+  those cursors is load-bearing, and the ones the last two keep are held to
+  never moving back by a `Test_..._bodyNeverMovesBack` of their own. The AWS and
+  Google scans keep no cursor and need none: a fixed count means a candidate
   reads a bounded number of bytes and stops, which is the same guarantee bought
   without state. Compare benchmarks before and after touching any of them.
 - Published library: any change to an exported name, signature or behaviour is

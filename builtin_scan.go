@@ -15,9 +15,10 @@ type segments struct {
 
 // isBase64URLByte reports whether c belongs to the base64url alphabet of RFC
 // 4648, which encodes the parts of a JWT, the JWT a stateless GitHub
-// installation token carries, and the body of a GitLab token. Padding is not
-// admitted: the compact serialization is defined without it, and neither is
-// the routable payload GitLab encodes.
+// installation token carries, the body of a GitLab token and the body of a
+// Google API key. Padding is not admitted: the compact serialization is defined
+// without it, and neither the routable payload GitLab encodes nor the key
+// Google shows carries any.
 func isBase64URLByte(c byte) bool {
 	return '0' <= c && c <= '9' ||
 		'A' <= c && c <= 'Z' ||

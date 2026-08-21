@@ -44,6 +44,13 @@ func ExampleGitLabToken() {
 	// Output: GITLAB_TOKEN=**************************
 }
 
+func ExampleGoogleAPIKey() {
+	m := mask.New(mask.WithPatterns(mask.GoogleAPIKey()))
+
+	fmt.Println(m.Mask("GOOGLE_API_KEY=AIza0123456789abcdefghijklmnopqrstuvwxy"))
+	// Output: GOOGLE_API_KEY=***************************************
+}
+
 func ExampleJWT() {
 	m := mask.New(mask.WithPatterns(mask.JWT()))
 

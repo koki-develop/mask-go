@@ -66,6 +66,17 @@ var builtinPatterns = []struct {
 		},
 	},
 	{
+		name:    "google-api-key",
+		pattern: GoogleAPIKey,
+		ref:     referenceGoogleAPIKeyFind,
+		samples: []string{
+			"GOOGLE_API_KEY=AIza0123456789abcdefghijklmnopqrstuvwxy",
+			"AIza0123456789abcdef-hijklmnopqrstuvwx_",
+			"AIzaAIza0123456789abcdefghijklmnopqrstuvwxy",
+			"AIza0123456789abcdefghijklmnopqrstuvwxyAIza0123456789abcdefghijklmnopqrstuvwxy",
+		},
+	},
+	{
 		name:    "jwt",
 		pattern: JWT,
 		ref:     referenceJWTFind,
