@@ -5,7 +5,7 @@ import "strings"
 // SlackToken locates Slack credentials that carry a token prefix: bot tokens
 // (xoxb-), user tokens (xoxp-), app-level tokens (xapp-), workflow tokens
 // (xwfp-), and the pair token rotation issues — refresh tokens (xoxe-) and the
-// rotatable access tokens written as a bot or user token behind xoxe.
+// rotatable access tokens a xoxe. prefix puts in front of a bot or user token
 // (xoxe.xoxb-, xoxe.xoxp-).
 //
 // Slack documents the prefixes and nothing else: no length, no alphabet, no
@@ -15,11 +15,6 @@ import "strings"
 // token ends with and carries a letter as every such secret does. A prefix
 // written against a letter or a digit opens nothing, which is what keeps an
 // identifier ending in one of them from being read as a token.
-//
-// The prefixes Slack no longer documents are left alone. xoxa- and xoxr- named
-// the access and refresh tokens of workspace apps, xoxs- and xoxo- the tokens
-// of the legacy custom integrations, and xoxc- and xoxd- are the values a
-// browser session carries, which Slack has never published at all.
 //
 // Its name is "slack-token".
 func SlackToken() Pattern { return slackToken }
@@ -78,8 +73,8 @@ func SlackToken() Pattern { return slackToken }
 // behind such an ending an ordinary hyphenated name goes on to carry a git SHA
 // or an MD5, which is a run of alphanumerics with letters in it and so the
 // whole of what the first demand asks for. Those are values a reader reads,
-// and CLAUDE.md's gate rules out a grammar admitting them where a tightening
-// was available.
+// and a tightening was available, so a grammar admitting them is one this
+// pattern has no business having.
 //
 // It is not the word boundary a regular expression would write, and the
 // difference is the underscore. SLACK_BOT_TOKEN_xoxb-... is how a token
@@ -109,17 +104,17 @@ func SlackToken() Pattern { return slackToken }
 // credential would come through whole because of text beside it. Keyed on some
 // segment, text written after a token can only lengthen the run and never take
 // a segment out of it, so what follows a token may widen the redaction but can
-// never undo it. The cost is stated rather than passed over:
+// never undo it. What that costs is the text a run reaches over:
 // xoxb-0123456789ab-0123456789abcdefghijklmn-backup takes -backup with it.
 //
 // The count is an observation and only as good as the observation. Eighteen is
-// below every secret published anywhere the author could find — the shortest
-// belongs to a retired bot token and is nineteen characters — and is the floor
-// the scanners that collected those settled on. Slack states no length, so were
-// it to issue a token whose every part were shorter than this, that token would
-// be left in the output whole. Against that stands what a lower count would
-// cost: at twelve, a hyphenated English identifier written after any of these
-// prefixes is redacted, letter and all.
+// below every published Slack secret — the shortest belongs to a retired bot
+// token and is nineteen characters — and is the floor the scanners that
+// collected those settled on. Slack states no length, so were it to issue a
+// token whose every part were shorter than this, that token would be left in
+// the output whole. Against that stands what a lower count would cost: at
+// twelve, a hyphenated English identifier written after any of these prefixes
+// is redacted, letter and all.
 //
 // The alphabet is the letters of both cases, the ten digits and the hyphen,
 // which is every character any published Slack token is written in. The
@@ -127,16 +122,9 @@ func SlackToken() Pattern { return slackToken }
 // case-insensitive prefix would put XOXO, which is a word and a common one in
 // file names, in front of the same run.
 //
-// Which prefixes are admitted is the other half of the decision, and it is the
-// ones Slack documents today. The legacy prefixes are left out — xoxa- and
-// xoxr- for workspace apps, xoxs- and xoxo- for the custom integrations Slack
-// retired and has been revoking, xoxc- and xoxd- for the values a browser
-// session carries. Those are credentials and this pattern does not reach them,
-// which is a decision and not an oversight: Slack has withdrawn every
-// description of them, so a pattern for one would be keyed on other people's
-// readings of tokens nobody can issue any more, and one of the four letters is
-// the word xoxo. A caller who still holds such a token has to say so with a
-// pattern of their own.
+// The prefixes admitted are the ones Slack documents today, which is what keeps
+// every count and character class above keyed on something Slack states rather
+// than on other people's readings of issued tokens.
 //
 // referenceSlackTokenFind in builtin_slack_token_test.go is the plain
 // implementation of these rules, spelling the prefixes, the count and the

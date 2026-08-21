@@ -8,24 +8,6 @@ import "strings"
 // are the two prefixes AWS documents for an access key ID, and STS tells the
 // two apart by them.
 //
-// The secret access key that goes with one is not located, and cannot be by a
-// pattern of this kind: AWS gives it no prefix and no length that tells it
-// apart from any other forty characters of base64, so the only thing marking
-// one is the name written in front of it, which this library does not read. A
-// caller who needs those redacted has to say so with a pattern of their own.
-//
-// The other prefixes IAM documents are left alone. AIDA for a user, AROA for a
-// role, AGPA for a group and the rest are unique identifiers rather than
-// credentials: they authenticate nothing, and they are written into policy
-// documents and CloudTrail records precisely so that a reader can match one up,
-// so redacting one takes something from the reader and keeps nothing from
-// anyone. Every unique identifier AWS shows is twenty-one characters rather
-// than twenty, which is an observation of the examples and not something AWS
-// states, so it is not what the scan turns on — the prefix is. ABIA, an
-// AWS STS service bearer token, and ACCA, a context-specific credential, are
-// credentials, but AWS documents no shape for either beyond the prefix itself,
-// and a pattern for them would be keyed on a guess rather than on a format.
-//
 // A key is located wherever it is written, with no word boundary either side,
 // and exactly twenty characters of it are. So an unbroken run of twenty
 // uppercase letters and digits opening with one of the prefixes is redacted
@@ -63,22 +45,21 @@ func AWSAccessKeyID() Pattern { return awsAccessKeyID }
 // the GetAccessKeyInfo page among them — and twenty-one in every unique
 // identifier beside them. Twenty is therefore an observation of the examples
 // rather than a documented format, and the count below is only as good as that
-// observation. The wager is bounded and stated: were AWS to issue a key longer
-// than twenty, the characters past the twentieth would be left in the output.
+// observation. The wager is bounded: were AWS to issue a key longer than
+// twenty, the characters past the twentieth would be left in the output.
 // Against that stands what a floor would cost, which the ASIA paragraph below
 // is about, and which bites on text that exists today rather than on text that
 // might.
 //
 // So the sixteen behind the prefix are a count and not a floor, and a longer
 // run of the alphabet is not one longer key but a key with something written
-// after it. Only the key is redacted, and the cost of that is stated rather
-// than passed over: AKIA0123456789ABCDEFGHIJ leaves GHIJ in the output. Those
-// four characters are part of no credential if the twenty in front of them are
-// a key, and the alternatives are worse in the direction that matters. Asking
-// for a boundary there would leave that key in the output whole; running the
-// alphabet out instead would redact every character of the run, which is what
-// makes the ASIA below cost a reader a whole word rather than twenty
-// characters of one.
+// after it. Only the key is redacted, and that costs the tail:
+// AKIA0123456789ABCDEFGHIJ leaves GHIJ in the output. Those four characters are
+// part of no credential if the twenty in front of them are a key, and the
+// alternatives are worse in the direction that matters. Asking for a boundary
+// there would leave that key in the output whole; running the alphabet out
+// instead would redact every character of the run, which is what makes the ASIA
+// below cost a reader a whole word rather than twenty characters of one.
 //
 // The alphabet is the uppercase letters and the ten digits, which is every
 // character AWS has shown in a key. It is wider than what the keys are thought
@@ -91,26 +72,24 @@ func AWSAccessKeyID() Pattern { return awsAccessKeyID }
 // what is located by nothing a reader can read: what reaches a span either way
 // is twenty uppercase characters and digits opening with AKIA or ASIA.
 //
-// What this pattern over-matches on, which the gate in CLAUDE.md asks to be
-// weighed rather than assumed: ASIA is an English word, and AKIA is not. So an
-// unbroken run of twenty uppercase letters and digits that opens with those
-// four is redacted whether or not it is a credential: written in capitals and
-// unbroken, ASIA PACIFIC SOUTHEAST is exactly twenty characters and is
+// What this pattern over-matches on: ASIA is an English word, and AKIA is not.
+// So an unbroken run of twenty uppercase letters and digits that opens with
+// those four is redacted whether or not it is a credential: written in capitals
+// and unbroken, ASIA PACIFIC SOUTHEAST is exactly twenty characters and is
 // redacted whole, and ASIAN ELEPHANT CONSERVATION is longer, so its first
 // twenty go and ATION stays. What reaches a span is never prose as a reader
 // writes it — a space, a hyphen or a lowercase letter ends the run, so the
 // text has to be twenty characters of unbroken capitals before the question
-// arises — but it can be a word, which the git SHA and the MD5 the gate names
-// cannot. The tables in builtin_aws_access_key_id_test.go and the corpus
-// beside it pin that behaviour so it cannot move unnoticed.
+// arises — but it can be a word, which a git SHA or an MD5 cannot. The tables
+// in builtin_aws_access_key_id_test.go and the corpus beside it pin that
+// behaviour so it cannot move unnoticed.
 //
 // It is admitted, and not merely tolerated. Twenty unbroken capitals opening
 // with ASIA are a key's format exactly, so there is nothing left in the text
 // to read them by: a real key and a word written that way are the same twenty
 // bytes, and a pattern that let one through would let the other through too.
 // Redacting both is the answer that keeps the credential; keeping the word
-// would cost the credential. CLAUDE.md's gate is about the loose grammar
-// rather than this one — the grammar here is already the format AWS states,
+// would cost the credential. The grammar here is already the format AWS states,
 // and tightening it is not on offer.
 //
 // The two tightenings that look available buy less than they cost. Asking the

@@ -123,7 +123,7 @@ func Test_SlackToken_identifiersThatAreNotTokens(t *testing.T) {
 	// output, log lines and branches carry them, each of which a prefix and a
 	// run alone would have redacted. Every one of them is a value a reader
 	// reads — a git SHA, an MD5, a nanosecond timestamp, a build number — and
-	// CLAUDE.md's gate rules those out where a tightening was available.
+	// none of them may be redacted.
 	//
 	// The first three are held out by what stands in front of the prefix:
 	// xapp closes linuxapp and nginxapp, and a letter there opens nothing. The

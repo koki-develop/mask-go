@@ -128,19 +128,18 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		// cost the token itself the day GitHub writes a header this pattern
 		// does not recognise.
 		//
-		// The shape the anchor does ask for is not free, and what it costs is
-		// stated rather than passed over: the whitespace JSON allows behind
-		// the brace beside the space — a tab, a carriage return and a newline
-		// — leaves a header that does not open with ey at all, so a stateless
-		// token carrying one is not located — not shortened, not partly
-		// redacted, left whole. It is the header
-		// the JWT pattern declines as well, for the same reason. Asking for
-		// less is worse rather than better: an anchor reading the ey alone
-		// draws a file name written after an app id into a token wherever the
-		// name opens with those letters.
+		// The shape the anchor asks for is not free. The whitespace JSON
+		// allows behind the brace beside the space — a tab, a carriage return
+		// and a newline — leaves a header that does not open with ey at all,
+		// so a stateless token carrying one is not located: not shortened,
+		// not partly redacted, left whole. It is the header the JWT pattern
+		// declines as well, for the same reason. Asking for less is worse
+		// rather than better: an anchor reading the ey alone draws a file
+		// name written after an app id into a token wherever the name opens
+		// with those letters.
 		//
 		// A token clipped before its second dot, as a log line cut to a column
-		// limit leaves one, is deliberately not located: what authenticates a
+		// limit leaves one, is not located either: what authenticates a
 		// stateless token is its signature, and a token cut that early carries
 		// none of it. One surviving signature character is already enough to
 		// have the whole token located. Reaching that remnant would mean

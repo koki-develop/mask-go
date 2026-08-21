@@ -16,10 +16,6 @@ import "strings"
 // moving to for Cells: a longer payload carrying the routing information,
 // closed by a dot, the length of that payload and a checksum.
 //
-// The workspace token (glwt-) is left alone, and so are the runner registration
-// token GitLab removed in 18.0 and the session cookie, which is named by the
-// text in front of it rather than by a prefix of its own.
-//
 // Its name is "gitlab-token".
 func GitLabToken() Pattern { return gitLabToken }
 
@@ -47,7 +43,7 @@ func GitLabToken() Pattern { return gitLabToken }
 // the reason given further down. It is GitLab's own statement of the shape
 // rather than a third party's reading of issued tokens, which is what makes it
 // something to key on; the counts are nonetheless a ruleset's and not a
-// specification's, and what that wagers is set out below.
+// specification's, and what that wagers is the exactness weighed below.
 //
 // The alphabet is the base64url one, isBase64URLByte in builtin_scan.go: the
 // letters of both cases, the digits, the hyphen and the underscore. That is
@@ -90,16 +86,15 @@ func GitLabToken() Pattern { return gitLabToken }
 // precedes it, in seven. So what closes a routable token is a dot and nine
 // characters of lowercase base36, or a dot, two of them, a dot and nine.
 //
-// Neither the length nor the checksum is verified, and that is a decision
-// rather than an omission. Both are readable — the length of the payload in
-// GitLab's own published example is twenty-seven characters and the two behind
-// its dot are 0r, which is twenty-seven in base36 — so a scan could check them
-// and would then be as good as exact. What it would also be is keyed on
-// arithmetic GitLab has already revised once: the version segment above was
-// added to this format after it shipped, and a scan verifying the fields around
-// it would have gone on finding nothing while GitLab issued tokens in the new
-// shape. A wrong checksum costs a credential; a wrong shape costs the end of a
-// hostname. The scan takes the second.
+// Neither the length nor the checksum is verified. Both are readable — the
+// length of the payload in GitLab's own published example is twenty-seven
+// characters and the two behind its dot are 0r, which is twenty-seven in
+// base36 — so a scan could check them and would then be as good as exact. What
+// it would also be is keyed on arithmetic GitLab has already revised once: the
+// version segment above was added to this format after it shipped, and a scan
+// verifying the fields around it would have gone on finding nothing while
+// GitLab issued tokens in the new shape. A wrong checksum costs a credential;
+// a wrong shape costs the end of a hostname. The scan takes the second.
 //
 // The floor on the payload is gitLabTokenPayloadChars, which is what the
 // shortest routable token can be: sixteen random bytes, the size byte and the
@@ -150,9 +145,8 @@ func GitLabToken() Pattern { return gitLabToken }
 // boundary behind the match would drop a token followed by a word character,
 // which is what the counts already handle by leaving the tail in the text.
 //
-// What this pattern over-matches on, which the gate in CLAUDE.md asks to be
-// weighed rather than assumed: the run behind a prefix admits the hyphen and
-// the underscore, so a hyphenated identifier written straight after one of
+// What this pattern over-matches on: the run behind a prefix admits the hyphen
+// and the underscore, so a hyphenated identifier written straight after one of
 // these prefixes reaches the count.
 // glagent-config-map-0123456789abcdef-production-tokyo-01234 carries fifty
 // characters behind glagent- and is redacted whole. What makes that admissible
@@ -163,27 +157,12 @@ func GitLabToken() Pattern { return gitLabToken }
 // it to hold no hyphen would drop far more than that. What reaches a span is
 // never prose as a reader writes it — a space, a dot or a comma ends the run,
 // so the text has to be an unbroken identifier of the exact length before the
-// question arises — and unlike the bare forty hex characters the gate names, it
-// cannot be a git SHA or an MD5, because the prefix is not something either of
-// those carries.
+// question arises — and it cannot be a git SHA or an MD5, because the prefix is
+// not something either of those carries.
 //
-// Three kinds of credential are left out, and each for a reason of its own.
-// glwt- names the workspace token, which GitLab introduced in 18.2 and whose
-// shape it publishes nowhere: no length in the documentation and no rule in the
-// ruleset, so a pattern for it would be keyed on a guess, which is where the
-// AWS scan leaves ABIA and ACCA. The runner registration token is the GR1348941
-// literal rather than a gl prefix, and GitLab removed registration tokens in
-// 18.0; reading it would mean searching the input for a second opening byte for
-// the sake of a credential GitLab no longer issues. The session cookie is a
-// value named by the _gitlab_session= written in front of it rather than by any
-// prefix of its own, and this library does not read the text beside a value. A
-// caller who needs one of the three redacted has to say so with a pattern of
-// their own.
-//
-// glrtr- is admitted where those three are not, and the difference is that it
-// is not a fourth kind: GitLab's table gives glrt- and glrtr- in one row, as
-// the two prefixes of the runner authentication token, so the body behind it is
-// that token's body rather than a shape nobody has stated.
+// glrtr- takes glrt-'s count because it is not a kind of its own: GitLab's
+// table gives glrt- and glrtr- in one row, as the two prefixes of the runner
+// authentication token, so the body behind it is that token's body.
 //
 // referenceGitLabToken in builtin_gitlab_token_test.go keeps the grammar as a
 // regular expression, spelling the prefixes, the counts, the alphabets and the
@@ -275,9 +254,7 @@ type gitLabTokenKind struct {
 // candidate is found by, closing with a hyphen, and naming a body long enough
 // to be one.
 //
-// The rationale above says where each count comes from and which kinds are left
-// out. A kind added here is a kind AllBuiltinPatterns redacts with, so it wants
-// the same weighing as the ones already in the list.
+// The rationale above says where each count comes from.
 var gitLabTokenKinds = [...]gitLabTokenKind{
 	{prefix: "glpat-", bodyChars: 20},   // personal, project, group and impersonation access tokens
 	{prefix: "gldt-", bodyChars: 20},    // deploy tokens

@@ -197,9 +197,9 @@ func Test_builtins_name(t *testing.T) {
 			}
 
 			// Pattern.Name asks for a name that is stable, lowercase and
-			// hyphenated, and a caller keying on one reads it as such. Nothing
-			// enforced that before, so each new name was only as conventional
-			// as whoever wrote it.
+			// hyphenated, and a caller keying on one reads it as such, so the
+			// convention is held to here rather than left to whoever writes
+			// the next name.
 			if b.name == "" {
 				t.Fatal("the name is empty")
 			}
@@ -368,10 +368,10 @@ func Test_builtins_concurrentUse(t *testing.T) {
 
 func Test_builtins_scanIsLinear(t *testing.T) {
 	// A scan working out again at every candidate what belongs to the run it
-	// sits in costs time quadratic in the length of the input, which has
-	// happened in this package more than once. Every sample is repeated to a
-	// length at which a quadratic scan cannot finish and a linear one is not
-	// noticed, so a new pattern is guarded without anyone writing the guard.
+	// sits in costs time quadratic in the length of the input, which is the
+	// easiest mistake to make in one. Every sample is repeated to a length at
+	// which a quadratic scan cannot finish and a linear one is not noticed, so
+	// a new pattern is guarded without anyone writing the guard.
 	//
 	// The inputs crafted against what a particular scan remembers stay with
 	// that scan, in Test_JWT_scanIsLinear: nothing generic reaches a header
