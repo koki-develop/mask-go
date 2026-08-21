@@ -11,10 +11,12 @@ import "strings"
 // Slack documents the prefixes and nothing else: no length, no alphabet, no
 // count of the parts a token is written in. So a body is read as the hyphen
 // separated segments every Slack token anyone has published is written in, and
-// a token is one where some segment is long enough to be the secret such a
-// token ends with and carries a letter as every such secret does. A prefix
-// written against a letter or a digit opens nothing, which is what keeps an
-// identifier ending in one of them from being read as a token.
+// a token is one where some segment other than the first is long enough to be
+// the secret such a token ends with and carries a letter as every such secret
+// does. Asking that the secret stand behind a part rather than against the
+// prefix is what keeps a bare digest out. A prefix written against a letter or
+// a digit opens nothing, which is what keeps an identifier ending in one of
+// them from being read as a token.
 //
 // Its name is "slack-token".
 func SlackToken() Pattern { return slackToken }
@@ -49,8 +51,12 @@ func SlackToken() Pattern { return slackToken }
 // so a prefix and a run would redact any of them written after one of these
 // five letters.
 //
-// The first demand is on the run: some segment of it must reach
-// slackTokenSecretChars characters and hold a letter. Eighteen unbroken
+// The first demand is on the run: some segment of it other than the first must
+// reach slackTokenSecretChars characters and hold a letter. That is two things
+// at once — what makes a segment a secret, and where in the run one may sit —
+// and each is worth its own account.
+//
+// The length and the letter are what make a segment a secret. Eighteen unbroken
 // alphanumerics with a letter among them are not a word, and text carrying one
 // after a Slack prefix is opaque whether or not Slack issued it. Asking for
 // the letter is what separates a secret from a nanosecond timestamp or a
@@ -67,14 +73,47 @@ func SlackToken() Pattern { return slackToken }
 // hexadecimal, where it is one in a million and a half. Against that stands
 // every eighteen digit identifier written after a prefix, which exists today.
 //
+// That the secret may not be the first segment is what keeps a bare digest out.
+// Every Slack token whose shape anyone has published carries at least one part
+// between the prefix and its secret: the bot token in Slack's own
+// oauth.v2.access response carries two identifiers, a user token three, an
+// app-level token an application id and an issue time, and a refresh token and
+// a rotatable access token carry the version number 1. How many differs by kind
+// and has changed; that there is one has not. Asked only for a long part
+// somewhere in the run, this pattern would read a prefix and a single run as a
+// whole token — and xapp- is a prefix that stands on its own in text, because
+// xApp is what an application on a radio access network is called. An MD5 and a
+// git SHA are hexadecimal, hexadecimal carries letters, and thirty-two
+// characters is well past eighteen, so each of them was the whole of what the
+// length and the letter ask for: the image tag
+// xapp-8f14e45fceea167a5a36dedd4bea2543 and the branch
+// xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190 were redacted entire. Those are
+// values a reader reads, and this tightening was available.
+//
+// What it wagers is a Slack token written as a prefix and a secret with nothing
+// between them, which would be left in the output whole. Slack states no
+// structure at all, so the wager rests on issued tokens rather than on a
+// document, and the one prefix it is a guess about is xwfp-: of the seven this
+// pattern reads, it is the one no published token is written with. What stands
+// against the wager is every hyphenated name carrying a digest under one of
+// these prefixes, which exists today.
+//
+// Where the tightening stops is a digest with a part written in front of it:
+// xapp-build-8f14e45fceea167a5a36dedd4bea2543 is redacted, and nothing is left
+// to tighten it by. A prefix, a part and a long alphanumeric run behind it is
+// the shape of an app-level token, so that text is indistinguishable from a
+// credential, and declining it would mean declining every token written the
+// same way. Test_SlackToken_aDigestBehindAPart pins the collision.
+//
 // The second demand is on what stands in front: the byte before the prefix may
 // not be a letter or a digit. Slack's prefixes are not words, but three of
 // these five letters can close one — linuxapp- and nginxapp- end in xapp — and
-// behind such an ending an ordinary hyphenated name goes on to carry a git SHA
-// or an MD5, which is a run of alphanumerics with letters in it and so the
-// whole of what the first demand asks for. Those are values a reader reads,
-// and a tightening was available, so a grammar admitting them is one this
-// pattern has no business having.
+// a hyphenated name goes on in exactly the parts the first demand asks for:
+// nginxapp-fix-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190 is a branch, its digest
+// stands behind a part, and the letter in front of the prefix is the only thing
+// left holding it back. Those are values a reader reads, and a tightening was
+// available, so a grammar admitting them is one this pattern has no business
+// having.
 //
 // It is not the word boundary a regular expression would write, and the
 // difference is the underscore. SLACK_BOT_TOKEN_xoxb-... is how a token
@@ -144,8 +183,8 @@ var slackToken = NewPattern("slack-token", func(src string) []Span {
 	// -1 where the run holds none. Rightmost is what makes it answer for every
 	// candidate crowded in the run and not only for the one it was computed
 	// at: a candidate's body starts at a segment boundary of this same run, so
-	// the run holds a secret at or after that body exactly when the rightmost
-	// one does not begin in front of it.
+	// the run holds a secret behind the first segment of that body exactly when
+	// the rightmost one begins past where the body does.
 	runEnd := -1
 	lastSecret := -1
 
@@ -188,7 +227,12 @@ var slackToken = NewPattern("slack-token", func(src string) []Span {
 		if body >= runEnd {
 			runEnd, lastSecret = slackTokenRun(src, body)
 		}
-		if lastSecret >= body {
+		// Strictly past the body, not at it: a segment beginning where the
+		// body does is the first one, and a secret there is a secret written
+		// against the prefix with no part in front of it. lastSecret is the
+		// rightmost, so nothing qualifies behind it and there is no earlier
+		// segment this could be hiding.
+		if lastSecret > body {
 			spans = append(spans, Span{Start: start, End: runEnd})
 		}
 	}
@@ -229,8 +273,8 @@ const (
 	// what divides a body into segments.
 	slackTokenSeparator = '-'
 
-	// slackTokenSecretChars is how long a segment must be, letter included,
-	// for the run holding it to be a token. It is a floor and not a count:
+	// slackTokenSecretChars is how long a segment must be, letter included, to
+	// be the secret a token carries. It is a floor and not a count:
 	// Slack states no length for any part of a token, and the secrets it has
 	// issued have been twenty-four characters, thirty-two, sixty-four and
 	// more. The rationale above weighs what a lower one would draw in and what

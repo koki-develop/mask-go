@@ -75,8 +75,16 @@ func Test_SlackToken(t *testing.T) {
 			// a match would step over the second and leave it in the output
 			// whole. The spans overlap, which a Masker resolves into one.
 			name: "a prefix written inside a body",
-			src:  "xoxb-xoxb-0123456789abcdefghijklmn",
-			want: []Span{{0, 34}, {5, 34}},
+			src:  "xoxb-xoxb-0123456789ab-0123456789abcdefghijklmn",
+			want: []Span{{0, 47}, {5, 47}},
+		},
+		{
+			// A part in front of the secret is all the pattern asks for, and
+			// one character is a part: Slack writes the version number of a
+			// refresh token that way.
+			name: "a secret behind a part of one character",
+			src:  "xwfp-1-0123456789abcdefghijklmn",
+			want: []Span{{0, 31}},
 		},
 		{
 			// The secret is asked for at eighteen characters, which is a
@@ -125,17 +133,34 @@ func Test_SlackToken_identifiersThatAreNotTokens(t *testing.T) {
 	// reads — a git SHA, an MD5, a nanosecond timestamp, a build number — and
 	// none of them may be redacted.
 	//
-	// The first three are held out by what stands in front of the prefix:
-	// xapp closes linuxapp and nginxapp, and a letter there opens nothing. The
-	// last two are held out by the letter a secret must carry: their long
+	// The first two are held out by the part a secret must stand behind. Their
+	// prefix opens a word of its own — xApp is what an application on a radio
+	// access network is called — so nothing in front of it holds them back,
+	// and a digest is a run of alphanumerics with letters in it, so the length
+	// and the letter do not either.
+	//
+	// The next three are held out by what stands in front of the prefix: xapp
+	// closes linuxapp and nginxapp, and a letter there opens nothing. The
+	// first two of those write their digest behind a part, so for them it is
+	// the one demand left.
+	//
+	// The last two are held out by the letter a secret must carry: their long
 	// parts are all digits, which is an id or a timestamp and not a secret.
 	tests := []struct {
 		name string
 		src  string
 	}{
 		{
+			name: "an md5 after a prefix that stands on its own",
+			src:  "image: registry.example.com/xapp-8f14e45fceea167a5a36dedd4bea2543",
+		},
+		{
+			name: "a git sha after a prefix that stands on its own",
+			src:  "branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190",
+		},
+		{
 			name: "an md5 after a name ending in a prefix",
-			src:  "image: registry.example.com/linuxapp-8f14e45fceea167a5a36dedd4bea2543",
+			src:  "image: registry.example.com/linuxapp-build-8f14e45fceea167a5a36dedd4bea2543",
 		},
 		{
 			name: "a git sha after a branch name ending in a prefix",
@@ -164,6 +189,41 @@ func Test_SlackToken_identifiersThatAreNotTokens(t *testing.T) {
 	}
 }
 
+func Test_SlackToken_aDigestBehindAPart(t *testing.T) {
+	// Where the demand for a part in front of the secret stops, stated here
+	// rather than left for the next reader to discover. A prefix, a part and a
+	// long alphanumeric run behind it is the shape of an app-level token, so
+	// there is nothing in these lines left to tell them apart from one, and
+	// declining them would mean declining every token written that way. What
+	// the demand does reach — the same digests written straight after the
+	// prefix — is in Test_SlackToken_identifiersThatAreNotTokens.
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "an md5 behind a part",
+			src:  "xapp-build-8f14e45fceea167a5a36dedd4bea2543",
+			want: "*******************************************",
+		},
+		{
+			name: "a git sha behind a part",
+			src:  "xapp-main-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190",
+			want: "**************************************************",
+		},
+	}
+
+	m := New(WithPatterns(SlackToken()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_SlackToken_noMatch(t *testing.T) {
 	tests := []struct {
 		name string
@@ -184,6 +244,19 @@ func Test_SlackToken_noMatch(t *testing.T) {
 			// a secret.
 			name: "a long segment with no letter in it",
 			src:  "xoxb-0123456789ab-012345678901234567",
+		},
+		{
+			// A secret standing against the prefix with no part in front of
+			// it. Every Slack token whose shape is published carries one, and
+			// without the demand a prefix and a single run would be a token.
+			name: "a secret with no part in front of it",
+			src:  "xoxb-0123456789abcdefghijklmn",
+		},
+		{
+			// And the same where the run goes on: the parts behind the secret
+			// are not what the demand asks for, which is one in front.
+			name: "a secret with parts behind it but none in front",
+			src:  "xoxb-0123456789abcdefghijklmn-backup-2",
 		},
 		{
 			// The tightening that keeps this pattern off text a reader can
@@ -305,8 +378,8 @@ func Test_SlackToken_inContext(t *testing.T) {
 			// The two spans are merged, so the token that begins inside the
 			// one before it leaves nothing of itself behind.
 			name: "a prefix written inside a body",
-			src:  "xoxb-xoxb-0123456789abcdefghijklmn",
-			want: "**********************************",
+			src:  "xoxb-xoxb-0123456789ab-0123456789abcdefghijklmn",
+			want: "***********************************************",
 		},
 		{
 			// And the same for a rotatable access token, which is located at
@@ -359,16 +432,16 @@ func Test_SlackToken_whatMayStandInFront(t *testing.T) {
 		},
 		{
 			name: "separator",
-			src:  "xoxb-xoxb-0123456789abcdefghijklmn",
-			want: "**********************************",
+			src:  "xoxb-xoxb-0123456789ab-0123456789abcdefghijklmn",
+			want: "***********************************************",
 		},
 		{
 			// And the narrow direction, which is what the pattern is
 			// tightened by: a letter in front and the prefix opens nothing,
 			// so the name and the digest written after it stay.
 			name: "letter",
-			src:  "linuxapp-8f14e45fceea167a5a36dedd4bea2543",
-			want: "linuxapp-8f14e45fceea167a5a36dedd4bea2543",
+			src:  "linuxapp-build-8f14e45fceea167a5a36dedd4bea2543",
+			want: "linuxapp-build-8f14e45fceea167a5a36dedd4bea2543",
 		},
 		{
 			name: "digit",
@@ -546,11 +619,14 @@ func Test_slackTokenByteClasses(t *testing.T) {
 
 // referenceSlackTokenFind locates tokens the plain way: every position in turn,
 // each prefix tried at it, and the run behind it walked segment by segment,
-// with no cursor and nothing remembered between candidates. The prefixes, the
-// count and the character classes are spelled again here rather than shared
-// with the scan. A reference reading those declarations could not disagree with
-// it about them, and it is exactly that disagreement the fuzz target below is
-// for: the two have to be changed together or reported apart.
+// with no cursor and nothing remembered between candidates. The first segment
+// is skipped rather than measured, which is the demand for a part in front of
+// the secret written the way a walk states it — the scan states the same thing
+// as a comparison against a remembered offset. The prefixes, the count and the
+// character classes are spelled again here rather than shared with the scan. A
+// reference reading those declarations could not disagree with it about them,
+// and it is exactly that disagreement the fuzz target below is for: the two
+// have to be changed together or reported apart.
 //
 // Every position is a starting point in its own right, a match included,
 // because a body is read as far as its alphabet runs and that alphabet holds
@@ -603,7 +679,7 @@ func referenceSlackTokenFind(src string) []Span {
 				}
 				j++
 			}
-			if holds && j-i >= secretChars {
+			if i > from && holds && j-i >= secretChars {
 				secret = true
 			}
 			i = j + 1
@@ -622,15 +698,19 @@ func referenceSlackTokenFind(src string) []Span {
 //
 // The seeds spell each prefix once and then the edges the two demands and the
 // cursor live on — a body opening straight onto a separator, a long part with
-// no letter in it, a prefix closing a word, a prefix written inside a body, and
-// a run of prefixes with a secret at the end of it and without one. There is no
-// checked-in corpus for this target, so what the seeds reach is all a cold run
-// starts from.
+// no letter in it, a secret with a part in front of it and one without, a
+// prefix closing a word, a prefix written inside a body, and a run of prefixes
+// with a secret at the end of it and without one. There is no checked-in
+// corpus for this target, so what the seeds reach is all a cold run starts
+// from.
 func FuzzSlackToken_matchesReference(f *testing.F) {
 	f.Add("nothing to see here")
 	f.Add("SLACK_BOT_TOKEN=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn")
 	f.Add("xoxb-0123456789ab-0123456789abcdefgh") // a secret of exactly eighteen
 	f.Add("xoxb-0123456789ab-0123456789abcdefg")  // one character short of one
+	f.Add("xoxb-0123456789abcdefgh")              // a secret with no part in front of it
+	f.Add("xoxb-1-0123456789abcdefgh")            // and the shortest part there is
+	f.Add("xoxb-0123456789abcdefgh-1")            // a part behind it rather than in front
 	f.Add("xoxb-012345678901234567")              // eighteen with no letter in it
 	f.Add("xoxb-01234567890123456a")              // and the same with one at the end
 	f.Add("xoxb-a12345678901234567")              // and at the start
@@ -642,12 +722,14 @@ func FuzzSlackToken_matchesReference(f *testing.F) {
 	f.Add("xoxe.xoxb-1-0123456789abcdefgh") // located at both of its prefixes
 	f.Add("xoxe.xoxp-1-0123456789abcdefgh") // and the user kind of the same
 	f.Add("xoxe.xoxe.xoxb-1-0123456789abcdefgh")
-	f.Add("xoxe.0123456789abcdefgh")         // the rotation prefix opening nothing
-	f.Add("xoxa-2-0123456789abcdefgh")       // a prefix slack no longer documents
-	f.Add("xoxo-0123456789abcdefgh")         // and the one that is a word
-	f.Add("XOXB-0123456789abcdefgh")         // the prefixes are read in lowercase
-	f.Add("xapp-frontend-integration-tests") // hyphens with no secret between them
-	f.Add("linuxapp-8f14e45fceea167a5a36dedd4bea2543")
+	f.Add("xoxe.0123456789abcdefgh")                     // the rotation prefix opening nothing
+	f.Add("xoxa-2-0123456789abcdefgh")                   // a prefix slack no longer documents
+	f.Add("xoxo-0123456789abcdefgh")                     // and the one that is a word
+	f.Add("XOXB-0123456789abcdefgh")                     // the prefixes are read in lowercase
+	f.Add("xapp-frontend-integration-tests")             // hyphens with no secret between them
+	f.Add("xapp-8f14e45fceea167a5a36dedd4bea2543")       // a digest against the prefix
+	f.Add("xapp-build-8f14e45fceea167a5a36dedd4bea2543") // and the same behind a part
+	f.Add("linuxapp-build-8f14e45fceea167a5a36dedd4bea2543")
 	f.Add("xapp-trace-1705311000123456789")
 	f.Add("xoxb--0123456789abcdefgh")       // an empty segment in front of the secret
 	f.Add("xoxb-0123456789abcdefgh--")      // and two behind it

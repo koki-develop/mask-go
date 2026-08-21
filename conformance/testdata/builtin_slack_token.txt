@@ -3,7 +3,9 @@
 # Every token here is built from the ordered run 0123456789abcdef, which no real
 # credential is, cut into the parts a Slack token is written in: identifiers of
 # twelve and thirteen characters, and a secret of twenty-four, of thirty-two or
-# of sixty-four, which are the lengths Slack's own examples carry.
+# of sixty-four, which are the lengths Slack's own examples carry. No token here
+# is written as a prefix and a secret alone: the pattern asks for a part between
+# the two, because every Slack token whose shape has been published has one.
 #
 # Slack publishes the prefix of each kind of token and nothing else — no length,
 # no alphabet, no count of the parts. So the shape below is read off the tokens
@@ -90,6 +92,27 @@ case: one letter among seventeen digits is
 in:   xoxb-0123456789ab-01234567890123456a
 out:  «slack-token»
 
+# And where in the run a secret may sit: behind a part, never against the
+# prefix. Every Slack token whose shape has been published carries at least one
+# part between the two — two identifiers for the bot token in Slack's own
+# oauth.v2.access response, three for a user token, an application id and an
+# issue time for an app-level token, the version number 1 for the two rotation
+# issues — and one character is enough to be that part. Without the demand a
+# prefix and a single long run would be a whole token, which is what the block
+# on digests further down is for.
+
+case: a secret behind a part of one character
+in:   xwfp-1-0123456789abcdefghijklmn
+out:  «slack-token»
+
+case: a secret against the prefix is not a token
+in:   xoxb-0123456789abcdefghijklmn
+out:  xoxb-0123456789abcdefghijklmn
+
+case: parts behind the secret do not stand in for one in front
+in:   xoxb-0123456789abcdefghijklmn-backup-2
+out:  xoxb-0123456789abcdefghijklmn-backup-2
+
 # What a token may be written against, which is not the same rule on the two
 # sides. In front of a prefix, anything but a letter or a digit: that is
 # narrower than a word boundary, which would drop rather than trim the token in
@@ -132,7 +155,7 @@ out:  «slack-token»
 # so it opens one. The two values overlap and are redacted as one.
 
 case: a prefix written inside a body
-in:   xoxb-xoxb-0123456789abcdefghijklmn
+in:   xoxb-xoxb-0123456789ab-0123456789abcdefghijklmn
 out:  «slack-token»
 
 case: two tokens with a space between them
@@ -188,22 +211,39 @@ case: prose
 in:   there is no credential in this sentence
 out:  there is no credential in this sentence
 
-# The text the two demands on a candidate are there for, and what each of them
-# holds back. A prefix and a run alone would have redacted every line below: the
-# hyphen is what names in build output, log lines and branches are joined with,
-# and behind one of these five letters such a name goes on to carry a digest or
-# an id long enough to be a secret. Each is a value a reader reads, which is
-# what CLAUDE.md's gate rules out where a tightening was available.
+# The text the demands on a candidate are there for, and what each of them holds
+# back. A prefix and a run alone would have redacted every line below: the hyphen
+# is what names in build output, log lines and branches are joined with, and
+# behind one of these five letters such a name goes on to carry a digest or an id
+# long enough to be a secret. Each is a value a reader reads, which is what
+# CLAUDE.md's gate rules out where a tightening was available.
 #
-# The first three are held back by what stands in front of the prefix: xapp
-# closes linuxapp and nginxapp, and a letter there opens nothing. The last two
-# do open with a prefix, and are held back by the letter a secret must carry —
-# their long parts are all digits, so they are a timestamp and a build number
-# rather than a secret.
+# The first two are held back by the part a secret must stand behind. xapp- needs
+# no word in front of it to appear in text — xApp is what an application on a
+# radio access network is called — and an MD5 and a git SHA are hexadecimal, so
+# they carry the letters a secret is asked for and run well past eighteen
+# characters. Standing against the prefix is the one thing left that they are
+# not.
+#
+# The next three are held back by what stands in front of the prefix: xapp closes
+# linuxapp and nginxapp, and a letter there opens nothing. The first two of those
+# write their digest behind a part, so for them it is the one demand left.
+#
+# The last two do open with a prefix, and are held back by the letter a secret
+# must carry — their long parts are all digits, so they are a timestamp and a
+# build number rather than a secret.
+
+case: an md5 after a prefix that stands on its own
+in:   image: registry.example.com/xapp-8f14e45fceea167a5a36dedd4bea2543
+out:  image: registry.example.com/xapp-8f14e45fceea167a5a36dedd4bea2543
+
+case: a git sha after a prefix that stands on its own
+in:   branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
+out:  branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
 
 case: an md5 after a name ending in a prefix
-in:   image: registry.example.com/linuxapp-8f14e45fceea167a5a36dedd4bea2543
-out:  image: registry.example.com/linuxapp-8f14e45fceea167a5a36dedd4bea2543
+in:   image: registry.example.com/linuxapp-build-8f14e45fceea167a5a36dedd4bea2543
+out:  image: registry.example.com/linuxapp-build-8f14e45fceea167a5a36dedd4bea2543
 
 case: a git sha after a branch name ending in a prefix
 in:   branch nginxapp-fix-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
@@ -220,6 +260,20 @@ out:  span=xapp-trace-1705311000123456789 done
 case: a build number after a prefix
 in:   xapp-build-20240115093000123456
 out:  xapp-build-20240115093000123456
+
+# Where the demand for a part in front of the secret stops. A digest with a part
+# written before it is redacted, and no tightening is left that would take it
+# out: a prefix, a part and a long alphanumeric run behind it is the shape of an
+# app-level token, so nothing in these lines tells the two apart, and declining
+# them would mean declining every token written that way.
+
+case: a digest behind a part is redacted
+in:   image: registry.example.com/xapp-build-0123456789abcdef0123456789abcdef
+out:  image: registry.example.com/«slack-token»
+
+case: a digest behind a part of one character is too
+in:   xapp-1-0123456789abcdef0123456789abcdef01234567
+out:  «slack-token»
 
 # The prefixes Slack no longer documents. xoxa- and xoxr- named the access and
 # refresh tokens of workspace apps, xoxs- and xoxo- the tokens of the custom

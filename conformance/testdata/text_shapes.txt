@@ -100,6 +100,14 @@ case: a slack prefix whose every part is too short to be a secret
 in:   SLACK_TOKEN=xoxb-0123456789abcdef-0123456789abcdef
 out:  SLACK_TOKEN=xoxb-0123456789abcdef-0123456789abcdef
 
+case: an image tag whose digest stands against a slack prefix
+in:   image: registry.example.com/xapp-8f14e45fceea167a5a36dedd4bea2543
+out:  image: registry.example.com/xapp-8f14e45fceea167a5a36dedd4bea2543
+
+case: a branch name whose digest stands against a slack prefix
+in:   branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
+out:  branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
+
 case: a stripe key is not one of the kinds this library knows
 in:   STRIPE_KEY=sk_live_0123456789abcdef0123456789abcdef
 out:  STRIPE_KEY=sk_live_0123456789abcdef0123456789abcdef
