@@ -185,7 +185,7 @@ func Test_references_shareNoDeclarationWithTheScans(t *testing.T) {
 	fset, info, pkg := src.fset, src.info, src.pkg
 	bodies := declarationBodies(fset, src.files)
 	shared := sharedWithReferences(pkg)
-	found := 0
+	checked := map[string]bool{}
 
 	for _, f := range src.files {
 		name := filepath.Base(fset.Position(f.Pos()).Filename)
@@ -197,7 +197,7 @@ func Test_references_shareNoDeclarationWithTheScans(t *testing.T) {
 		}
 		for _, d := range f.Decls {
 			for _, ref := range scanReferences(d) {
-				found++
+				checked[name] = true
 				w := walk{fset: fset, info: info, pkg: pkg, bodies: bodies, shared: shared, seen: map[types.Object]bool{}}
 				for _, r := range w.reads(ref.node, nil) {
 					through := ""
@@ -212,13 +212,16 @@ func Test_references_shareNoDeclarationWithTheScans(t *testing.T) {
 		}
 	}
 
-	// Every built-in carries a reference, and most carry the regular expression
-	// their reference reads as well. A run finding fewer than one apiece is a run
-	// that stopped recognising them, which reads exactly like a run finding
-	// nothing wrong.
-	if want := len(builtins); found < want {
-		t.Errorf("%d reference(s) were read, want at least %d, one per built-in; a reference this no longer recognises is one nothing holds",
-			found, want)
+	// Every built-in carries a reference, in the file beside its scan, and a
+	// file may carry any number of them: a reference written out by hand is
+	// several declarations where one built on an expression is two. What is
+	// counted is therefore the files a reference was recognised in and not the
+	// references themselves, so that a pattern whose reference this stopped
+	// reading is reported. A run recognising nothing reads exactly like a run
+	// finding nothing wrong.
+	if want := len(builtins); len(checked) < want {
+		t.Errorf("reference(s) were read in %d of the built-in test files, want %d, one per built-in; a reference this no longer recognises is one nothing holds",
+			len(checked), want)
 	}
 }
 
