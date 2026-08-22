@@ -23,4 +23,4 @@ func AllBuiltinPatterns() []Pattern {
 // place which puts it in AllBuiltinPatterns and under the properties every
 // built-in is held to in builtins_test.go. The pattern itself stays in the
 // file it was declared in; only its name reaches this list.
-var builtins = []Pattern{anthropicAPIKey, awsAccessKeyID, githubToken, gitLabToken, googleAPIKey, jsonWebToken, npmToken, openAIAPIKey, pypiAPIToken, sendGridAPIKey, slackToken, stripeAPIKey}
+var builtins = []Pattern{anthropicAPIKey, awsAccessKeyID, githubToken, gitLabToken, googleAPIKey, jsonWebToken, npmToken, openAIAPIKey, pypiAPIToken, sendGridAPIKey, sentryAuthToken, slackToken, stripeAPIKey}
