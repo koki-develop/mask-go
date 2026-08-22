@@ -113,6 +113,15 @@ func checkMasking(t testing.TB, patterns []mask.Pattern, src string) {
 	// been left on purpose — a pattern locating a single letter says nothing
 	// about the other letters like it — so only the values that were there once
 	// say anything here.
+	//
+	// What this catches on its own is little, and the guard is why it is worth
+	// saying so: masked has just been held to kept and the values, and kept is
+	// src with the redactions taken out of it, so a value standing in the
+	// output is a value standing in a stretch the first pass left alone. On a
+	// repeated input the guard is false throughout and this runs on nothing at
+	// all. The property that reaches a scan which located one of two identical
+	// values is checkSecondPass, run just above, which reads where the second
+	// pass redacts rather than what the first pass left.
 	for _, value := range values {
 		if strings.Count(src, value) == 1 && strings.Contains(masked, value) {
 			t.Fatalf("masking %q gave %q, which still holds the redacted %q", src, masked, value)
@@ -354,8 +363,9 @@ func TestProperties_casesRunTogether(t *testing.T) {
 
 func TestProperties_repeatedCases(t *testing.T) {
 	// A value repeated is a value every time. A scan that carries a cursor
-	// forward through a run, as both built-in scans do, is what this is aimed
-	// at: the second value must not be lost to what the first left behind.
+	// forward through a run, as several of the built-in scans do, is what this
+	// is aimed at: the second value must not be lost to what the first left
+	// behind.
 	for _, c := range readableCases(t) {
 		for _, set := range builtinSets {
 			t.Run(set.name+"/"+c.subtest(), func(t *testing.T) {
@@ -368,10 +378,10 @@ func TestProperties_repeatedCases(t *testing.T) {
 }
 
 func TestProperties_maskerIsReusable(t *testing.T) {
-	// A Masker is built once and handed everything a program logs. Driving the
-	// whole corpus through a single Masker holds what a built-in scan keeps
-	// between calls — a cursor, a decoder — to keeping nothing that outlives the
-	// call it belongs to.
+	// A Masker is built once and handed everything a program logs. Driving
+	// every readable case through a single Masker holds what a built-in scan
+	// keeps between calls — a cursor, a decoder — to keeping nothing that
+	// outlives the call it belongs to.
 	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
 	cases := readableCases(t)
 

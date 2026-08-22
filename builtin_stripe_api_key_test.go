@@ -738,12 +738,15 @@ func Test_stripeAPIKeyBodyEnd(t *testing.T) {
 }
 
 func Test_StripeAPIKey_scanIsLinear(t *testing.T) {
-	// This is the one built-in scan reading a run to its end that keeps no
-	// cursor, so what holds it linear is a property of the format rather than
-	// state: every prefix closes with an underscore, no body is written with
-	// one, and so no two candidates can read the same run. These are the inputs
-	// that would find that wrong — a line that is nothing but candidates, a line
-	// that is nothing but anchors, and a single run as long as the line.
+	// This scan reads a run to its end and keeps no cursor, so what holds it
+	// linear is a property of the format rather than state: every prefix closes
+	// with an underscore, no body is written with one, and so no two candidates
+	// can read the same run. The npm, Sentry and Linear scans reach it by the
+	// same argument and each drives inputs of its own for it, which is why the
+	// argument is written out in four files rather than borrowed from one.
+	// These are the inputs that would find it wrong here — a line that is
+	// nothing but candidates, a line that is nothing but anchors, and a single
+	// run as long as the line.
 	//
 	// The generic guard in builtins_test.go repeats the samples, which carry a
 	// whole body apiece and so hold a candidate every thirty-two bytes at their

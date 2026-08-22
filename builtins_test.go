@@ -488,10 +488,11 @@ func Test_builtins_maskLeavesNothingToFind(t *testing.T) {
 }
 
 func Test_builtins_concurrentUse(t *testing.T) {
-	// Pattern is documented safe for concurrent use, and both built-in scans
-	// carry a cursor as they go, one of them a decoder as well. Driving a
-	// pattern from many goroutines at once puts what it carries under the race
-	// detector, and holds its answer to the one a single goroutine gets.
+	// Pattern is documented safe for concurrent use, and several of the
+	// built-in scans carry a cursor as they go, the JWT one a decoder as
+	// well. Driving a pattern from many goroutines at once puts what it
+	// carries under the race detector, and holds its answer to the one a
+	// single goroutine gets.
 	for _, b := range builtinPatterns {
 		t.Run(b.name, func(t *testing.T) {
 			p := b.pattern()

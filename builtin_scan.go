@@ -15,10 +15,14 @@ type segments struct {
 
 // isBase64URLByte reports whether c belongs to the base64url alphabet of RFC
 // 4648, which encodes the parts of a JWT, the JWT a stateless GitHub
-// installation token carries, the body of a GitLab token and the body of a
-// Google API key. Padding is not admitted: the compact serialization is defined
-// without it, and neither the routable payload GitLab encodes nor the key
-// Google shows carries any.
+// installation token carries, the body of a GitLab token, the body of a Google
+// API key, the run an OpenAI key is read as, the body of an Anthropic key, the
+// body of a PyPI token and both segments of a SendGrid key. All eight are here
+// so that changing what the alphabet admits is changed against every scan that
+// reads it rather than the first few; the Sentry scan says in its own file that
+// the alphabet it reads is not this one. Padding is not admitted: the compact
+// serialization is defined without it, and neither the routable payload GitLab
+// encodes nor the key Google shows carries any.
 func isBase64URLByte(c byte) bool {
 	return '0' <= c && c <= '9' ||
 		'A' <= c && c <= 'Z' ||

@@ -165,7 +165,9 @@ out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«pypi-api-token»
 # encodes to, which is a domain name no index has, and the case is here so that
 # the assumption is on the record. The three after them are the prefix, read in
 # its own case, in all five of its characters, and asked for against the header
-# rather than apart from it. Of the last three, the names carrying pypi- are
+# rather than apart from it. The one after those turns the pair around and
+# writes the header with no prefix in front of it at all, so that neither half
+# is read as a token on its own. Of the last three, the names carrying pypi- are
 # what a line about the index is full of and the header is the whole of what
 # turns them away; a digest carries no hyphen for the prefix and neither a g nor
 # an E for the header; and no word of prose is spelled with either.
