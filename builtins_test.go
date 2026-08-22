@@ -132,6 +132,19 @@ var builtinPatterns = []struct {
 		benchmarks: openAIAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "pypi-api-token",
+		pattern: PyPIAPIToken,
+		ref:     referencePyPIAPITokenFind,
+		samples: []string{
+			"PYPI_API_TOKEN=pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef",
+			"pypi-AgENdGVzdC5weXBpLm9yZw0123456789abcdef0123456789abcdef0123456789abcdef",
+			"pypi-AgEEeC5pbw0123456789abcdef0123456789abcdef0123456789abcdef",
+			"pypi-AgE0123456789abcdef0123456789abcdef0123456789abcde",
+			"pypi-AgEpypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		benchmarks: pypiAPITokenFindBenchmarks,
+	},
+	{
 		name:    "slack-token",
 		pattern: SlackToken,
 		ref:     referenceSlackTokenFind,
