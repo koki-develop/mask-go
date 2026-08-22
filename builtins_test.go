@@ -118,6 +118,18 @@ var builtinPatterns = []struct {
 		benchmarks: jwtFindBenchmarks,
 	},
 	{
+		name:    "npm-token",
+		pattern: NPMToken,
+		ref:     referenceNPMTokenFind,
+		samples: []string{
+			"NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz",
+			"npm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+			"npm_0123456789abcdefghijklmnopqrstuvwxyz0",
+			"npm_0123456789abcdefghijklmnopqrstuvwnpm_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		benchmarks: npmTokenFindBenchmarks,
+	},
+	{
 		name:    "openai-api-key",
 		pattern: OpenAIAPIKey,
 		ref:     referenceOpenAIAPIKeyFind,

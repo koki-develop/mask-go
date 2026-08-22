@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «npm-token»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -357,6 +357,49 @@ out:  «anthropic-api-key».«jwt»
 case: an environment file holding an anthropic api key among the others
 in:   ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 out:  ANTHROPIC_API_KEY=«anthropic-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+
+# An npm token beside the others, and inside them. A body is base62 read to the
+# end of its run: the letters of both cases and the digits, which is the
+# alphabet a classic GitHub token body is read in and narrower than the
+# base64url the OpenAI and Anthropic bodies are. So a value written in an
+# alphabet as narrow can stand inside an npm body and is located there as well;
+# the two spans overlap and are redacted as one, attributed to whichever starts
+# earliest. The underscore is what ends a body rather than a count, so a value
+# whose own prefix carries one begins after the run it interrupted — and the
+# two still overlap, because that run reached the letters standing in front of
+# the underscore.
+
+case: an npm token beside a github token and a jwt
+in:   npm=npm_0123456789abcdefghijklmnopqrstuvwxyz github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  npm=«npm-token» github=«github-token» jwt=«jwt»
+
+case: an access key id inside an npm token body
+in:   npm_AKIA0123456789ABCDEF0123456789abcdef
+out:  «npm-token»
+
+case: a google api key inside an npm token body
+in:   npm_AIza0123456789abcdefghijklmnopqrstuvwxy
+out:  «npm-token»
+
+case: an npm token inside the signature of a jwt
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «jwt»
+
+case: a classic github token written straight after an npm token
+in:   npm_0123456789abcdefghijklmnopqrstuvwxyzghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «npm-token»
+
+case: an npm token written straight after a classic github token
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyznpm_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «github-token»
+
+case: a jwt directly after an npm token, which the dot keeps apart
+in:   npm_0123456789abcdefghijklmnopqrstuvwxyz.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «npm-token».«jwt»
+
+case: an environment file holding an npm token among the others
+in:   NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  NPM_TOKEN=«npm-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # Where the GitHub and JWT patterns disagree about a stateless installation
 # token. The GitHub pattern asks for an app id, a single underscore, and a JWT

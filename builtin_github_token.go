@@ -97,17 +97,13 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 
 		// Both of the alternatives left read the same run, so it is scanned
 		// once. No cursor is kept over it, and none is needed: a candidate
-		// asks for an underscore four characters in and this alphabet holds
-		// none, so the underscore of the next candidate can be no earlier
-		// than the byte that ends this run, and the run that candidate reads
-		// therefore begins past this one. Successive candidates read runs
-		// that do not overlap, and reading all of them comes to the length of
-		// the input.
+		// asks for an underscore four characters in and base62 holds none, so
+		// the underscore of the next candidate can be no earlier than the
+		// byte that ends this run, and the run that candidate reads therefore
+		// begins past this one. Successive candidates read runs that do not
+		// overlap, and reading all of them comes to the length of the input.
 		body := start + 4
-		end := body
-		for end < len(src) && isGitHubTokenByte(src[end]) {
-			end++
-		}
+		end := base62RunEnd(src, body)
 
 		// The stateless form comes first, as it does in the expression: an
 		// app id of thirty-six characters or more would otherwise be taken
@@ -223,13 +219,17 @@ func isGitHubTokenKind(c byte) bool {
 // them apart.
 func isGitHubStatelessKind(c byte) bool { return c == 's' || c == 'u' }
 
-func isGitHubTokenByte(c byte) bool {
-	return '0' <= c && c <= '9' ||
-		'A' <= c && c <= 'Z' ||
-		'a' <= c && c <= 'z'
-}
-
-func isGitHubPATByte(c byte) bool { return isGitHubTokenByte(c) || c == '_' }
+// isGitHubPATByte reports whether c may appear in the body of a fine grained
+// personal access token: the base62 alphabet a classic body is read in,
+// isBase62Byte in builtin_scan.go, and the underscore this body carries between
+// its two parts.
+//
+// That one extra character is why this body needs a cursor of its own where a
+// classic body needs none. The prefix closes with an underscore, so a prefix
+// can be written inside a body of this kind and a run can hold a candidate for
+// every eleven characters it has; a classic body admits none, which leaves at
+// most one candidate to such a run and nothing for a cursor to save.
+func isGitHubPATByte(c byte) bool { return isBase62Byte(c) || c == '_' }
 
 // githubJWTEnd returns where the two segments a signed token carries after its
 // header end, and whether both are there. Unlike segmentsEnd in builtin_jwt.go,

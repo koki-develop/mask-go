@@ -12,12 +12,13 @@ One built-in pattern to a file: `builtin_<name>.go` with a
 only that scan reads, its behaviour tables, its reference, its fuzz target and
 the cases it is benchmarked on. `builtins.go` is the registry alone,
 `builtin_scan.go` holds what more than one scan reads (`segments`,
-`isBase64URLByte`, `base64URLRunEnd`), `builtins_test.go` holds what every
-built-in is held to, `fuzz_test.go` holds the `Masker` targets and the body the
-per-pattern targets share, and `benchmark_test.go` holds every benchmark there
-is. Adding a pattern should touch the registry, the property table, two new
-files and the conformance corpus — nothing else. Keep it that way rather than
-letting a shared `builtin.go` grow back.
+`isBase64URLByte`, `base64URLRunEnd`, `isBase62Byte`, `base62RunEnd`),
+`builtins_test.go` holds what every built-in is held to, `fuzz_test.go` holds
+the `Masker` targets and the body the per-pattern targets share, and
+`benchmark_test.go` holds every benchmark there is. Adding a pattern should
+touch the registry, the property table, two new files and the conformance
+corpus — nothing else. Keep it that way rather than letting a shared
+`builtin.go` grow back.
 
 One pattern may read another's declarations where the credentials themselves
 nest: `builtin_github_token.go` reads `opensJOSEHeaderAt`, `jwtHeaderPrefix` and
@@ -53,8 +54,9 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   package: `FuzzMasker_locate`, `FuzzMasker_Mask`, `FuzzJWT_matchesReference`,
   `FuzzGitHubToken_matchesReference`, `FuzzAWSAccessKeyID_matchesReference`,
   `FuzzSlackToken_matchesReference`, `FuzzGitLabToken_matchesReference`,
-  `FuzzGoogleAPIKey_matchesReference`, `FuzzOpenAIAPIKey_matchesReference`
-  and `FuzzAnthropicAPIKey_matchesReference`. In `conformance`: `FuzzMask`,
+  `FuzzGoogleAPIKey_matchesReference`, `FuzzOpenAIAPIKey_matchesReference`,
+  `FuzzAnthropicAPIKey_matchesReference` and `FuzzNPMToken_matchesReference`.
+  In `conformance`: `FuzzMask`,
   `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30 seconds.
 - `go test -bench . -benchmem` — benchmarks. `BenchmarkMasker_Mask` drives every
   pattern at once through the public API, which is what a caller pays;
@@ -136,31 +138,35 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   (`builtin_slack_token_test.go`), `referenceGitLabTokenFind`
   (`builtin_gitlab_token_test.go`), `referenceGoogleAPIKeyFind`
   (`builtin_google_api_key_test.go`), `referenceOpenAIAPIKeyFind`
-  (`builtin_openai_api_key_test.go`) and `referenceAnthropicAPIKeyFind`
-  (`builtin_anthropic_api_key_test.go`), plain implementations of the same
+  (`builtin_openai_api_key_test.go`), `referenceAnthropicAPIKeyFind`
+  (`builtin_anthropic_api_key_test.go`) and `referenceNPMTokenFind`
+  (`builtin_npm_token_test.go`), plain implementations of the same
   rules. The second tries `referenceGitHubToken`, the regular expression the
   GitHub token scan reads by hand, at every byte rather than handing it to
   `FindAllStringIndex`: a value either scan locates can hold the start of the
   next one, so a reference that resumed past a match would miss what the scan
-  finds. The third, the fifth, the sixth and the seventh do the same for the
-  same reason — an access key ID can begin three characters into the one before
-  it, a GitLab body is written in an alphabet that holds every letter a GitLab
-  prefix is, and a Google API key's prefix and an OpenAI key's `sk-` are each
-  written in the alphabet their own runs are. The first, the fourth and the
+  finds. The third, the fifth, the sixth, the seventh and the ninth do the same
+  for the same reason — an access key ID can begin three characters into the one
+  before it, a GitLab body is written in an alphabet that holds every letter a
+  GitLab prefix is, a Google API key's prefix and an OpenAI key's `sk-` are each
+  written in the alphabet their own runs are, and an npm body can close with the
+  three letters an npm prefix opens with. The first, the fourth and the
   eighth are written out rather than built on a regular expression, and start
   afresh at every position for that same reason. What the first two read of a
   candidate — a decoded JOSE header, a run divided into segments — is not what
   an expression states compactly; the eighth's grammar is, and it is written out
   anyway, because a floor spelled as a counted repetition costs an engine a
   machine ninety-five states wide at every candidate, which left its fuzz target
-  wedged on one grown input instead of fuzzing. Its own file measures both. A
-  reference spells the prefixes, the counts and the character classes its scan
-  reads out again rather than sharing the declarations, so that the two can
-  disagree and the fuzz target report it. Change scanner and reference
-  together, and keep the corpus in `testdata/fuzz/`. The targets share their
-  body through `fuzzAgainstReference` (`fuzz_test.go`) but keep a name apiece,
-  because the corpus is keyed on the name of the target — so never rename a
-  target without moving its corpus directory.
+  wedged on one grown input instead of fuzzing. Its own file measures both. The
+  ninth spells a floor as a counted repetition too and pays nothing for it: no
+  input crowds two npm candidates inside one run, so no engine walks the same
+  run twice. A reference spells the prefixes, the counts and the character
+  classes its scan reads out again rather than sharing the declarations, so that
+  the two can disagree and the fuzz target report it. Change scanner and
+  reference together, and keep the corpus in `testdata/fuzz/`. The targets share
+  their body through `fuzzAgainstReference` (`fuzz_test.go`) but keep a name
+  apiece, because the corpus is keyed on the name of the target — so never
+  rename a target without moving its corpus directory.
 - Behaviour that differs under the race detector is branched on `raceEnabled`
   (`race_test.go` / `norace_test.go`), not skipped.
 
@@ -181,7 +187,10 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `AIza` is four characters a key's own body may be written with, `sk-` is
   three of an OpenAI run's own and `sk-ant-` is seven of an Anthropic body's.
   An Anthropic key is read to the end of its run as an OpenAI key is, so it
-  swallows what is written straight after it too. Consuming a match would step
+  swallows what is written straight after it too. An npm token is read to the
+  end of its run as well, and only the three letters in front of its underscore
+  belong to that run, so a token begins three characters before the one in
+  front of it ends rather than anywhere inside it. Consuming a match would step
   over such a value and leave it in the output whole. The cost is that a value
   nested in another — a JWT payload that is itself a header — is located too;
   the spans overlap and `Masker.locate` resolves them.
@@ -197,10 +206,15 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   ones the Slack, GitLab and Anthropic scans keep are held to never moving back
   by a `Test_..._bodyNeverMovesBack` of their own, and the two the OpenAI scan
   keeps by `Test_OpenAIAPIKey_scanIsLinear`, as the Anthropic one is by
-  `Test_AnthropicAPIKey_scanIsLinear`. The AWS and Google scans keep no cursor
-  and need none: a fixed count means a candidate reads a bounded number of bytes
-  and stops, which is the same guarantee bought without state. Compare
-  benchmarks before and after touching any of them — that scan's cases under
-  `BenchmarkBuiltins` as well as `BenchmarkMasker_Mask`.
+  `Test_AnthropicAPIKey_scanIsLinear`. The AWS, Google and npm scans keep no
+  cursor and need none, for two different reasons: a fixed count means an AWS or
+  Google candidate reads a bounded number of bytes and stops, and an npm
+  candidate asks for an underscore no body may hold, so the run it reads begins
+  past the run of the candidate before it — the same guarantee the classic
+  alternative of the GitHub scan has, bought without state either way.
+  `Test_npmTokenPrefix_runsDoNotOverlap` holds the npm prefix to the character
+  that argument rests on. Compare benchmarks before and after touching any of
+  them — that scan's cases under `BenchmarkBuiltins` as well as
+  `BenchmarkMasker_Mask`.
 - Published library: any change to an exported name, signature or behaviour is
   breaking. Keep `README.md` in sync with the exported API.
