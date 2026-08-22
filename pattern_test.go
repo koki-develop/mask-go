@@ -98,6 +98,28 @@ func Test_MustRegexp_find(t *testing.T) {
 			src:  "id=",
 			want: []Span{{3, 3}},
 		},
+		{
+			// A marker written in variants is one alternation with the group
+			// named in each branch, and the branch that matched is the one
+			// that must be located — not the leftmost, which is all
+			// SubexpIndex reports.
+			name: "a mask group named in each branch of an alternation",
+			expr: `key_(?:live_(?P<mask>[0-9a-f]+)|test_(?P<mask>[0-9a-f]+))`,
+			src:  "key_test_dead key_live_beef",
+			want: []Span{{9, 13}, {23, 27}},
+		},
+		{
+			name: "two mask groups taking part in one match",
+			expr: `(?P<mask>a+)-(?P<mask>b+)`,
+			src:  "aa-bb",
+			want: []Span{{0, 2}, {3, 5}},
+		},
+		{
+			name: "a match where no mask group took part is located nowhere",
+			expr: `id=(?:(?P<mask>\d+)|(?P<mask>x+)|none)`,
+			src:  "id=none",
+			want: nil,
+		},
 	}
 
 	for _, tt := range tests {
@@ -129,5 +151,21 @@ func Test_MustRegexp_maskGroup(t *testing.T) {
 	m := New(WithPatterns(MustRegexp("user-id", `user_id=(?P<mask>\d+)`)))
 	if got, want := m.Mask("user_id=12345 name=alice"), "user_id=***** name=alice"; got != want {
 		t.Errorf("Mask() = %q, want %q", got, want)
+	}
+}
+
+func Test_MustRegexp_maskGroupInEveryBranch(t *testing.T) {
+	// What this is here for is the branch that is not the leftmost. Reading
+	// one submatch index for the name would leave that branch with a group
+	// that took part in nothing, drop the match on it and write the key back
+	// out whole, with nothing reported anywhere.
+	m := New(WithPatterns(MustRegexp("key", `key_(?:live_(?P<mask>[0-9a-f]+)|test_(?P<mask>[0-9a-f]+))`)))
+	for _, tt := range []struct{ src, want string }{
+		{"key_live_deadbeef", "key_live_********"},
+		{"key_test_deadbeef", "key_test_********"},
+	} {
+		if got := m.Mask(tt.src); got != tt.want {
+			t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+		}
 	}
 }

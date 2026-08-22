@@ -35,6 +35,27 @@ case: a mask group that matches nothing to redact
 in:   user_id= name=alice
 out:  user_id= name=alice
 
+patterns: regexp-mask-group-branches
+
+# The name may be written more than once, one branch of an alternation apiece,
+# and the branch that matched is the one redacted. Only the leftmost of the
+# groups sharing a name has an index a caller can ask for, so the two cases
+# below are what tells reading all of them from reading that one: reading that
+# one leaves the second case with a group that took part in nothing, and the
+# key is written back out whole.
+
+case: a mask group in the leftmost branch of an alternation
+in:   key_live_0123456789abcdef
+out:  key_live_«key»
+
+case: a mask group in a branch that is not the leftmost
+in:   key_test_0123456789abcdef
+out:  key_test_«key»
+
+case: both branches on one line
+in:   key_live_0123456789abcdef key_test_0123456789abcdef
+out:  key_live_«key» key_test_«key»
+
 patterns: func
 
 case: a pattern built from a function
