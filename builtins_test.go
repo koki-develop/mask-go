@@ -118,6 +118,18 @@ var builtinPatterns = []struct {
 		benchmarks: jwtFindBenchmarks,
 	},
 	{
+		name:    "linear-api-key",
+		pattern: LinearAPIKey,
+		ref:     referenceLinearAPIKeyFind,
+		samples: []string{
+			"LINEAR_API_KEY=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123",
+			"lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123",
+			"lin_api_0123456789abcdefghijklmnopqrstuvwxyz01234",
+			"lin_api_0123456789abcdefghijklmnopqrstuvwxyz0lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123",
+		},
+		benchmarks: linearAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "npm-token",
 		pattern: NPMToken,
 		ref:     referenceNPMTokenFind,

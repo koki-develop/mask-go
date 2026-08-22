@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token» «sendgrid-api-key» «sentry-auth-token»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -615,6 +615,75 @@ out:  «npm-token»
 case: a sentry token in an environment file beside a stripe key and an access key id
 in:   SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\nSTRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF
 out:  SENTRY_AUTH_TOKEN=«sentry-auth-token»\nSTRIPE_SECRET_KEY=«stripe-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
+
+# A Linear API key beside the other kinds, and inside them. A body is base62
+# read to the end of its run, as an npm body is, so a value written in an
+# alphabet as narrow can stand inside one and is located there as well; the two
+# spans overlap and are redacted as one, attributed to whichever starts
+# earliest. The underscore is what ends a body rather than a count, so a value
+# whose own prefix carries one begins after the run it interrupted — and the two
+# still overlap, because that run reached the letters standing in front of the
+# underscore. A dot ends a body as well, which is what keeps a JWT written
+# straight after a key a value of its own.
+#
+# Read the other way round it is the prefix's own two underscores that matter.
+# base64url admits them where base62 does not, so a whole key can be written
+# inside a JWT signature or a PyPI token body without ending either, and the
+# spans overlap there too.
+
+case: a linear key beside a github token and a jwt
+in:   linear=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  linear=«linear-api-key» github=«github-token» jwt=«jwt»
+
+case: an access key id inside a linear key body
+in:   lin_api_AKIA0123456789ABCDEF0123456789abcdefghij
+out:  «linear-api-key»
+
+case: a google api key inside a linear key body
+in:   lin_api_AIza0123456789abcdefghijklmnopqrstuvwxy0
+out:  «linear-api-key»
+
+case: a linear key inside the signature of a jwt
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:  «jwt»
+
+case: a linear key inside a pypi api token body
+in:   pypi-AgEIcHlwaS5vcmclin_api_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdef
+out:  «pypi-api-token»
+
+case: a classic github token written straight after a linear key
+in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «linear-api-key»
+
+case: a linear key written straight after a classic github token
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:  «github-token»
+
+case: a jwt directly after a linear key, which the dot keeps apart
+in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «linear-api-key».«jwt»
+
+case: an environment file holding a linear key among the others
+in:   LINEAR_API_KEY=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  LINEAR_API_KEY=«linear-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+
+# A Stripe key written against the end of a Linear key, which is the shape the
+# block closing this file states of an npm token and ends the same way. A Linear
+# body is read to the end of its run and the sk opening the Stripe prefix is two
+# characters of that run, so the key's span reaches into the prefix and stops at
+# the underscore behind them. The Linear key is redacted and takes the sk away
+# with it, and the whole random part of a live secret key stays in the text.
+# Written the other way round the Stripe body reaches three characters into the
+# Linear prefix and stops at its underscore, so the two spans overlap and both
+# values go.
+
+case: a stripe key written against the end of a linear key
+in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123sk_live_0123456789abcdef01234567
+out:  «linear-api-key»_live_0123456789abcdef01234567
+
+case: a linear key written against the end of a stripe key
+in:   sk_live_0123456789abcdef01234567lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:  «stripe-api-key»
 
 # A Stripe key beside the other kinds, and inside them. A body is written in
 # letters and digits alone, so an access key ID and a Google API key can each be
