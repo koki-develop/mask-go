@@ -69,8 +69,8 @@ to move with it: no `out` can contradict a name.
 
 `builtin_anthropic_api_key.txt`, `builtin_aws_access_key_id.txt`,
 `builtin_github_token.txt`, `builtin_gitlab_token.txt`,
-`builtin_google_api_key.txt`, `builtin_jwt.txt`, `builtin_openai_api_key.txt`
-and `builtin_slack_token.txt` (one pattern each),
+`builtin_google_api_key.txt`, `builtin_jwt.txt`, `builtin_openai_api_key.txt`,
+`builtin_slack_token.txt` and `builtin_stripe_api_key.txt` (one pattern each),
 `builtins_together.txt` (all of them at once, and the values two of them read
 differently), `custom_patterns.txt` (`MustRegexp`, `NewPattern`, and no pattern
 at all), `overlap_and_attribution.txt` (how overlapping values merge and which
