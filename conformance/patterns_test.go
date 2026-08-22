@@ -71,6 +71,7 @@ var patternSets = map[string][]mask.Pattern{
 	"jwt":               {mask.JWT()},
 	"npm-token":         {mask.NPMToken()},
 	"openai-api-key":    {mask.OpenAIAPIKey()},
+	"pypi-api-token":    {mask.PyPIAPIToken()},
 	"slack-token":       {mask.SlackToken()},
 	"stripe-api-key":    {mask.StripeAPIKey()},
 

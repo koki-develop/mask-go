@@ -55,14 +55,15 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `FuzzGitHubToken_matchesReference`, `FuzzAWSAccessKeyID_matchesReference`,
   `FuzzSlackToken_matchesReference`, `FuzzGitLabToken_matchesReference`,
   `FuzzGoogleAPIKey_matchesReference`, `FuzzOpenAIAPIKey_matchesReference`,
-  `FuzzAnthropicAPIKey_matchesReference`, `FuzzStripeAPIKey_matchesReference`
-  and `FuzzNPMToken_matchesReference`. In `conformance`: `FuzzMask`,
+  `FuzzAnthropicAPIKey_matchesReference`, `FuzzStripeAPIKey_matchesReference`,
+  `FuzzPyPIAPIToken_matchesReference` and `FuzzNPMToken_matchesReference`.
+  In `conformance`: `FuzzMask`,
   `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30 seconds.
 - `go test -bench . -benchmem` — benchmarks. `BenchmarkMasker_Mask` drives every
   pattern at once through the public API, which is what a caller pays;
   `BenchmarkBuiltins` drives each scan alone under the name its pattern reports,
   and that is what a change to a scan is compared against, since a regression in
-  one is a ninth of what the first reports. `go test -bench Builtins/jwt
+  one is an eleventh of what the first reports. `go test -bench Builtins/jwt
   -benchmem .` runs one of them.
 - `golangci-lint run` — lint (no config file; defaults).
 - `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
@@ -140,40 +141,42 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   (`builtin_google_api_key_test.go`), `referenceOpenAIAPIKeyFind`
   (`builtin_openai_api_key_test.go`), `referenceAnthropicAPIKeyFind`
   (`builtin_anthropic_api_key_test.go`), `referenceStripeAPIKeyFind`
-  (`builtin_stripe_api_key_test.go`) and `referenceNPMTokenFind`
+  (`builtin_stripe_api_key_test.go`), `referencePyPIAPITokenFind`
+  (`builtin_pypi_api_token_test.go`) and `referenceNPMTokenFind`
   (`builtin_npm_token_test.go`), plain implementations of the same
   rules. The second tries `referenceGitHubToken`, the regular expression the
   GitHub token scan reads by hand, at every byte rather than handing it to
   `FindAllStringIndex`: a value either scan locates can hold the start of the
   next one, so a reference that resumed past a match would miss what the scan
-  finds. The third, the fifth, the sixth, the seventh and the tenth do the same
-  for the same reason — an access key ID can begin three characters into the one
-  before it, a GitLab body is written in an alphabet that holds every letter a
-  GitLab prefix is, a Google API key's prefix and an OpenAI key's `sk-` are each
-  written in the alphabet their own runs are, and an npm body can close with the
-  three letters an npm prefix opens with. The first, the fourth, the eighth and
-  the ninth are written out rather than built on a regular expression, and all
-  four start afresh at every position — the first three of them for that same
-  reason, the ninth because a reference is written to know nothing its scan
-  claims, and what the Stripe scan claims is that no key can begin inside
-  another. What the first two read of a candidate — a decoded JOSE header, a run
-  divided into segments — is not what an expression states compactly; the
-  eighth's grammar is, and it is written out anyway, because a floor spelled as
-  a counted repetition costs an engine a machine ninety-five states wide at
-  every candidate, which left its fuzz target wedged on one grown input instead
-  of fuzzing. Its own file measures both. The ninth's grammar cannot be spelled
-  in Go's syntax at all: the byte it reads in front of a prefix admits the
-  underscore where `\b` does not, and there is no lookbehind to write the demand
-  with instead. The tenth spells a floor as a counted repetition and pays
-  nothing for it, for the reason its scan needs no cursor: no input crowds two
-  npm candidates inside one run, so no engine walks the same run twice. A
-  reference spells the prefixes, the counts and the character classes its scan
-  reads out again rather than sharing the declarations, so that the two can
-  disagree and the fuzz target report it. Change scanner and reference together,
-  and keep the corpus in `testdata/fuzz/`. The targets share their body through
-  `fuzzAgainstReference` (`fuzz_test.go`) but keep a name apiece, because the
-  corpus is keyed on the name of the target — so never rename a target without
-  moving its corpus directory.
+  finds. The third, the fifth, the sixth, the seventh and the eleventh do the
+  same for the same reason — an access key ID can begin three characters into
+  the one before it, a GitLab body is written in an alphabet that holds every
+  letter a GitLab prefix is, a Google API key's prefix and an OpenAI key's `sk-`
+  are each written in the alphabet their own runs are, and an npm body can close
+  with the three letters an npm prefix opens with. The first, the fourth, the
+  eighth, the ninth and the tenth are written out rather than built on a regular
+  expression, and all five start afresh at every position — all but the ninth
+  for that same reason, and the ninth because a reference is written to know
+  nothing its scan claims, and what the Stripe scan claims is that no key can
+  begin inside another. What the first two read of a candidate — a decoded JOSE
+  header, a run divided into segments — is not what an expression states
+  compactly; the grammars of the eighth and the tenth are, and they are written
+  out anyway, because a floor spelled as a counted repetition costs an engine a
+  machine as wide as the floor at every candidate, which left the eighth's fuzz
+  target wedged on one grown input instead of fuzzing. The Anthropic file
+  measures both. The ninth's grammar cannot be spelled in Go's syntax at all:
+  the byte it reads in front of a prefix admits the underscore where `\b` does
+  not, and there is no lookbehind to write the demand with instead. The eleventh
+  spells a floor as a counted repetition and is not wedged by it, for the reason
+  its scan needs no cursor: no input crowds two npm candidates inside one run,
+  so the walk an engine repeats at the eighth's candidates has nothing to repeat
+  at its own. A reference spells the prefixes, the counts and the character
+  classes its scan reads out again rather than sharing the declarations, so that
+  the two can disagree and the fuzz target report it. Change scanner and
+  reference together, and keep the corpus in `testdata/fuzz/`. The targets share
+  their body through `fuzzAgainstReference` (`fuzz_test.go`) but keep a name
+  apiece, because the corpus is keyed on the name of the target — so never
+  rename a target without moving its corpus directory.
 - Behaviour that differs under the race detector is branched on `raceEnabled`
   (`race_test.go` / `norace_test.go`), not skipped.
 
@@ -192,14 +195,15 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   are read to a fixed count and swallow nothing, but each can still be written
   inside the one before it — the `A` closing `ASIA` opens the `AKIA` three
   characters along, `AIza` is four characters a key's own body may be written
-  with, `sk-` is three of an OpenAI run's own and `sk-ant-` is seven of an
-  Anthropic body's.
-  An Anthropic key is read to the end of its run as an OpenAI key is, so it
-  swallows what is written straight after it too. An npm token is read to the
-  end of its run as well, and only the three letters in front of its underscore
-  belong to that run, so a token begins three characters before the one in
-  front of it ends rather than anywhere inside it. Consuming a match would step
-  over such a value and leave it in the output whole. The cost is that a value
+  with, `sk-` is three of an OpenAI run's own, `sk-ant-` is seven of an
+  Anthropic body's and `pypi-AgE` is eight of a PyPI token body's.
+  An Anthropic key and a PyPI token are read to the end of their run as an
+  OpenAI key is, so each swallows what is written straight after it too. An npm
+  token is read to the end of its run as well, and only the three letters in
+  front of its underscore belong to that run, so a token begins three characters
+  before the one in front of it ends rather than anywhere inside it. Consuming a
+  match would step over such a value and leave it in the output whole. The cost
+  is that a value
   nested in another — a JWT payload that is itself a header — is located too;
   the spans overlap and `Masker.locate` resolves them.
 - The Stripe scan is the exception and states why in its own file: a key begins
@@ -212,24 +216,27 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `Test_StripeAPIKey_noKeyBeginsInsideAnother` is what holds the claim.
 - `Masker.locate` and every built-in scanner are deliberately linear-time and
   allocation-conscious. Resuming one byte along means a run can hold a
-  candidate for every character it has, and six of the scans keep a cursor over
-  that run to rule out quadratic inputs: the JWT scan over a run of base64url
-  characters, the GitHub scan over that and over the alphabet a fine grained
-  token body is written in, the GitLab scan over a body run, the Slack scan
-  over a body run and the rightmost part of it able to be a secret, the
-  OpenAI scan over a run and over where the marker inside it stands, and the
-  Anthropic scan over a body run. Each of those cursors is load-bearing; the
-  ones the Slack, GitLab and Anthropic scans keep are held to never moving back
-  by a `Test_..._bodyNeverMovesBack` of their own, and the two the OpenAI scan
-  keeps by `Test_OpenAIAPIKey_scanIsLinear`, as the Anthropic one is by
-  `Test_AnthropicAPIKey_scanIsLinear`. The AWS and Google scans keep no cursor
-  and need none: a fixed count means a candidate reads a bounded number of bytes
-  and stops, which is the same guarantee bought without state. The Stripe and
-  npm scans keep none either, and share a guarantee of their own: every prefix
-  either of them reads closes with an underscore and no body of either is
-  written with one, so every body begins where a run begins and no two
-  candidates can read the same run. It is what the classic alternative of the
-  GitHub scan has for that same reason.
+  candidate for every character it has, and seven of the scans keep a cursor
+  over that run to rule out quadratic inputs: the JWT scan over a run of
+  base64url characters, the GitHub scan over that and over the alphabet a fine
+  grained token body is written in, the GitLab scan over a body run, the Slack
+  scan over a body run and the rightmost part of it able to be a secret, the
+  OpenAI scan over a run and over where the marker inside it stands, the
+  Anthropic scan over a body run, and the PyPI scan over one too. Each of those
+  cursors is load-bearing; the ones the Slack, GitLab and Anthropic scans keep
+  are held to never moving back by a `Test_..._bodyNeverMovesBack` of their own,
+  and the two the OpenAI scan keeps by `Test_OpenAIAPIKey_scanIsLinear`, as the
+  Anthropic one is by `Test_AnthropicAPIKey_scanIsLinear` and the PyPI one by
+  `Test_PyPIAPIToken_scanIsLinear`. The PyPI scan needs no `bodyNeverMovesBack`
+  beside those: its body stands a fixed distance past the start of its
+  candidate, so it moves forward with the candidates and there is no separator
+  to reason about. The AWS and Google scans keep no cursor and need none: a
+  fixed count means a candidate reads a bounded number of bytes and stops, which
+  is the same guarantee bought without state. The Stripe and npm scans keep none
+  either, and share a guarantee of their own: every prefix either of them reads
+  closes with an underscore and no body of either is written with one, so every
+  body begins where a run begins and no two candidates can read the same run. It
+  is what the classic alternative of the GitHub scan has for that same reason.
   `Test_StripeAPIKey_scanIsLinear` and `Test_NPMToken_scanIsLinear` drive the
   inputs that would find it wrong, and `Test_npmTokenPrefix_runsDoNotOverlap`
   holds the npm prefix to the character it rests on. Compare benchmarks before
