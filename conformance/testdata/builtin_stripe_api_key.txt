@@ -1,0 +1,265 @@
+# What Stripe API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is, written out until it is the twenty-four characters the pattern
+# holds a body to. That count is a floor and not an abbreviation: a body
+# shortened for readability would leave a case holding no key at all. One case
+# carries the ninety-nine characters Stripe issues today, to say that the floor
+# is not a count.
+#
+# The two cases under the over-match heading are not keys and nobody issued
+# them. What they hold is a snake_case name whose first segment is a key type,
+# whose second is a mode and whose third is long enough to be a body, which is
+# the whole of what the pattern asks for.
+
+patterns: stripe-api-key
+
+# The kinds of key, which differ in the two letters they open with and in the
+# mode written behind them. Stripe documents a publishable key as safe to embed
+# in the page it initializes; it is redacted along with the rest, because
+# nothing in the string tells the kinds apart before the mode has been read and
+# a caller reaching for this pattern is redacting what a log line carries.
+
+case: a live secret key in an environment assignment
+in:   STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567
+out:  STRIPE_SECRET_KEY=«stripe-api-key»
+
+case: a secret key in the basic auth username a request carries it as
+in:   curl https://api.stripe.com/v1/charges -u sk_live_0123456789abcdef01234567:
+out:  curl https://api.stripe.com/v1/charges -u «stripe-api-key»:
+
+case: a sandbox secret key
+in:   sk_test_0123456789abcdef01234567
+out:  «stripe-api-key»
+
+case: a live restricted key
+in:   rk_live_0123456789abcdef01234567
+out:  «stripe-api-key»
+
+case: a sandbox restricted key
+in:   rk_test_0123456789abcdef01234567
+out:  «stripe-api-key»
+
+case: a live publishable key
+in:   pk_live_0123456789abcdef01234567
+out:  «stripe-api-key»
+
+case: a publishable key in a client side configuration object
+in:   {"publishableKey":"pk_test_0123456789abcdef01234567","locale":"auto"}
+out:  {"publishableKey":"«stripe-api-key»","locale":"auto"}
+
+case: a restricted key in a bearer token header
+in:   Authorization: Bearer rk_live_0123456789abcdef01234567
+out:  Authorization: Bearer «stripe-api-key»
+
+# The organization key. Stripe states the prefix sk_org and states that these
+# keys support sandboxes and live mode, and states nowhere which of the two
+# shapes the mode is written in. Both are read, so a key carrying a mode segment
+# of its own and a key carrying none are each redacted whole. What a key in a
+# mode Stripe has not written comes to is the last case here, and it is the same
+# thing the mode case further down says.
+
+case: an organization key with no mode segment
+in:   sk_org_0123456789abcdef01234567
+out:  «stripe-api-key»
+
+case: an organization key with a mode segment of its own
+in:   sk_org_live_0123456789abcdef01234567
+out:  «stripe-api-key»
+
+case: an organization key in a sandbox
+in:   sk_org_test_0123456789abcdef01234567
+out:  «stripe-api-key»
+
+case: an organization key in a mode no Stripe page names
+in:   sk_org_prod_0123456789abcdef01234567
+out:  sk_org_prod_0123456789abcdef01234567
+
+# How long a body is, which is the one count this pattern reads. Twenty-four
+# characters is the shortest body Stripe has printed in its own documentation,
+# and it is read as a floor: the ninety-nine characters Stripe issues today are
+# redacted whole, and so would a length nobody has published be. What the floor
+# holds back is the placeholder a template carries where a key goes, which is
+# the reason it is not lower.
+#
+# What it leaves over is the key cut short. A line cut to a column limit partway
+# through one leaves a prefix and a body too short to be a body, and every
+# random character written before the cut comes through in the clear. The two
+# cases below are that, and they are here to be looked up rather than arrived
+# at.
+
+case: the length Stripe issues today
+in:   sk_live_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:  «stripe-api-key»
+
+case: a body one character longer than the floor
+in:   sk_live_0123456789abcdef01234567z
+out:  «stripe-api-key»
+
+case: a key one character short of the floor
+in:   STRIPE_SECRET_KEY=sk_live_0123456789abcdef0123456
+out:  STRIPE_SECRET_KEY=sk_live_0123456789abcdef0123456
+
+case: a key cut off at its prefix
+in:   STRIPE_SECRET_KEY=sk_live_
+out:  STRIPE_SECRET_KEY=sk_live_
+
+case: a placeholder where a key goes
+in:   STRIPE_PUBLISHABLE_KEY=pk_test_yourkeyhere
+out:  STRIPE_PUBLISHABLE_KEY=pk_test_yourkeyhere
+
+# The mode. It is read as one of the names Stripe writes rather than as any
+# lowercase word at all, which is what makes the anchor eight characters instead
+# of the three a key type is. What that wagers is a mode Stripe has not written
+# yet, and the case below is the one gitleaks reads and no Stripe page names.
+
+case: a mode no Stripe page names
+in:   sk_prod_0123456789abcdef01234567
+out:  sk_prod_0123456789abcdef01234567
+
+case: a key type with no mode behind it
+in:   sk_0123456789abcdef01234567
+out:  sk_0123456789abcdef01234567
+
+# The alphabet a body is written in: the letters of both cases and the ten
+# digits, which is what every ruleset admits behind a prefix. Neither the
+# underscore nor the hyphen is in it, so either of them ends a body where it
+# stands and what is left in front of it is too short to be one.
+
+case: a body written in capitals
+in:   sk_live_0123456789ABCDEF01234567
+out:  «stripe-api-key»
+
+case: an underscore in the body
+in:   sk_live_0123456789abcdef_01234567
+out:  sk_live_0123456789abcdef_01234567
+
+case: a hyphen in the body
+in:   sk_live_0123456789abcdef-01234567
+out:  sk_live_0123456789abcdef-01234567
+
+case: a dot in the body
+in:   sk_live_0123456789abcdef.01234567
+out:  sk_live_0123456789abcdef.01234567
+
+# What a key may be written against. The byte in front of a prefix may be no
+# letter and no digit, which is a demand only the Slack pattern makes besides
+# this one and for the same reason: two of these three key types can close a
+# word — task_ ends in sk_ and network_ in rk_. It is not the word boundary a
+# regular expression writes: the underscore is admitted, because that is how a
+# key reaches a log line from a shell.
+#
+# Behind the key the redaction reaches to the end of the run, which is the price
+# of reading a floor rather than a count. A letter or a digit written straight
+# after a key is redacted with it; an underscore, a hyphen, a space or a quote
+# ends the run and stays.
+
+case: a key after an underscore
+in:   STRIPE_SECRET_KEY_sk_live_0123456789abcdef01234567
+out:  STRIPE_SECRET_KEY_«stripe-api-key»
+
+case: a key after a letter
+in:   xsk_live_0123456789abcdef01234567
+out:  xsk_live_0123456789abcdef01234567
+
+case: a key after a digit
+in:   1sk_live_0123456789abcdef01234567
+out:  1sk_live_0123456789abcdef01234567
+
+case: a key at the end of a sentence
+in:   the key is sk_live_0123456789abcdef01234567.
+out:  the key is «stripe-api-key».
+
+case: a key inside quotes
+in:   export STRIPE_SECRET_KEY="sk_live_0123456789abcdef01234567"
+out:  export STRIPE_SECRET_KEY="«stripe-api-key»"
+
+case: a key before a word
+in:   sk_live_0123456789abcdef01234567suffix
+out:  «stripe-api-key»
+
+case: a key before an underscore, which ends the run
+in:   sk_live_0123456789abcdef01234567_suffix
+out:  «stripe-api-key»_suffix
+
+case: a key before a hyphenated word, which ends the run
+in:   sk_live_0123456789abcdef01234567-suffix
+out:  «stripe-api-key»-suffix
+
+# Two keys written together. No key can begin inside the span of another here,
+# which no other built-in can say: a key opens only where no letter and no digit
+# stands in front of it, and everything a span covers is one or the other but
+# for the underscores of the prefix. So the second of two keys written with
+# nothing at all between them opens nothing, and what is left of it after the
+# first key's run has reached over its key type is in the clear. That is the far
+# side of the byte in front, and it is here to be looked up rather than arrived
+# at — a list of keys carries a separator, and every separator is a byte a key
+# may be written after.
+
+case: two keys separated by a space
+in:   sk_live_0123456789abcdef01234567 pk_live_0123456789abcdef01234567
+out:  «stripe-api-key» «stripe-api-key»
+
+case: two keys with an underscore between them
+in:   sk_live_0123456789abcdef01234567_pk_test_0123456789abcdef01234567
+out:  «stripe-api-key»_«stripe-api-key»
+
+case: a key written straight onto the end of another
+in:   sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
+out:  «stripe-api-key»_test_0123456789abcdef01234567
+
+# What this pattern redacts that nobody issued. A prefix carries two
+# underscores, so no base64 payload holds one and no digest does; what is left
+# is text somebody wrote — a snake_case name whose first segment is a key type,
+# whose second is a mode, and whose third is twenty-four unbroken letters and
+# digits.
+#
+# That is the answer rather than a fault in it: such a name is a key's format
+# exactly, so nothing is left in the text to read the two apart by, and the only
+# tightening on offer is the count, which the pattern's own file weighs and
+# reads as a floor for the reason a wrong count costs a whole credential.
+
+case: a name whose segments spell a prefix, with a digest behind it
+in:   rk_live_0123456789abcdef0123456789abcdef
+out:  «stripe-api-key»
+
+case: the same name at the start of a shell word
+in:   cat pk_test_0123456789abcdef01234567.json
+out:  cat «stripe-api-key».json
+
+# And what this pattern leaves alone. The first two are the prefix: read in its
+# own case, and written with the underscores Stripe writes rather than the
+# hyphens the Anthropic and OpenAI keys carry. Of the last four, the digest
+# carries no underscore and so holds no prefix to be found at; no word of prose
+# is spelled sk_live_; and the two snake_case names are the ones that carry a
+# whole prefix and are turned away by nothing but the letter in front of it —
+# task_ closes with a secret key's key type and network_ with a restricted
+# key's.
+
+case: an uppercase prefix
+in:   SK_LIVE_0123456789abcdef01234567
+out:  SK_LIVE_0123456789abcdef01234567
+
+case: hyphens where the prefix carries underscores
+in:   sk-live-0123456789abcdef01234567
+out:  sk-live-0123456789abcdef01234567
+
+case: a run of the right length opening with no prefix
+in:   0123456789abcdef01234567
+out:  0123456789abcdef01234567
+
+case: a hexadecimal digest
+in:   sha1=0123456789abcdef0123456789abcdef01234567
+out:  sha1=0123456789abcdef0123456789abcdef01234567
+
+case: prose
+in:   there is no credential in this sentence
+out:  there is no credential in this sentence
+
+case: a snake_case name closing on the secret key type
+in:   the task_test_0123456789abcdef01234567 fixture was rebuilt
+out:  the task_test_0123456789abcdef01234567 fixture was rebuilt
+
+case: a snake_case name closing on the restricted key type
+in:   network_live_0123456789abcdef01234567
+out:  network_live_0123456789abcdef01234567

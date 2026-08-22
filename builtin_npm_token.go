@@ -77,6 +77,14 @@ func NPMToken() Pattern { return npmToken }
 // already reaches to the end of the run, is every token with anything written
 // against it.
 //
+// The Stripe scan beside this one does ask that the byte in front be no letter
+// and no digit, and what makes that worth its cost there makes it worthless
+// here. Its prefixes are three characters an ordinary word closes with — task_
+// ends in sk_ and network_ in rk_ — so without the demand a word and a mode
+// would read as a key. Four characters ending in npm close no word anybody
+// writes, so the same demand would rule out nothing and would cost the token
+// written straight against a letter.
+//
 // The scan resumes one byte past the start of a candidate whether it became a
 // token or not. The underscore the prefix closes with belongs to no body, but
 // the three letters in front of it do, so a body may close with npm and the
@@ -92,9 +100,9 @@ func NPMToken() Pattern { return npmToken }
 // earlier than the byte that ends this run, and the run that candidate reads
 // therefore begins past this one. Successive candidates read runs that do not
 // overlap, and reading all of them comes to the length of the input — the
-// guarantee the classic alternative of the GitHub scan has for the same reason,
-// bought without state, where the JWT, GitLab, Slack, OpenAI and Anthropic
-// scans have to keep a cursor for want of it.
+// guarantee the Stripe scan and the classic alternative of the GitHub scan
+// reach by the same argument, bought without state, where the JWT, GitLab,
+// Slack, OpenAI and Anthropic scans have to keep a cursor for want of it.
 // Test_npmTokenPrefix_runsDoNotOverlap holds the prefix to the one thing that
 // argument rests on, and Test_NPMToken_scanIsLinear drives it.
 //

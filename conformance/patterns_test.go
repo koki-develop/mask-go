@@ -72,6 +72,7 @@ var patternSets = map[string][]mask.Pattern{
 	"npm-token":         {mask.NPMToken()},
 	"openai-api-key":    {mask.OpenAIAPIKey()},
 	"slack-token":       {mask.SlackToken()},
+	"stripe-api-key":    {mask.StripeAPIKey()},
 
 	// No pattern at all: a Masker given none redacts nothing.
 	"none": {},
