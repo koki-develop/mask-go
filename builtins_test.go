@@ -169,6 +169,22 @@ var builtinPatterns = []struct {
 		benchmarks: sendGridAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "sentry-auth-token",
+		pattern: SentryAuthToken,
+		ref:     referenceSentryAuthTokenFind,
+		samples: []string{
+			"SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"sntrya_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"sntryi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"sntrys_0123456789abcdefghijklmnopqrstuv_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			"sntrys_0123456789abcdefghijklmnopqrst==_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			"sntrys_0123456789abcdefghijklmnopqrs+/v_0123456789abcdefghijklmnopqrstuvwxyzABCDE+/",
+			"sntrys_0123456789abcdef0123456789sntrys_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGH_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			"sntrys_0123456789abcdef0123456789sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		benchmarks: sentryAuthTokenFindBenchmarks,
+	},
+	{
 		name:    "slack-token",
 		pattern: SlackToken,
 		ref:     referenceSlackTokenFind,

@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token» «sendgrid-api-key»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token» «sendgrid-api-key» «sentry-auth-token»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -577,6 +577,44 @@ out:  «sendgrid-api-key».«jwt»
 case: a sendgrid key in an environment file beside a stripe key and an access key id
 in:   SENDGRID_API_KEY=SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a\nSTRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF
 out:  SENDGRID_API_KEY=«sendgrid-api-key»\nSTRIPE_SECRET_KEY=«stripe-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
+
+# A Sentry auth token beside the other kinds, and inside one. The token with a
+# hexadecimal body is read to an exact count, so a value written straight after
+# one is reached and keeps a redaction of its own. An organization token's two
+# segments are base64, which admits the letters and digits an access key ID and
+# a Google API key are written in, so either can be written into one without
+# ending it and is located there as well; the values overlap and are redacted as
+# one, attributed to what starts earliest.
+#
+# In front of a token the underscore its prefix closes with is what a value of
+# another kind is stopped by. An npm body is read to the end of its run and the
+# six characters in front of a Sentry separator belong to that run, so the npm
+# token's span reaches into the Sentry prefix and stops at the underscore behind
+# it — the two spans overlap there and both values go.
+
+case: a sentry token beside a github token and a jwt
+in:   sentry=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  sentry=«sentry-auth-token» github=«github-token» jwt=«jwt»
+
+case: an access key id inside an organization payload
+in:   sntrys_AKIA0123456789ABCDEF0123456789ab_0123456789abcdef0123456789abcdef0123456789a
+out:  «sentry-auth-token»
+
+case: a google api key inside an organization secret
+in:   sntrys_0123456789abcdef0123456789abcdef_AIza0123456789abcdef0123456789abcdef0123456
+out:  «sentry-auth-token»
+
+case: a github token directly after a sentry token
+in:   sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «sentry-auth-token»«github-token»
+
+case: a sentry token written against the end of an npm token
+in:   npm_0123456789abcdefghijklmnopqrstuvwxyzsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «npm-token»
+
+case: a sentry token in an environment file beside a stripe key and an access key id
+in:   SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\nSTRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF
+out:  SENTRY_AUTH_TOKEN=«sentry-auth-token»\nSTRIPE_SECRET_KEY=«stripe-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
 
 # A Stripe key beside the other kinds, and inside them. A body is written in
 # letters and digits alone, so an access key ID and a Google API key can each be
