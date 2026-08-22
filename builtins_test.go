@@ -36,6 +36,19 @@ var builtinPatterns = []struct {
 	benchmarks func() []benchmarkCase // what the scan is timed on
 }{
 	{
+		name:    "anthropic-api-key",
+		pattern: AnthropicAPIKey,
+		ref:     referenceAnthropicAPIKeyFind,
+		samples: []string{
+			"ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			"sk-ant-admin01-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			"sk-ant-oat01-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			"sk-ant-api03-0123456789abcdef-123456789abcdef_123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			"sk-ant-a-sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+		},
+		benchmarks: anthropicAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "aws-access-key-id",
 		pattern: AWSAccessKeyID,
 		ref:     referenceAWSAccessKeyIDFind,

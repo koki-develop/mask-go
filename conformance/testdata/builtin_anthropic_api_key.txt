@@ -1,0 +1,213 @@
+# What Anthropic API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is, written out until it is the ninety-five characters the pattern
+# holds a body to. That count is a floor and not an abbreviation: unlike the
+# runs the OpenAI cases stand in for, it cannot be shortened for readability
+# without the case ceasing to hold a key at all, which is why every line below
+# is as long as a real credential.
+#
+# The two cases under the over-match heading carry no ordered run in the place a
+# body stands. They are not keys and nobody issued them: what they hold is a
+# base64url blob carrying the prefix, a kind and a long enough run behind it,
+# which is the whole of what the pattern asks for.
+
+patterns: anthropic-api-key
+
+# The kinds of credential, which differ only in the name a kind writes between
+# the prefix and the body. The pattern reads that there is a name rather than
+# which one it is, so the Console key, the Admin API key, the two OAuth tokens
+# issued for Claude Code, a session key of the version added beside sid01 and a
+# kind nobody here has named are one shape in six spellings.
+
+case: a console key in an environment assignment
+in:   ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  ANTHROPIC_API_KEY=«anthropic-api-key»
+
+case: a console key in the header a request carries it in
+in:   x-api-key: sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  x-api-key: «anthropic-api-key»
+
+case: an admin api key
+in:   sk-ant-admin01-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  «anthropic-api-key»
+
+case: an oauth access token
+in:   sk-ant-oat01-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  «anthropic-api-key»
+
+case: an oauth refresh token
+in:   sk-ant-ort01-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  «anthropic-api-key»
+
+case: a session key of the version added beside sid01
+in:   sk-ant-sid02-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  «anthropic-api-key»
+
+case: a key naming a kind this pattern was never told about
+in:   sk-ant-zzz99-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  «anthropic-api-key»
+
+case: a key in a client side configuration object
+in:   {"apiKey":"sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde","model":"claude-opus-4"}
+out:  {"apiKey":"«anthropic-api-key»","model":"claude-opus-4"}
+
+# The alphabet a body is written in. It is base64url, which is what both
+# rulesets stating a shape admit behind the prefix: the letters of both cases,
+# the digits, the hyphen and the underscore. The two characters standard base64
+# writes in place of the last two, the plus and the slash, are not admitted, and
+# neither is anything else — a character outside the alphabet ends the body
+# where it stands, and what is left in front of it is too short to be one.
+
+case: a body carrying a hyphen and an underscore
+in:   sk-ant-api03-0123456789abcdef-123456789abcdef_123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  «anthropic-api-key»
+
+case: a plus in the body
+in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef012+456789abcdef0123456789abcdef0123456789abcde
+out:  sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef012+456789abcdef0123456789abcdef0123456789abcde
+
+case: a dot in the body
+in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef012.456789abcdef0123456789abcdef0123456789abcde
+out:  sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef012.456789abcdef0123456789abcdef0123456789abcde
+
+# The kind, and the hyphen that closes it. The kind is one or more lowercase
+# letters and digits, which is how every kind Anthropic has written spells
+# itself, and the first hyphen behind the prefix is what divides it from a body
+# that carries hyphens of its own. A run with no hyphen in it at all holds no
+# kind to be divided from anything.
+
+case: an uppercase kind
+in:   sk-ant-API03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  sk-ant-API03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case: an underscore where the kind is closed by a hyphen
+in:   sk-ant-api03_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  sk-ant-api03_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case: no kind between the prefix and the body
+in:   sk-ant-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  sk-ant-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+# How long a body is, which is the one count this pattern reads. Ninety-five
+# characters is what every published Anthropic credential carries and what both
+# rulesets state, and it is read as a floor: a key longer than it is redacted to
+# the end of its run, and a key shorter than it is not redacted at all. What the
+# floor is doing besides stating the count is telling a credential from a
+# hyphenated identifier, which is why it cannot simply be lowered — the last
+# case in this file is the identifier it turns away.
+#
+# What that leaves over is the key cut short. A line cut to a column limit
+# partway through one leaves a prefix, a kind and a body too short to be a body,
+# and every random character written before the cut comes through in the clear.
+# The two cases below are that, and they are here to be looked up rather than
+# arrived at.
+
+case: a body one character longer than the floor
+in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdez
+out:  «anthropic-api-key»
+
+case: a key one character short of the floor
+in:   ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd
+out:  ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd
+
+case: a key cut off at its kind
+in:   ANTHROPIC_API_KEY=sk-ant-api03
+out:  ANTHROPIC_API_KEY=sk-ant-api03
+
+# What a key may be written against, and what it draws in. The prefix is the
+# whole of the anchor and there is no boundary on either side of it, so a key
+# keeps its span whatever word character stands in front of it. Behind it the
+# redaction reaches to the end of the run, which is the price of reading a floor
+# rather than a count: a character of the key's own alphabet written straight
+# after a key is redacted with the key, and a space, a dot or a quote is not.
+
+case: a key after an underscore
+in:   ANTHROPIC_API_KEY_sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  ANTHROPIC_API_KEY_«anthropic-api-key»
+
+case: a key after a letter
+in:   xsk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  x«anthropic-api-key»
+
+case: a key at the end of a sentence
+in:   the key is sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde.
+out:  the key is «anthropic-api-key».
+
+case: a key inside quotes
+in:   export ANTHROPIC_API_KEY="sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde"
+out:  export ANTHROPIC_API_KEY="«anthropic-api-key»"
+
+case: a key before a hyphenated word
+in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde-suffix
+out:  «anthropic-api-key»
+
+case: a key before a word
+in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdesuffix
+out:  «anthropic-api-key»
+
+# Two keys written together. The prefix is written in the alphabet a body is, so
+# a key can begin inside the span of the one before it; the two spans overlap
+# and are redacted as one. Written apart, both go.
+
+case: a key beginning inside the key before it
+in:   sk-ant-a-sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  «anthropic-api-key»
+
+case: two keys separated by a space
+in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk-ant-admin01-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  «anthropic-api-key» «anthropic-api-key»
+
+# What this pattern redacts that nobody issued. The prefix is seven characters
+# of an alphabet of sixty-four, so a base64url encoding long enough carries it,
+# and where a kind, a hyphen and ninety-five more characters follow inside the
+# same run, everything from the prefix to the end of that run is redacted. The
+# two hyphens in the prefix narrow this further than it looks — standard base64
+# writes no hyphen at all, so a certificate or an embedded image holds no prefix
+# to be found at however long it runs.
+#
+# That is the answer rather than a fault in it: what is taken is a stretch of a
+# value already opaque to a reader, and the tightening on offer is a table of
+# the names a kind writes, which would have located nothing on the day sid02 was
+# added beside sid01. A stale list costs a whole credential, and this costs a
+# reader nothing. The pattern's own file weighs both.
+
+case: the prefix and a long enough run inside a base64url payload
+in:   payload=zzzzsk-ant-a-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdezzzz
+out:  payload=zzzz«anthropic-api-key»
+
+case: the prefix and a long enough run where a signature stands
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzsk-ant-a-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdezzzz
+out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«anthropic-api-key»
+
+# And what this pattern leaves alone. The first three are the prefix: read in
+# its own case, in all seven of its characters, and asked for at all. Of the
+# last three, the digest carries no hyphen and so holds no prefix to be found
+# at; no word of prose is spelled sk-ant-; and the hyphenated identifier is the
+# one that carries the prefix and is turned away by nothing but the count — a
+# task-ant- holds sk-ant- three characters in, and what stands behind it is a
+# phrase rather than ninety-five unbroken characters of the alphabet.
+
+case: an uppercase prefix
+in:   SK-ANT-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  SK-ANT-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case: an underscore where the prefix carries a hyphen
+in:   sk_ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  sk_ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case: a run of the right length opening with no prefix
+in:   0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case: a hexadecimal digest
+in:   sha1=0123456789abcdef0123456789abcdef01234567
+out:  sha1=0123456789abcdef0123456789abcdef01234567
+
+case: prose
+in:   there is no credential in this sentence
+out:  there is no credential in this sentence
+
+case: a hyphenated identifier carrying the prefix
+in:   the task-ant-colony-optimization-benchmark-suite was reviewed
+out:  the task-ant-colony-optimization-benchmark-suite was reviewed

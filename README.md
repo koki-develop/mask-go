@@ -24,6 +24,7 @@ returns every pattern in the table below, and grows as patterns are added:
 
 | Pattern | Locates |
 | --- | --- |
+| `AnthropicAPIKey()` | `sk-ant-api03-…`, `sk-ant-admin01-…` |
 | `AWSAccessKeyID()` | `AKIA…`, `ASIA…` |
 | `GitHubToken()` | `ghp_…`, `gho_…`, `ghu_…`, `ghs_…`, `ghr_…`, `github_pat_…` |
 | `GitLabToken()` | `glpat-…`, `gldt-…`, `glrt-…`, `glrtr-…`, `glcbt-…`, `glptt-…`, `glft-…`, `glimt-…`, `glagent-…`, `gloas-…`, `glsoat-…`, `glffct-…` |

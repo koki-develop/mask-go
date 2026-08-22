@@ -63,6 +63,7 @@ var patternSets = map[string][]mask.Pattern{
 	// what says the pattern locates a value on its own; the whole set is what
 	// says the sets do not interfere.
 	"default":           mask.AllBuiltinPatterns(),
+	"anthropic-api-key": {mask.AnthropicAPIKey()},
 	"aws-access-key-id": {mask.AWSAccessKeyID()},
 	"github-token":      {mask.GitHubToken()},
 	"gitlab-token":      {mask.GitLabToken()},

@@ -53,14 +53,14 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   package: `FuzzMasker_locate`, `FuzzMasker_Mask`, `FuzzJWT_matchesReference`,
   `FuzzGitHubToken_matchesReference`, `FuzzAWSAccessKeyID_matchesReference`,
   `FuzzSlackToken_matchesReference`, `FuzzGitLabToken_matchesReference`,
-  `FuzzGoogleAPIKey_matchesReference` and
-  `FuzzOpenAIAPIKey_matchesReference`. In `conformance`: `FuzzMask`,
+  `FuzzGoogleAPIKey_matchesReference`, `FuzzOpenAIAPIKey_matchesReference`
+  and `FuzzAnthropicAPIKey_matchesReference`. In `conformance`: `FuzzMask`,
   `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30 seconds.
 - `go test -bench . -benchmem` — benchmarks. `BenchmarkMasker_Mask` drives every
   pattern at once through the public API, which is what a caller pays;
   `BenchmarkBuiltins` drives each scan alone under the name its pattern reports,
   and that is what a change to a scan is compared against, since a regression in
-  one is a seventh of what the first reports. `go test -bench Builtins/jwt
+  one is an eighth of what the first reports. `go test -bench Builtins/jwt
   -benchmem .` runs one of them.
 - `golangci-lint run` — lint (no config file; defaults).
 - `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
@@ -135,8 +135,9 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   (`builtin_aws_access_key_id_test.go`), `referenceSlackTokenFind`
   (`builtin_slack_token_test.go`), `referenceGitLabTokenFind`
   (`builtin_gitlab_token_test.go`), `referenceGoogleAPIKeyFind`
-  (`builtin_google_api_key_test.go`) and `referenceOpenAIAPIKeyFind`
-  (`builtin_openai_api_key_test.go`), plain implementations of the same
+  (`builtin_google_api_key_test.go`), `referenceOpenAIAPIKeyFind`
+  (`builtin_openai_api_key_test.go`) and `referenceAnthropicAPIKeyFind`
+  (`builtin_anthropic_api_key_test.go`), plain implementations of the same
   rules. The second tries `referenceGitHubToken`, the regular expression the
   GitHub token scan reads by hand, at every byte rather than handing it to
   `FindAllStringIndex`: a value either scan locates can hold the start of the
@@ -145,10 +146,14 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   same reason — an access key ID can begin three characters into the one before
   it, a GitLab body is written in an alphabet that holds every letter a GitLab
   prefix is, and a Google API key's prefix and an OpenAI key's `sk-` are each
-  written in the alphabet their own runs are. The first and the fourth are
-  written out rather than built on a regular
-  expression, because what they read of a candidate — a decoded JOSE header, a
-  run divided into segments — is not what an expression states compactly. A
+  written in the alphabet their own runs are. The first, the fourth and the
+  eighth are written out rather than built on a regular expression, and start
+  afresh at every position for that same reason. What the first two read of a
+  candidate — a decoded JOSE header, a run divided into segments — is not what
+  an expression states compactly; the eighth's grammar is, and it is written out
+  anyway, because a floor spelled as a counted repetition costs an engine a
+  machine ninety-five states wide at every candidate, which left its fuzz target
+  wedged on one grown input instead of fuzzing. Its own file measures both. A
   reference spells the prefixes, the counts and the character classes its scan
   reads out again rather than sharing the declarations, so that the two can
   disagree and the fuzz target report it. Change scanner and reference
@@ -173,26 +178,29 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   behind its marker; an AWS access key ID and a Google API key are read to a
   fixed count and swallow nothing, but each can still be written inside the one
   before it — the `A` closing `ASIA` opens the `AKIA` three characters along,
-  `AIza` is four characters a key's own body may be written with, and `sk-` is
-  three of an OpenAI run's own. Consuming a match would step over such a value
-  and leave it in the output whole. The cost is that a
-  value nested in another — a JWT payload that is itself a header — is located
-  too; the spans overlap and `Masker.locate` resolves them.
+  `AIza` is four characters a key's own body may be written with, `sk-` is
+  three of an OpenAI run's own and `sk-ant-` is seven of an Anthropic body's.
+  An Anthropic key is read to the end of its run as an OpenAI key is, so it
+  swallows what is written straight after it too. Consuming a match would step
+  over such a value and leave it in the output whole. The cost is that a value
+  nested in another — a JWT payload that is itself a header — is located too;
+  the spans overlap and `Masker.locate` resolves them.
 - `Masker.locate` and every built-in scanner are deliberately linear-time and
   allocation-conscious. Resuming one byte along means a run can hold a
-  candidate for every character it has, and five of the scans keep a cursor over
+  candidate for every character it has, and six of the scans keep a cursor over
   that run to rule out quadratic inputs: the JWT scan over a run of base64url
   characters, the GitHub scan over that and over the alphabet a fine grained
   token body is written in, the GitLab scan over a body run, the Slack scan
-  over a body run and the rightmost part of it able to be a secret, and the
-  OpenAI scan over a run and over where the marker inside it stands. Each of
-  those cursors is load-bearing; the ones the Slack and GitLab scans keep are
-  held to never moving back by a `Test_..._bodyNeverMovesBack` of their own, and
-  the two the OpenAI scan keeps by `Test_OpenAIAPIKey_scanIsLinear`. The AWS and
-  Google scans keep no cursor and need none: a fixed count means a candidate
-  reads a bounded number of bytes and stops, which is the same guarantee bought
-  without state. Compare benchmarks before and after touching any of them —
-  that scan's cases under `BenchmarkBuiltins` as well as
-  `BenchmarkMasker_Mask`.
+  over a body run and the rightmost part of it able to be a secret, the
+  OpenAI scan over a run and over where the marker inside it stands, and the
+  Anthropic scan over a body run. Each of those cursors is load-bearing; the
+  ones the Slack, GitLab and Anthropic scans keep are held to never moving back
+  by a `Test_..._bodyNeverMovesBack` of their own, and the two the OpenAI scan
+  keeps by `Test_OpenAIAPIKey_scanIsLinear`, as the Anthropic one is by
+  `Test_AnthropicAPIKey_scanIsLinear`. The AWS and Google scans keep no cursor
+  and need none: a fixed count means a candidate reads a bounded number of bytes
+  and stops, which is the same guarantee bought without state. Compare
+  benchmarks before and after touching any of them — that scan's cases under
+  `BenchmarkBuiltins` as well as `BenchmarkMasker_Mask`.
 - Published library: any change to an exported name, signature or behaviour is
   breaking. Keep `README.md` in sync with the exported API.

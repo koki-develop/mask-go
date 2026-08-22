@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -313,6 +313,50 @@ out:  «openai-api-key».«jwt»
 case: an environment file holding an openai api key among the others
 in:   OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 out:  OPENAI_API_KEY=«openai-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+
+# An Anthropic API key beside the others, and inside them. A key opens sk-, as
+# an OpenAI key does, and what tells the two apart is what follows: ant-, a kind
+# and a hyphen for one, a run carrying the marker T3BlbkFJ for the other. So
+# neither pattern is troubled by the other's values, and a body carrying those
+# eight characters is a key to both at once — one redaction is made of it, and
+# it is attributed to whichever of the two the registry names first. Behind the
+# prefix a key is base64url read to the end of its run, so a value of another
+# kind written inside one or straight after it falls inside the key's own span
+# rather than beside it, as it does with an OpenAI key and not with the GitLab
+# and Google counts. A dot ends the run, which is what keeps a JWT written after
+# a key apart from it.
+
+case: an anthropic api key beside a github token and a jwt
+in:   anthropic=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  anthropic=«anthropic-api-key» github=«github-token» jwt=«jwt»
+
+case: an anthropic api key and an openai api key on one line
+in:   ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:  ANTHROPIC_API_KEY=«anthropic-api-key» OPENAI_API_KEY=«openai-api-key»
+
+case: an anthropic api key whose body carries the marker an openai key is read by
+in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789aT3BlbkFJ3456789abcdef0123456789abcdef0123456789abcde
+out:  «anthropic-api-key»
+
+case: a google api key inside an anthropic api key body
+in:   sk-ant-api03-AIza0123456789abcdefghijklmnopqrstuvwxy789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  «anthropic-api-key»
+
+case: an access key id written straight after an anthropic api key
+in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeAKIA0123456789ABCDEF
+out:  «anthropic-api-key»
+
+case: an anthropic api key inside the signature of a jwt
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  «jwt»
+
+case: a jwt directly after an anthropic api key, which the dot keeps apart
+in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «anthropic-api-key».«jwt»
+
+case: an environment file holding an anthropic api key among the others
+in:   ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  ANTHROPIC_API_KEY=«anthropic-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # Where the GitHub and JWT patterns disagree about a stateless installation
 # token. The GitHub pattern asks for an app id, a single underscore, and a JWT
