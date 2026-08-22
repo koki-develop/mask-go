@@ -1,0 +1,15 @@
+version: "1.0"
+
+defaults:
+  base_dir: ../worktrees/mask-go
+
+hooks:
+  post_create:
+    - type: copy
+      from: .claude
+      to: .claude
+
+    - type: command
+      command: mise trust
+    - type: command
+      command: mise bootstrap
