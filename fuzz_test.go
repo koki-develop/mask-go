@@ -39,8 +39,8 @@ func spanBytes(spans ...Span) []byte {
 	return raw
 }
 
-// FuzzLocate checks the guarantees Mask relies on: the values it walks are
-// ordered, never overlap, and between them still cover every span a pattern
+// FuzzMasker_locate checks the guarantees Mask relies on: the values it walks
+// are ordered, never overlap, and between them still cover every span a pattern
 // reported.
 func FuzzMasker_locate(f *testing.F) {
 	f.Add("abcdef", spanBytes(Span{0, 2}, Span{4, 6}))  // apart

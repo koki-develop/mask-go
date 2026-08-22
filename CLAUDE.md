@@ -14,11 +14,12 @@ the cases it is benchmarked on. `builtins.go` is the registry alone,
 `builtin_scan.go` holds what more than one scan reads (`segments`,
 `isBase64URLByte`, `base64URLRunEnd`, `isBase62Byte`, `base62RunEnd`),
 `builtins_test.go` holds what every built-in is held to, `fuzz_test.go` holds
-the `Masker` targets and the body the per-pattern targets share, and
-`benchmark_test.go` holds every benchmark there is. Adding a pattern should
-touch the registry, the property table, two new files and the conformance
-corpus — nothing else. Keep it that way rather than letting a shared
-`builtin.go` grow back.
+the `Masker` targets and the body the per-pattern targets share,
+`benchmark_test.go` holds every benchmark there is, and `source_test.go` holds
+the rules about how this package is written rather than about what it computes,
+read out of the syntax tree. Adding a pattern should touch the registry, the
+property table, two new files and the conformance corpus — nothing else. Keep it
+that way rather than letting a shared `builtin.go` grow back.
 
 One pattern may read another's declarations where the credentials themselves
 nest: `builtin_github_token.go` reads `opensJOSEHeaderAt`, `jwtHeaderPrefix` and
@@ -210,6 +211,23 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   two can disagree about. A reference spells the prefixes, the counts and the
   character classes its scan reads out again rather than sharing the
   declarations, so that the two can disagree and the fuzz target report it.
+  `Test_references_shareNoDeclarationWithTheScans` (`source_test.go`) is what
+  holds this: a reference reading the scan's own declaration moves with whatever
+  the scan is changed to, its target then compares a rule with itself, and
+  nothing else reports it — the two agree on every input, the target passes and
+  the corpus holds, because from then on they are wrong together or right
+  together and never apart. It type-checks the package and asks what each name
+  resolves to rather than matching names, which is what makes it exact: a
+  declaration of the scans is reached as a type, through a field of one, as the
+  receiver of a method, as the key of a map literal or as the right-hand side of
+  a binding that shadows it, and a walk of the syntax alone has a hole for each
+  of those. It reads `builtin_*_test.go` alone, which is where a reference
+  belongs, and `Test_references_liveBesideTheScansTheyCheck` holds them there:
+  one lifted elsewhere would leave the rule with nothing to hold rather than
+  failing. `Test_references_areNamedRatherThanWritten` holds the reference a
+  target is given to being one of those declarations, since a reference written
+  inline at the call, or bound to a local, is one no declaration holds and no
+  rule reaches.
   Change scanner and reference together, and keep the corpus in
   `testdata/fuzz/`. The targets share their body through `fuzzAgainstReference`
   (`fuzz_test.go`) but keep a name apiece, because the corpus is keyed on the
@@ -223,6 +241,21 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
 - Doc comments on every exported identifier. Comments explain *why* — the
   scanner rationale in each `builtin_<name>.go` is load-bearing, so update it
   rather than dropping it.
+- The comment above a function of this package opens with the name of that
+  function, and `Test_docComments_nameWhatTheyDocument` (`source_test.go`) holds
+  it there. Of this package alone: the check reads the directory it stands in, so
+  `conformance` is not held to it, where the one comment that would fail — the one
+  on `decodeText` — opens on what the notation is and names itself in the
+  paragraph that follows.
+
+  staticcheck states the same rule and reaches only exported declarations
+  outside `_test.go`, which leaves out every fuzz target, every reference and
+  every helper the tests are built from — where the names are longest and a
+  rename is most likely to leave a comment behind, and where being sent to
+  rename the function to match the comment instead parts a target from the
+  corpus in `testdata/fuzz` keyed on its name. The comment above a built-in's
+  pattern variable is the rationale for the scan under it and opens on that
+  rather than on the variable, which is why the rule is about functions alone.
 - `Pattern` and `Redactor` implementations must be safe for concurrent use.
 - Every built-in scan advances a byte along whether the candidate became a
   value or not rather than consuming a match, and in all but one of them that
