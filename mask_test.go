@@ -303,13 +303,30 @@ func TestMasker_Mask_withoutMatchDoesNotAllocate(t *testing.T) {
 		t.Skip("the race detector adds allocations of its own")
 	}
 
-	src := strings.Repeat("the quick brown fox ", 100)
-	for name, m := range map[string]*Masker{
-		"pattern finding nothing": New(WithPatterns(fixed("p"))),
-		"built-in patterns":       New(WithPatterns(AllBuiltinPatterns()...)),
+	// Prose reaches the anchor of no built-in at all, so what it measures is
+	// the search for one. The candidates below are what measures the rest: the
+	// anchor of every built-in written over and over with a body too short to
+	// be a value, so a candidate is opened every few bytes and every one of
+	// them is dropped. A scan that allocated per candidate — a prefix compared
+	// through a string conversion rather than against a slice of the input —
+	// would be measured by prose alone in neither of the cases above it.
+	prose := strings.Repeat("the quick brown fox ", 100)
+	candidates := strings.Repeat("ey.ey.ey sk-T3BlbkF ghp_0123456789 github_pat_0 AKIA0123456789ABCDE sk_live_ sntrys_ ntn_0123 npm_0123 pypi-AgE lin_api_0 SG.0.0 AIza0 xoxb-0 glpat-0 sk-ant- ", 20)
+	for name, tt := range map[string]struct {
+		m   *Masker
+		src string
+	}{
+		"pattern finding nothing":           {New(WithPatterns(fixed("p"))), prose},
+		"built-in patterns":                 {New(WithPatterns(AllBuiltinPatterns()...)), prose},
+		"built-in patterns over candidates": {New(WithPatterns(AllBuiltinPatterns()...)), candidates},
 	} {
 		t.Run(name, func(t *testing.T) {
-			if n := testing.AllocsPerRun(100, func() { _ = m.Mask(src) }); n != 0 {
+			// A masking that located something allocates by writing its
+			// output, and would measure nothing about the scans.
+			if got := tt.m.Mask(tt.src); got != tt.src {
+				t.Fatalf("Mask() redacted something: %q", got)
+			}
+			if n := testing.AllocsPerRun(100, func() { _ = tt.m.Mask(tt.src) }); n != 0 {
 				t.Errorf("Mask() allocated %v times, want 0", n)
 			}
 		})
