@@ -31,6 +31,7 @@ returns every pattern in the table below, and grows as patterns are added:
 | `GoogleAPIKey()` | `AIza…` |
 | `JWT()` | JSON Web Tokens |
 | `LinearAPIKey()` | `lin_api_…` |
+| `NotionAPIToken()` | `ntn_…`, `secret_…` |
 | `NPMToken()` | `npm_…` |
 | `OpenAIAPIKey()` | `sk-proj-…`, `sk-svcacct-…`, `sk-admin-…`, `sk-…` |
 | `PyPIAPIToken()` | `pypi-…` |
