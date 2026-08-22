@@ -183,3 +183,4 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - run: golangci-lint run --verbose
+      - run: go fix -diff ./...
