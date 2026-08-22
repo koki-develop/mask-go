@@ -387,10 +387,15 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 // quote of a member name leaves, and the four the space JSON allows before one
 // leaves. A run written as ey and anything at all draws in a file name written
 // after an app id, ghs_1_eyes.tar.gz among them.
+//
+// The two prefixes are written out here rather than read from jwtHeaderPrefix
+// and githubPATPrefix. Reading them would move this expression with whatever
+// the scan was changed to, and the fuzz target below would then hold a rule
+// against itself.
 var referenceGitHubToken = regexp.MustCompile(
-	`gh[su]_[0-9A-Za-z]+_` + jwtHeaderPrefix + `[A-DI-L][0-9A-Za-z_-]*\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+` +
+	`gh[su]_[0-9A-Za-z]+_ey[A-DI-L][0-9A-Za-z_-]*\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+` +
 		`|gh[pousr]_[0-9A-Za-z]{36,}` +
-		`|` + githubPATPrefix + `[0-9A-Za-z_]{82,}`,
+		`|github_pat_[0-9A-Za-z_]{82,}`,
 )
 
 // referenceGitHubTokenFind locates tokens the plain way: the leftmost match of

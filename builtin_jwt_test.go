@@ -648,10 +648,17 @@ func Test_closesObject(t *testing.T) {
 // included, because a signature run swallows the header of a token written
 // straight after it and the second token then begins inside the first match.
 // The scanner in builtin_jwt.go must agree with it on every input.
+//
+// The prefix, the alphabet, the two segment counts, the member names and what
+// closes an object are spelled out here and in the three helpers below rather
+// than read from builtin_jwt.go and builtin_scan.go. A reference reading those
+// moves with whatever the scan is changed to, and FuzzJWT_matchesReference
+// would then be holding the scan against itself rather than against a second
+// statement of the rule.
 func referenceJWTFind(src string) []Span {
 	var spans []Span
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], jwtHeaderPrefix)
+		i := strings.Index(src[offset:], "ey")
 		if i < 0 {
 			break
 		}
@@ -659,7 +666,7 @@ func referenceJWTFind(src string) []Span {
 		offset = start + 1
 
 		dot := start
-		for dot < len(src) && isBase64URLByte(src[dot]) {
+		for dot < len(src) && referenceJWTBase64URLByte(src[dot]) {
 			dot++
 		}
 		if dot == len(src) || src[dot] != '.' {
@@ -673,21 +680,61 @@ func referenceJWTFind(src string) []Span {
 		if len(decoded) < len(`{"a":0}`) || decoded[0] != '{' || decoded[1] != '"' && decoded[1] != ' ' {
 			continue
 		}
-		if !closesObject(decoded) || !bytes.Contains(decoded, algName) {
+		if !referenceJWTClosesObject(decoded) || !bytes.Contains(decoded, []byte(`"alg"`)) {
 			continue
 		}
 
-		signed := segmentsEnd(src, dot, signedSegments)
-		if !signed.ok {
+		end, ok := referenceJWTSegmentsEnd(src, dot, 2)
+		if !ok {
 			continue
 		}
-		end := signed.end
-		if encrypted := segmentsEnd(src, dot, encryptedSegments); encrypted.ok && bytes.Contains(decoded, encName) {
-			end = encrypted.end
+		if encrypted, ok := referenceJWTSegmentsEnd(src, dot, 4); ok && bytes.Contains(decoded, []byte(`"enc"`)) {
+			end = encrypted
 		}
 		spans = append(spans, Span{Start: start, End: end})
 	}
 	return spans
+}
+
+// referenceJWTBase64URLByte reports whether c belongs to the base64url alphabet
+// of RFC 4648. Padding is not admitted: the compact serialization is defined
+// without it.
+func referenceJWTBase64URLByte(c byte) bool {
+	return c >= '0' && c <= '9' ||
+		c >= 'A' && c <= 'Z' ||
+		c >= 'a' && c <= 'z' ||
+		c == '-' || c == '_'
+}
+
+// referenceJWTSegmentsEnd returns where the want segments beginning at dot end,
+// and whether there are that many. Anything past them is left alone, so that
+// the sentence a token sits in keeps its full stop.
+func referenceJWTSegmentsEnd(src string, dot, want int) (int, bool) {
+	i := dot
+	for range want {
+		if i == len(src) || src[i] != '.' {
+			return 0, false
+		}
+		for i++; i < len(src) && referenceJWTBase64URLByte(src[i]); {
+			i++
+		}
+	}
+	return i, true
+}
+
+// referenceJWTClosesObject reports whether b ends with the } that closes a JSON
+// object, which JSON allows to be followed by space.
+func referenceJWTClosesObject(b []byte) bool {
+	for i := len(b) - 1; i >= 0; i-- {
+		switch b[i] {
+		case ' ', '\t', '\n', '\r':
+		case '}':
+			return true
+		default:
+			return false
+		}
+	}
+	return false
 }
 
 // FuzzJWT_matchesReference guards the cursor, the cheap checks, the decode the
