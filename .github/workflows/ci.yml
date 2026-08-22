@@ -22,7 +22,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          submodules: true
       - uses: ./.github/actions/setup
       # Both, deliberately. The race detector allocates on paths that otherwise
       # do not, so the tests that hold this library to allocating nothing stand
@@ -30,50 +29,136 @@ jobs:
       - run: go test ./...
       - run: go test -race ./...
 
-  fuzz:
-    timeout-minutes: 20
+  # A fuzz target is given its own job rather than a turn in a loop on one
+  # runner. The loop was thirty seconds per target one after another, and this
+  # repository grows by adding built-in patterns, each of which brings a target
+  # of its own: the wall clock rose with the pattern count and nothing else on
+  # the workflow came close to it. A job apiece costs the same thirty seconds
+  # however many targets there are. What is listed is what runs, so a target
+  # added to the code is fuzzed without this file being touched.
+  fuzz-list:
+    timeout-minutes: 10
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.list.outputs.targets }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          submodules: true
+      # Restore only. What a listing job leaves in the build cache is what the
+      # jobs that do save it leave there too.
       - uses: ./.github/actions/setup
-      # A plain go test runs a fuzz target over its corpus alone, which is the
-      # inputs someone thought of. Every target is given a little time to look
-      # for the ones nobody did.
-      - name: Fuzz every target
+        with:
+          cache: restore
+      - name: List every fuzz target
+        id: list
         shell: bash
         run: |
           # A loop iterating over what a command substitution produced is where
           # errexit does not reach: the substitution can fail and the loop simply
           # runs no times. Both listings are therefore assigned first and their
-          # status checked, and the count catches what is left — a pattern that
-          # stops matching any target at all.
+          # status checked.
           if ! packages=$(go list ./...); then
             echo "listing the packages failed" >&2
             exit 1
           fi
-          fuzzed=0
+          targets=()
           for pkg in $packages; do
             if ! listed=$(go test -list '^Fuzz' "$pkg"); then
               echo "listing the fuzz targets of $pkg failed" >&2
               exit 1
             fi
             for target in $(echo "$listed" | grep '^Fuzz'); do
-              echo "::group::$target ($pkg)"
-              go test -run '^$' -fuzz "^${target}$" -fuzztime 30s "$pkg"
-              echo "::endgroup::"
-              fuzzed=$((fuzzed + 1))
+              # dir is the package's last element, carried so that the job below
+              # can name itself by it. Two packages may hold a target of the same
+              # name, and two check runs reading "fuzz (FuzzText)" cannot be told
+              # apart; the import path in full is too long to read in a list.
+              if ! entry=$(jq -nc --arg pkg "$pkg" --arg target "$target" '{pkg: $pkg, target: $target, dir: ($pkg | split("/") | last)}'); then
+                echo "describing $target ($pkg) failed" >&2
+                exit 1
+              fi
+              targets+=("$entry")
             done
           done
-          if [ "$fuzzed" -eq 0 ]; then
-            echo "no fuzz target was run" >&2
+          if ! matrix=$(printf '%s\n' "${targets[@]}" | jq -sc .); then
+            echo "building the matrix failed" >&2
             exit 1
           fi
-          echo "fuzzed $fuzzed target(s)"
+          echo "found ${#targets[@]} target(s): $matrix"
+          echo "targets=$matrix" >> "$GITHUB_OUTPUT"
+
+  fuzz-target:
+    name: fuzz (${{ matrix.dir }}/${{ matrix.target }})
+    needs: fuzz-list
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    strategy:
+      # One target failing says nothing about whether the others do, and which
+      # of them also fail is what a failure is read by. Stopping the rest would
+      # throw that away to save runner time, which a public repository is not
+      # billed for.
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.fuzz-list.outputs.targets) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Restore only: fourteen of these jobs run at once and would otherwise
+      # race to save one key, each carrying its own generated corpus.
+      - uses: ./.github/actions/setup
+        with:
+          cache: restore
+      # A plain go test runs a fuzz target over its corpus alone, which is the
+      # inputs someone thought of. Every target is given a little time to look
+      # for the ones nobody did.
+      - name: Fuzz
+        shell: bash
+        # The two reach the script through the environment rather than being
+        # written into it: what the listing job reported is then data the shell
+        # expands, not text it parses.
+        env:
+          PKG: ${{ matrix.pkg }}
+          TARGET: ${{ matrix.target }}
+        run: go test -run '^$' -fuzz "^${TARGET}$" -fuzztime 30s "$PKG"
+
+  # The name the fuzzing is read by from outside, kept to one row now that the
+  # targets are a job apiece. needs alone would only skip this job when one of
+  # them failed, and a skipped job is not a failed one, so it runs whenever the
+  # run was not cancelled and reads the two results itself. A matrix reports
+  # success only when every job in it succeeded, which is what makes one
+  # comparison enough.
+  #
+  # !cancelled() rather than always(), which GitHub recommends against: always()
+  # holds a job open through a cancellation, and a workflow cancelling itself is
+  # routine here — cancel-in-progress above ends the previous run on every push
+  # to a branch already building. That run would then report this check red for
+  # results that read "cancelled", which is not a fuzz failure. The expression is
+  # wrapped because a bare ! opens a YAML tag.
+  fuzz:
+    needs:
+      - fuzz-list
+      - fuzz-target
+    if: ${{ !cancelled() }}
+    timeout-minutes: 10
+    permissions: {}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that every target was fuzzed
+        shell: bash
+        env:
+          LIST_RESULT: ${{ needs.fuzz-list.result }}
+          TARGET_RESULT: ${{ needs.fuzz-target.result }}
+        run: |
+          echo "fuzz-list: $LIST_RESULT"
+          echo "fuzz-target: $TARGET_RESULT"
+          if [ "$LIST_RESULT" != "success" ] || [ "$TARGET_RESULT" != "success" ]; then
+            exit 1
+          fi
 
   build:
     timeout-minutes: 10
@@ -84,7 +169,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          submodules: true
       - uses: ./.github/actions/setup
       - run: go build
 

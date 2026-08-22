@@ -1,13 +1,46 @@
 name: Setup
 description: Setup the environment for the runner
 
+inputs:
+  cache:
+    description: |
+      Whether the Go caches this job fills are written back at the end of it:
+      "save" for a job whose caches are worth keeping, "restore" for one whose
+      are not.
+    default: save
+
 runs:
   using: composite
   steps:
     - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4.2.5
       with:
         experimental: true
-    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    # Two steps for one cache, because actions/cache has no input that turns
+    # its saving off: it registers a post step that writes back whatever the
+    # job left behind, and the deprecation on save-always points at the
+    # restore-only action as the way to say no. Every job restores; a job says
+    # cache: restore when what it would write back is worth less than the
+    # contention of writing it. The key is one string for the whole workflow,
+    # so every saver races for it on the first run after go.sum changes, and
+    # the loser of that race logs a failure. Fuzzing is where that matters:
+    # a target to a job means fourteen of them, and go test -fuzz leaves its
+    # generated corpus in GOCACHE/fuzz, so the winner would decide what the
+    # jobs after it restore as a build cache.
+    - if: inputs.cache == 'save'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    # Anything that is not "save" restores, rather than the two conditions
+    # naming a word each: between them they then cover every value, so a job
+    # that spells the input wrong is one that restores, and never one left with
+    # no cache at all.
+    - if: inputs.cache != 'save'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
           ~/.cache/go-build
