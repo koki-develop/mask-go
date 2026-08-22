@@ -41,3 +41,32 @@ func base64URLRunEnd(src string, i int) int {
 	}
 	return i
 }
+
+// isBase62Byte reports whether c belongs to the base62 alphabet: the letters of
+// both cases and the digits. It is what the body of a classic GitHub token is
+// written in and what the body of an npm token is written in — npm's own
+// announcement of its format says it matched GitHub's, and both bodies close
+// with six characters of a checksum encoded in this alphabet.
+//
+// What it leaves out is what separates it from base64url above: neither the
+// hyphen nor the underscore is admitted. The underscore is the character both
+// prefixes close with, so a run read in this alphabet stops where the next
+// prefix begins, and that is what keeps either scan from reading one run twice.
+func isBase62Byte(c byte) bool {
+	return '0' <= c && c <= '9' ||
+		'A' <= c && c <= 'Z' ||
+		'a' <= c && c <= 'z'
+}
+
+// base62RunEnd returns where the run of base62 characters beginning at i in src
+// ends, which is len(src) where the run reaches the end of the input.
+//
+// What is shared is the walk alone, for the reason base64URLRunEnd gives: which
+// run a scan reads, and what it may take for granted about where the run of the
+// candidate before it ended, stay with the scan.
+func base62RunEnd(src string, i int) int {
+	for i < len(src) && isBase62Byte(src[i]) {
+		i++
+	}
+	return i
+}

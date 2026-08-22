@@ -187,13 +187,9 @@ case: an aws secret access key is not one of the kinds this library knows
 in:   AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567
 out:  AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567
 
-case: an openai api key is not one of the kinds this library knows
+case: a key opening sk- with none of the marker an openai key carries
 in:   OPENAI_API_KEY=sk-0123456789abcdef0123456789abcdef0123456789abcdef
 out:  OPENAI_API_KEY=sk-0123456789abcdef0123456789abcdef0123456789abcdef
-
-case: an npm token is not one of the kinds this library knows
-in:   NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz
 
 case: a basic authorization header is not one of the kinds this library knows
 in:   Authorization: Basic dXNlcjowMTIzNDU2Nzg5YWJjZGVm

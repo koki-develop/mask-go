@@ -178,20 +178,21 @@ func StripeAPIKey() Pattern { return stripeAPIKey }
 // written after. It is the same shape the byte in front costs in the other
 // direction, and the same shape the Slack scan gives up for the same demand.
 //
-// The scan keeps no cursor and needs none, which is the one thing here that is
-// neither the AWS and Google answer nor the JWT, GitHub, GitLab, Slack, OpenAI
-// and Anthropic one. Those six keep a run cursor because a prefix written in
-// the run's own alphabet lets a run hold a candidate for every few characters
-// it has, and
-// each of them would otherwise read that run to its end. No run here can hold
-// two bodies. Every prefix closes with an underscore and no body is written
-// with one, so a body always begins where a run of body characters begins —
-// and two candidates cannot begin one run between them, because the second
-// would need an underscore at the character before its body, which is a
-// character inside the first body's run and so a letter or a digit. Each run of
-// the input is therefore walked by at most one candidate, and the walks add up
-// to a single pass. Test_StripeAPIKey_scanIsLinear drives the inputs that would
-// find this wrong.
+// The scan keeps no cursor and needs none, which is neither the AWS and Google
+// answer nor the JWT, GitHub, GitLab, Slack, OpenAI and Anthropic one. Those
+// six keep a run cursor because a prefix written in the run's own alphabet lets
+// a run hold a candidate for every few characters it has, and each of them
+// would otherwise read that run to its end. No run here can hold two bodies.
+// Every prefix closes with an underscore and no body is written with one, so a
+// body always begins where a run of body characters begins — and two candidates
+// cannot begin one run between them, because the second would need an
+// underscore at the character before its body, which is a character inside the
+// first body's run and so a letter or a digit. Each run of the input is
+// therefore walked by at most one candidate, and the walks add up to a single
+// pass. Test_StripeAPIKey_scanIsLinear drives the inputs that would find this
+// wrong. The npm scan beside this one reaches the same answer by the same
+// argument, its own prefix closing with an underscore no body of its own may
+// hold.
 //
 // The publishable keys are located along with the rest, and Stripe's own page
 // says they are safe to expose: a publishable key is embedded in the page it
