@@ -177,36 +177,36 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   eighth and the tenth are, and they are written out anyway, because a floor
   spelled as a counted repetition costs an engine a machine as wide as the floor
   at every candidate, which left the fuzz targets of the second and the eighth
-  wedged on a grown input instead of fuzzing. The second reached forty-seven
-  thousand executions in three seconds and reported none at all for the
-  twenty-seven after them; what replaced it runs seven million in forty seconds
-  and does not stall. The Anthropic file measures both. The ninth's grammar
-  cannot be spelled in Go's syntax at all: the byte it reads in front of a
-  prefix admits the underscore where `\b` does not, and there is no lookbehind
-  to write the demand with instead. The eleventh spells a floor as a counted
-  repetition and is not wedged by it, for the reason its scan needs no cursor:
-  no input crowds two npm candidates inside one run, so the walk an engine
-  repeats at the eighth's candidates has nothing to repeat at its own. The
-  twelfth spells no floor at all: both its counts are exact, twenty-two and
-  forty-three, so the machine an engine builds for a candidate is read once and
-  stops. The thirteenth was an expression too, and neither its counts nor its
-  repetition are what it was written out for: sixty-four and forty-three are
-  both exact and the group of four repeated without limit is a loop rather than
-  a width, so the machine an engine built for a candidate was bounded. What cost
-  it is that the alphabet a Sentry payload is written in holds every letter a
-  Sentry opening is, so a run of them is a candidate at every byte and a
-  reference asking at every byte hands the engine the whole of the rest of the
-  input at each of them. That target ran for three seconds of its thirty and
-  reported no executions at all for the twenty-seven after them; what replaced
-  it runs seven million in forty-five seconds. It still writes the one rule its
-  scan reads as arithmetic, that a payload is a whole number of base64 groups,
-  as base64 itself writes it: groups of four walked one at a time, the last able
-  to close with padding, rather than a length divided. That is the one place a
-  reference and its scan state a rule differently on purpose, since a reference
-  restating the modulus would agree by construction wherever the scan had the
-  modulus wrong. The fourteenth spells a floor as a counted repetition and is
-  not wedged by it either, and for the eleventh's reason: no input crowds two
-  Linear candidates inside one run. The fifteenth was an expression too and is
+  wedged on a grown input instead of fuzzing. An expression at the second
+  reaches forty-seven thousand executions in three seconds and reports none at
+  all for the twenty-seven after them, where the walks written out there run
+  seven million in forty seconds and do not stall. The Anthropic file measures
+  both. The ninth's grammar cannot be spelled in Go's syntax at all: the byte it
+  reads in front of a prefix admits the underscore where `\b` does not, and
+  there is no lookbehind to write the demand with instead. The eleventh spells a
+  floor as a counted repetition and is not wedged by it, for the reason its scan
+  needs no cursor: no input crowds two npm candidates inside one run, so the
+  walk an engine repeats at the eighth's candidates has nothing to repeat at its
+  own. The twelfth spells no floor at all: both its counts are exact, twenty-two
+  and forty-three, so the machine an engine builds for a candidate is read once
+  and stops. The thirteenth is written out too, and neither its counts nor its
+  repetition are why: sixty-four and forty-three are both exact and the group of
+  four repeated without limit is a loop rather than a width, so the machine an
+  engine builds for a candidate is bounded. What costs an expression there is
+  that the alphabet a Sentry payload is written in holds every letter a Sentry
+  opening is, so a run of them is a candidate at every byte and a reference
+  asking at every byte hands the engine the whole of the rest of the input at
+  each of them. Such an expression runs for three seconds of its target's thirty
+  and reports no executions at all for the twenty-seven after them, where the
+  walks written out there run seven million in forty-five seconds. It still
+  writes the one rule its scan reads as arithmetic, that a payload is a whole
+  number of base64 groups, as base64 itself writes it: groups of four walked one
+  at a time, the last able to close with padding, rather than a length divided.
+  That is the one place a reference and its scan state a rule differently on
+  purpose, since a reference restating the modulus would agree by construction
+  wherever the scan had the modulus wrong. The fourteenth spells a floor as a
+  counted repetition and is not wedged by it either, and for the eleventh's
+  reason: no input crowds two Linear candidates inside one run. The fifteenth is
   written out for a reason none of the others has: its grammar is an alternation
   of two literals, and an expression with one literal in front of it is scanned
   for by searching the text for that literal where two leave the engine walking
@@ -214,8 +214,8 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   costs the alternation seventeen milliseconds and either half of it alone
   fourteen microseconds, and the mutator reaches inputs of that size — which had
   the target running at speed for fifteen seconds and at nothing at all for the
-  rest of its run. What replaced it pays nothing for that: both counts are
-  counts, so a position reads at most fifty bytes and stops, and the walk is
+  rest of its run. What is written out there pays nothing for that: both counts
+  are counts, so a position reads at most fifty bytes and stops, and the walk is
   linear where the eighth's is quadratic. It spells the two counts a body rather
   than the one total the scan subtracts a prefix from, so the subtraction is
   something the two can disagree about. A reference spells the prefixes, the

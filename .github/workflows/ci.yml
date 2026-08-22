@@ -30,10 +30,10 @@ jobs:
       - run: go test -race ./...
 
   # A fuzz target is given its own job rather than a turn in a loop on one
-  # runner. The loop was thirty seconds per target one after another, and this
+  # runner. A loop is thirty seconds per target one after another, and this
   # repository grows by adding built-in patterns, each of which brings a target
-  # of its own: the wall clock rose with the pattern count and nothing else on
-  # the workflow came close to it. A job apiece costs the same thirty seconds
+  # of its own: the wall clock rises with the pattern count and nothing else on
+  # the workflow comes close to it. A job apiece costs the same thirty seconds
   # however many targets there are. What is listed is what runs, so a target
   # added to the code is fuzzed without this file being touched.
   fuzz-list:

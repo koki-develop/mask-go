@@ -353,9 +353,9 @@ func Test_JWT_scanIsLinear(t *testing.T) {
 	// Rejecting a candidate resumes one byte along, so a run dense in header
 	// prefixes holds as many candidates as it has characters. Everything a
 	// candidate needs beyond a constant is worked out once for the run it
-	// sits in; getting that wrong has cost time quadratic in the length of
-	// the input more than once. The bound here is far above a linear scan
-	// and far below a quadratic one.
+	// sits in; getting that wrong costs time quadratic in the length of
+	// the input. The bound here is far above a linear scan and far below a
+	// quadratic one.
 	sources := map[string]string{
 		"many rejected candidates":                strings.Repeat("eyJ..", 200000),
 		"overlapping candidate starts":            strings.Repeat("eyJ", 200000) + "..",
@@ -363,8 +363,8 @@ func Test_JWT_scanIsLinear(t *testing.T) {
 		"a run of the prefix alone":               strings.Repeat("ey", 300000) + "..",
 		"dense starts with a near dot":            strings.Repeat(strings.Repeat("eyJ", 300)+".", 600),
 		"one long run before a dot":               strings.Repeat("eyJ", 200000) + ".a.b",
-		// A header that reads as JSON until its very end once cost a full
-		// parse at every candidate behind it.
+		// A header that reads as JSON until its very end is what costs a
+		// full parse at every candidate behind it.
 		"header that parses to the end":     nestedHeader(60000, false) + ".a.b",
 		"header that also passes the marks": nestedHeader(60000, true) + ".a.b",
 		// aad9 makes the last base64 group of every header decode to a byte

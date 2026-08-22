@@ -84,11 +84,11 @@ func SlackToken() Pattern { return slackToken }
 // whole token — and xapp- is a prefix that stands on its own in text, because
 // xApp is what an application on a radio access network is called. An MD5 and a
 // git SHA are hexadecimal, hexadecimal carries letters, and thirty-two
-// characters is well past eighteen, so each of them was the whole of what the
+// characters is well past eighteen, so each of them is the whole of what the
 // length and the letter ask for: the image tag
 // xapp-8f14e45fceea167a5a36dedd4bea2543 and the branch
-// xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190 were redacted entire. Those are
-// values a reader reads, and this tightening was available.
+// xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190 would be redacted entire. Those
+// are values a reader reads, and this tightening was available.
 //
 // What it wagers is a Slack token written as a prefix and a secret with nothing
 // between them, which would be left in the output whole. Slack states no

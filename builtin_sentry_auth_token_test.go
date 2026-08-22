@@ -649,17 +649,18 @@ func Test_SentryAuthToken_scanIsLinear(t *testing.T) {
 // restating the modulus would agree with the scan by construction wherever the
 // scan had the modulus wrong.
 //
-// This was an expression, and byte tests are what replaced it. Both counts are
-// exact, so the machine an engine built for a candidate was bounded and the
-// counts were not what cost it; the group of four repeated without limit was
-// not either. What cost it is that the alphabet a payload is written in holds
-// every letter the opening is written in, so a run of them is a candidate at
-// every byte, and a reference asking at every byte hands the engine the whole
-// of the rest of the input at each of them. Over an input the mutator had
-// grown, that left FuzzSentryAuthToken_matchesReference running for three
-// seconds of its thirty and reporting no executions at all for the rest. The
-// walks below read a byte at a time, and a candidate that is not one stops on
-// the character that says so.
+// It is written out rather than built on a regular expression, and neither the
+// counts nor the repetition is why. Both counts are exact, so the machine an
+// engine builds for a candidate is bounded, and the group of four repeated
+// without limit is a loop rather than a width. What costs an expression here is
+// that the alphabet a payload is written in holds every letter the opening is
+// written in, so a run of them is a candidate at every byte, and a reference
+// asking at every byte hands the engine the whole of the rest of the input at
+// each of them. Over an input the mutator had grown, that leaves
+// FuzzSentryAuthToken_matchesReference running for three seconds of its thirty
+// and reporting no executions at all for the rest. The walks below read a byte
+// at a time, and a candidate that is not one stops on the character that says
+// so.
 func referenceSentryAuthTokenAt(src string, start int) (int, bool) {
 	if !strings.HasPrefix(src[start:], "sntry") {
 		return 0, false

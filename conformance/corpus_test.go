@@ -202,9 +202,9 @@ func parseCorpusFile(name string, data []byte) (*corpusFile, error) {
 		}
 
 		if fields[key] {
-			// in and out were the only fields this was checked for, and a
-			// second patterns or spans quietly won over the first, leaving the
-			// case stating behaviour for a set its author did not name.
+			// Every field, not in and out alone: a second patterns or spans
+			// would quietly win over the first, leaving the case stating
+			// behaviour for a set its author did not name.
 			return nil, fmt.Errorf("%s: the case already has a %s field", at, key)
 		}
 		fields[key] = true

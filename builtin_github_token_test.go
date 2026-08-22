@@ -390,10 +390,10 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 // JSON allows before one leaves. A run written as ey and anything at all draws
 // in a file name written after an app id, ghs_1_eyes.tar.gz among them.
 //
-// This was an expression, and byte tests are what replaced it. Both bodies
+// It is written out rather than built on a regular expression. Both bodies
 // spell a floor, thirty-six characters and eighty-two, and a floor written as
 // a counted repetition costs an engine a machine as wide as the floor at every
-// candidate — over an input the mutator had grown, that left
+// candidate — over an input the mutator had grown, that leaves
 // FuzzGitHubToken_matchesReference running for three seconds of its thirty and
 // reporting no executions at all for the rest. The walks below read a byte at
 // a time and pay nothing for the width of a count.

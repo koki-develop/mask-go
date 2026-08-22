@@ -82,8 +82,8 @@ const spanType = "Span"
 // name reaches a declaration of the scans in more ways than a walk of the syntax
 // can be taught to recognise — as a type, through a field of one, as the
 // receiver of a method, as the key of a map literal, as the right-hand side of a
-// binding that shadows it — and each of those was a hole while this read the
-// syntax alone. What a resolver answers instead is the question actually being
+// binding that shadows it — and a walk of the syntax alone has a hole for each
+// of those. What a resolver answers instead is the question actually being
 // asked: which declaration is this, and which file was it declared in.
 //
 // The file list comes from go/build, which applies build constraints and so
