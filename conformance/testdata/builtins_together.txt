@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token» «sendgrid-api-key»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -535,6 +535,48 @@ out:  ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 case: a stateless installation token written across a line break
 in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+# A SendGrid key beside the other kinds, and inside them. A key is three
+# dot-separated base64url segments, which is a JWT's shape as well, and the two
+# patterns still read it apart: a JWT is anchored on the ey a JOSE header opens
+# with, and SG is not that. The out field below is what says so — were both to
+# locate the same span, the value would be attributed to the JWT pattern, which
+# AllBuiltinPatterns reports first.
+#
+# Inside a key, the two segments are read in base64url and to a fixed count, so
+# an access key ID fits an identifier and a Google API key fits a secret; both
+# are located there as well, the values overlap and are redacted as one,
+# attributed to what starts earliest. Behind a key nothing is swallowed, which
+# is what the count being a count buys: a token written straight after one keeps
+# a redaction of its own where a Stripe key's run would have reached into it.
+
+case: a sendgrid key is one value, not a key and a jwt
+in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  «sendgrid-api-key»
+
+case: a sendgrid key beside a github token and a jwt
+in:   sendgrid=SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  sendgrid=«sendgrid-api-key» github=«github-token» jwt=«jwt»
+
+case: an access key id inside a sendgrid key identifier
+in:   SG.AKIA0123456789ABCDEF01.0123456789abcdef0123456789abcdef0123456789a
+out:  «sendgrid-api-key»
+
+case: a google api key inside a sendgrid key secret
+in:   SG.0123456789abcdef012345.AIza0123456789abcdef0123456789abcdef0123456
+out:  «sendgrid-api-key»
+
+case: a github token directly after a sendgrid key
+in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789aghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «sendgrid-api-key»«github-token»
+
+case: a jwt directly after a sendgrid key, which the dot keeps apart
+in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «sendgrid-api-key».«jwt»
+
+case: a sendgrid key in an environment file beside a stripe key and an access key id
+in:   SENDGRID_API_KEY=SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a\nSTRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF
+out:  SENDGRID_API_KEY=«sendgrid-api-key»\nSTRIPE_SECRET_KEY=«stripe-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
 
 # A Stripe key beside the other kinds, and inside them. A body is written in
 # letters and digits alone, so an access key ID and a Google API key can each be

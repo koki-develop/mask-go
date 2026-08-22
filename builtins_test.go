@@ -157,6 +157,18 @@ var builtinPatterns = []struct {
 		benchmarks: pypiAPITokenFindBenchmarks,
 	},
 	{
+		name:    "sendgrid-api-key",
+		pattern: SendGridAPIKey,
+		ref:     referenceSendGridAPIKeyFind,
+		samples: []string{
+			"SENDGRID_API_KEY=SG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			"SG.0123456789abcdef-hij_l.0123456789abcdefghijklmnopqrstuvwxy-ABCDE_G",
+			"SG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDESG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			"SG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGSG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+		},
+		benchmarks: sendGridAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "slack-token",
 		pattern: SlackToken,
 		ref:     referenceSlackTokenFind,

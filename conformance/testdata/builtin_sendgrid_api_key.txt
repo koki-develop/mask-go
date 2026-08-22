@@ -1,0 +1,216 @@
+# What SendGrid API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is, written out until each of the two segments is the length the
+# pattern reads it at: twenty-two characters of identifier and forty-three of
+# secret. Neither count is an abbreviation — a segment shortened for readability
+# would leave a case holding no key at all — and their total with the prefix and
+# the dot between them is the sixty-nine characters SendGrid states a key always
+# is.
+#
+# The case under the over-match heading is not a key and nobody issued it. What
+# it holds is a property chain whose first component closes on the prefix, whose
+# second is exactly the length of an identifier and whose third is at least the
+# length of a secret, which is the whole of what the pattern asks for.
+
+patterns: sendgrid-api-key
+
+# A key as it is written. One string serves every access level SendGrid issues,
+# so what is below differs in where the key stands rather than in what kind it
+# is: the create-key response it is first read out of, the bearer token header
+# it is sent in, and the SMTP password SendGrid documents it being used as
+# beside the username apikey.
+
+case: a key in an environment assignment
+in:   SENDGRID_API_KEY=SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  SENDGRID_API_KEY=«sendgrid-api-key»
+
+case: a key in the response that first reports it
+in:   {"api_key":"SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a","name":"My API Key"}
+out:  {"api_key":"«sendgrid-api-key»","name":"My API Key"}
+
+case: a key in a bearer token header
+in:   Authorization: Bearer SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  Authorization: Bearer «sendgrid-api-key»
+
+case: a key as the smtp password it doubles as
+in:   smtp://apikey:SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a@smtp.sendgrid.net:587
+out:  smtp://apikey:«sendgrid-api-key»@smtp.sendgrid.net:587
+
+case: a key at the end of a sentence
+in:   the key is SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a.
+out:  the key is «sendgrid-api-key».
+
+# The alphabet the two segments are written in: base64url, which is what every
+# ruleset admits behind the prefix and what the keys GitLab publishes for its
+# own SendGrid rule carry — two of the five write an underscore into the
+# identifier and one writes both a hyphen and an underscore into the secret.
+# Padding is not in
+# it and does not arise: twenty-two and forty-three are the unpadded lengths of
+# sixteen bytes and of thirty-two, and a padded encoding of the same bytes would
+# not come to sixty-nine characters.
+
+case: a hyphen and an underscore in each segment
+in:   SG.0123456789abcdef-1234_.0123456789abcdef0123456789abcdef-123456789a
+out:  «sendgrid-api-key»
+
+case: an equals sign where the secret ends
+in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789=
+out:  SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789=
+
+case: a plus and a slash, which standard base64 writes where base64url writes - and _
+in:   SG.0123456789abcdef+1234/.0123456789abcdef0123456789abcdef0123456789a
+out:  SG.0123456789abcdef+1234/.0123456789abcdef0123456789abcdef0123456789a
+
+# How long each segment is. Both counts are read exactly rather than as floors,
+# which is where this pattern stands with the AWS, GitLab and Google ones rather
+# than with the OpenAI, Anthropic, Stripe, PyPI and npm ones: SendGrid states
+# the length of a key itself, in a support article whose subject is that it
+# never varies.
+#
+# So a segment of another length is not a key of another length. A run longer
+# than a secret is a key with something written after it, and only the key is
+# redacted; a segment shorter than its count — which is what a line cut to a
+# column limit leaves — is no key at all, and every random character before the
+# cut comes through in the clear. The cases below are both, and the second is
+# here to be looked up rather than arrived at.
+
+case: an alphabet run longer than the secret
+in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789ab
+out:  «sendgrid-api-key»b
+
+case: a secret one character short
+in:   SENDGRID_API_KEY=SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789
+out:  SENDGRID_API_KEY=SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789
+
+case: an identifier one character short
+in:   SG.0123456789abcdef01234.0123456789abcdef0123456789abcdef0123456789a
+out:  SG.0123456789abcdef01234.0123456789abcdef0123456789abcdef0123456789a
+
+case: an identifier one character too long
+in:   SG.0123456789abcdef0123456.0123456789abcdef0123456789abcdef0123456789a
+out:  SG.0123456789abcdef0123456.0123456789abcdef0123456789abcdef0123456789a
+
+case: a key cut off at its prefix
+in:   SENDGRID_API_KEY=SG.
+out:  SENDGRID_API_KEY=SG.
+
+# The dot between the two segments. It is the one character of the format that
+# the alphabet does not hold, which is what ends a segment where it stands and
+# what makes the count on either side of it readable at all. Nothing else
+# divides the two.
+
+case: a hyphen where the separator belongs
+in:   SG.0123456789abcdef012345-0123456789abcdef0123456789abcdef0123456789a
+out:  SG.0123456789abcdef012345-0123456789abcdef0123456789abcdef0123456789a
+
+case: an underscore where the separator belongs
+in:   SG.0123456789abcdef012345_0123456789abcdef0123456789abcdef0123456789a
+out:  SG.0123456789abcdef012345_0123456789abcdef0123456789abcdef0123456789a
+
+case: a hyphen where the prefix carries its dot
+in:   SG-0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  SG-0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+
+case: a further dot inside the secret
+in:   SG.0123456789abcdef012345.0123456789abcdef012345678.abcdef0123456789a
+out:  SG.0123456789abcdef012345.0123456789abcdef012345678.abcdef0123456789a
+
+# What a key may be written against. There is no boundary on either side of a
+# match, as there is none in any built-in but the Slack and Stripe ones: a
+# demand in front would drop a key written against a letter rather than trim it,
+# and one behind would drop a key with a character of its own alphabet after it.
+
+case: a key after an underscore
+in:   SENDGRID_API_KEY_SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  SENDGRID_API_KEY_«sendgrid-api-key»
+
+case: a key after a letter
+in:   xSG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  x«sendgrid-api-key»
+
+case: a key inside quotes
+in:   export SENDGRID_API_KEY="SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a"
+out:  export SENDGRID_API_KEY="«sendgrid-api-key»"
+
+case: a key before a hyphenated word
+in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a-suffix
+out:  «sendgrid-api-key»-suffix
+
+# Two keys written together. The prefix is two characters a segment is written
+# with and the dot a key already carries between its segments, so a secret
+# closing with SG opens a candidate two characters before its own key ends: the
+# dot that candidate wants is the one written after the key, and a second key's
+# identifier, dot and secret follow it. The two spans overlap and are redacted
+# as one, which is what a scan resuming past a match would have stepped over.
+
+case: two keys separated by a space
+in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a SG.0123456789abcdef-1234_.0123456789abcdef0123456789abcdef-123456789a
+out:  «sendgrid-api-key» «sendgrid-api-key»
+
+case: a key written straight onto the end of another
+in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789aSG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  «sendgrid-api-key»«sendgrid-api-key»
+
+case: a key beginning inside the key before it
+in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef012345678SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  «sendgrid-api-key»
+
+# What this pattern redacts that nobody issued, which is text somebody wrote:
+# SG. can close an ordinary identifier — MSG., NSG., ESG. and PSG. each carry
+# the whole prefix — so a property chain whose first component is one of them,
+# whose second is exactly twenty-two characters of the alphabet and whose third
+# is at least forty-three, is redacted from its SG onward.
+#
+# That is the answer rather than a fault in it: the chain from that SG is a
+# key's format exactly, and the counts are already the vendor's own, so nothing
+# is left in the string to read the two apart by. The tightening on offer is the
+# one the Slack and Stripe patterns take, to ask that no letter and no digit
+# stand in front of the prefix, and what it would cost is the case above where a
+# key is written after a letter — which the pattern's own file weighs.
+
+case: a property chain whose first component closes on the prefix
+in:   MSG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  M«sendgrid-api-key»
+
+# And what this pattern leaves alone. The prefix is read in its own case; a
+# digest, a base64 payload and a base64url one each hold no dot and so no prefix
+# to be found at, however long they run, and the last two of the three cases for
+# that carry the two letters a prefix opens with and still hand it nowhere to
+# close; no word of prose is spelled SG. with sixty-six characters of one run
+# behind it; and a signed JWT is three dot-separated base64url segments as a key
+# is and still carries no candidate — the header and the payload of one are
+# JSON, so the bytes each encodes close with a brace, and base64url turns a
+# final brace into 9, into 0 or into fQ, never into SG.
+
+case: a lowercase prefix
+in:   sg.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  sg.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+
+case: a value of the right shape opening with no prefix
+in:   XY.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:  XY.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+
+case: a hexadecimal digest
+in:   sha1=0123456789abcdef0123456789abcdef01234567
+out:  sha1=0123456789abcdef0123456789abcdef01234567
+
+case: a base64url payload carrying the letters a prefix opens with
+in:   payload=SG0123456789abcdef012345SG0123456789abcdef0123456789abcdef0123456789a
+out:  payload=SG0123456789abcdef012345SG0123456789abcdef0123456789abcdef0123456789a
+
+case: a base64 payload carrying them, written with the + and / base64url leaves out
+in:   payload=SG0123456789abcdef+12345SG0123456789abcdef/123456789abcdef0123456789a
+out:  payload=SG0123456789abcdef+12345SG0123456789abcdef/123456789abcdef0123456789a
+
+case: prose
+in:   there is no credential in this sentence
+out:  there is no credential in this sentence
+
+case: a jwt
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: a log line
+in:   time=2026-08-17T00:00:00Z level=info msg="sending mail" url=https://api.sendgrid.com/v3/mail/send
+out:  time=2026-08-17T00:00:00Z level=info msg="sending mail" url=https://api.sendgrid.com/v3/mail/send
