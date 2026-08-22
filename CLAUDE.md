@@ -57,14 +57,15 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `FuzzGoogleAPIKey_matchesReference`, `FuzzOpenAIAPIKey_matchesReference`,
   `FuzzAnthropicAPIKey_matchesReference`, `FuzzStripeAPIKey_matchesReference`,
   `FuzzPyPIAPIToken_matchesReference`, `FuzzNPMToken_matchesReference`,
-  `FuzzSendGridAPIKey_matchesReference` `FuzzSentryAuthToken_matchesReference`
-  and `FuzzLinearAPIKey_matchesReference`. In `conformance`: `FuzzMask`,
+  `FuzzSendGridAPIKey_matchesReference`,
+  `FuzzSentryAuthToken_matchesReference`, `FuzzLinearAPIKey_matchesReference`
+  and `FuzzNotionAPIToken_matchesReference`. In `conformance`: `FuzzMask`,
   `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30 seconds.
 - `go test -bench . -benchmem` — benchmarks. `BenchmarkMasker_Mask` drives
   every pattern at once through the public API, which is what a caller pays;
   `BenchmarkBuiltins` drives each scan alone under the name its pattern
   reports, and that is what a change to a scan is compared against, since a
-  regression in one is a fourteenth of what the first reports. `go test -bench
+  regression in one is a fifteenth of what the first reports. `go test -bench
   Builtins/jwt -benchmem .` runs one of them.
 - `golangci-lint run` — lint (no config file; defaults).
 - `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
@@ -146,10 +147,11 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   (`builtin_pypi_api_token_test.go`), `referenceNPMTokenFind`
   (`builtin_npm_token_test.go`), `referenceSendGridAPIKeyFind`
   (`builtin_sendgrid_api_key_test.go`), `referenceSentryAuthTokenFind`
-  (`builtin_sentry_auth_token_test.go`) and `referenceLinearAPIKeyFind`
-  (`builtin_linear_api_key_test.go`), plain implementations of the same rules.
-  The second tries `referenceGitHubToken`, the regular expression the GitHub
-  token scan reads by hand, at every byte rather than handing it to
+  (`builtin_sentry_auth_token_test.go`), `referenceLinearAPIKeyFind`
+  (`builtin_linear_api_key_test.go`) and `referenceNotionAPITokenFind`
+  (`builtin_notion_api_token_test.go`), plain implementations of the same
+  rules. The second tries `referenceGitHubToken`, the regular expression the
+  GitHub token scan reads by hand, at every byte rather than handing it to
   `FindAllStringIndex`: a value either scan locates can hold the start of the
   next one, so a reference that resumed past a match would miss what the scan
   finds. The third, the fifth, the sixth, the seventh, the eleventh, the
@@ -163,9 +165,11 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   segments, and a Sentry organization payload is written in an alphabet holding
   every letter a Sentry prefix is, closed by the underscore that prefix ends
   on, and a Linear key's `lin_api_` opens with three characters a Linear body
-  is written with. The first, the fourth, the eighth, the ninth and the tenth
-  are written out rather than built on a regular expression, and all five start
-  afresh at every position — all but the ninth for that same reason, and the
+  is written with. The first, the fourth, the eighth, the ninth, the tenth and
+  the fifteenth are written out rather than built on a regular expression, and
+  all six start afresh at every position — all but the ninth for that same
+  reason, the fifteenth because the `ntn` and `secret` in front of a Notion
+  prefix's underscore are characters a Notion body is written with, and the
   ninth because a reference is written to know nothing its scan claims, and
   what the Stripe scan claims is that no key can begin inside another. What the
   first two read of a candidate — a decoded JOSE header, a run divided into
@@ -190,14 +194,27 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   purpose, since a reference restating the modulus would agree by construction
   wherever the scan had the modulus wrong. The fourteenth spells a floor as a
   counted repetition and is not wedged by it either, and for the eleventh's
-  reason: no input crowds two Linear candidates inside one run. A reference
-  spells the prefixes, the counts and the character classes its scan reads out
-  again rather than sharing the declarations, so that the two can disagree and
-  the fuzz target report it. Change scanner and reference together, and keep
-  the corpus in `testdata/fuzz/`. The targets share their body through
-  `fuzzAgainstReference` (`fuzz_test.go`) but keep a name apiece, because the
-  corpus is keyed on the name of the target — so never rename a target without
-  moving its corpus directory.
+  reason: no input crowds two Linear candidates inside one run. The fifteenth
+  was an expression too and is written out for a reason none of the others has:
+  its grammar is an alternation of two literals, and an expression with one
+  literal in front of it is scanned for by searching the text for that literal
+  where two leave the engine walking its machine at every byte. A mebibyte of
+  alphanumerics holding no token at all costs the alternation seventeen
+  milliseconds and either half of it alone fourteen microseconds, and the
+  mutator reaches inputs of that size — which had the target running at speed
+  for fifteen seconds and at nothing at all for the rest of its run. What
+  replaced it pays nothing for that: both counts are counts, so a position
+  reads at most fifty bytes and stops, and the walk is linear where the
+  eighth's is quadratic. It spells the two counts a body rather than the one
+  total the scan subtracts a prefix from, so the subtraction is something the
+  two can disagree about. A reference spells the prefixes, the counts and the
+  character classes its scan reads out again rather than sharing the
+  declarations, so that the two can disagree and the fuzz target report it.
+  Change scanner and reference together, and keep the corpus in
+  `testdata/fuzz/`. The targets share their body through `fuzzAgainstReference`
+  (`fuzz_test.go`) but keep a name apiece, because the corpus is keyed on the
+  name of the target — so never rename a target without moving its corpus
+  directory.
 - Behaviour that differs under the race detector is branched on `raceEnabled`
   (`race_test.go` / `norace_test.go`), not skipped.
 
@@ -207,9 +224,12 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   scanner rationale in each `builtin_<name>.go` is load-bearing, so update it
   rather than dropping it.
 - `Pattern` and `Redactor` implementations must be safe for concurrent use.
-- Every built-in scan resumes a byte along from a candidate whether it became a
-  value or not, and in all but one of them that is because a value can begin
-  inside the one before it. A GitHub body and a JWT signature are read as far
+- Every built-in scan advances a byte along whether the candidate became a
+  value or not rather than consuming a match, and in all but one of them that
+  is because a value can begin inside the one before it. What the byte is
+  measured from is the start of the candidate in all but two: the Stripe scan
+  and the Notion scan each measure from the anchor they searched for, and each
+  says why in its own file. A GitHub body and a JWT signature are read as far
   as their alphabet runs, so either swallows the opening of a credential
   written straight after it, as does an OpenAI key, whose run reaches to the
   end of the alphabet behind its marker; an AWS access key ID, a Google API key
@@ -235,10 +255,14 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   its run as an npm token is, and nests as one does: `lin_api_` opens with
   three characters a body may be written with and closes with an underscore no
   body holds, so a key begins three characters before the one in front of it
-  ends and nowhere else inside it. Consuming a match would step over such a
-  value and leave it in the output whole. The cost is that a value nested in
-  another — a JWT payload that is itself a header — is located too; the spans
-  overlap and `Masker.locate` resolves them.
+  ends and nowhere else inside it. A Notion token is read to a fixed count and
+  swallows nothing too, and the `ntn` and `secret` in front of either of its
+  prefixes' underscores are characters a body is written with, so a body
+  closing with one of them hands the underscore written after the token to a
+  candidate three or six characters before that token ends. Consuming a match
+  would step over such a value and leave it in the output whole. The cost is
+  that a value nested in another — a JWT payload that is itself a header — is
+  located too; the spans overlap and `Masker.locate` resolves them.
 - The Stripe scan is the exception and states why in its own file: a key begins
   only where no letter and no digit stands in front of it, and everything a span
   covers is one or the other but for the underscores of its prefix, so no key
@@ -247,6 +271,17 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   of the candidate, because the candidate opens one byte in front of them and
   resuming there would find the same anchor again and never advance.
   `Test_StripeAPIKey_noKeyBeginsInsideAnother` is what holds the claim.
+- The Notion scan measures from its anchor for a reason of its own, and states
+  it in its own file: the two prefixes it reads share nothing but the
+  underscore they close with, so that underscore is what it searches for and a
+  candidate is read backwards from it. No body carries an underscore, so every
+  candidate is found by one of its own and every underscore in the input is
+  looked at in turn — advancing past one steps over nothing, and a token
+  written inside another is found by the underscore standing past the token it
+  begins inside. Reading a prefix backwards is also what makes the order the
+  spans come out in an argument rather than an observation:
+  `Test_notionAPITokenPrefixes` holds the table to what that argument rests on
+  and `Test_NotionAPIToken_spansAreAscending` drives it.
 - `Masker.locate` and every built-in scanner are deliberately linear-time and
   allocation-conscious. Resuming one byte along means a run can hold a
   candidate for every character it has, and seven of the scans keep a cursor
@@ -263,23 +298,27 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   one by `Test_PyPIAPIToken_scanIsLinear`. The PyPI scan needs no
   `bodyNeverMovesBack` beside those: its body stands a fixed distance past the
   start of its candidate, so it moves forward with the candidates and there is
-  no separator to reason about. The AWS, Google and SendGrid scans keep no
-  cursor and need none: a fixed count means a candidate reads a bounded number
-  of bytes and stops, which is the same guarantee bought without state. The
-  Stripe, npm, Sentry and Linear scans keep none either, and share a guarantee
-  of their own: every prefix any of them reads closes with an underscore and no
-  body of any of them is written with one, so every body begins where a run
-  begins and no two candidates can read the same run. It is what the classic
-  alternative of the GitHub scan has for that same reason, and it is what lets
-  the Sentry scan walk an organization payload of any length without
-  remembering where the last one ended. `Test_StripeAPIKey_scanIsLinear`,
+  no separator to reason about. The AWS, Google, SendGrid and Notion scans keep
+  no cursor and need none: a fixed count means a candidate reads a bounded
+  number of bytes and stops, which is the same guarantee bought without state.
+  The Stripe, npm, Sentry and Linear scans keep none either, and share a
+  guarantee of their own: every prefix any of them reads closes with an
+  underscore and no body of any of them is written with one, so every body
+  begins where a run begins and no two candidates can read the same run. It is
+  what the classic alternative of the GitHub scan has for that same reason, and
+  it is what lets the Sentry scan walk an organization payload of any length
+  without remembering where the last one ended. The Notion scan reads that same
+  underscore and reads it as the anchor itself rather than as what ends a body,
+  which is what lets one search find two prefixes sharing no other character;
+  what bounds it is still its count. `Test_StripeAPIKey_scanIsLinear`,
   `Test_NPMToken_scanIsLinear`, `Test_SentryAuthToken_scanIsLinear` and
   `Test_LinearAPIKey_scanIsLinear` drive the inputs that would find it wrong,
   and `Test_npmTokenPrefix_runsDoNotOverlap`,
   `Test_sentryAuthTokenSeparator_runsDoNotOverlap` and
   `Test_linearAPIKeyPrefix_runsDoNotOverlap` hold those three prefixes to the
-  character the guarantee rests on. Compare benchmarks before and after
-  touching any of them — that scan's cases under `BenchmarkBuiltins` as well as
+  character the guarantee rests on, as `Test_notionAPITokenPrefixes` holds the
+  two the Notion scan reads. Compare benchmarks before and after touching any
+  of them — that scan's cases under `BenchmarkBuiltins` as well as
   `BenchmarkMasker_Mask`.
 - Published library: any change to an exported name, signature or behaviour is
   breaking. Keep `README.md` in sync with the exported API.

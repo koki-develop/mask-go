@@ -130,6 +130,19 @@ var builtinPatterns = []struct {
 		benchmarks: linearAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "notion-api-token",
+		pattern: NotionAPIToken,
+		ref:     referenceNotionAPITokenFind,
+		samples: []string{
+			"NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abcd",
+			"secret_0123456789abcdef0123456789abcdef0123456789a",
+			"ntn_0123456789ABCDEF0123456789ABCDEF0123456789ABCD",
+			"ntn_0123456789abcdef0123456789abcdef0123456789antn_0123456789abcdef0123456789abcdef0123456789abcd",
+			"secret_0123456789abcdef0123456789abcdef01234secret_0123456789abcdef0123456789abcdef0123456789a",
+		},
+		benchmarks: notionAPITokenFindBenchmarks,
+	},
+	{
 		name:    "npm-token",
 		pattern: NPMToken,
 		ref:     referenceNPMTokenFind,

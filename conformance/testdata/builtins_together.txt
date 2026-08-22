@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -780,3 +780,68 @@ out:  «stripe-api-key»
 case: an npm token and a stripe key with a space between them
 in:   npm_0123456789abcdefghijklmnopqrstuvwxyz sk_live_0123456789abcdef01234567
 out:  «npm-token» «stripe-api-key»
+
+# A Notion token beside the others, and inside them. A body is base62 read to a
+# fixed count: the letters of both cases and the digits, which is the alphabet a
+# classic GitHub token body and an npm token body are read in. So a value
+# written in an alphabet as narrow can stand inside a Notion body without ending
+# it and is located there as well; the two spans overlap and are redacted as
+# one, attributed to whichever starts earliest.
+#
+# Behind a token the count is what decides. A value written straight after one
+# keeps a redaction of its own, where a run read to its end would have reached
+# into it — and written the other way round, a run that does read to its end
+# reaches three characters into a Notion prefix and stops at the underscore
+# behind them, so the two overlap there and both go.
+
+case: a notion token beside a github token and a jwt
+in:   notion=ntn_0123456789abcdef0123456789abcdef0123456789abcd github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  notion=«notion-api-token» github=«github-token» jwt=«jwt»
+
+case: an access key id inside a notion token body
+in:   ntn_AKIA0123456789ABCDEF0123456789abcdef0123456789
+out:  «notion-api-token»
+
+case: a google api key inside a notion token body
+in:   ntn_AIza0123456789abcdefghijklmnopqrstuvwxy0123456
+out:  «notion-api-token»
+
+case: a notion token inside the signature of a jwt
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:  «jwt»
+
+case: a notion token written straight after a classic github token
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:  «github-token»
+
+case: a classic github token written straight after a notion token
+in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «notion-api-token»«github-token»
+
+case: a jwt directly after a notion token, which the dot keeps apart
+in:   ntn_0123456789abcdef0123456789abcdef0123456789abcd.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «notion-api-token».«jwt»
+
+case: an environment file holding a notion token among the others
+in:   NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abcd\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  NOTION_TOKEN=«notion-api-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+
+# A Stripe prefix written against the end of a Notion token, which is the
+# shape the case named "a stripe prefix written against the end of an access
+# key id" takes and ends the same way. A Notion body is read to a count and
+# stops, so the last character of one is a letter or a digit standing
+# directly in front of the sk — and the Stripe scan asks that no letter and
+# no digit stand there. The Notion token is redacted and the secret key
+# beside it comes through whole and would authenticate a request as it
+# stands. Neither pattern's own file states what the two come to together,
+# which is why the case is here.
+#
+# No out field can state how it ends, any more than it can for that case:
+# redacting the Notion token puts characters that are neither a letter nor a
+# digit where its last one stood, so the prefix is open to a second pass and
+# the key is redacted then. Masking is not idempotent, and the doc comment on
+# Mask says so.
+
+case: a stripe prefix written against the end of a notion token
+in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdsk_live_0123456789abcdef01234567
+out:  «notion-api-token»sk_live_0123456789abcdef01234567

@@ -1,0 +1,255 @@
+# What Notion API tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is, written out until the body is the length the pattern reads it
+# at: forty-six characters behind ntn_, and forty-three behind the secret_ of
+# the format Notion issued until September 2024. Neither count is an
+# abbreviation — a body shortened for readability would leave a case holding no
+# token at all — and each comes to the same fifty characters with its prefix in
+# front.
+#
+# The cases under the over-match heading are not tokens and nobody issued them.
+# What they hold is a name closing on the older prefix with a value spliced
+# straight onto it, and a digest written behind a prefix, which are the two
+# shapes fifty characters of this grammar can be reached by writing.
+
+patterns: notion-api-token
+
+# The two prefixes. One string serves every kind of token the Public API takes —
+# the static token of an internal connection, the OAuth access token of a public
+# one, a personal access token — so what is below differs in where a token
+# stands rather than in what kind it is. The older prefix is read beside the
+# newer because Notion did not revoke the tokens carrying it: the changelog
+# announcing the change says they continue to work unchanged.
+
+case: a token in an environment assignment
+in:   NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:  NOTION_TOKEN=«notion-api-token»
+
+case: a token in the bearer header a request carries
+in:   Authorization: Bearer ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:  Authorization: Bearer «notion-api-token»
+
+case: a token in the response an oauth exchange returns
+in:   {"access_token":"ntn_0123456789abcdef0123456789abcdef0123456789abcd","token_type":"bearer","workspace_id":"0123456789ab"}
+out:  {"access_token":"«notion-api-token»","token_type":"bearer","workspace_id":"0123456789ab"}
+
+case: a token of the format issued until september 2024
+in:   NOTION_TOKEN=secret_0123456789abcdef0123456789abcdef0123456789a
+out:  NOTION_TOKEN=«notion-api-token»
+
+case: a token at the end of a sentence
+in:   the token is ntn_0123456789abcdef0123456789abcdef0123456789abcd.
+out:  the token is «notion-api-token».
+
+# The alphabet a body is written in: base62, the letters of both cases and the
+# digits, which is what every ruleset reading either prefix admits behind it.
+# Neither character base64url adds is in it, so a hyphen ends a body where it
+# stands, and so does a second underscore — which is the character a candidate
+# is found by, and which no body carries.
+
+case: a body written in capitals
+in:   ntn_0123456789ABCDEF0123456789ABCDEF0123456789ABCD
+out:  «notion-api-token»
+
+case: a hyphen inside the body
+in:   ntn_0123456789abcdef0123-456789abcdef0123456789abc
+out:  ntn_0123456789abcdef0123-456789abcdef0123456789abc
+
+case: a further underscore inside the body
+in:   ntn_0123456789abcdef0123_456789abcdef0123456789abc
+out:  ntn_0123456789abcdef0123_456789abcdef0123456789abc
+
+# How long a token is. Fifty characters, prefix included, read exactly rather
+# than as a floor — which is where this pattern stands with the AWS, Google and
+# SendGrid ones rather than with the OpenAI, Anthropic, Stripe, PyPI and npm
+# ones. Notion states no length at all; what the fifty rests on is that both
+# published shapes come to it, the prefix having lost three characters when
+# Notion changed it and the body having gained three.
+#
+# So a body of another length is not a token of another length. A run longer
+# than the count is a token with something written after it, and only the token
+# is redacted; a body shorter than its count — which is what a line cut to a
+# column limit leaves — is no token at all, and every random character before
+# the cut comes through in the clear. The cases below are both, and the second
+# is here to be looked up rather than arrived at.
+
+case: an alphabet run longer than the body
+in:   ntn_0123456789abcdef0123456789abcdef0123456789abcd0
+out:  «notion-api-token»0
+
+case: a body one character short
+in:   NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abc
+out:  NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abc
+
+case: a body of the older format one character short
+in:   NOTION_TOKEN=secret_0123456789abcdef0123456789abcdef0123456789
+out:  NOTION_TOKEN=secret_0123456789abcdef0123456789abcdef0123456789
+
+case: a token cut off at its prefix
+in:   NOTION_TOKEN=ntn_
+out:  NOTION_TOKEN=ntn_
+
+# What a token may be written against. There is no boundary on either side of a
+# match, as there is none in any built-in but the Slack and Stripe ones: a
+# demand in front would drop a token written against a letter rather than trim
+# it, and one behind would drop a token with a character of its own alphabet
+# after it. What the count buys is the other side of that — a word written
+# straight onto the end of a token is left where it stands, where the OpenAI,
+# Anthropic, PyPI and npm patterns would read it as more of the body.
+
+case: a token after an underscore
+in:   NOTION_TOKEN_ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:  NOTION_TOKEN_«notion-api-token»
+
+case: a token after a letter
+in:   xntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:  x«notion-api-token»
+
+case: a token inside quotes
+in:   export NOTION_TOKEN="ntn_0123456789abcdef0123456789abcdef0123456789abcd"
+out:  export NOTION_TOKEN="«notion-api-token»"
+
+case: a word written against a token
+in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdsuffix
+out:  «notion-api-token»suffix
+
+case: a hyphenated word written against a token
+in:   ntn_0123456789abcdef0123456789abcdef0123456789abcd-suffix
+out:  «notion-api-token»-suffix
+
+# Two tokens written together. The characters in front of either prefix's
+# underscore belong to the alphabet a body is written in, so a body closing with
+# ntn hands the underscore written after the token to a candidate beginning
+# three characters before that token ends, and a body closing with secret does
+# the same six characters before. The underscore such a candidate is found by
+# stands past the first token rather than inside it, so the scan reaches it; the
+# two spans overlap and are redacted as one. Written without that overlap the
+# two are separate values, and both go.
+
+case: two tokens separated by a space
+in:   ntn_0123456789abcdef0123456789abcdef0123456789abcd secret_0123456789abcdef0123456789abcdef0123456789a
+out:  «notion-api-token» «notion-api-token»
+
+case: a token written straight onto the end of another
+in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:  «notion-api-token»«notion-api-token»
+
+case: a token beginning inside the token before it
+in:   ntn_0123456789abcdef0123456789abcdef0123456789antn_0123456789abcdef0123456789abcdef0123456789abcd
+out:  «notion-api-token»
+
+case: a token of the older format beginning inside the one before it
+in:   secret_0123456789abcdef0123456789abcdef01234secret_0123456789abcdef0123456789abcdef0123456789a
+out:  «notion-api-token»
+
+# What this pattern redacts that nobody issued, and the one place the text taken
+# is text somebody wrote. secret_ closes an ordinary name — client_secret_,
+# app_secret_ and webhook_secret_ are all that shape — so where forty-three
+# unbroken letters and digits are spliced straight onto one, the name is
+# redacted from its secret onward.
+#
+# What keeps such a name out of a span in an ordinary file is the character that
+# follows it there: a file writes =, a colon and a space, or a quote between the
+# name and the value, and none of those is a character a body is written with.
+# The tightening on offer in front is the one the Slack and Stripe patterns
+# take, to ask that no letter and no digit stand before the prefix, and it would
+# not help — it admits the underscore, which is what every one of these names
+# carries in front of the prefix. The pattern's own file weighs both.
+
+case: a name closing on the older prefix with a value spliced onto it
+in:   client_secret_0123456789abcdef0123456789abcdef0123456789a
+out:  client_«notion-api-token»
+
+case: the same name with the value written where a file would write it
+in:   client_secret=0123456789abcdef0123456789abcdef0123456789a
+out:  client_secret=0123456789abcdef0123456789abcdef0123456789a
+
+# A digest written behind a prefix, which is the other shape reachable by
+# writing. Hexadecimal digits are base62 and a digest carries nothing that ends
+# a run, so a SHA-256 behind either prefix reaches the count and the first fifty
+# characters are redacted — the rest of the digest stays in the text, which is
+# what reading a count rather than a floor leaves behind. A SHA-1 is forty
+# characters and an MD5 thirty-two, and neither reaches either count.
+
+case: a sha256 behind the prefix
+in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «notion-api-token»ef0123456789abcdef
+
+case: a sha256 behind the older prefix
+in:   secret_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «notion-api-token»bcdef0123456789abcdef
+
+case: a sha1 behind the prefix, six characters short of a body
+in:   ntn_0123456789abcdef0123456789abcdef01234567
+out:  ntn_0123456789abcdef0123456789abcdef01234567
+
+case: an md5 behind the prefix
+in:   ntn_0123456789abcdef0123456789abcdef
+out:  ntn_0123456789abcdef0123456789abcdef
+
+# And what this pattern leaves alone. The first three are the prefix, read in
+# the case Notion writes it and in the character it closes with. The two after
+# them are the count and the anchor: a body a space has broken, and a run of the
+# right length behind an underscore that opens no prefix. Of the rest, a digest
+# and a sentence carry no underscore at all and so hold no position to be found
+# at however long they run, and the environment a Notion client is configured
+# through is written in snake_case and does carry the anchor — what turns it
+# away is the word after each underscore, which is far short of a body.
+
+case: an uppercase prefix
+in:   NTN_0123456789abcdef0123456789abcdef0123456789abcd
+out:  NTN_0123456789abcdef0123456789abcdef0123456789abcd
+
+case: a hyphen where the prefix carries its underscore
+in:   ntn-0123456789abcdef0123456789abcdef0123456789abcd
+out:  ntn-0123456789abcdef0123456789abcdef0123456789abcd
+
+case: an uppercase older prefix
+in:   SECRET_0123456789abcdef0123456789abcdef0123456789a
+out:  SECRET_0123456789abcdef0123456789abcdef0123456789a
+
+case: a body broken by a space
+in:   ntn_0123456789abcdef0123 456789abcdef0123456789abc
+out:  ntn_0123456789abcdef0123 456789abcdef0123456789abc
+
+case: a run of the right length behind an underscore that opens no prefix
+in:   xyz_0123456789abcdef0123456789abcdef0123456789abcd
+out:  xyz_0123456789abcdef0123456789abcdef0123456789abcd
+
+case: a run of the right length with no prefix at all
+in:   0123456789abcdef0123456789abcdef0123456789abcd
+out:  0123456789abcdef0123456789abcdef0123456789abcd
+
+case: a hexadecimal digest
+in:   sha1=0123456789abcdef0123456789abcdef01234567
+out:  sha1=0123456789abcdef0123456789abcdef01234567
+
+case: prose
+in:   there is no credential in this sentence
+out:  there is no credential in this sentence
+
+case: a jwt
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case: an environment file naming the token rather than carrying one
+in:   NOTION_API_KEY=\nNOTION_VERSION=2022-06-28
+out:  NOTION_API_KEY=\nNOTION_VERSION=2022-06-28
+
+case: a log line
+in:   time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.notion.com/v1/pages
+out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.notion.com/v1/pages
+
+# And a Notion credential this pattern has nothing to say about. A public
+# connection is given a refresh token beside its access token, and that one
+# opens with nrt_. Nothing published pins what follows it: the one example
+# Notion prints is forty-nine characters where both token forms are fifty, and
+# the one ruleset carrying a rule for it reads a range of forty to fifty-five
+# and admits the underscore inside the body. A count guessed at there locates
+# part of a token or none of it, so none is guessed at and the string below is
+# left whole.
+
+case: a refresh token, which no count here is read for
+in:   {"refresh_token":"nrt_0123456789abcdef0123456789abcdef0123456789abcd"}
+out:  {"refresh_token":"nrt_0123456789abcdef0123456789abcdef0123456789abcd"}
