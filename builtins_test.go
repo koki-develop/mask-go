@@ -146,6 +146,22 @@ var builtinPatterns = []struct {
 		},
 		benchmarks: slackTokenFindBenchmarks,
 	},
+	{
+		name:    "stripe-api-key",
+		pattern: StripeAPIKey,
+		ref:     referenceStripeAPIKeyFind,
+		samples: []string{
+			"STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567",
+			"sk_test_0123456789abcdef01234567",
+			"rk_live_0123456789abcdef01234567",
+			"pk_live_0123456789abcdef01234567",
+			"sk_org_0123456789abcdef01234567",
+			"sk_org_live_0123456789abcdef01234567",
+			"sk_live_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+			"sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567",
+		},
+		benchmarks: stripeAPIKeyFindBenchmarks,
+	},
 }
 
 // noValueInputs is text no built-in pattern has anything to find in: ordinary

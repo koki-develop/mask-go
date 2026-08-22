@@ -32,6 +32,7 @@ returns every pattern in the table below, and grows as patterns are added:
 | `JWT()` | JSON Web Tokens |
 | `OpenAIAPIKey()` | `sk-proj-…`, `sk-svcacct-…`, `sk-admin-…`, `sk-…` |
 | `SlackToken()` | `xoxb-…`, `xoxp-…`, `xapp-…`, `xwfp-…`, `xoxe-…`, `xoxe.xoxb-…`, `xoxe.xoxp-…` |
+| `StripeAPIKey()` | `sk_live_…`, `sk_test_…`, `rk_live_…`, `rk_test_…`, `pk_live_…`, `pk_test_…`, `sk_org_…` |
 
 `MustRegexp` builds a pattern from a regular expression:
 

@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -429,3 +429,57 @@ out:  ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 case: a stateless installation token written across a line break
 in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+# A Stripe key beside the other kinds, and inside them. A body is written in
+# letters and digits alone, so an access key ID and a Google API key can each be
+# written into one without ending it and are located there as well; the values
+# overlap and are redacted as one, attributed to what starts earliest. The
+# underscore ends a body instead, which is what lets a GitHub token written
+# after a key be reached at all — the key's run reaches three characters into
+# the token's own prefix and stops at the underscore behind them, so the two
+# spans overlap there and are redacted as one.
+#
+# The block closing this file is the other direction, and is where a value
+# beside a Stripe key costs one of them.
+
+case: a stripe key beside a github token and a jwt
+in:   stripe=sk_live_0123456789abcdef01234567 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  stripe=«stripe-api-key» github=«github-token» jwt=«jwt»
+
+case: an access key id inside a stripe key body
+in:   sk_live_AKIA0123456789ABCDEF0123
+out:  «stripe-api-key»
+
+case: a google api key inside a stripe key body
+in:   pk_live_AIza0123456789abcdefghijklmnopqrstuvwxy
+out:  «stripe-api-key»
+
+case: a github token directly after a stripe key
+in:   sk_live_0123456789abcdef01234567ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «stripe-api-key»
+
+case: a jwt directly after a stripe key, which the dot keeps apart
+in:   sk_live_0123456789abcdef01234567.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  «stripe-api-key».«jwt»
+
+case: a stripe key in an environment file beside a github token and an access key id
+in:   STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  STRIPE_SECRET_KEY=«stripe-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+
+# The other direction: a Stripe prefix written against the end of a value of
+# another kind rather than a value written into a Stripe body. A prefix standing
+# behind a letter or a digit opens nothing, so the access key ID is redacted and
+# the secret key beside it comes through whole and would authenticate a request
+# as it stands. That is what the case below shows, and it is here to be looked
+# up rather than arrived at: neither pattern's own file states what the two of
+# them come to when both are enabled.
+#
+# It is the same shape the Slack case above it has, and it ends the same way,
+# which no out field can state. Redacting the access key ID puts characters that
+# are neither a letter nor a digit where its last one stood, so the prefix a
+# letter had closed is open to a second pass and the key is redacted then.
+# Masking is not idempotent, and the doc comment on Mask says so.
+
+case: a stripe prefix written against the end of an access key id
+in:   AKIA0123456789ABCDEFsk_live_0123456789abcdef01234567
+out:  «aws-access-key-id»sk_live_0123456789abcdef01234567
