@@ -1,7 +1,6 @@
 package mask
 
 import (
-	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -371,65 +370,195 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 	}
 }
 
-// referenceGitHubToken is the expression the scan in builtin_github_token.go
-// reads by hand: the statement of what a GitHub token is, kept here so that the
-// scan can be held to it. Go matches an alternation leftmost-first rather than
-// leftmost-longest, which is why the stateless form comes before the classic
-// one it opens like.
+// referenceGitHubTokenAt reports where a GitHub token written at start ends,
+// and whether one is written there at all. It is the statement of what the scan
+// in builtin_github_token.go locates, kept here so that the scan can be held to
+// it, and it reads one position and stops.
 //
-// The kinds spelled into that first alternative are the ones
-// isGitHubStatelessKind admits, and the two have to be changed together: a
-// kind added to one and not the other is a kind the scan and the reference
-// disagree about, which is what the fuzz target below is for.
+// The three alternatives are tried in the order an alternation would try them,
+// leftmost-first rather than leftmost-longest: the stateless form comes before
+// the classic one it opens like, so that an app id of thirty-six characters or
+// more is not taken for a whole classic token.
 //
-// The class after the header prefix is the third character of a JOSE header,
-// which opensJOSEHeader admits and this expression spells out: the four the
-// quote of a member name leaves, and the four the space JSON allows before one
-// leaves. A run written as ey and anything at all draws in a file name written
-// after an app id, ghs_1_eyes.tar.gz among them.
+// The kinds spelled into the first alternative are the ones the scan admits to
+// the stateless form, and the two have to be changed together: a kind added to
+// one and not the other is a kind the scan and this disagree about, which is
+// what the fuzz target below is for.
 //
-// The two prefixes are written out here rather than read from jwtHeaderPrefix
-// and githubPATPrefix. Reading them would move this expression with whatever
+// The class the header prefix is read with is the third character of a JOSE
+// header: the four the quote of a member name leaves, and the four the space
+// JSON allows before one leaves. A run written as ey and anything at all draws
+// in a file name written after an app id, ghs_1_eyes.tar.gz among them.
+//
+// This was an expression, and byte tests are what replaced it. Both bodies
+// spell a floor, thirty-six characters and eighty-two, and a floor written as
+// a counted repetition costs an engine a machine as wide as the floor at every
+// candidate — over an input the mutator had grown, that left
+// FuzzGitHubToken_matchesReference running for three seconds of its thirty and
+// reporting no executions at all for the rest. The walks below read a byte at
+// a time and pay nothing for the width of a count.
+//
+// The prefixes, the kinds, the counts and the alphabets are written out here
+// rather than read from the scan. Reading them would move this with whatever
 // the scan was changed to, and the fuzz target below would then hold a rule
-// against itself.
-var referenceGitHubToken = regexp.MustCompile(
-	`gh[su]_[0-9A-Za-z]+_ey[A-DI-L][0-9A-Za-z_-]*\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+` +
-		`|gh[pousr]_[0-9A-Za-z]{36,}` +
-		`|github_pat_[0-9A-Za-z_]{82,}`,
-)
+// against itself; Test_references_shareNoDeclarationWithTheScans is what keeps
+// the two apart.
+func referenceGitHubTokenAt(src string, start int) (int, bool) {
+	if end, ok := referenceGitHubStatelessAt(src, start); ok {
+		return end, true
+	}
+	if end, ok := referenceGitHubClassicAt(src, start); ok {
+		return end, true
+	}
+	return referenceGitHubFineGrainedAt(src, start)
+}
 
-// referenceGitHubTokenFind locates tokens the plain way: the leftmost match of
-// the expression above, then the leftmost one beginning after that match's
-// first byte, over and over, with no cursor and nothing remembered between
-// them. It is the control flow of the scan spelled with a regexp in place of
-// the byte tests.
+// referenceGitHubStatelessAt reads gh, one of the two kinds written in the
+// stateless form, an underscore, an app id of at least one character, an
+// underscore, and the JWT behind it: a header opening on ey and the third
+// character of a JOSE header, then two segments each holding at least one
+// character, so that the two dots of a file name written after an app id do not
+// stand in for them.
+func referenceGitHubStatelessAt(src string, start int) (int, bool) {
+	if start+4 > len(src) || src[start] != 'g' || src[start+1] != 'h' {
+		return 0, false
+	}
+	if kind := src[start+2]; kind != 's' && kind != 'u' {
+		return 0, false
+	}
+	if src[start+3] != '_' {
+		return 0, false
+	}
+
+	app := referenceGitHubTokenRunEnd(src, start+4, referenceGitHubTokenBase62Byte)
+	if app == start+4 || app == len(src) || src[app] != '_' {
+		return 0, false
+	}
+
+	header := app + 1
+	if header+3 > len(src) || src[header] != 'e' || src[header+1] != 'y' {
+		return 0, false
+	}
+	if !referenceGitHubHeaderThirdByte(src[header+2]) {
+		return 0, false
+	}
+
+	i := referenceGitHubTokenRunEnd(src, header+3, referenceGitHubTokenBase64URLByte)
+	for range 2 {
+		if i == len(src) || src[i] != '.' {
+			return 0, false
+		}
+		segment := referenceGitHubTokenRunEnd(src, i+1, referenceGitHubTokenBase64URLByte)
+		if segment == i+1 {
+			return 0, false
+		}
+		i = segment
+	}
+	return i, true
+}
+
+// referenceGitHubClassicAt reads gh, any of the five token kinds, an underscore
+// and a body of thirty-six characters or more. The count is a floor and the
+// body is read to the end of its run, so a token is located to the end of what
+// is written rather than to a length.
+func referenceGitHubClassicAt(src string, start int) (int, bool) {
+	if start+4 > len(src) || src[start] != 'g' || src[start+1] != 'h' {
+		return 0, false
+	}
+	switch src[start+2] {
+	case 'p', 'o', 'u', 's', 'r':
+	default:
+		return 0, false
+	}
+	if src[start+3] != '_' {
+		return 0, false
+	}
+
+	body := start + 4
+	end := referenceGitHubTokenRunEnd(src, body, referenceGitHubTokenBase62Byte)
+	if end-body < 36 {
+		return 0, false
+	}
+	return end, true
+}
+
+// referenceGitHubFineGrainedAt reads the literal a fine grained personal access
+// token opens with and a body of eighty-two characters or more, written in the
+// alphabet a classic body is and the underscore this body carries between its
+// two parts.
+func referenceGitHubFineGrainedAt(src string, start int) (int, bool) {
+	if !strings.HasPrefix(src[start:], "github_pat_") {
+		return 0, false
+	}
+
+	body := start + len("github_pat_")
+	end := referenceGitHubTokenRunEnd(src, body, referenceGitHubTokenPATByte)
+	if end-body < 82 {
+		return 0, false
+	}
+	return end, true
+}
+
+// referenceGitHubHeaderThirdByte reports whether c is the third character of a
+// JOSE header: the four the quote of a member name leaves behind the brace, and
+// the four the space JSON allows before one leaves.
+func referenceGitHubHeaderThirdByte(c byte) bool {
+	return 'A' <= c && c <= 'D' || 'I' <= c && c <= 'L'
+}
+
+// referenceGitHubTokenBase62Byte reports whether c may appear in an app id or in
+// a classic body.
+func referenceGitHubTokenBase62Byte(c byte) bool {
+	return '0' <= c && c <= '9' || 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z'
+}
+
+// referenceGitHubTokenPATByte reports whether c may appear in the body of a fine
+// grained personal access token.
+func referenceGitHubTokenPATByte(c byte) bool {
+	return referenceGitHubTokenBase62Byte(c) || c == '_'
+}
+
+// referenceGitHubTokenBase64URLByte reports whether c may appear in a segment of
+// the JWT a stateless token carries.
+func referenceGitHubTokenBase64URLByte(c byte) bool {
+	return referenceGitHubTokenBase62Byte(c) || c == '-' || c == '_'
+}
+
+// referenceGitHubTokenRunEnd returns where the run beginning at i in src ends,
+// reading the characters admits accepts.
+func referenceGitHubTokenRunEnd(src string, i int, admits func(byte) bool) int {
+	for i < len(src) && admits(src[i]) {
+		i++
+	}
+	return i
+}
+
+// referenceGitHubTokenFind locates tokens the plain way: every position in turn,
+// with no cursor and nothing remembered between them. It is the control flow of
+// the scan with the grammar above in place of the byte tests the scan reads it
+// with.
 //
-// FindAllStringIndex would be the shorter way to write this and the wrong one.
-// It resumes past a match, and a token can begin inside one: a body is read as
-// far as its alphabet runs, so it swallows the prefix of a token written
-// straight after it and hides that token from every starting point the engine
-// would go on to try. The scan finds both, and reports the two spans
-// overlapping for a Masker to resolve, so the reference must ask about both.
+// Asking at every position is what a reference must do here, and the shorter
+// way of resuming past a match is the wrong one. A token can begin inside
+// another: a body is read as far as its alphabet runs, so it swallows the prefix
+// of a token written straight after it and hides that token from every starting
+// point a search resuming past the match would go on to try. The scan finds
+// both, and reports the two spans overlapping for a Masker to resolve, so the
+// reference must ask about both.
 //
-// Resuming a byte along is what the run cursors save the scan from, so this
-// costs time quadratic in the length of a run the fine grained prefix can be
-// written inside: every candidate in such a run matches, so nothing about the
-// bytes lets the engine skip one, and eighty kilobytes of github_pat_ written
-// over and over take seconds here against half a millisecond in the scan. It
-// is the price of a reference with no cursor to be wrong about, and the reason
-// the seeds below keep that shape to a hundred and thirty bytes rather than
-// inviting the mutator to grow it. Test_builtins_scanIsLinear is where the
-// cost the scan pays is held down.
+// Asking everywhere is also what makes this quadratic in the length of a run the
+// fine grained prefix can be written inside: every candidate in such a run
+// matches, so nothing about the bytes lets a position be skipped, and each of
+// them reads the run to its end. It is the price of a reference with no cursor
+// to be wrong about, and the reason the seeds below keep that shape to a hundred
+// and thirty bytes rather than inviting the mutator to grow it.
+// Test_builtins_scanIsLinear is where the cost the scan pays is held down.
 func referenceGitHubTokenFind(src string) []Span {
 	var spans []Span
-	for i := 0; i < len(src); {
-		loc := referenceGitHubToken.FindStringIndex(src[i:])
-		if loc == nil {
-			break
+	for start := range len(src) {
+		if end, ok := referenceGitHubTokenAt(src, start); ok {
+			spans = append(spans, Span{Start: start, End: end})
 		}
-		start := i + loc[0]
-		spans = append(spans, Span{Start: start, End: i + loc[1]})
-		i = start + 1
 	}
 	return spans
 }

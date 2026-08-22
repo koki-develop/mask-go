@@ -1,7 +1,6 @@
 package mask
 
 import (
-	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -628,9 +627,10 @@ func Test_SentryAuthToken_scanIsLinear(t *testing.T) {
 	}
 }
 
-// referenceSentryAuthToken is the expression the scan in
-// builtin_sentry_auth_token.go reads by hand: the statement of what a Sentry
-// auth token is, kept here so that the scan can be held to it.
+// referenceSentryAuthTokenAt reports where a Sentry auth token written at start
+// ends, and whether one is written there at all. It is the statement of what the
+// scan in builtin_sentry_auth_token.go locates, kept here so that the scan can
+// be held to it, and it reads one position and stops.
 //
 // The opening, the characters naming a kind, the two counts, the separator, the
 // alphabets and the padding rule are spelled again rather than built from
@@ -642,45 +642,142 @@ func Test_SentryAuthToken_scanIsLinear(t *testing.T) {
 // fuzz target below is for: the two have to be changed together or reported
 // apart.
 //
-// The payload is written as base64 writes it — whole groups of four, the last
-// of them able to close with one padding character or two — rather than as a
-// run and a length divisible by four, which is how the scan reads the same
-// rule. That is the one place the two are written differently on purpose: a
-// reference restating the modulus would agree with the scan by construction
-// wherever the scan had the modulus wrong.
+// The payload is read as base64 writes it — whole groups of four, the last of
+// them able to close with one padding character or two — rather than as a run
+// and a length divisible by four, which is how the scan reads the same rule.
+// That is the one place the two are written differently on purpose: a reference
+// restating the modulus would agree with the scan by construction wherever the
+// scan had the modulus wrong.
 //
-// The counted repetitions here are sixty-four and forty-three, so the machine an
-// engine builds for a candidate is bounded, as the SendGrid reference's is and
-// unlike the floor the Anthropic one declines to spell. The group of four
-// repeated without limit is a loop rather than a width, which costs an engine
-// nothing.
-var referenceSentryAuthToken = regexp.MustCompile(
-	`sntry(?:[uai]_[0-9a-f]{64}` +
-		`|s_(?:[0-9A-Za-z+/]{4})*(?:[0-9A-Za-z+/]{4}|[0-9A-Za-z+/]{3}=|[0-9A-Za-z+/]{2}==)_[0-9A-Za-z+/]{43})`,
-)
+// This was an expression, and byte tests are what replaced it. Both counts are
+// exact, so the machine an engine built for a candidate was bounded and the
+// counts were not what cost it; the group of four repeated without limit was
+// not either. What cost it is that the alphabet a payload is written in holds
+// every letter the opening is written in, so a run of them is a candidate at
+// every byte, and a reference asking at every byte hands the engine the whole
+// of the rest of the input at each of them. Over an input the mutator had
+// grown, that left FuzzSentryAuthToken_matchesReference running for three
+// seconds of its thirty and reporting no executions at all for the rest. The
+// walks below read a byte at a time, and a candidate that is not one stops on
+// the character that says so.
+func referenceSentryAuthTokenAt(src string, start int) (int, bool) {
+	if !strings.HasPrefix(src[start:], "sntry") {
+		return 0, false
+	}
+	prefix := start + len("sntry")
+	if prefix+2 > len(src) || src[prefix+1] != '_' {
+		return 0, false
+	}
+	body := prefix + 2
 
-// referenceSentryAuthTokenFind locates tokens the plain way: the leftmost match
-// of the expression above, then the leftmost one beginning after that match's
-// first byte, over and over, with nothing remembered between them.
+	switch kind := src[prefix]; kind {
+	case 'u', 'a', 'i':
+		end := body + 64
+		if end > len(src) {
+			return 0, false
+		}
+		for i := body; i < end; i++ {
+			if !referenceSentryHexByte(src[i]) {
+				return 0, false
+			}
+		}
+		return end, true
+	case 's':
+		payload, ok := referenceSentryPayloadEnd(src, body)
+		if !ok {
+			return 0, false
+		}
+		secret := payload + 1 // the separator the payload closed against
+		end := secret + 43
+		if end > len(src) {
+			return 0, false
+		}
+		for i := secret; i < end; i++ {
+			if !referenceSentryBase64Byte(src[i]) {
+				return 0, false
+			}
+		}
+		return end, true
+	}
+	return 0, false
+}
+
+// referenceSentryPayloadEnd returns where the payload beginning at body ends,
+// and whether one is written there: whole groups of four, then a last group of
+// four, of three and one padding character, or of two and two, with the
+// separator standing behind it.
 //
-// FindAllStringIndex would be the shorter way to write this and the wrong one.
-// It resumes past a match, and a token can begin inside one: the alphabet an
-// organization token's segments are written in holds every letter the opening
-// is written in and every character naming a kind, and the separator behind
-// them is the one such a token already carries, so a payload closing with
-// sntrys or sntryu opens a candidate the engine would never go on to try. The
-// scan finds both and reports the two spans overlapping for a Masker to
-// resolve, so the reference must ask about both.
+// It walks the groups rather than dividing, which is the one rule this file
+// states differently from the scan on purpose. A group that cannot be the last
+// one is a full group and the walk goes on past it; a group that is neither is
+// where a payload stops being one.
+func referenceSentryPayloadEnd(src string, body int) (int, bool) {
+	for i := body; ; i += 4 {
+		if end, ok := referenceSentryLastGroupEnd(src, i); ok && end < len(src) && src[end] == '_' {
+			return end, true
+		}
+		for j := i; j < i+4; j++ {
+			if j >= len(src) || !referenceSentryBase64Byte(src[j]) {
+				return 0, false
+			}
+		}
+	}
+}
+
+// referenceSentryLastGroupEnd returns where the group beginning at i ends when
+// it is the last one of a payload, taking the three shapes in the order an
+// alternation would try them: four characters, three and one padding character,
+// two and two.
+func referenceSentryLastGroupEnd(src string, i int) (int, bool) {
+	run := 0
+	for run < 4 && i+run < len(src) && referenceSentryBase64Byte(src[i+run]) {
+		run++
+	}
+	switch {
+	case run == 4:
+		return i + 4, true
+	case run == 3 && i+4 <= len(src) && src[i+3] == '=':
+		return i + 4, true
+	case run == 2 && i+4 <= len(src) && src[i+2] == '=' && src[i+3] == '=':
+		return i + 4, true
+	}
+	return 0, false
+}
+
+// referenceSentryHexByte reports whether c may appear in the body of a token
+// carrying one, which is what token_hex writes: the digits and the lowercase
+// letters through f.
+func referenceSentryHexByte(c byte) bool {
+	return '0' <= c && c <= '9' || 'a' <= c && c <= 'f'
+}
+
+// referenceSentryBase64Byte reports whether c may appear in the payload or the
+// secret of an organization token, which is the base64 alphabet of RFC 4648
+// without its padding: + and / where base64url writes - and _.
+func referenceSentryBase64Byte(c byte) bool {
+	return '0' <= c && c <= '9' ||
+		'A' <= c && c <= 'Z' ||
+		'a' <= c && c <= 'z' ||
+		c == '+' || c == '/'
+}
+
+// referenceSentryAuthTokenFind locates tokens the plain way: every position in
+// turn, with nothing remembered between them.
+//
+// Asking at every position is what a reference must do here, and the shorter way
+// of resuming past a match is the wrong one. A token can begin inside one: the
+// alphabet an organization token's segments are written in holds every letter
+// the opening is written in and every character naming a kind, and the separator
+// behind them is the one such a token already carries, so a payload closing with
+// sntrys or sntryu opens a candidate a search resuming past the match would
+// never go on to try. The scan finds both and reports the two spans overlapping
+// for a Masker to resolve, so the reference must ask about both.
 func referenceSentryAuthTokenFind(src string) []Span {
 	var spans []Span
-	for i := 0; i < len(src); {
-		loc := referenceSentryAuthToken.FindStringIndex(src[i:])
-		if loc == nil {
-			break
+	for start := range len(src) {
+		if end, ok := referenceSentryAuthTokenAt(src, start); ok {
+			spans = append(spans, Span{Start: start, End: end})
 		}
-		start := i + loc[0]
-		spans = append(spans, Span{Start: start, End: i + loc[1]})
-		i = start + 1
 	}
 	return spans
 }

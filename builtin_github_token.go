@@ -25,14 +25,15 @@ func GitHubToken() Pattern { return githubToken }
 //
 // The scan reads the same grammar a regular expression would, written out by
 // hand because regexp costs three times what the byte tests below do on a line
-// holding no token, and six times on a line of them. referenceGitHubToken in
-// builtin_github_token_test.go keeps the expression as the statement of what is
-// located, and the fuzz target beside it holds the two to the same answer.
+// holding no token, and six times on a line of them. referenceGitHubTokenAt in
+// builtin_github_token_test.go states that grammar again, spelled out at one
+// position with none of the state below, and the fuzz target beside it holds
+// the two to the same answer.
 //
-// Only the grammar is the expression's; how often it is tried is not. A value
-// this scan locates may hold the start of the next one, so the expression is
-// tried at every byte rather than handed to FindAllStringIndex, which would
-// resume past a match and step over the token inside it.
+// Only the grammar is stated twice; how often it is tried is not. A value this
+// scan locates may hold the start of the next one, so the grammar is tried at
+// every byte rather than resumed past a match, which would step over the token
+// inside it.
 var githubToken = NewPattern("github-token", func(src string) []Span {
 	var spans []Span
 
@@ -105,7 +106,7 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		body := start + 4
 		end := base62RunEnd(src, body)
 
-		// The stateless form comes first, as it does in the expression: an
+		// The stateless form comes first, as it does in the reference: an
 		// app id of thirty-six characters or more would otherwise be taken
 		// for a whole classic token, leaving the rest of the token to the JWT
 		// pattern and the underscore between them unredacted. Which kinds
@@ -214,7 +215,7 @@ func isGitHubTokenKind(c byte) bool {
 // altogether are read for the classic form alone, where the same cost would
 // buy nothing.
 //
-// referenceGitHubToken in builtin_github_token_test.go spells these kinds
+// referenceGitHubTokenAt in builtin_github_token_test.go spells these kinds
 // again, so the two are changed together or the fuzz target beside it reports
 // them apart.
 func isGitHubStatelessKind(c byte) bool { return c == 's' || c == 'u' }
@@ -234,8 +235,9 @@ func isGitHubPATByte(c byte) bool { return isBase62Byte(c) || c == '_' }
 // githubJWTEnd returns where the two segments a signed token carries after its
 // header end, and whether both are there. Unlike segmentsEnd in builtin_jwt.go,
 // which serves the JWT pattern, a segment here must hold at least one
-// character: the expression this scan reads spells them with a plus, so that
-// the two dots of a file name written after a token do not stand in for them.
+// character, so that the two dots of a file name written after a token do not
+// stand in for them. referenceGitHubStatelessAt asks the same of a segment,
+// which is what the fuzz target holds the two to.
 //
 // This and the scan above read opensJOSEHeaderAt, jwtHeaderPrefix and
 // signedSegments from that file rather than spelling them again. A stateless

@@ -169,10 +169,10 @@ func SentryAuthToken() Pattern { return sentryAuthToken }
 // a reader reads rather than on values already opaque, and there is no anchor
 // to narrow it with: nothing in such a string says Sentry issued it.
 //
-// referenceSentryAuthToken in builtin_sentry_auth_token_test.go keeps the
-// grammar as a regular expression, spelling the prefixes, the counts, the
-// alphabets and the padding rule again so that the two are changed together,
-// and the fuzz target beside it holds this scan to that expression.
+// referenceSentryAuthTokenAt in builtin_sentry_auth_token_test.go states that
+// grammar again, spelled out at one position, with the prefixes, the counts,
+// the alphabets and the padding rule written afresh so that the two are changed
+// together, and the fuzz target beside it holds this scan to it.
 var sentryAuthToken = NewPattern("sentry-auth-token", func(src string) []Span {
 	var spans []Span
 
