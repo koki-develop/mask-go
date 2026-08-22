@@ -328,10 +328,12 @@ func (f *corpusFile) render() []byte {
 			continue
 		}
 		if at.key == fieldOut {
-			if at.c.hasOut {
-				b.WriteString(fieldLine(fieldOut, fieldValue(at.c, fieldOut)))
-				b.WriteString("\n")
-			}
+			// The case carries an out field: parsing this very line is what
+			// set hasOut on it, and nothing clears it again. The guard below,
+			// where the field is written for a case whose file has no line
+			// for it yet, is the one that has a case with none to turn away.
+			b.WriteString(fieldLine(fieldOut, fieldValue(at.c, fieldOut)))
+			b.WriteString("\n")
 			continue
 		}
 		b.WriteString(fieldLine(at.key, fieldValue(at.c, at.key)))
