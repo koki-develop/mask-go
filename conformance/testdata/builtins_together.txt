@@ -541,25 +541,29 @@ out:  «aws-access-key-id»sk_live_0123456789abcdef01234567
 # time gives back exactly what masking it once gave. That is not something an
 # out field can state, which is why it is written here.
 #
-# The case after it is the same line with a space in it, where there is nothing
-# for either value to reach into and both of them go. So it is the abutment
-# alone that costs a credential, and neither pattern's own file states it — it
-# takes the npm reading of a run and the byte the Stripe scan demands in front
-# of a prefix together to arrive at.
+# The two cases after it are the other direction and the same line written with
+# a space in it. Written the other way round the Stripe body reaches three
+# characters into the npm prefix and stops at its underscore, so the two spans
+# overlap and both values go; with a space between them there is nothing to
+# reach into and both go as well. It is the abutment in the first case alone
+# that costs a credential, and neither pattern's own file states it — it takes
+# the npm reading of a run and the byte the Stripe scan demands in front of a
+# prefix together to arrive at.
 #
-# Written the other way round, a Stripe key with an npm token against its end,
-# nothing is lost: that is the shape the block above states with a GitHub token
-# in the npm token's place, a Stripe body reaching three characters into a
-# prefix and stopping at its underscore, and npm_ is three letters and an
-# underscore as ghp_ is. It is not written out again with npm in it for a reason
-# outside this library — a Stripe prefix and the twenty-seven characters the
-# concatenation puts behind it are the format of a Highnote key, which GitHub's
-# push protection declines in the secret, restricted and test mode spellings
-# alike.
+# The middle case concatenates a Stripe body and the three letters an npm prefix
+# opens with into twenty-seven characters behind sk_live_, which is the format
+# of a Highnote live secret key: GitHub's push protection declines the line, and
+# declines the restricted and test mode spellings of it too. It was allowed
+# through as the false positive it is rather than written around, because what
+# the corpus states is not the secret scanner's to narrow.
 
 case: a stripe key written against the end of an npm token
 in:   npm_0123456789abcdefghijklmnopqrstuvwxyzsk_live_0123456789abcdef01234567
 out:  «npm-token»_live_0123456789abcdef01234567
+
+case: an npm token written against the end of a stripe key
+in:   sk_live_0123456789abcdef01234567npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «stripe-api-key»
 
 case: an npm token and a stripe key with a space between them
 in:   npm_0123456789abcdefghijklmnopqrstuvwxyz sk_live_0123456789abcdef01234567
