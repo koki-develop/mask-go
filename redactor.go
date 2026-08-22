@@ -13,6 +13,12 @@ type Match struct {
 	// Value is the text about to be redacted. When a pattern redacts only
 	// part of what it matched, Value holds that part rather than the whole
 	// match.
+	//
+	// It reaches the other way too. Values that overlap are redacted
+	// together as one, and the combined text goes to the redactor under the
+	// single pattern Masker.Mask attributes it to, so Value can hold more
+	// than that pattern located and most of it can be what another pattern
+	// found. Masker.Mask states how the attribution is decided.
 	Value string
 }
 
@@ -31,6 +37,11 @@ type Redactor interface {
 //		}
 //		return "[REDACTED]"
 //	})
+//
+// A redactor reading the name, as this one does, is reading the attribution of
+// what it was handed rather than a promise about the whole of it: a JWT written
+// against another credential is redacted together with it, and the one label
+// then stands for both. Match.Value says where that comes from.
 //
 // redact must be safe for concurrent use by multiple goroutines.
 func NewRedactor(redact func(m Match) string) Redactor {
