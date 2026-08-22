@@ -33,6 +33,7 @@ returns every pattern in the table below, and grows as patterns are added:
 | `NPMToken()` | `npm_…` |
 | `OpenAIAPIKey()` | `sk-proj-…`, `sk-svcacct-…`, `sk-admin-…`, `sk-…` |
 | `PyPIAPIToken()` | `pypi-…` |
+| `SendGridAPIKey()` | `SG.…` |
 | `SlackToken()` | `xoxb-…`, `xoxp-…`, `xapp-…`, `xwfp-…`, `xoxe-…`, `xoxe.xoxb-…`, `xoxe.xoxp-…` |
 | `StripeAPIKey()` | `sk_live_…`, `sk_test_…`, `rk_live_…`, `rk_test_…`, `pk_live_…`, `pk_test_…`, `sk_org_…` |
 
