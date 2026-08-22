@@ -3,13 +3,15 @@
 #
 # No built-in pattern states these rules. Two of them do overlap, and one value
 # does contain another — a stateless installation token carries a JWT, and the
-# signature of a JWT swallows a token written after it — but no input makes two
-# of them start together or cover the same span, so the rules that decide
-# attribution when they do, the longest and then the one added first, have no
-# built-in input at all. The patterns here look for a given substring instead,
-# so that the input a case is written against can be read at a glance rather
-# than decoded. The letters say where the values are; nothing about them is a
-# credential.
+# signature of a JWT swallows a token written after it — and a case somewhere in
+# the corpus covers one span with two of them, which is the rule reading the
+# order they were added in. TestCorpus_attributionIsExercised counts the cases
+# reaching that rule and names each one it finds, so no sentence here has to
+# name a file a case can be moved out of. What the cases below state is every
+# rule rather than the corner of them the built-ins happen to reach, with
+# patterns looking for a given substring, so that the input a case is written
+# against can be read at a glance rather than decoded. The letters say where the
+# values are; nothing about them is a credential.
 #
 # Values that overlap are redacted together as one, and the combined text is
 # attributed to the pattern that located the value starting earliest; among

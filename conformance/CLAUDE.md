@@ -59,7 +59,14 @@ nobody measures it. Two rules keep one honest:
 - **Count before writing `every`, `only`, `the one`, `no input at all`**, or
   write the sentence without them. A claim about the corpus is as easy to get
   wrong as a claim about the library, and it is the file's own cases that
-  contradict it.
+  contradict it. Where a count is worth keeping, have a test do the counting and
+  point the sentence at it: `TestCorpus_attributionIsExercised` counts the
+  inputs on which two built-in patterns report one span, which is what the
+  comment at the top of `overlap_and_attribution.txt` rests on and what no `out`
+  line could report. An `out` line names the pattern the redaction went to, so it
+  pins which of the two won — but not that a second one reached the span at all,
+  and once the losing one stops locating that value the line reads exactly as it
+  did with nothing left reaching the rule.
 
 A case name carries the same weight as a comment and drifts the same way. Name a
 case for the rule the scan reads, not for a property of the input that happens

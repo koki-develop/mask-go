@@ -8,6 +8,7 @@
 package conformance
 
 import (
+	"cmp"
 	"fmt"
 	"maps"
 	"os"
@@ -356,6 +357,80 @@ func TestCorpus_usesEveryPatternSet(t *testing.T) {
 			t.Errorf("no case is masked with the pattern set %q", name)
 		}
 	}
+}
+
+func TestCorpus_attributionIsExercised(t *testing.T) {
+	// overlap_and_attribution.txt states how a redaction is attributed when two
+	// patterns cover the same span, and states it with patterns of its own. What
+	// it cannot say for itself is whether any built-in input reaches those rules:
+	// two built-ins reporting one span is what drives the last of them,
+	// registration order, and only the corpus in full can be counted for it.
+	//
+	// A comment there counts before writing "every", "only" or "no input at all",
+	// and this is what a comment about this one rests on. No out line can say it.
+	// An out line names the pattern the redaction went to, so it does pin which
+	// of two that reach one span won it — but not that a second one reached it at
+	// all. Let the losing pattern stop locating that value and the winner wins
+	// still, the line stays exactly as it was, and the rule is reached by nothing
+	// any more.
+	//
+	// Each case is read with the set it is masked with rather than with every
+	// built-in, because reaching the rule is what is being counted and a case
+	// masked with one pattern reaches nothing however its text reads. Moving the
+	// case that reaches it under a set of one would otherwise leave this passing
+	// on a collision the corpus no longer performs. Only built-ins count towards
+	// it: the patterns of overlap_and_attribution.txt are written to cover one
+	// span and would meet the bar on their own, which is the arrangement the
+	// comment there is drawing a contrast with.
+	type span struct{ start, end int }
+
+	builtin := map[mask.Pattern]bool{}
+	for _, p := range mask.AllBuiltinPatterns() {
+		builtin[p] = true
+	}
+
+	var together []string
+	for _, c := range corpusCases(t) {
+		at := map[span][]string{}
+		for _, p := range c.patterns() {
+			if !builtin[p] {
+				continue
+			}
+			for _, s := range p.Find(c.in) {
+				// The names, not the spans: a scan reporting one span twice, or
+				// a set naming one pattern twice, is one pattern still and
+				// reaches no tie-break. Counting the report rather than the
+				// pattern would leave this met with nothing contesting anything.
+				k := span{s.Start, s.End}
+				if !slices.Contains(at[k], p.Name()) {
+					at[k] = append(at[k], p.Name())
+				}
+			}
+		}
+		for _, k := range slices.SortedFunc(maps.Keys(at), func(a, b span) int {
+			if a.start != b.start {
+				return cmp.Compare(a.start, b.start)
+			}
+			return cmp.Compare(a.end, b.end)
+		}) {
+			// The names are in the order the case's own set holds them, which
+			// is the order the tie-break reads: Masker.locate sorts on the
+			// index of the pattern in the list it was given. So of two tied
+			// here the first is the one the redaction went to — though a third
+			// pattern reporting a longer span from the same start would take it
+			// from both, which is a different rule and not what this counts.
+			if names := at[k]; len(names) > 1 {
+				together = append(together, fmt.Sprintf("%s: [%d,%d) %s", c.id(), k.start, k.end, strings.Join(names, ", ")))
+			}
+		}
+	}
+
+	if len(together) == 0 {
+		t.Error("no corpus case masks with two built-in patterns reporting one span, so nothing here reaches the tie-break " +
+			"in overlap_and_attribution.txt; write a case that does, or say in that file that only its own patterns reach it")
+		return
+	}
+	t.Log("built-in values sharing a span, first name first:\n\t" + strings.Join(together, "\n\t"))
 }
 
 func TestCorpus_summary(t *testing.T) {
