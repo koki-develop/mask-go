@@ -49,11 +49,11 @@ func base64URLRunEnd(src string, i int) int {
 
 // isBase62Byte reports whether c belongs to the base62 alphabet: the letters of
 // both cases and the digits. It is what the body of a classic GitHub token is
-// written in, what the body of an npm token is written in, what the body of a
-// Linear API key is written in, what the body of a Notion API token is written
-// in and what the secret of a Grafana service account token is written in —
-// npm's own announcement of its format says it matched GitHub's, and the GitHub
-// and npm bodies close with six characters of a checksum encoded in this
+// written in, what the body of an npm access token is written in, what the body
+// of a Linear API key is written in, what the body of a Notion API token is
+// written in and what the secret of a Grafana service account token is written
+// in — npm's own announcement of its format says it matched GitHub's, and the
+// GitHub and npm bodies close with six characters of a checksum encoded in this
 // alphabet, while the alphabet is all Notion's own rulesets agree on behind
 // either of the prefixes it has issued and is the one Grafana's own generator
 // draws a secret from.

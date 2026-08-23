@@ -8,8 +8,8 @@ import (
 	"time"
 )
 
-// The npm token pattern: what it locates and what it leaves alone, written out
-// case by case, and the reference its scan is held to.
+// The npm access token pattern: what it locates and what it leaves alone,
+// written out case by case, and the reference its scan is held to.
 //
 // What every built-in shares — the convention its name follows, one value per
 // accessor, usable spans, no false positive on prose, agreement with the
@@ -27,7 +27,7 @@ import (
 // where the case is what a case is about: base62 holds the letters of both, so
 // either spelling is a body.
 
-func Test_NPMToken(t *testing.T) {
+func Test_NPMAccessToken(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -78,14 +78,14 @@ func Test_NPMToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NPMToken().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got := NPMAccessToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_NPMToken_noMatch(t *testing.T) {
+func Test_NPMAccessToken_noMatch(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -98,7 +98,7 @@ func Test_NPMToken_noMatch(t *testing.T) {
 			// Thirty-five characters where the pattern asks for thirty-six.
 			// This is the shape a line cut to a column limit leaves, and the
 			// characters in front of the cut stay in the text: the far side of
-			// reading a floor, which builtin_npm_token.go weighs.
+			// reading a floor, which builtin_npm_access_token.go weighs.
 			name: "a body one character too short",
 			src:  "npm_0123456789abcdefghijklmnopqrstuvwxy",
 		},
@@ -176,14 +176,14 @@ func Test_NPMToken_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NPMToken().Find(tt.src); len(got) != 0 {
+			if got := NPMAccessToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
 	}
 }
 
-func Test_NPMToken_inContext(t *testing.T) {
+func Test_NPMAccessToken_inContext(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -230,7 +230,7 @@ func Test_NPMToken_inContext(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(NPMToken()))
+	m := New(WithPatterns(NPMAccessToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -240,7 +240,7 @@ func Test_NPMToken_inContext(t *testing.T) {
 	}
 }
 
-func Test_NPMToken_nextToWordCharacters(t *testing.T) {
+func Test_NPMAccessToken_nextToWordCharacters(t *testing.T) {
 	// A word boundary in front of the pattern would not trim these matches but
 	// drop them, letting the token through whole.
 	tests := []struct {
@@ -260,7 +260,7 @@ func Test_NPMToken_nextToWordCharacters(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(NPMToken()))
+	m := New(WithPatterns(NPMAccessToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -270,7 +270,7 @@ func Test_NPMToken_nextToWordCharacters(t *testing.T) {
 	}
 }
 
-func Test_NPMToken_reachesTheEndOfTheRun(t *testing.T) {
+func Test_NPMAccessToken_reachesTheEndOfTheRun(t *testing.T) {
 	// The far side of reading a floor rather than a count. Where a token ends
 	// is where its alphabet stops, so a letter or a digit written straight
 	// against a token is redacted with it — which is what buys a token of a
@@ -310,7 +310,7 @@ func Test_NPMToken_reachesTheEndOfTheRun(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(NPMToken()))
+	m := New(WithPatterns(NPMAccessToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -320,7 +320,7 @@ func Test_NPMToken_reachesTheEndOfTheRun(t *testing.T) {
 	}
 }
 
-func Test_NPMToken_cutShortOfTheFloor(t *testing.T) {
+func Test_NPMAccessToken_cutShortOfTheFloor(t *testing.T) {
 	// What the floor costs, held to being left in the text rather than
 	// redacted. A line cut to a column limit partway through a token leaves a
 	// prefix and a body too short to be one, and the random characters written
@@ -344,7 +344,7 @@ func Test_NPMToken_cutShortOfTheFloor(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(NPMToken()))
+	m := New(WithPatterns(NPMAccessToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.src {
@@ -354,7 +354,7 @@ func Test_NPMToken_cutShortOfTheFloor(t *testing.T) {
 	}
 }
 
-func Test_NPMToken_insideAnOpaqueRun(t *testing.T) {
+func Test_NPMAccessToken_insideAnOpaqueRun(t *testing.T) {
 	// What this pattern redacts that nobody issued. The prefix carries an
 	// underscore, which standard base64 writes nowhere, so only a base64url
 	// encoding can hold one — and there four characters of an alphabet of
@@ -389,7 +389,7 @@ func Test_NPMToken_insideAnOpaqueRun(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(NPMToken()))
+	m := New(WithPatterns(NPMAccessToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -399,8 +399,8 @@ func Test_NPMToken_insideAnOpaqueRun(t *testing.T) {
 	}
 }
 
-func Test_NPMToken_aDigestBehindThePrefix(t *testing.T) {
-	// The collision builtin_npm_token.go names, held to the answer it gives
+func Test_NPMAccessToken_aDigestBehindThePrefix(t *testing.T) {
+	// The collision builtin_npm_access_token.go names, held to the answer it gives
 	// rather than to the one a reader might want. Hexadecimal digits are base62
 	// and a digest carries nothing that ends a run, so a digest of forty
 	// characters or more written behind the prefix is a token's format exactly
@@ -439,7 +439,7 @@ func Test_NPMToken_aDigestBehindThePrefix(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(NPMToken()))
+	m := New(WithPatterns(NPMAccessToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -449,7 +449,7 @@ func Test_NPMToken_aDigestBehindThePrefix(t *testing.T) {
 	}
 }
 
-func Test_npmTokenPrefix(t *testing.T) {
+func Test_npmAccessTokenPrefix(t *testing.T) {
 	// The scan resumes one byte past the start of a candidate because a token
 	// can begin inside the one before it, and that holds only while the prefix
 	// carries characters a body may be written with. Here it is the three in
@@ -458,17 +458,17 @@ func Test_npmTokenPrefix(t *testing.T) {
 	// outside the alphabet would make the two impossible to nest, and the case
 	// above pinning the nesting would stand for nothing — which is not a
 	// failure anything else here reports.
-	if npmTokenPrefix == "" {
+	if npmAccessTokenPrefix == "" {
 		t.Fatal("the pattern carries no prefix, so it locates nothing")
 	}
-	for i := range len(npmTokenPrefix) - 1 {
-		if c := npmTokenPrefix[i]; !isBase62Byte(c) {
+	for i := range len(npmAccessTokenPrefix) - 1 {
+		if c := npmAccessTokenPrefix[i]; !isBase62Byte(c) {
 			t.Errorf("the prefix holds %q in front of its last character, which no body may be written with", c)
 		}
 	}
 }
 
-func Test_npmTokenPrefix_runsDoNotOverlap(t *testing.T) {
+func Test_npmAccessTokenPrefix_runsDoNotOverlap(t *testing.T) {
 	// The scan walks the run behind every candidate and keeps no cursor over
 	// it, where the JWT, GitLab, Slack, OpenAI and Anthropic scans each keep
 	// one. What makes the cursor unnecessary is that two candidates can never
@@ -478,15 +478,15 @@ func Test_npmTokenPrefix_runsDoNotOverlap(t *testing.T) {
 	// begins past it. Were that character one a body admits, a run dense in
 	// prefixes would be walked once for every candidate in it and the scan
 	// would cost time quadratic in the length of such a line.
-	if npmTokenPrefix == "" {
+	if npmAccessTokenPrefix == "" {
 		t.Fatal("the pattern carries no prefix, so there is no candidate to reason about")
 	}
-	if c := npmTokenPrefix[len(npmTokenPrefix)-1]; isBase62Byte(c) {
+	if c := npmAccessTokenPrefix[len(npmAccessTokenPrefix)-1]; isBase62Byte(c) {
 		t.Errorf("the prefix closes with %q, which a body may be written with, so two candidates can read the same run", c)
 	}
 }
 
-func Test_NPMToken_scanIsLinear(t *testing.T) {
+func Test_NPMAccessToken_scanIsLinear(t *testing.T) {
 	// Rejecting a candidate resumes one byte along, so a line dense in prefixes
 	// holds a candidate for every four characters it has. The one thing a
 	// candidate reads that is a walk over the rest of the input rather than a
@@ -516,7 +516,7 @@ func Test_NPMToken_scanIsLinear(t *testing.T) {
 		"the letters of the prefix with no underscore": strings.Repeat("npm", 600000),
 	}
 
-	m := New(WithPatterns(NPMToken()))
+	m := New(WithPatterns(NPMAccessToken()))
 	for name, src := range sources {
 		t.Run(name, func(t *testing.T) {
 			start := time.Now()
@@ -528,25 +528,25 @@ func Test_NPMToken_scanIsLinear(t *testing.T) {
 	}
 }
 
-// referenceNPMToken is the expression the scan in builtin_npm_token.go reads by
-// hand: the statement of what an npm token is, kept here so that the scan can
-// be held to it.
+// referenceNPMAccessToken is the expression the scan in
+// builtin_npm_access_token.go reads by hand: the statement of what an npm
+// access token is, kept here so that the scan can be held to it.
 //
 // The prefix, the floor and the alphabet are spelled again rather than built
-// from npmTokenPrefix, npmTokenBodyChars and isBase62Byte. A reference sharing
-// those declarations could not disagree with the scan about them, and it is
-// exactly that disagreement the fuzz target below is for: the two have to be
-// changed together or reported apart.
+// from npmAccessTokenPrefix, npmAccessTokenBodyChars and isBase62Byte. A
+// reference sharing those declarations could not disagree with the scan about
+// them, and it is exactly that disagreement the fuzz target below is for: the
+// two have to be changed together or reported apart.
 //
 // The floor is written as a counted repetition, which is what the Anthropic
 // reference beside this one is written out by hand to avoid. It costs nothing
 // here, and for the reason the scan needs no cursor: candidates cannot crowd
 // inside one run, so no input makes an engine walk the same run more than once.
-var referenceNPMToken = regexp.MustCompile(`npm_[0-9A-Za-z]{36,}`)
+var referenceNPMAccessToken = regexp.MustCompile(`npm_[0-9A-Za-z]{36,}`)
 
-// referenceNPMTokenFind locates tokens the plain way: the leftmost match of the
-// expression above, then the leftmost one beginning after that match's first
-// byte, over and over, with nothing remembered between them.
+// referenceNPMAccessTokenFind locates tokens the plain way: the leftmost match
+// of the expression above, then the leftmost one beginning after that match's
+// first byte, over and over, with nothing remembered between them.
 //
 // FindAllStringIndex would be the shorter way to write this and the wrong one.
 // It resumes past a match, and a token can begin inside one: the three letters
@@ -554,10 +554,10 @@ var referenceNPMToken = regexp.MustCompile(`npm_[0-9A-Za-z]{36,}`)
 // closing with npm holds the start of the token behind it. The scan finds both
 // and reports the two spans overlapping for a Masker to resolve, so the
 // reference must ask about both.
-func referenceNPMTokenFind(src string) []Span {
+func referenceNPMAccessTokenFind(src string) []Span {
 	var spans []Span
 	for i := 0; i < len(src); {
-		loc := referenceNPMToken.FindStringIndex(src[i:])
+		loc := referenceNPMAccessToken.FindStringIndex(src[i:])
 		if loc == nil {
 			break
 		}
@@ -568,11 +568,11 @@ func referenceNPMTokenFind(src string) []Span {
 	return spans
 }
 
-// FuzzNPMToken_matchesReference guards the hand-written scan: the prefix it
-// searches for, the floor it holds a body to, the alphabet it reads that body
-// in and the byte it resumes at may none of them change which tokens are
+// FuzzNPMAccessToken_matchesReference guards the hand-written scan: the prefix
+// it searches for, the floor it holds a body to, the alphabet it reads that
+// body in and the byte it resumes at may none of them change which tokens are
 // located.
-func FuzzNPMToken_matchesReference(f *testing.F) {
+func FuzzNPMAccessToken_matchesReference(f *testing.F) {
 	f.Add("nothing to see here")
 	f.Add("NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz")
 	f.Add("npm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -608,15 +608,16 @@ func FuzzNPMToken_matchesReference(f *testing.F) {
 	f.Add("payload=zzzznpm_0123456789abcdefghijklmnopqrstuvwxyzzzzz")
 	f.Add("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzznpm_0123456789abcdefghijklmnopqrstuvwxyzzzzz")
 
-	fuzzAgainstReference(f, NPMToken().Find, referenceNPMTokenFind)
+	fuzzAgainstReference(f, NPMAccessToken().Find, referenceNPMAccessTokenFind)
 }
 
-// npmTokenFindBenchmarks is what this scan is timed on. The builtinPatterns
-// entry for the pattern names it, and BenchmarkBuiltins times every case it
-// holds under the pattern's own name, so that a built-in cannot arrive without
-// a benchmark. Every case is held to the count it states under a plain go test
-// as well, which is what a benchmark nobody has run yet cannot be.
-func npmTokenFindBenchmarks() []benchmarkCase {
+// npmAccessTokenFindBenchmarks is what this scan is timed on. The
+// builtinPatterns entry for the pattern names it, and BenchmarkBuiltins times
+// every case it holds under the pattern's own name, so that a built-in cannot
+// arrive without a benchmark. Every case is held to the count it states under a
+// plain go test as well, which is what a benchmark nobody has run yet cannot
+// be.
+func npmAccessTokenFindBenchmarks() []benchmarkCase {
 	// Nothing in an ordinary line opens the prefix, so what the line times is
 	// the search for it — which is most of what this pattern costs a caller
 	// whose text holds no token.

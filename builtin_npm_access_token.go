@@ -2,7 +2,7 @@ package mask
 
 import "strings"
 
-// NPMToken locates npm access tokens: the prefix npm_ and thirty-six
+// NPMAccessToken locates npm access tokens: the prefix npm_ and thirty-six
 // characters behind it. One shape serves every token the registry issues in
 // this format — the granular access tokens npmjs.com creates today, and the
 // classic tokens, read-only, automation and publish alike, created in it until
@@ -14,8 +14,8 @@ import "strings"
 // written against a word character keeps its span, and a character of the
 // token's own alphabet written straight after a token is redacted with it.
 //
-// Its name is "npm-token".
-func NPMToken() Pattern { return npmToken }
+// Its name is "npm-access-token".
+func NPMAccessToken() Pattern { return npmAccessToken }
 
 // What npm states of this format it states in one place, the announcement of
 // it, and states more there than Slack, GitLab, Google, OpenAI and Anthropic
@@ -67,7 +67,8 @@ func NPMToken() Pattern { return npmToken }
 // limit partway through a token leaves a prefix and a body too short to be one,
 // and nothing is located: the random characters written before the cut stay in
 // the output. That is the far side of this choice, and the cases in
-// builtin_npm_token_test.go pin it so that it stays a decision on the record.
+// builtin_npm_access_token_test.go pin it so that it stays a decision on the
+// record.
 //
 // There is no boundary on either side of a match, as there is none in the AWS,
 // GitLab, Google, OpenAI and Anthropic scans. A boundary in front would drop
@@ -103,8 +104,8 @@ func NPMToken() Pattern { return npmToken }
 // guarantee the Stripe scan and the classic alternative of the GitHub scan
 // reach by the same argument, bought without state, where the JWT, GitLab,
 // Slack, OpenAI and Anthropic scans have to keep a cursor for want of it.
-// Test_npmTokenPrefix_runsDoNotOverlap holds the prefix to the one thing that
-// argument rests on, and Test_NPMToken_scanIsLinear drives it.
+// Test_npmAccessTokenPrefix_runsDoNotOverlap holds the prefix to the one thing
+// that argument rests on, and Test_NPMAccessToken_scanIsLinear drives it.
 //
 // What this pattern over-matches on: thirty-six characters of base62 behind
 // npm_ inside a longer value. The underscore is what makes that rare. Standard
@@ -139,7 +140,7 @@ func NPMToken() Pattern { return npmToken }
 // over-matching is held to, and this is the one place where the value taken is
 // one a reader had a use for. An MD5 is left alone, at thirty-two characters
 // four short of the floor, and so is any digest written behind a hyphen rather
-// than an underscore. Test_NPMToken_aDigestBehindThePrefix pins all four.
+// than an underscore. Test_NPMAccessToken_aDigestBehindThePrefix pins all four.
 //
 // What reaches a span is never prose, and never a digest standing on its own. A
 // digest carries no underscore, so it holds no prefix to be found at however
@@ -149,15 +150,15 @@ func NPMToken() Pattern { return npmToken }
 // turns those away is the thirty-six unbroken characters of the alphabet the
 // body is held to, which the next underscore of such a name ends long before.
 //
-// referenceNPMToken in builtin_npm_token_test.go keeps the grammar as a regular
-// expression, spelling the prefix, the floor and the alphabet again so that the
-// two are changed together, and the fuzz target beside it holds this scan to
-// that expression.
-var npmToken = NewPattern("npm-token", func(src string) []Span {
+// referenceNPMAccessToken in builtin_npm_access_token_test.go keeps the grammar
+// as a regular expression, spelling the prefix, the floor and the alphabet
+// again so that the two are changed together, and the fuzz target beside it
+// holds this scan to that expression.
+var npmAccessToken = NewPattern("npm-access-token", func(src string) []Span {
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], npmTokenPrefix)
+		i := strings.Index(src[offset:], npmAccessTokenPrefix)
 		if i < 0 {
 			break
 		}
@@ -169,8 +170,8 @@ var npmToken = NewPattern("npm-token", func(src string) []Span {
 		// characters before the end of the one before it.
 		offset = start + 1
 
-		body := start + len(npmTokenPrefix)
-		if end := base62RunEnd(src, body); end-body >= npmTokenBodyChars {
+		body := start + len(npmAccessTokenPrefix)
+		if end := base62RunEnd(src, body); end-body >= npmAccessTokenBodyChars {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
@@ -178,19 +179,19 @@ var npmToken = NewPattern("npm-token", func(src string) []Span {
 })
 
 const (
-	// npmTokenPrefix is what every token npm issues in this format opens with,
-	// and what the scan searches the input for. Its first three characters
+	// npmAccessTokenPrefix is what every token npm issues in this format opens
+	// with, and what the scan searches the input for. Its first three characters
 	// belong to the alphabet a body is written in, which is what lets one token
 	// begin inside another and is why the scan resumes a byte along; the
-	// underscore closing it does not, which is what keeps two candidates from
-	// ever reading the same run. Test_npmTokenPrefix holds it to the first and
-	// Test_npmTokenPrefix_runsDoNotOverlap to the second.
-	npmTokenPrefix = "npm_"
+	// underscore closing it does not, which is what keeps two candidates from ever
+	// reading the same run. Test_npmAccessTokenPrefix holds it to the first and
+	// Test_npmAccessTokenPrefix_runsDoNotOverlap to the second.
+	npmAccessTokenPrefix = "npm_"
 
-	// npmTokenBodyChars is the count a body is held to, read as a floor rather
-	// than exactly. Thirty-six is thirty random characters — the hundred and
-	// seventy-eight bits npm states, in an alphabet of sixty-two — and the six
-	// of checksum behind them, and it is what both rulesets state. The
-	// rationale above weighs reading it as a floor.
-	npmTokenBodyChars = 36
+	// npmAccessTokenBodyChars is the count a body is held to, read as a floor
+	// rather than exactly. Thirty-six is thirty random characters — the hundred
+	// and seventy-eight bits npm states, in an alphabet of sixty-two — and the six
+	// of checksum behind them, and it is what both rulesets state. The rationale
+	// above weighs reading it as a floor.
+	npmAccessTokenBodyChars = 36
 )
