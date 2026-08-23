@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd hvs.0123456789abcdef01234567
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token» «hashicorp-vault-token»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd hvs.0123456789abcdef01234567 glsa_0123456789abcdef0123456789abcdef_01234567
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token» «hashicorp-vault-token» «grafana-service-account-token»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -886,3 +886,71 @@ out:  VAULT_TOKEN=«hashicorp-vault-token» jwt=«jwt»
 case: an environment file holding a vault token among the others
 in:   VAULT_TOKEN=hvs.0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 out:  VAULT_TOKEN=«hashicorp-vault-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+
+# A Grafana service account token beside the others, and the credentials that
+# can be written inside one. A secret is thirty-two base62 characters, which is
+# room for an access key ID at twenty and for a Google API key at thirty-nine
+# only because a Google body is base64url and may carry the underscore a token
+# divides its secret from its checksum by. Either is located where it stands
+# and the token is located around it; the spans overlap and are redacted as one,
+# attributed to whichever starts earliest.
+#
+# Behind a token the count is what decides, as it is behind an access key ID:
+# what is written after the forty-sixth character keeps a redaction of its own
+# or none.
+
+case: a grafana token beside a github token and a jwt
+in:   grafana=glsa_0123456789abcdef0123456789abcdef_01234567 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  grafana=«grafana-service-account-token» github=«github-token» jwt=«jwt»
+
+case: an access key id inside a grafana secret
+in:   glsa_AKIA0123456789ABCDEF0123456789ab_01234567
+out:  «grafana-service-account-token»
+
+case: a google api key inside a grafana secret
+in:   glsa_AIza0123456789abcdef0123456789ab_01234567
+out:  «grafana-service-account-token»
+
+case: a grafana token inside the signature of a jwt
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.glsa_0123456789abcdef0123456789abcdef_01234567
+out:  «jwt»
+
+case: a grafana token written straight after a classic github token
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzglsa_0123456789abcdef0123456789abcdef_01234567
+out:  «github-token»
+
+case: a classic github token written straight after a grafana token
+in:   glsa_0123456789abcdef0123456789abcdef_01234567ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «grafana-service-account-token»«github-token»
+
+case: a notion token written straight after a grafana token
+in:   glsa_0123456789abcdef0123456789abcdef_01234567ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:  «grafana-service-account-token»«notion-api-token»
+
+case: an environment file holding a grafana token among the others
+in:   GRAFANA_TOKEN=glsa_0123456789abcdef0123456789abcdef_01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  GRAFANA_TOKEN=«grafana-service-account-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+
+# A Stripe prefix written against the end of a Grafana token, which is the shape
+# the two cases named "a stripe prefix written against the end of an access key
+# id" and "...of a notion token" take and ends the same way. A Grafana token is
+# read to a count and stops, and its last character is a hexadecimal digit — so
+# a letter or a digit stands directly in front of the sk, and the Stripe scan
+# asks that neither does. The token is redacted and the secret key beside it
+# comes through whole and would authenticate a request as it stands. Neither
+# pattern's own file states what the two come to together, which is why the case
+# is here.
+#
+# No out field can state how it ends, any more than it can for those two:
+# redacting the token puts characters that are neither a letter nor a digit
+# where its last one stood, so the prefix is open to a second pass and the key
+# is redacted then. Masking is not idempotent, and the doc comment on Mask says
+# so.
+
+case: a stripe prefix written against the end of a grafana token
+in:   glsa_0123456789abcdef0123456789abcdef_01234567sk_live_0123456789abcdef01234567
+out:  «grafana-service-account-token»sk_live_0123456789abcdef01234567
+
+case: a stripe key a space away from a grafana token
+in:   glsa_0123456789abcdef0123456789abcdef_01234567 sk_live_0123456789abcdef01234567
+out:  «grafana-service-account-token» «stripe-api-key»

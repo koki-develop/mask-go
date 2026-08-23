@@ -311,7 +311,7 @@ func TestMasker_Mask_withoutMatchDoesNotAllocate(t *testing.T) {
 	// through a string conversion rather than against a slice of the input —
 	// would be measured by prose alone in neither of the cases above it.
 	prose := strings.Repeat("the quick brown fox ", 100)
-	candidates := strings.Repeat("ey.ey.ey sk-T3BlbkF ghp_0123456789 github_pat_0 AKIA0123456789ABCDE sk_live_ sntrys_ ntn_0123 npm_0123 pypi-AgE lin_api_0 SG.0.0 AIza0 xoxb-0 glpat-0 sk-ant- hvs.0123 hvb.0123 hvr.0123 ", 20)
+	candidates := strings.Repeat("ey.ey.ey sk-T3BlbkF ghp_0123456789 github_pat_0 AKIA0123456789ABCDE sk_live_ sntrys_ ntn_0123 npm_0123 pypi-AgE lin_api_0 SG.0.0 AIza0 xoxb-0 glpat-0 sk-ant- hvs.0123 hvb.0123 hvr.0123 glsa_0123 ", 20)
 	for name, tt := range map[string]struct {
 		m   *Masker
 		src string

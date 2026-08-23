@@ -76,7 +76,9 @@ to move with it: no `out` can contradict a name.
 
 `builtin_anthropic_api_key.txt`, `builtin_aws_access_key_id.txt`,
 `builtin_github_token.txt`, `builtin_gitlab_token.txt`,
-`builtin_google_api_key.txt`, `builtin_hashicorp_vault_token.txt`,
+`builtin_google_api_key.txt`,
+`builtin_grafana_service_account_token.txt`,
+`builtin_hashicorp_vault_token.txt`,
 `builtin_jwt.txt`, `builtin_linear_api_key.txt`,
 `builtin_notion_api_token.txt`, `builtin_npm_token.txt`,
 `builtin_openai_api_key.txt`, `builtin_pypi_api_token.txt`,
