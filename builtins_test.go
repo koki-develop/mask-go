@@ -106,6 +106,18 @@ var builtinPatterns = []struct {
 		benchmarks: googleAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "grafana-service-account-token",
+		pattern: GrafanaServiceAccountToken,
+		ref:     referenceGrafanaServiceAccountTokenFind,
+		samples: []string{
+			"GRAFANA_TOKEN=glsa_0123456789abcdef0123456789abcdef_01234567",
+			"glsa_0123456789ABCDEF0123456789ABCDEF_0123ABCD",
+			"glsa_0123456789abcdef0123456789abcdef_01234567glsa_0123456789abcdef0123456789abcdef_01234567",
+			"glsa_0123456789abcdef0123456789abglsa_012345670123456789abcdef01234567_89abcdef",
+		},
+		benchmarks: grafanaServiceAccountTokenFindBenchmarks,
+	},
+	{
 		name:    "hashicorp-vault-token",
 		pattern: HashiCorpVaultToken,
 		ref:     referenceHashiCorpVaultTokenFind,

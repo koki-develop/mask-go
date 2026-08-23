@@ -50,20 +50,23 @@ func base64URLRunEnd(src string, i int) int {
 // isBase62Byte reports whether c belongs to the base62 alphabet: the letters of
 // both cases and the digits. It is what the body of a classic GitHub token is
 // written in, what the body of an npm token is written in, what the body of a
-// Linear API key is written in and what the body of a Notion API token is
-// written in — npm's own announcement of its format says it matched GitHub's,
-// and the GitHub and npm bodies close with six characters of a checksum
-// encoded in this alphabet, while the alphabet is all Notion's own rulesets
-// agree on behind either of the prefixes it has issued.
+// Linear API key is written in, what the body of a Notion API token is written
+// in and what the secret of a Grafana service account token is written in —
+// npm's own announcement of its format says it matched GitHub's, and the GitHub
+// and npm bodies close with six characters of a checksum encoded in this
+// alphabet, while the alphabet is all Notion's own rulesets agree on behind
+// either of the prefixes it has issued and is the one Grafana's own generator
+// draws a secret from.
 //
 // What it leaves out is what separates it from base64url above: neither the
 // hyphen nor the underscore is admitted. The underscore is the character all
-// four of those prefixes close with, so a run read in this alphabet stops
-// where the next prefix begins, and that is what keeps each of those scans
+// five of those prefixes close with, so a run read in this alphabet stops
+// where the next prefix begins, and that is what keeps the first four scans
 // from reading one run twice. Admitting it here would cost the first three
 // that guarantee at once and make every one of them quadratic on a run dense
-// in prefixes, and would cost the Notion scan the character it finds a
-// candidate by at all.
+// in prefixes, would cost the Notion scan the character it finds a candidate
+// by at all, and would let a Grafana secret carry the character its own token
+// is divided from its checksum by.
 func isBase62Byte(c byte) bool {
 	return '0' <= c && c <= '9' ||
 		'A' <= c && c <= 'Z' ||

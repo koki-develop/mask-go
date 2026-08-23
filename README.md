@@ -29,6 +29,7 @@ returns every pattern in the table below, and grows as patterns are added:
 | `GitHubToken()` | `ghp_…`, `gho_…`, `ghu_…`, `ghs_…`, `ghr_…`, `github_pat_…` |
 | `GitLabToken()` | `glpat-…`, `gldt-…`, `glrt-…`, `glrtr-…`, `glcbt-…`, `glptt-…`, `glft-…`, `glimt-…`, `glagent-…`, `gloas-…`, `glsoat-…`, `glffct-…` |
 | `GoogleAPIKey()` | `AIza…` |
+| `GrafanaServiceAccountToken()` | `glsa_…` |
 | `HashiCorpVaultToken()` | `hvs.…`, `hvb.…`, `hvr.…` |
 | `JWT()` | JSON Web Tokens |
 | `LinearAPIKey()` | `lin_api_…` |
