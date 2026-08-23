@@ -57,7 +57,7 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `FuzzSlackToken_matchesReference`, `FuzzGitLabToken_matchesReference`,
   `FuzzGoogleAPIKey_matchesReference`, `FuzzOpenAIAPIKey_matchesReference`,
   `FuzzAnthropicAPIKey_matchesReference`, `FuzzStripeAPIKey_matchesReference`,
-  `FuzzPyPIAPIToken_matchesReference`, `FuzzNPMToken_matchesReference`,
+  `FuzzPyPIAPIToken_matchesReference`, `FuzzNPMAccessToken_matchesReference`,
   `FuzzSendGridAPIKey_matchesReference`,
   `FuzzSentryAuthToken_matchesReference`, `FuzzLinearAPIKey_matchesReference`,
   `FuzzNotionAPIToken_matchesReference`,
@@ -148,8 +148,8 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   (`builtin_openai_api_key_test.go`), `referenceAnthropicAPIKeyFind`
   (`builtin_anthropic_api_key_test.go`), `referenceStripeAPIKeyFind`
   (`builtin_stripe_api_key_test.go`), `referencePyPIAPITokenFind`
-  (`builtin_pypi_api_token_test.go`), `referenceNPMTokenFind`
-  (`builtin_npm_token_test.go`), `referenceSendGridAPIKeyFind`
+  (`builtin_pypi_api_token_test.go`), `referenceNPMAccessTokenFind`
+  (`builtin_npm_access_token_test.go`), `referenceSendGridAPIKeyFind`
   (`builtin_sendgrid_api_key_test.go`), `referenceSentryAuthTokenFind`
   (`builtin_sentry_auth_token_test.go`), `referenceLinearAPIKeyFind`
   (`builtin_linear_api_key_test.go`), `referenceNotionAPITokenFind`
@@ -286,56 +286,55 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   pattern variable is the rationale for the scan under it and opens on that
   rather than on the variable, which is why the rule is about functions alone.
 - `Pattern` and `Redactor` implementations must be safe for concurrent use.
-- Every built-in scan advances a byte along whether the candidate became a
-  value or not rather than consuming a match, and in all but one of them that
-  is because a value can begin inside the one before it. What the byte is
-  measured from is the start of the candidate in all but two: the Stripe scan
-  and the Notion scan each measure from the anchor they searched for, and each
-  says why in its own file. A GitHub body and a JWT signature are read as far
-  as their alphabet runs, so either swallows the opening of a credential
-  written straight after it, as does an OpenAI key, whose run reaches to the
-  end of the alphabet behind its marker; an AWS access key ID, a Google API key
-  and a SendGrid key are read to a fixed count and swallow nothing, but each
-  can still be written inside the one before it — the `A` closing `ASIA` opens
-  the `AKIA` three characters along, `AIza` is four characters a key's own body
-  may be written with, `sk-` is three of an OpenAI run's own, `sk-ant-` is
-  seven of an Anthropic body's, `pypi-AgE` is eight of a PyPI token body's and
-  `SG.` is two characters a SendGrid segment is written with followed by the
-  dot such a key already carries between its segments, so a secret closing with
-  `SG` opens a candidate two characters before its own key ends. An Anthropic
-  key and a PyPI token are read to the end of their run as an OpenAI key is, so
-  each swallows what is written straight after it too. An npm token is read to
-  the end of its run as well, and only the three letters in front of its
-  underscore belong to that run, so a token begins three characters before the
-  one in front of it ends rather than anywhere inside it. A Sentry token is
-  read to a fixed count too, and nests for the reason a SendGrid key does: the
-  six characters in front of the underscore its prefix closes with are ones a
-  Sentry organization payload is written with, and that underscore is the one
-  such a token already carries between its payload and its secret, so a payload
-  closing with `sntrys` or `sntryu` opens a candidate whose own body begins
-  where the first token's secret does. A Linear API key is read to the end of
-  its run as an npm token is, and nests as one does: `lin_api_` opens with
-  three characters a body may be written with and closes with an underscore no
-  body holds, so a key begins three characters before the one in front of it
-  ends and nowhere else inside it. A Notion token is read to a fixed count and
-  swallows nothing too, and the `ntn` and `secret` in front of either of its
-  prefixes' underscores are characters a body is written with, so a body
-  closing with one of them hands the underscore written after the token to a
-  candidate three or six characters before that token ends. A HashiCorp Vault
-  token is read to the end of its run as a Linear key is, and nests as one
-  does: the `hv` a prefix opens with and the letter naming its kind are three
-  characters a body may be written with, and the dot the prefix closes with is
-  none, so a token begins three characters before the one in front of it ends
-  and nowhere else inside it. A Grafana service account token is read to a
-  fixed count and swallows nothing either, and nests for the reason a Sentry
-  token does: `glsa` is four characters a secret is written with and the
-  underscore behind them is the one such a token already carries between its
-  secret and its checksum, so a secret whose last four characters are `glsa`
-  opens a candidate four characters before that secret ends and thirteen before
-  the token does. Consuming a match would step over such a value and leave it
-  in the output whole. The cost is that a value nested in another — a JWT
-  payload that is itself a header — is located too; the spans overlap and
-  `Masker.locate` resolves them.
+- Every built-in scan advances a byte along whether the candidate became a value
+  or not rather than consuming a match, and in all but one of them that is
+  because a value can begin inside the one before it. What the byte is measured
+  from is the start of the candidate in all but two: the Stripe scan and the
+  Notion scan each measure from the anchor they searched for, and each says why
+  in its own file. A GitHub body and a JWT signature are read as far as their
+  alphabet runs, so either swallows the opening of a credential written straight
+  after it, as does an OpenAI key, whose run reaches to the end of the alphabet
+  behind its marker; an AWS access key ID, a Google API key and a SendGrid key
+  are read to a fixed count and swallow nothing, but each can still be written
+  inside the one before it — the `A` closing `ASIA` opens the `AKIA` three
+  characters along, `AIza` is four characters a key's own body may be written
+  with, `sk-` is three of an OpenAI run's own, `sk-ant-` is seven of an
+  Anthropic body's, `pypi-AgE` is eight of a PyPI token body's and `SG.` is two
+  characters a SendGrid segment is written with followed by the dot such a key
+  already carries between its segments, so a secret closing with `SG` opens a
+  candidate two characters before its own key ends. An Anthropic key and a PyPI
+  token are read to the end of their run as an OpenAI key is, so each swallows
+  what is written straight after it too. An npm access token is read to the end
+  of its run as well, and only the three letters in front of its underscore
+  belong to that run, so a token begins three characters before the one in front
+  of it ends rather than anywhere inside it. A Sentry token is read to a fixed
+  count too, and nests for the reason a SendGrid key does: the six characters in
+  front of the underscore its prefix closes with are ones a Sentry organization
+  payload is written with, and that underscore is the one such a token already
+  carries between its payload and its secret, so a payload closing with `sntrys`
+  or `sntryu` opens a candidate whose own body begins where the first token's
+  secret does. A Linear API key is read to the end of its run as an npm access
+  token is, and nests as one does: `lin_api_` opens with three characters a body
+  may be written with and closes with an underscore no body holds, so a key
+  begins three characters before the one in front of it ends and nowhere else
+  inside it. A Notion token is read to a fixed count and swallows nothing too,
+  and the `ntn` and `secret` in front of either of its prefixes' underscores are
+  characters a body is written with, so a body closing with one of them hands
+  the underscore written after the token to a candidate three or six characters
+  before that token ends. A HashiCorp Vault token is read to the end of its run
+  as a Linear key is, and nests as one does: the `hv` a prefix opens with and
+  the letter naming its kind are three characters a body may be written with,
+  and the dot the prefix closes with is none, so a token begins three characters
+  before the one in front of it ends and nowhere else inside it. A Grafana
+  service account token is read to a fixed count and swallows nothing either,
+  and nests for the reason a Sentry token does: `glsa` is four characters a
+  secret is written with and the underscore behind them is the one such a token
+  already carries between its secret and its checksum, so a secret whose last
+  four characters are `glsa` opens a candidate four characters before that
+  secret ends and thirteen before the token does. Consuming a match would step
+  over such a value and leave it in the output whole. The cost is that a value
+  nested in another — a JWT payload that is itself a header — is located too;
+  the spans overlap and `Masker.locate` resolves them.
 - The Stripe scan is the exception and states why in its own file: a key begins
   only where no letter and no digit stands in front of it, and everything a
   span covers is one or the other but for the underscores of its prefix, so no
@@ -385,10 +384,10 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   reads that same underscore and reads it as the anchor itself rather than as
   what ends a body, which is what lets one search find two prefixes sharing no
   other character; what bounds it is still its count.
-  `Test_StripeAPIKey_scanIsLinear`, `Test_NPMToken_scanIsLinear`,
+  `Test_StripeAPIKey_scanIsLinear`, `Test_NPMAccessToken_scanIsLinear`,
   `Test_SentryAuthToken_scanIsLinear`, `Test_LinearAPIKey_scanIsLinear` and
   `Test_HashiCorpVaultToken_scanIsLinear` drive the inputs that would find it
-  wrong, and `Test_npmTokenPrefix_runsDoNotOverlap`,
+  wrong, and `Test_npmAccessTokenPrefix_runsDoNotOverlap`,
   `Test_sentryAuthTokenSeparator_runsDoNotOverlap`,
   `Test_linearAPIKeyPrefix_runsDoNotOverlap` and
   `Test_hashiCorpVaultTokenSeparator_runsDoNotOverlap` hold those four prefixes

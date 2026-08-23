@@ -80,7 +80,7 @@ to move with it: no `out` can contradict a name.
 `builtin_grafana_service_account_token.txt`,
 `builtin_hashicorp_vault_token.txt`,
 `builtin_jwt.txt`, `builtin_linear_api_key.txt`,
-`builtin_notion_api_token.txt`, `builtin_npm_token.txt`,
+`builtin_notion_api_token.txt`, `builtin_npm_access_token.txt`,
 `builtin_openai_api_key.txt`, `builtin_pypi_api_token.txt`,
 `builtin_sendgrid_api_key.txt`, `builtin_sentry_auth_token.txt`,
 `builtin_slack_token.txt` and `builtin_stripe_api_key.txt` (one pattern each),

@@ -168,16 +168,16 @@ var builtinPatterns = []struct {
 		benchmarks: notionAPITokenFindBenchmarks,
 	},
 	{
-		name:    "npm-token",
-		pattern: NPMToken,
-		ref:     referenceNPMTokenFind,
+		name:    "npm-access-token",
+		pattern: NPMAccessToken,
+		ref:     referenceNPMAccessTokenFind,
 		samples: []string{
 			"NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz",
 			"npm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 			"npm_0123456789abcdefghijklmnopqrstuvwxyz0",
 			"npm_0123456789abcdefghijklmnopqrstuvwnpm_0123456789abcdefghijklmnopqrstuvwxyz",
 		},
-		benchmarks: npmTokenFindBenchmarks,
+		benchmarks: npmAccessTokenFindBenchmarks,
 	},
 	{
 		name:    "openai-api-key",

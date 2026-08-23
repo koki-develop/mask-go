@@ -7,7 +7,7 @@
 # the case does not matter and in uppercase where the case is what a case is
 # about: base62 holds the letters of both, so either spelling is a body.
 
-patterns: npm-token
+patterns: npm-access-token
 
 # The one prefix npm has issued a token of this format with. There is a single
 # kind of string here rather than a table of them, as the GitLab and Slack files
@@ -17,23 +17,23 @@ patterns: npm-token
 
 case: a token in an environment assignment
 in:   NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  NPM_TOKEN=«npm-token»
+out:  NPM_TOKEN=«npm-access-token»
 
 case: a token in an npmrc
 in:   //registry.npmjs.org/:_authToken=npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  //registry.npmjs.org/:_authToken=«npm-token»
+out:  //registry.npmjs.org/:_authToken=«npm-access-token»
 
 case: a token in the authorization header a request to the registry carries
 in:   Authorization: Bearer npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  Authorization: Bearer «npm-token»
+out:  Authorization: Bearer «npm-access-token»
 
 case: a token on a command line
 in:   npm config set //registry.npmjs.org/:_authToken npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  npm config set //registry.npmjs.org/:_authToken «npm-token»
+out:  npm config set //registry.npmjs.org/:_authToken «npm-access-token»
 
 case: a token in a workflow environment block
 in:   env:\n  NODE_AUTH_TOKEN: npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  env:\n  NODE_AUTH_TOKEN: «npm-token»
+out:  env:\n  NODE_AUTH_TOKEN: «npm-access-token»
 
 # The alphabet the thirty-six characters are written in. It is base62 — the
 # letters of both cases and the digits — which is what both rulesets stating a
@@ -43,7 +43,7 @@ out:  env:\n  NODE_AUTH_TOKEN: «npm-token»
 
 case: a body written in capitals
 in:   npm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-out:  «npm-token»
+out:  «npm-access-token»
 
 case: a body carrying a hyphen
 in:   npm_0123456789abcdef-ghijklmnopqrstuvwxyz
@@ -65,7 +65,7 @@ out:  npm_0123456789abcdef_ghijklmnopqrstuvwxyz
 
 case: a body of thirty-six characters is a token
 in:   npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «npm-token»
+out:  «npm-access-token»
 
 case: a body of thirty-five characters is not
 in:   npm_0123456789abcdefghijklmnopqrstuvwxy
@@ -73,7 +73,7 @@ out:  npm_0123456789abcdefghijklmnopqrstuvwxy
 
 case: an alphabet run longer than the floor is a token to the end of it
 in:   npm_0123456789abcdefghijklmnopqrstuvwxyz0
-out:  «npm-token»
+out:  «npm-access-token»
 
 # What a token may be written against. The prefix is the whole of the anchor and
 # there is no boundary on either side of it, so a token keeps its span whatever
@@ -85,27 +85,27 @@ out:  «npm-token»
 
 case: a token after an underscore
 in:   NPM_TOKEN_npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  NPM_TOKEN_«npm-token»
+out:  NPM_TOKEN_«npm-access-token»
 
 case: a token after a letter
 in:   xnpm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  x«npm-token»
+out:  x«npm-access-token»
 
 case: a word written against a token
 in:   npm_0123456789abcdefghijklmnopqrstuvwxyzsuffix
-out:  «npm-token»
+out:  «npm-access-token»
 
 case: a hyphenated word written against a token
 in:   npm_0123456789abcdefghijklmnopqrstuvwxyz-suffix
-out:  «npm-token»-suffix
+out:  «npm-access-token»-suffix
 
 case: an underscored word written against a token
 in:   npm_0123456789abcdefghijklmnopqrstuvwxyz_suffix
-out:  «npm-token»_suffix
+out:  «npm-access-token»_suffix
 
 case: a token at the end of a sentence
 in:   the token is npm_0123456789abcdefghijklmnopqrstuvwxyz.
-out:  the token is «npm-token».
+out:  the token is «npm-access-token».
 
 # Two tokens written together. The three letters the prefix opens with belong to
 # the alphabet a body is written in, so a body may close with npm and the
@@ -116,15 +116,15 @@ out:  the token is «npm-token».
 
 case: a token beginning inside the token before it
 in:   npm_0123456789abcdefghijklmnopqrstuvwnpm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «npm-token»
+out:  «npm-access-token»
 
 case: two tokens with nothing between them
 in:   npm_0123456789abcdefghijklmnopqrstuvwxyznpm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-out:  «npm-token»
+out:  «npm-access-token»
 
 case: two tokens separated by a space
 in:   npm_0123456789abcdefghijklmnopqrstuvwxyz npm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-out:  «npm-token» «npm-token»
+out:  «npm-access-token» «npm-access-token»
 
 # What this pattern redacts that nobody issued. The prefix carries an
 # underscore, which standard base64 writes nowhere, so only a base64url encoding
@@ -139,11 +139,11 @@ out:  «npm-token» «npm-token»
 
 case: the prefix inside a longer run of base64url
 in:   payload=zzzznpm_0123456789abcdefghijklmnopqrstuvwxyzzzzz
-out:  payload=zzzz«npm-token»
+out:  payload=zzzz«npm-access-token»
 
 case: the prefix where a signature stands
 in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzznpm_0123456789abcdefghijklmnopqrstuvwxyzzzzz
-out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«npm-token»
+out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«npm-access-token»
 
 # A digest written behind the prefix, which is the one over-match here that
 # takes a value a reader had a use for. Hexadecimal digits are base62 and a
@@ -158,11 +158,11 @@ out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«npm-token»
 
 case: a sha1 behind the prefix
 in:   npm_0123456789abcdef0123456789abcdef01234567
-out:  «npm-token»
+out:  «npm-access-token»
 
 case: a sha256 in a cache key
 in:   key: npm_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  key: «npm-token»
+out:  key: «npm-access-token»
 
 case: an md5 behind the prefix, four characters short of a body
 in:   npm_0123456789abcdef0123456789abcdef
