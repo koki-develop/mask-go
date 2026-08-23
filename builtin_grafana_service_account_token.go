@@ -19,17 +19,18 @@ import "strings"
 func GrafanaServiceAccountToken() Pattern { return grafanaServiceAccountToken }
 
 // What Grafana states about this format it states in the code that writes it,
-// which no other pattern here can say of its own. Grafana is published under
-// AGPL and the generator is pkg/components/satokengen: a prefixed key is the
-// two letters gl, a service identifier, an underscore, a secret and an
-// underscore and a checksum, the secret is util.GetRandomString(32) and the
-// checksum is the CRC32 of everything in front of it, four bytes little-endian,
-// written out by encoding/hex. The service identifier a service account token
-// carries is the constant "sa". So the prefix, the alphabet, both counts and
-// the separator between them are read off the thing that produces them rather
-// than off the values it produced, which is what the Slack, GitLab, Google,
-// OpenAI, Anthropic, Stripe, PyPI, npm, Sentry, Linear and Notion patterns each
-// had to do without.
+// as the Vault and RubyGems formats are stated in theirs. Grafana is published
+// under AGPL and the generator is pkg/components/satokengen: a
+// prefixed key is the two letters gl, a service identifier, an underscore, a
+// secret and an underscore and a checksum, the secret is
+// util.GetRandomString(32) and the checksum is the CRC32 of everything in
+// front of it, four bytes little-endian, written out by encoding/hex. The
+// service identifier a service account token carries is the constant "sa". So
+// the prefix, the alphabet, both counts and the separator between them are
+// read off the thing that produces them rather than off the values it
+// produced, which is what the Slack, GitLab, Google, OpenAI, Anthropic,
+// Stripe, PyPI, npm, Sentry, Linear and Notion patterns each had to do
+// without.
 //
 // The documentation agrees and is the second source rather than the first. The
 // service account pages print glsa_iNValIdinValiDinvalidinvalidinva_5b582697,
@@ -309,9 +310,14 @@ func isGrafanaServiceAccountTokenBody(s string) bool {
 // digit, which is what the checksum is written in.
 //
 // It stays in this file rather than joining the byte tests in builtin_scan.go,
-// which hold what more than one scan reads: this is the only scan here reading
-// a hexadecimal run, and a shared test named for the class rather than for the
-// checksum would invite the next pattern to read a digest with it.
+// which hold what more than one scan reads. The RubyGems scan reads a
+// hexadecimal run too and keeps its own test for it, and the two classes are
+// not the same one: this is a checksum standing behind a match a prefix and a
+// secret have already decided, so it admits either case, where that is a whole
+// body and admits lowercase alone. A shared test named for the class rather
+// than for what reads it would have to be one of the two, would silently be the
+// wrong answer for the other, and would invite the next pattern to read a
+// digest with it.
 //
 // Either case is admitted where the generator writes lowercase alone, for the
 // reason the rationale above gives.

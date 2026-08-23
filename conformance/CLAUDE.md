@@ -82,8 +82,9 @@ to move with it: no `out` can contradict a name.
 `builtin_jwt.txt`, `builtin_linear_api_key.txt`,
 `builtin_notion_api_token.txt`, `builtin_npm_access_token.txt`,
 `builtin_openai_api_key.txt`, `builtin_pypi_api_token.txt`,
-`builtin_sendgrid_api_key.txt`, `builtin_sentry_auth_token.txt`,
-`builtin_slack_token.txt`, `builtin_stripe_api_key.txt` and
+`builtin_rubygems_api_key.txt`, `builtin_sendgrid_api_key.txt`,
+`builtin_sentry_auth_token.txt`, `builtin_slack_token.txt`,
+`builtin_stripe_api_key.txt` and
 `builtin_supabase_personal_access_token.txt` (one pattern each),
 `builtins_together.txt` (all of them at once, and the values two of them read
 differently), `custom_patterns.txt` (`MustRegexp`, `NewPattern`, and no pattern

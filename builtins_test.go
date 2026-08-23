@@ -207,6 +207,18 @@ var builtinPatterns = []struct {
 		benchmarks: pypiAPITokenFindBenchmarks,
 	},
 	{
+		name:    "rubygems-api-key",
+		pattern: RubyGemsAPIKey,
+		ref:     referenceRubyGemsAPIKeyFind,
+		samples: []string{
+			"RUBYGEMS_API_KEY=rubygems_0123456789abcdef0123456789abcdef0123456789abcdef",
+			"rubygems_abcdef0123456789abcdef0123456789abcdef0123456789",
+			"rubygems_rubygems_0123456789abcdef0123456789abcdef0123456789abcdef",
+			"rubygems_0123456789abcdef0123456789abcdef0123456789abcdefrubygems_0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		benchmarks: rubyGemsAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "sendgrid-api-key",
 		pattern: SendGridAPIKey,
 		ref:     referenceSendGridAPIKeyFind,

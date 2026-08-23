@@ -119,13 +119,14 @@ func SupabasePersonalAccessToken() Pattern { return supabasePersonalAccessToken 
 // be left in the output whole rather than trimmed.
 //
 // The scan resumes one byte past the start of a candidate whether it became a
-// token or not, and unlike every other scan here that is not because a token can
-// begin inside the one before it. None can, and the reason is one character: the
-// letter the prefix opens with stands in a token exactly once, at its first
-// character. The prefix carries one, oauth_ carries none, and a body is written
-// in hexadecimal digits, which carry none either — so the anchor cannot be found
-// inside a span, and the spans this scan reports never overlap one another. That
-// puts it with the Stripe scan and nowhere else, and
+// token or not, and unlike most of the scans here that is not because a token
+// can begin inside the one before it. None can, and the reason is one
+// character: the letter the prefix opens with stands in a token exactly once,
+// at its first character. The prefix carries one, oauth_ carries none, and a
+// body is written in hexadecimal digits, which carry none either — so the
+// anchor cannot be found inside a span, and the spans this scan reports never
+// overlap one another. That puts it with the Stripe and RubyGems scans and
+// nowhere else, and
 // Test_SupabasePersonalAccessToken_noTokenBeginsInsideAnother holds the claim.
 //
 // What the resumption is for is the candidate that failed. sbp_sbp_ opens one
