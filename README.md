@@ -45,16 +45,6 @@ returns every pattern in the table below, and grows as patterns are added:
 | `StripeAPIKey()` | `sk_live_…`, `sk_test_…`, `rk_live_…`, `rk_test_…`, `pk_live_…`, `pk_test_…`, `sk_org_…` |
 | `SupabasePersonalAccessToken()` | `sbp_…`, `sbp_oauth_…` |
 
-One of these is worth knowing about before masking source code or stack traces
-with the whole set. Vault documents its token as a prefix and "24 or more"
-characters, and `HashiCorpVaultToken()` reads exactly that, so any name written
-in dot-separated segments is redacted where the segment behind an `hvs`, `hvb`
-or `hvr` runs to twenty-four characters — a hostname such as
-`hvs.example-host-name-of-that-length`, and a method call on a receiver named
-`hvs`, both go. Its doc comment says so too, and the rationale beside the
-scanner weighs the tighter grammars that were available against the truncated
-tokens they would stop redacting.
-
 `MustRegexp` builds a pattern from a regular expression:
 
 ```go
