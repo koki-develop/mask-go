@@ -508,10 +508,11 @@ func Test_StripeAPIKey_insideASnakeCaseName(t *testing.T) {
 }
 
 func Test_StripeAPIKey_noKeyBeginsInsideAnother(t *testing.T) {
-	// The claim builtin_stripe_api_key.go makes that no other built-in can: the
-	// spans of this pattern never overlap one another, because a key begins only
-	// where no letter and no digit stands in front of it and everything a span
-	// covers is one or the other but for the underscores of the prefix — none of
+	// The claim builtin_stripe_api_key.go makes that only the RubyGems,
+	// Supabase and OpenRouter patterns make beside it: the spans of this
+	// pattern never overlap one another, because a key begins only where no
+	// letter and no digit stands in front of it and everything a span covers
+	// is one or the other but for the underscores of the prefix — none of
 	// which opens a prefix of its own.
 	//
 	// It is what the scan resuming past a match would rest on, were it to

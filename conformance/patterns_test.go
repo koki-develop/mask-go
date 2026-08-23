@@ -75,6 +75,7 @@ var patternSets = map[string][]mask.Pattern{
 	"notion-api-token":               {mask.NotionAPIToken()},
 	"npm-access-token":               {mask.NPMAccessToken()},
 	"openai-api-key":                 {mask.OpenAIAPIKey()},
+	"openrouter-api-key":             {mask.OpenRouterAPIKey()},
 	"pypi-api-token":                 {mask.PyPIAPIToken()},
 	"rubygems-api-key":               {mask.RubyGemsAPIKey()},
 	"sendgrid-api-key":               {mask.SendGridAPIKey()},

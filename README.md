@@ -36,6 +36,7 @@ returns every pattern in the table below, and grows as patterns are added:
 | `NotionAPIToken()` | `ntn_…`, `secret_…` |
 | `NPMAccessToken()` | `npm_…` |
 | `OpenAIAPIKey()` | `sk-proj-…`, `sk-svcacct-…`, `sk-admin-…`, `sk-…` |
+| `OpenRouterAPIKey()` | `sk-or-v1-…` |
 | `PyPIAPIToken()` | `pypi-…` |
 | `RubyGemsAPIKey()` | `rubygems_…` |
 | `SendGridAPIKey()` | `SG.…` |

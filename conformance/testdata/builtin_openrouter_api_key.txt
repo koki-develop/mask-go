@@ -1,0 +1,211 @@
+# What OpenRouter API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is: the body is that run written four times, which is the
+# sixty-four hexadecimal digits the pattern reads it at. The count is not an
+# abbreviation — a body shortened for readability would leave a case holding no
+# key at all — and its total with the prefix is the seventy-three characters the
+# example in OpenRouter's own documentation is. Where the case is what a case is
+# about the same run is written in uppercase, since the body is hexadecimal and
+# holds the letters of either case.
+
+patterns: openrouter-api-key
+
+# A key as it is written. One string serves every model OpenRouter routes to,
+# so what is below differs in where the key stands rather than in what kind it
+# is: the response it is first read out of, which OpenRouter says is the only
+# place a key is ever shown whole, and the bearer header it is sent in.
+
+case: a key in an environment assignment
+in:   OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  OPENROUTER_API_KEY=«openrouter-api-key»
+
+case: a key in the response that first reports it
+in:   {"key":"sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","data":{"label":"sk-or-v1-abc...123"}}
+out:  {"key":"«openrouter-api-key»","data":{"label":"sk-or-v1-abc...123"}}
+
+case: a key in a bearer token header
+in:   Authorization: Bearer sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  Authorization: Bearer «openrouter-api-key»
+
+case: a key on a command line
+in:   curl -H "Authorization: Bearer sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" https://openrouter.ai/api/v1/key
+out:  curl -H "Authorization: Bearer «openrouter-api-key»" https://openrouter.ai/api/v1/key
+
+case: a key in a configuration environment block
+in:   "env": {"OPENROUTER_API_KEY": "sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}
+out:  "env": {"OPENROUTER_API_KEY": "«openrouter-api-key»"}
+
+case: a key at the end of a sentence
+in:   the key is sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.
+out:  the key is «openrouter-api-key».
+
+# The alphabet. A body is hexadecimal, so the letters it may carry stop at f and
+# neither the hyphen nor the underscore may stand inside one, however many
+# hyphens the prefix is written with. Either case is read in the body, which the
+# pattern's own file weighs: every key OpenRouter has printed is lowercase, and
+# a scan asking for lowercase alone would locate nothing of a body the day
+# OpenRouter wrote one in uppercase. The prefix is read in one case, and the
+# case named "an uppercase prefix" below is what that comes to.
+
+case: an uppercase body
+in:   sk-or-v1-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:  «openrouter-api-key»
+
+case: a letter past f at the end of the body
+in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeg
+out:  sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeg
+
+case: a hyphen inside the body
+in:   sk-or-v1-0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcdef
+out:  sk-or-v1-0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcdef
+
+case: an underscore inside the body
+in:   sk-or-v1-0123456789abcdef_123456789abcdef0123456789abcdef0123456789abcdef
+out:  sk-or-v1-0123456789abcdef_123456789abcdef0123456789abcdef0123456789abcdef
+
+# The length. Sixty-four is what OpenRouter's own example carries and what all
+# three rulesets reading this format ask for, and it is read as a count and not
+# as a floor, like the AWS access key ID, the GitLab token, the Google API key,
+# the SendGrid key, the Sentry token, the Notion token, the Grafana token, the
+# Supabase token and the RubyGems key, and unlike the OpenAI, Anthropic,
+# Stripe, PyPI, npm and Linear bodies. What makes that wager small here is the
+# version the prefix carries: a key of some other shape is a key behind some
+# other prefix, so the count goes stale no sooner than sk-or-v1- does.
+
+case: a body of sixty-four characters is a key
+in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «openrouter-api-key»
+
+case: a body one character short is not
+in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:  sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case: a body run one character longer is a key and the character after it
+in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0
+out:  «openrouter-api-key»0
+
+# What a key may be written against. There is no boundary on either side of the
+# prefix — which is a disagreement with all three rulesets, since each of them
+# writes one at both ends — so a key keeps its span whatever word character it
+# abuts, and what stands past the seventy-third character stays where it was
+# written. The first two cases are what a boundary in front would cost. The
+# third is what it would buy, and it is all it would buy: the prefix closes with
+# a hyphen rather than with a letter, so no snake_case name reaches it and only
+# a hyphenated word spelled with these segments in this order does.
+
+case: a key after an underscore
+in:   OPENROUTER_API_KEY_sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  OPENROUTER_API_KEY_«openrouter-api-key»
+
+case: a key after a letter
+in:   xsk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  x«openrouter-api-key»
+
+case: a hyphenated word closing on the prefix
+in:   risk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  ri«openrouter-api-key»
+
+case: a word written against a key
+in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsuffix
+out:  «openrouter-api-key»suffix
+
+case: a hyphenated word written against a key
+in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef-suffix
+out:  «openrouter-api-key»-suffix
+
+case: an underscored word written against a key
+in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef_suffix
+out:  «openrouter-api-key»_suffix
+
+# Two keys written together. No key can be written inside another, which only
+# the Stripe, Supabase and RubyGems patterns say beside this one: a candidate
+# begins where an s begins, and the only s a span covers is the one its prefix
+# opens with — the rest of the prefix is k, o, r, v, a digit and three hyphens,
+# and a body is hexadecimal. So the spans here never overlap, and the scan may
+# resume at the body of a candidate rather than a byte past its start. The
+# second case is that resumption doing its work: the outer candidate is turned
+# away at the first character of its body, which is the s the inner prefix
+# opens with, and the inner key is found where it stands.
+
+case: two keys with nothing between them
+in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsk-or-v1-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:  «openrouter-api-key»«openrouter-api-key»
+
+case: a candidate whose body opens with a prefix
+in:   sk-or-v1-sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  sk-or-v1-«openrouter-api-key»
+
+case: two keys separated by a space
+in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk-or-v1-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:  «openrouter-api-key» «openrouter-api-key»
+
+# A digest written behind the prefix, which every prefix in this package leaves
+# as a collision and which this one pays rather than avoids. Sixty-four
+# hexadecimal digits are a SHA-256, so the shape this pattern reads and the
+# shape a digest is are the same shape — where the Grafana format has an
+# underscore dividing its secret from its checksum to turn a digest away with,
+# this one has nothing. Redacting it is right rather than a fault in it: a key
+# OpenRouter issued is sixty-four hexadecimal digits behind this prefix, so a
+# scan declining a digest behind this prefix declines every key there is. The
+# shorter digests are turned away by the count, and a digest on its own carries
+# no hyphen and so holds no prefix to be found at.
+
+case: a sha256 behind the prefix
+in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «openrouter-api-key»
+
+case: a sha1 behind the prefix
+in:   sk-or-v1-0123456789abcdef0123456789abcdef01234567
+out:  sk-or-v1-0123456789abcdef0123456789abcdef01234567
+
+case: an md5 behind the prefix
+in:   sk-or-v1-0123456789abcdef0123456789abcdef
+out:  sk-or-v1-0123456789abcdef0123456789abcdef
+
+case: a sha256 in a cache key
+in:   key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# And what this pattern leaves alone. First the prefix: the case OpenRouter
+# writes it in, the version written later, the version left out, and the hyphens
+# written as underscores. Then a body of the right count with nothing in front
+# of it, the prefix of an OpenAI project key in front of one, a key a space has
+# broken, and the prose and the log line no pattern here has anything to find
+# in.
+
+case: an uppercase prefix
+in:   SK-OR-V1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  SK-OR-V1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case: a later version of the prefix
+in:   sk-or-v2-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  sk-or-v2-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case: the version left out of the prefix
+in:   sk-or-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  sk-or-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case: underscores where the prefix carries its hyphens
+in:   sk_or_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  sk_or_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case: a body of the right count opening with no prefix
+in:   xx-xx-xx-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  xx-xx-xx-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case: an openai prefix in front of a body of the right count
+in:   sk-proj-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  sk-proj-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case: a key broken by a space
+in:   sk-or-v1-0123456789abcdef0123456789 abcdef0123456789abcdef0123456789abcdef
+out:  sk-or-v1-0123456789abcdef0123456789 abcdef0123456789abcdef0123456789abcdef
+
+case: prose
+in:   there is no credential in this sentence
+out:  there is no credential in this sentence
+
+case: a log line
+in:   time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://openrouter.ai/api/v1/chat/completions
+out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://openrouter.ai/api/v1/chat/completions

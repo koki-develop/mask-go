@@ -148,19 +148,19 @@ func StripeAPIKey() Pattern { return stripeAPIKey }
 // on into the text after it, and since the span already reaches the end of the
 // run, that is every key with a letter or a digit written against it.
 //
-// No key can be written inside another, which of the built-ins beside this one
-// the RubyGems and Supabase patterns can say as well. The rest resume a byte
-// past a match because a value can begin inside the span of the one in front
-// of it; here none can, and in those two for a reason of their own — the
-// letter each prefix opens with stands in a value exactly once, at its first
-// character. A key begins only where no letter and no digit stands in front of
-// it, and everything a span covers is one or the other except the underscores
-// of the prefix — and none of the positions those underscores open opens a
-// prefix of its own, since what stands at each of them is the rest of a mode
-// or of the organization scope. The body cannot open one either: a prefix
-// wants an underscore at its third character, and the third character of a
-// body is a letter or a digit like the rest of it. So the spans of this
-// pattern never overlap one another.
+// No key can be written inside another, which of the built-ins beside this
+// one the RubyGems, Supabase and OpenRouter patterns can say as well. The
+// rest resume a byte past a match because a value can begin inside the span
+// of the one in front of it; here none can, and in those three for a reason
+// of their own — the letter each prefix opens with stands in a value exactly
+// once, at its first character. A key begins only where no letter and no
+// digit stands in front of it, and everything a span covers is one or the
+// other except the underscores of the prefix — and none of the positions
+// those underscores open opens a prefix of its own, since what stands at each
+// of them is the rest of a mode or of the organization scope. The body cannot
+// open one either: a prefix wants an underscore at its third character, and
+// the third character of a body is a letter or a digit like the rest of it.
+// So the spans of this pattern never overlap one another.
 // Test_StripeAPIKey_noKeyBeginsInsideAnother drives every shape that would
 // find that wrong.
 //

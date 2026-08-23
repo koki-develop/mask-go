@@ -310,14 +310,16 @@ func isGrafanaServiceAccountTokenBody(s string) bool {
 // digit, which is what the checksum is written in.
 //
 // It stays in this file rather than joining the byte tests in builtin_scan.go,
-// which hold what more than one scan reads. The RubyGems scan reads a
-// hexadecimal run too and keeps its own test for it, and the two classes are
-// not the same one: this is a checksum standing behind a match a prefix and a
-// secret have already decided, so it admits either case, where that is a whole
-// body and admits lowercase alone. A shared test named for the class rather
-// than for what reads it would have to be one of the two, would silently be the
-// wrong answer for the other, and would invite the next pattern to read a
-// digest with it.
+// which hold what more than one scan reads. The RubyGems and OpenRouter scans
+// read a hexadecimal run too and each keeps a test of its own for it, and the
+// three are not one class: this is a checksum standing behind a match a prefix
+// and a secret have already decided, so it admits either case; a RubyGems body
+// is the whole of what stands behind its prefix and admits lowercase alone; an
+// OpenRouter body is the whole of what stands behind its prefix too and admits
+// either case, for the reason its own file gives. A shared test named for the
+// class rather than for what reads it would have to be one of the three, would
+// silently be the wrong answer for the others, and would invite the next
+// pattern to read a digest with it.
 //
 // Either case is admitted where the generator writes lowercase alone, for the
 // reason the rationale above gives.
