@@ -265,6 +265,18 @@ var builtinPatterns = []struct {
 		},
 		benchmarks: stripeAPIKeyFindBenchmarks,
 	},
+	{
+		name:    "supabase-personal-access-token",
+		pattern: SupabasePersonalAccessToken,
+		ref:     referenceSupabasePersonalAccessTokenFind,
+		samples: []string{
+			"SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567",
+			"sbp_oauth_0123456789abcdef0123456789abcdef01234567",
+			"sbp_0123456789abcdef0123456789abcdef01234567sbp_oauth_0123456789abcdef0123456789abcdef01234567",
+			"sbp_sbp_0123456789abcdef0123456789abcdef01234567",
+		},
+		benchmarks: supabasePersonalAccessTokenFindBenchmarks,
+	},
 }
 
 // noValueInputs is text no built-in pattern has anything to find in: ordinary
