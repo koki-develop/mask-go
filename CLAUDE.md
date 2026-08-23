@@ -63,15 +63,16 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `FuzzNotionAPIToken_matchesReference`,
   `FuzzHashiCorpVaultToken_matchesReference`,
   `FuzzGrafanaServiceAccountToken_matchesReference`,
-  `FuzzSupabasePersonalAccessToken_matchesReference` and
-  `FuzzRubyGemsAPIKey_matchesReference`. In `conformance`:
+  `FuzzSupabasePersonalAccessToken_matchesReference`,
+  `FuzzRubyGemsAPIKey_matchesReference` and
+  `FuzzOpenRouterAPIKey_matchesReference`. In `conformance`:
   `FuzzMask`, `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30
   seconds.
 - `go test -bench . -benchmem` — benchmarks. `BenchmarkMasker_Mask` drives
   every pattern at once through the public API, which is what a caller pays;
   `BenchmarkBuiltins` drives each scan alone under the name its pattern
   reports, and that is what a change to a scan is compared against, since a
-  regression in one is a nineteenth of what the first reports. `go test -bench
+  regression in one is a twentieth of what the first reports. `go test -bench
   Builtins/jwt -benchmem .` runs one of them.
 - `golangci-lint run` — lint (no config file; defaults).
 - `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
@@ -161,14 +162,15 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   (`builtin_grafana_service_account_token_test.go`) and
   `referenceSupabasePersonalAccessTokenFind`
   (`builtin_supabase_personal_access_token_test.go`) and
-  `referenceRubyGemsAPIKeyFind` (`builtin_rubygems_api_key_test.go`), plain
-  implementations of the same rules. The third, the fifth, the sixth, the
+  `referenceRubyGemsAPIKeyFind` (`builtin_rubygems_api_key_test.go`) and
+  `referenceOpenRouterAPIKeyFind` (`builtin_openrouter_api_key_test.go`),
+  plain implementations of the same rules. The third, the fifth, the sixth, the
   seventh, the eleventh, the twelfth, the fourteenth, the sixteenth, the
-  seventeenth, the eighteenth and the nineteenth are built on a regular
-  expression, and each tries it at every byte rather than handing it to
-  `FindAllStringIndex`. For all but the eighteenth and the nineteenth that is
-  because a value either scan locates can hold the start of the next one, so a
-  reference that resumed past a match would miss what the scan finds — an access
+  seventeenth, the eighteenth, the nineteenth and the twentieth are built on a
+  regular expression, and each tries it at every byte rather than handing it
+  to `FindAllStringIndex`. For all but the last three that is because a value
+  either scan locates can hold the start of the next one, so a reference that
+  resumed past a match would miss what the scan finds — an access
   key ID can begin three characters into the one before it, a GitLab body is
   written in an alphabet that holds every letter a GitLab prefix is, a Google
   API key's prefix and an OpenAI key's `sk-` are each written in the alphabet
@@ -189,21 +191,27 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   exactly once, so no key begins inside another there either. What asking at
   every byte buys in both is that the reference restates the scan's own
   resumption rather than a shorter rule that happens to agree with it. The
-  first, the second, the fourth, the eighth, the ninth, the tenth, the
-  thirteenth and the fifteenth are written out rather than built on a regular
-  expression, and all eight start afresh at every position — all but the ninth
-  for that same reason, the thirteenth because a Sentry organization payload is
-  written in an alphabet
-  holding every letter a Sentry prefix is, closed by the underscore that prefix
-  ends on, the fifteenth because the `ntn` and `secret` in front of a Notion
+  twentieth is a third of that kind — the `s` an OpenRouter prefix opens with
+  stands in a key exactly once — and asks at every byte for the ninth's reason
+  rather than for theirs: its scan resumes at the body of a candidate on the
+  strength of the claim, and a reference written to know nothing its scan
+  claims is one that would report a key nested in another where the scan would
+  not. The first, the second, the fourth, the eighth, the ninth, the tenth,
+  the thirteenth and the fifteenth are written out rather than built on a
+  regular expression, and all eight start afresh at every position — all but
+  the ninth for that same reason, the thirteenth because a Sentry organization
+  payload is written in an alphabet holding every letter a Sentry prefix is,
+  closed by the underscore that prefix ends on, the fifteenth because the
+  `ntn` and `secret` in front of a Notion
   prefix's underscore are characters a Notion body is written with, and the
   ninth because a reference is written to know nothing its scan claims, and what
-  the Stripe scan claims is that no key can begin inside another. The eighteenth
-  is built on an expression and asks at every byte for that same reason: no
-  RubyGems key can begin inside another either, and a reference is written to
-  know nothing its scan claims. What the first reads of a candidate — a decoded
-  JOSE header, a run divided into segments — is not what an expression states
-  compactly; the grammars of the second, the eighth and the tenth are, and they
+  the Stripe scan claims is that no key can begin inside another. The
+  nineteenth and the twentieth are built on an expression and ask at every
+  byte for that same reason: no RubyGems key and no OpenRouter key can begin
+  inside another either, and a reference is written to know nothing its scan
+  claims. What the first reads of a candidate — a decoded JOSE header, a run
+  divided into segments — is not what an expression states compactly; the
+  grammars of the second, the eighth and the tenth are, and they
   are written out anyway, because a floor spelled as a counted repetition costs
   an engine a machine as wide as the floor at every candidate, which left the
   fuzz targets of the second and the eighth wedged on a grown input instead of
@@ -261,9 +269,11 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   text for, where the fifteenth's alternation of two literals leaves it none.
   Nor does the nineteenth: its one count is exact, forty-eight, so the machine
   is forty-eight states wide and bounded, and `rubygems_` is the literal the
-  engine searches for. A reference spells the prefixes, the counts and the
-  character classes its scan reads out again rather than sharing the
-  declarations, so that the two can disagree and the fuzz target report it.
+  engine searches for. Nor does the twentieth: its one count is exact and is
+  sixty-four, and `sk-or-v1-` is the literal in front of it. A reference
+  spells the prefixes, the counts and the character classes its scan reads out
+  again rather than sharing the declarations, so that the two can disagree and
+  the fuzz target report it.
   `Test_references_shareNoDeclarationWithTheScans` (`source_test.go`) is what
   holds this: a reference reading the scan's own declaration moves with whatever
   the scan is changed to, its target then compares a rule with itself, and
@@ -309,55 +319,59 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   pattern variable is the rationale for the scan under it and opens on that
   rather than on the variable, which is why the rule is about functions alone.
 - `Pattern` and `Redactor` implementations must be safe for concurrent use.
-- Every built-in scan advances a byte along whether the candidate became a value
-  or not rather than consuming a match, and in all but three of them that is
-  because a value can begin inside the one before it. What the byte is measured
-  from is the start of the candidate in all but two: the Stripe scan and the
-  Notion scan each measure from the anchor they searched for, and each says why
-  in its own file. A GitHub body and a JWT signature are read as far as their
-  alphabet runs, so either swallows the opening of a credential written straight
-  after it, as does an OpenAI key, whose run reaches to the end of the alphabet
-  behind its marker; an AWS access key ID, a Google API key and a SendGrid key
-  are read to a fixed count and swallow nothing, but each can still be written
-  inside the one before it — the `A` closing `ASIA` opens the `AKIA` three
-  characters along, `AIza` is four characters a key's own body may be written
-  with, `sk-` is three of an OpenAI run's own, `sk-ant-` is seven of an
-  Anthropic body's, `pypi-AgE` is eight of a PyPI token body's and `SG.` is two
-  characters a SendGrid segment is written with followed by the dot such a key
-  already carries between its segments, so a secret closing with `SG` opens a
-  candidate two characters before its own key ends. An Anthropic key and a PyPI
-  token are read to the end of their run as an OpenAI key is, so each swallows
-  what is written straight after it too. An npm access token is read to the end
-  of its run as well, and only the three letters in front of its underscore
-  belong to that run, so a token begins three characters before the one in front
-  of it ends rather than anywhere inside it. A Sentry token is read to a fixed
-  count too, and nests for the reason a SendGrid key does: the six characters in
-  front of the underscore its prefix closes with are ones a Sentry organization
-  payload is written with, and that underscore is the one such a token already
-  carries between its payload and its secret, so a payload closing with `sntrys`
-  or `sntryu` opens a candidate whose own body begins where the first token's
-  secret does. A Linear API key is read to the end of its run as an npm access
-  token is, and nests as one does: `lin_api_` opens with three characters a body
-  may be written with and closes with an underscore no body holds, so a key
-  begins three characters before the one in front of it ends and nowhere else
-  inside it. A Notion token is read to a fixed count and swallows nothing too,
-  and the `ntn` and `secret` in front of either of its prefixes' underscores are
+- Every built-in scan advances whether the candidate became a value or not
+  rather than consuming a match. Nineteen of them advance a byte, and in all
+  but three of those nineteen that is because a value can begin inside the one
+  before it; the twentieth is the OpenRouter scan, which advances the width of
+  its prefix and has a bullet of its own below. What the step is measured from
+  is the start of the candidate in all but two: the Stripe scan and the Notion
+  scan each measure from the anchor they searched for, and each says why in
+  its own file. A GitHub body and a JWT signature are read as far as their
+  alphabet runs, so either swallows the opening of a credential written
+  straight after it, as does an OpenAI key, whose run reaches to the end of
+  the alphabet behind its marker; an AWS access key ID, a Google API key and a
+  SendGrid key are read to a fixed count and swallow nothing, but each can
+  still be written inside the one before it — the `A` closing `ASIA` opens the
+  `AKIA` three characters along, `AIza` is four characters a key's own body
+  may be written with, `sk-` is three of an OpenAI run's own, `sk- ant-` is
+  seven of an Anthropic body's, `pypi-AgE` is eight of a PyPI token body's and
+  `SG.` is two characters a SendGrid segment is written with followed by the
+  dot such a key already carries between its segments, so a secret closing
+  with `SG` opens a candidate two characters before its own key ends. An
+  Anthropic key and a PyPI token are read to the end of their run as an OpenAI
+  key is, so each swallows what is written straight after it too. An npm
+  access token is read to the end of its run as well, and only the three
+  letters in front of its underscore belong to that run, so a token begins
+  three characters before the one in front of it ends rather than anywhere
+  inside it. A Sentry token is read to a fixed count too, and nests for the
+  reason a SendGrid key does: the six characters in front of the underscore
+  its prefix closes with are ones a Sentry organization payload is written
+  with, and that underscore is the one such a token already carries between
+  its payload and its secret, so a payload closing with `sntrys` or `sntryu`
+  opens a candidate whose own body begins where the first token's secret does.
+  A Linear API key is read to the end of its run as an npm access token is,
+  and nests as one does: `lin_api_` opens with three characters a body may be
+  written with and closes with an underscore no body holds, so a key begins
+  three characters before the one in front of it ends and nowhere else inside
+  it. A Notion token is read to a fixed count and swallows nothing too, and
+  the `ntn` and `secret` in front of either of its prefixes' underscores are
   characters a body is written with, so a body closing with one of them hands
-  the underscore written after the token to a candidate three or six characters
-  before that token ends. A HashiCorp Vault token is read to the end of its run
-  as a Linear key is, and nests as one does: the `hv` a prefix opens with and
-  the letter naming its kind are three characters a body may be written with,
-  and the dot the prefix closes with is none, so a token begins three characters
-  before the one in front of it ends and nowhere else inside it. A Grafana
-  service account token is read to a fixed count and swallows nothing either,
-  and nests for the reason a Sentry token does: `glsa` is four characters a
-  secret is written with and the underscore behind them is the one such a token
-  already carries between its secret and its checksum, so a secret whose last
-  four characters are `glsa` opens a candidate four characters before that
-  secret ends and thirteen before the token does. Consuming a match would step
-  over such a value and leave it in the output whole. The cost is that a value
-  nested in another — a JWT payload that is itself a header — is located too;
-  the spans overlap and `Masker.locate` resolves them.
+  the underscore written after the token to a candidate three or six
+  characters before that token ends. A HashiCorp Vault token is read to the
+  end of its run as a Linear key is, and nests as one does: the `hv` a prefix
+  opens with and the letter naming its kind are three characters a body may be
+  written with, and the dot the prefix closes with is none, so a token begins
+  three characters before the one in front of it ends and nowhere else inside
+  it. A Grafana service account token is read to a fixed count and swallows
+  nothing either, and nests for the reason a Sentry token does: `glsa` is four
+  characters a secret is written with and the underscore behind them is the
+  one such a token already carries between its secret and its checksum, so a
+  secret whose last four characters are `glsa` opens a candidate four
+  characters before that secret ends and thirteen before the token does.
+  Consuming a match would step over such a value and leave it in the output
+  whole. The cost is that a value nested in another — a JWT payload that is
+  itself a header — is located too; the spans overlap and `Masker.locate`
+  resolves them.
 - Two of the three scans that advance a byte for another reason are the Supabase
   one and the RubyGems one, and neither can have a value written inside another.
   The Supabase scan says so in its own file and rests it on one character: the
@@ -384,6 +398,24 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   of the candidate, because the candidate opens one byte in front of them and
   resuming there would find the same anchor again and never advance.
   `Test_StripeAPIKey_noKeyBeginsInsideAnother` is what holds the claim.
+- The OpenRouter scan cannot have a value written inside another either, and
+  reaches that by a route of its own: a candidate begins where an `s` begins,
+  and the only `s` a span covers is the one `sk-or-v1-` opens with, since the
+  rest of that prefix is `k`, `o`, `r`, `v`, a digit and three hyphens and a
+  body is hexadecimal. So no key can be written inside another and its spans
+  never overlap one another, which
+  `Test_OpenRouterAPIKey_noKeyBeginsInsideAnother` drives and
+  `Test_openRouterAPIKeyPrefix` holds the prefix to the two properties of.
+  That is what lets it advance further than the three scans above, which
+  cannot nest either and still advance a byte: it resumes at the body of a
+  candidate — nine characters along rather than one — and steps over nothing,
+  since those nine are the prefix that has just matched, and no second `s`
+  stands among them, where `sbp_sbp_` and `rubygems_rubygems_` each put the
+  letter their own prefix opens with inside a failed candidate. Resuming past
+  a whole match would step over nothing either, and is declined because a
+  candidate that is not a key has no match to resume past. The reference
+  beside it starts afresh at every byte and so knows none of this, which is
+  what holds the claim on every input the target reaches.
 - The Notion scan measures from its anchor for a reason of its own, and states
   it in its own file: the two prefixes it reads share nothing but the
   underscore they close with, so that underscore is what it searches for and a
@@ -412,29 +444,31 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `bodyNeverMovesBack` beside those: its body stands a fixed distance past the
   start of its candidate, so it moves forward with the candidates and there is
   no separator to reason about. The AWS, Google, SendGrid, Notion, Grafana,
-  RubyGems and Supabase scans keep no cursor and need none: a fixed count means
-  a candidate reads a bounded number of bytes and stops, which is the same
-  guarantee bought without state. The Stripe, npm, Sentry, Linear and Vault
-  scans keep none either, and share a guarantee of their own: every prefix any
-  of them reads closes with a character no body of that scan is written with —
-  an underscore for the first four, the dot Vault writes between a prefix and a
-  body for the fifth — so every body begins where a run begins and no two
-  candidates can read the same run. It is what the classic alternative of the
-  GitHub scan has for that same reason, and it is what lets the Sentry scan walk
-  an organization payload of any length without remembering where the last one
-  ended. The Notion scan reads that same underscore and reads it as the anchor
-  itself rather than as what ends a body, which is what lets one search find two
-  prefixes sharing no other character; what bounds it is still its count.
+  RubyGems, Supabase and OpenRouter scans keep no cursor and need none: a
+  fixed count means a candidate reads a bounded number of bytes and stops,
+  which is the same guarantee bought without state. The Stripe, npm, Sentry,
+  Linear and Vault scans keep none either, and share a guarantee of their own:
+  every prefix any of them reads closes with a character no body of that scan
+  is written with — an underscore for the first four, the dot Vault writes
+  between a prefix and a body for the fifth — so every body begins where a run
+  begins and no two candidates can read the same run. It is what the classic
+  alternative of the GitHub scan has for that same reason, and it is what lets
+  the Sentry scan walk an organization payload of any length without
+  remembering where the last one ended. The Notion scan reads that same
+  underscore and reads it as the anchor itself rather than as what ends a
+  body, which is what lets one search find two prefixes sharing no other
+  character; what bounds it is still its count.
   `Test_StripeAPIKey_scanIsLinear`, `Test_NPMAccessToken_scanIsLinear`,
   `Test_SentryAuthToken_scanIsLinear`, `Test_LinearAPIKey_scanIsLinear` and
   `Test_HashiCorpVaultToken_scanIsLinear` drive the inputs that would find it
-  wrong, and `Test_npmAccessTokenPrefix_runsDoNotOverlap`,
+  wrong, as `Test_OpenRouterAPIKey_scanIsLinear` drives the ones that would find
+  a count read as a run, and `Test_npmAccessTokenPrefix_runsDoNotOverlap`,
   `Test_sentryAuthTokenSeparator_runsDoNotOverlap`,
   `Test_linearAPIKeyPrefix_runsDoNotOverlap` and
-  `Test_hashiCorpVaultTokenSeparator_runsDoNotOverlap` hold those four prefixes
-  to the character the guarantee rests on, as `Test_notionAPITokenPrefixes`
-  holds the two the Notion scan reads. Compare benchmarks before and after
-  touching any of them — that scan's cases under `BenchmarkBuiltins` as well as
-  `BenchmarkMasker_Mask`.
+  `Test_hashiCorpVaultTokenSeparator_runsDoNotOverlap` hold those four
+  prefixes to the character the guarantee rests on, as
+  `Test_notionAPITokenPrefixes` holds the two the Notion scan reads. Compare
+  benchmarks before and after touching any of them — that scan's cases under
+  `BenchmarkBuiltins` as well as `BenchmarkMasker_Mask`.
 - Published library: any change to an exported name, signature or behaviour is
   breaking. Keep `README.md` in sync with the exported API.

@@ -194,6 +194,19 @@ var builtinPatterns = []struct {
 		benchmarks: openAIAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "openrouter-api-key",
+		pattern: OpenRouterAPIKey,
+		ref:     referenceOpenRouterAPIKeyFind,
+		samples: []string{
+			"OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"sk-or-v1-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+			"sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+			"sk-or-v1-sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		benchmarks: openRouterAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "pypi-api-token",
 		pattern: PyPIAPIToken,
 		ref:     referencePyPIAPITokenFind,
