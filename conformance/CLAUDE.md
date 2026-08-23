@@ -74,26 +74,22 @@ to move with it: no `out` can contradict a name.
 
 ## Where a case goes
 
-`builtin_anthropic_api_key.txt`, `builtin_aws_access_key_id.txt`,
-`builtin_github_token.txt`, `builtin_gitlab_token.txt`,
-`builtin_google_api_key.txt`,
-`builtin_grafana_service_account_token.txt`,
-`builtin_hashicorp_vault_token.txt`,
-`builtin_jwt.txt`, `builtin_linear_api_key.txt`,
-`builtin_notion_api_token.txt`, `builtin_npm_access_token.txt`,
-`builtin_openai_api_key.txt`, `builtin_openrouter_api_key.txt`,
-`builtin_pypi_api_token.txt`,
-`builtin_rubygems_api_key.txt`, `builtin_sendgrid_api_key.txt`,
-`builtin_sentry_auth_token.txt`, `builtin_slack_token.txt`,
-`builtin_stripe_api_key.txt` and
-`builtin_supabase_personal_access_token.txt` (one pattern each),
-`builtins_together.txt` (all of them at once, and the values two of them read
-differently), `custom_patterns.txt` (`MustRegexp`, `NewPattern`, and no pattern
-at all), `overlap_and_attribution.txt` (how overlapping values merge and which
-pattern the result is attributed to), `unusable_spans.txt` (the spans `Find` is
-documented to ignore), `text_shapes.txt` (log lines, JSON, command lines, and
-the credentials this library does not redact), `degenerate.txt` (empty text,
-control bytes, text that is not valid UTF-8).
+One file a built-in pattern, holding what that pattern locates and leaves alone
+on its own, named `builtin_<name>.txt` where `<name>` is what the pattern reports
+with the hyphens written as underscores: `aws-access-key-id` is
+`builtin_aws_access_key_id.txt`. The corpus is loaded by a glob, so a file named
+any other way is read and its cases run — nothing about the suite would fail.
+`TestCorpus_everyBuiltinHasAFileOfItsOwn` is what asks for it by name. Then:
+
+- `builtins_together.txt` — all of them at once, and the values two of them read
+  differently.
+- `custom_patterns.txt` — `MustRegexp`, `NewPattern`, and no pattern at all.
+- `overlap_and_attribution.txt` — how overlapping values merge and which pattern
+  the result is attributed to.
+- `unusable_spans.txt` — the spans `Find` is documented to ignore.
+- `text_shapes.txt` — log lines, JSON, command lines, and the credentials this
+  library does not redact.
+- `degenerate.txt` — empty text, control bytes, text that is not valid UTF-8.
 
 ## The harness
 
@@ -109,10 +105,16 @@ control bytes, text that is not valid UTF-8).
   `TestCorpus_coversEveryBuiltinPattern` asks for at least three cases locating
   it, and three where it locates nothing **masked with a set holding that
   pattern alone** — a clean case masked with `default` counts for nothing, since
-  every pattern added to that set would inherit it. So a new built-in also needs
-  an entry of its own in `patternSets`, which `Test_patternSets_holdEveryBuiltinAlone`
-  asks for. The property tests need no entry: `builtinSets`
-  (`properties_test.go`) is derived from `AllBuiltinPatterns`.
+  every pattern added to that set would inherit it. The set holding it alone
+  needs no writing: it is derived from `AllBuiltinPatterns` in `patterns_test.go`
+  and named as the pattern names itself, as `builtinSets`
+  (`properties_test.go`) already was. What a new built-in owes `patterns_test.go`
+  is nothing at all; what it owes this directory is the cases.
+- A case name that claims something about the whole registry is counted rather
+  than trusted: `TestCorpus_everyKindCaseHoldsEveryBuiltin` holds the case named
+  "every kind of credential this library knows" to naming every built-in, since
+  a pattern left out of it leaves the line masked exactly as it was and no `out`
+  can report the omission.
 - Masking is not held to being idempotent here, because `Mask` is not, and the
   root package says so on `Mask` itself: a redaction does not read as the value
   it replaced, so it can open a prefix that value closed — an AWS access key ID

@@ -94,14 +94,14 @@ func SupabasePersonalAccessToken() Pattern { return supabasePersonalAccessToken 
 // validator refuses an uppercase token, with a test named for refusing one, so
 // an uppercase run is not a token anything would accept.
 //
-// The count is read exactly, which is where this scan stands with the AWS,
-// GitLab, Google, SendGrid, Sentry, Notion and Grafana ones rather than with the
-// OpenAI, Anthropic, Stripe, PyPI, npm and Linear ones. Those six decline an
-// exact count because their vendor states no length and a count that is wrong
-// there costs the whole credential; here forty is a count in the vendor's own
-// expression with a test either side of it. What an exact count costs is what it
-// costs everywhere: a run longer than forty is not one longer token but a token
-// with something written after it, and only the token is redacted.
+// The count is read exactly, which is what a scan does wherever the vendor
+// states the length. Where a vendor states none, a scan reads to the end of the
+// run instead and declines an exact count, because a count that is wrong there
+// costs the whole credential rather than the end of one; here forty is a count
+// in the vendor's own expression with a test either side of it. What an exact
+// count costs is what it costs everywhere: a run longer than forty is not one
+// longer token but a token with something written after it, and only the token
+// is redacted.
 //
 // There is no boundary on either side of a match, as there is none in any of the
 // scans beside this one but the Slack and Stripe ones. A word boundary in front

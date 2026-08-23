@@ -4,20 +4,23 @@ description: Workflow for adding a new built-in credential pattern to mask-go. U
 ---
 
 The decision to add the pattern has already been made before this skill is
-invoked. What to touch and how it must behave is stated in the root `CLAUDE.md`
-and `conformance/CLAUDE.md` — this skill only fixes the order of work and the
-steps easiest to lose.
+invoked. What to touch and how it must behave is stated in
+`.claude/rules/builtin-patterns.md` — **read that first**, since it loads on
+opening a `builtin_*.go` and this skill starts before there is one — together
+with the root `CLAUDE.md` and `conformance/CLAUDE.md`. This skill only fixes the
+order of work and the steps easiest to lose.
 
 ## 1. Pin down the grammar
 
-Verify the token's exact format against current official sources: prefix, alphabet, length, checksum, and every variant sharing
-the prefix. Do not work from memory — formats change, and the scanner rationale
-comment in `builtin_<name>.go` is written from what this step establishes.
+Verify the token's exact format against current official sources: prefix,
+alphabet, length, checksum, and every variant sharing the prefix. Do not work
+from memory — formats change, and the scanner rationale comment in
+`builtin_<name>.go` is written from what this step establishes.
 
 ## 2. Implement, with the pattern's own tests
 
-The declarations to touch are named in the root `CLAUDE.md`. Points that don't
-follow from the file layout alone:
+The declarations to touch are named in the rules file. Points that don't follow
+from the file layout alone:
 
 - The exhaustive edge cases — what is located, what is left alone — belong in
   the behaviour tables of `builtin_<name>_test.go`, not in conformance. Writing
@@ -27,14 +30,20 @@ follow from the file layout alone:
 - The fuzz target is `Fuzz<Name>_matchesReference`, one call to
   `fuzzAgainstReference`. No corpus directory to create — `testdata/fuzz/` is
   where fuzzing's own findings get checked in.
+- Whatever is unusual about this pattern — why the reference went the way it
+  did, how far the scan advances at a candidate, what rules out a quadratic
+  input — is written in these two files and nowhere else. Do not add it to a
+  list in `CLAUDE.md`; there is deliberately no such list to add to.
 
 ## 3. Conformance last
 
 `out` lines are generated from the implementation, so this step cannot come
-earlier. Read `conformance/CLAUDE.md` before writing cases. It asks for a solo
-`patternSets` entry, a `builtin_<name>.txt`, at least three cases locating the
-value and three clean ones under the solo set — plus `builtins_together.txt`
-cases if the value interacts with another pattern. Then
+earlier. Read `conformance/CLAUDE.md` before writing cases. It asks for a
+`builtin_<name>.txt` with at least three cases locating the value and three
+clean ones under the pattern's own set — plus `builtins_together.txt` cases if
+the value interacts with another pattern, and the entry in the case named "every
+kind of credential this library knows", which a test holds to naming every
+built-in. The solo `patternSets` entry is derived and needs no writing. Then
 `go test ./conformance -update` and review the diff it leaves as a reviewer
 would.
 

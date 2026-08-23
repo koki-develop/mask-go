@@ -20,6 +20,25 @@ import (
 // there stay the statement of behaviour and each of their cases still carries
 // its own input.
 //
+// The anchors say the opposite of a sample: what opens a candidate of this kind
+// with a body too short to be a value, so that a scan reaches for one and drops
+// it. TestMasker_Mask_withoutMatchDoesNotAllocate (mask_test.go) is what reads
+// them, and it needs one from every built-in — a scan whose anchor is missing
+// there is never reached, and the allocation it might do per candidate goes
+// measured by prose that opens no candidate at all. Naming them here is what
+// makes that reach the whole registry: written out as one string in that test,
+// the anchors of a pattern added later are simply absent, and nothing reports
+// the hole.
+//
+// What is held of an anchor is that it is not a value, which
+// Test_builtins_anchorsAreNotValues drives. That it opens a candidate at all is
+// not held and cannot be: opening one is a step inside a scan, and a scan
+// reports spans rather than the positions it looked at, so an anchor spelled
+// wrongly and one that turns a scan away on its first byte report the same
+// nothing. It is a choice made where the scan was written, by whoever knew what
+// the cheapest rejection there costs, and it is written here rather than in the
+// test so that changing the scan and changing the anchor are the same edit.
+//
 // The benchmarks are named rather than written out for the same reason and one
 // more: what is worth timing in a scan is crafted against what that one scan
 // remembers, so it belongs beside it, while what times it is BenchmarkBuiltins
@@ -33,6 +52,7 @@ var builtinPatterns = []struct {
 	pattern    func() Pattern         // the exported accessor
 	ref        func(string) []Span    // the plain implementation the scan must agree with
 	samples    []string               // inputs holding a value of this kind
+	anchors    []string               // what opens a candidate, too short to be a value
 	benchmarks func() []benchmarkCase // what the scan is timed on
 }{
 	{
@@ -46,6 +66,7 @@ var builtinPatterns = []struct {
 			"sk-ant-api03-0123456789abcdef-123456789abcdef_123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
 			"sk-ant-a-sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
 		},
+		anchors:    []string{"sk-ant-"},
 		benchmarks: anthropicAPIKeyFindBenchmarks,
 	},
 	{
@@ -58,6 +79,7 @@ var builtinPatterns = []struct {
 			"ASIAKIA0123456789ABCDEF",
 			"AKIA0123456789ABCDEFASIA0123456789ABCDEF",
 		},
+		anchors:    []string{"AKIA0123456789ABCDE", "ASIA0123456789ABCDE"},
 		benchmarks: awsAccessKeyIDFindBenchmarks,
 	},
 	{
@@ -72,6 +94,7 @@ var builtinPatterns = []struct {
 			"ghu_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 			"ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 		},
+		anchors:    []string{"ghp_0123456789", "github_pat_0"},
 		benchmarks: githubTokenFindBenchmarks,
 	},
 	{
@@ -91,6 +114,7 @@ var builtinPatterns = []struct {
 			"glrt-t1_0123456789abcdefghijklmnopq.012345678",
 			"glpat-0123456789abcdefglpat-0123456789abcdefghij",
 		},
+		anchors:    []string{"glpat-0"},
 		benchmarks: gitLabTokenFindBenchmarks,
 	},
 	{
@@ -103,6 +127,7 @@ var builtinPatterns = []struct {
 			"AIzaAIza0123456789abcdefghijklmnopqrstuvwxy",
 			"AIza0123456789abcdefghijklmnopqrstuvwxyAIza0123456789abcdefghijklmnopqrstuvwxy",
 		},
+		anchors:    []string{"AIza0"},
 		benchmarks: googleAPIKeyFindBenchmarks,
 	},
 	{
@@ -115,6 +140,7 @@ var builtinPatterns = []struct {
 			"glsa_0123456789abcdef0123456789abcdef_01234567glsa_0123456789abcdef0123456789abcdef_01234567",
 			"glsa_0123456789abcdef0123456789abglsa_012345670123456789abcdef01234567_89abcdef",
 		},
+		anchors:    []string{"glsa_0123"},
 		benchmarks: grafanaServiceAccountTokenFindBenchmarks,
 	},
 	{
@@ -128,6 +154,7 @@ var builtinPatterns = []struct {
 			"hvs.0123456789abcdef-123456789_bcdef0123456789abcdef",
 			"hvs.0123456789abcdef01234hvs.0123456789abcdef01234567",
 		},
+		anchors:    []string{"hvs.0123", "hvb.0123", "hvr.0123"},
 		benchmarks: hashiCorpVaultTokenFindBenchmarks,
 	},
 	{
@@ -140,6 +167,7 @@ var builtinPatterns = []struct {
 			"eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.encKEY123.iv12345.ciphertextABC.authTAGxyz",
 			"eyIwIjoxLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 		},
+		anchors:    []string{"ey.ey.ey"},
 		benchmarks: jwtFindBenchmarks,
 	},
 	{
@@ -152,6 +180,7 @@ var builtinPatterns = []struct {
 			"lin_api_0123456789abcdefghijklmnopqrstuvwxyz01234",
 			"lin_api_0123456789abcdefghijklmnopqrstuvwxyz0lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123",
 		},
+		anchors:    []string{"lin_api_0"},
 		benchmarks: linearAPIKeyFindBenchmarks,
 	},
 	{
@@ -165,6 +194,7 @@ var builtinPatterns = []struct {
 			"ntn_0123456789abcdef0123456789abcdef0123456789antn_0123456789abcdef0123456789abcdef0123456789abcd",
 			"secret_0123456789abcdef0123456789abcdef01234secret_0123456789abcdef0123456789abcdef0123456789a",
 		},
+		anchors:    []string{"ntn_0123", "secret_0123"},
 		benchmarks: notionAPITokenFindBenchmarks,
 	},
 	{
@@ -177,6 +207,7 @@ var builtinPatterns = []struct {
 			"npm_0123456789abcdefghijklmnopqrstuvwxyz0",
 			"npm_0123456789abcdefghijklmnopqrstuvwnpm_0123456789abcdefghijklmnopqrstuvwxyz",
 		},
+		anchors:    []string{"npm_0123"},
 		benchmarks: npmAccessTokenFindBenchmarks,
 	},
 	{
@@ -191,6 +222,7 @@ var builtinPatterns = []struct {
 			"sk-proj-0123456789abcdef-0123456789abcdef_T3BlbkFJ0123456789abcdef",
 			"sk-sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef",
 		},
+		anchors:    []string{"sk-T3BlbkF"},
 		benchmarks: openAIAPIKeyFindBenchmarks,
 	},
 	{
@@ -204,6 +236,7 @@ var builtinPatterns = []struct {
 			"sk-or-v1-sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			"sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		},
+		anchors:    []string{"sk-or-v1-0"},
 		benchmarks: openRouterAPIKeyFindBenchmarks,
 	},
 	{
@@ -217,6 +250,7 @@ var builtinPatterns = []struct {
 			"pypi-AgE0123456789abcdef0123456789abcdef0123456789abcde",
 			"pypi-AgEpypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef",
 		},
+		anchors:    []string{"pypi-AgE"},
 		benchmarks: pypiAPITokenFindBenchmarks,
 	},
 	{
@@ -229,6 +263,7 @@ var builtinPatterns = []struct {
 			"rubygems_rubygems_0123456789abcdef0123456789abcdef0123456789abcdef",
 			"rubygems_0123456789abcdef0123456789abcdef0123456789abcdefrubygems_0123456789abcdef0123456789abcdef0123456789abcdef",
 		},
+		anchors:    []string{"rubygems_0123"},
 		benchmarks: rubyGemsAPIKeyFindBenchmarks,
 	},
 	{
@@ -241,6 +276,7 @@ var builtinPatterns = []struct {
 			"SG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDESG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
 			"SG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGSG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
 		},
+		anchors:    []string{"SG.0.0"},
 		benchmarks: sendGridAPIKeyFindBenchmarks,
 	},
 	{
@@ -257,6 +293,7 @@ var builtinPatterns = []struct {
 			"sntrys_0123456789abcdef0123456789sntrys_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGH_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
 			"sntrys_0123456789abcdef0123456789sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		},
+		anchors:    []string{"sntrys_", "sntryu_"},
 		benchmarks: sentryAuthTokenFindBenchmarks,
 	},
 	{
@@ -272,6 +309,7 @@ var builtinPatterns = []struct {
 			"xoxe.xoxb-1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			"xoxb-xoxb-xoxb-xoxb-0123456789abcdefghijklmn",
 		},
+		anchors:    []string{"xoxb-0"},
 		benchmarks: slackTokenFindBenchmarks,
 	},
 	{
@@ -288,6 +326,7 @@ var builtinPatterns = []struct {
 			"sk_live_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
 			"sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567",
 		},
+		anchors:    []string{"sk_live_", "sk_test_"},
 		benchmarks: stripeAPIKeyFindBenchmarks,
 	},
 	{
@@ -300,6 +339,7 @@ var builtinPatterns = []struct {
 			"sbp_0123456789abcdef0123456789abcdef01234567sbp_oauth_0123456789abcdef0123456789abcdef01234567",
 			"sbp_sbp_0123456789abcdef0123456789abcdef01234567",
 		},
+		anchors:    []string{"sbp_0123", "sbp_oauth_0123"},
 		benchmarks: supabasePersonalAccessTokenFindBenchmarks,
 	},
 }
@@ -376,8 +416,35 @@ func Test_builtins_entriesAreFilledIn(t *testing.T) {
 			if len(b.samples) == 0 {
 				t.Error("the entry carries no samples")
 			}
+			if len(b.anchors) == 0 {
+				t.Error("the entry carries no anchors")
+			}
 			if b.benchmarks == nil {
 				t.Error("the entry carries no benchmarks")
+			}
+		})
+	}
+}
+
+func Test_builtins_anchorsAreNotValues(t *testing.T) {
+	// An anchor stands for a candidate that fails, so nothing may locate a value
+	// in one. Against every built-in rather than against its own: the anchors
+	// are masked with the whole registry in
+	// TestMasker_Mask_withoutMatchDoesNotAllocate, so an anchor that is a value
+	// of some other pattern breaks that case exactly as one that is a value of
+	// its own does. What breaks there is reported as a redaction — the text it
+	// was handed having stopped being text that locates nothing — and it is
+	// skipped under the race detector besides, so a run of go test -race alone
+	// would report nothing at all. Here the anchor is named.
+	patterns := AllBuiltinPatterns()
+	for _, b := range builtinPatterns {
+		t.Run(b.name, func(t *testing.T) {
+			for _, a := range b.anchors {
+				for _, p := range patterns {
+					if spans := p.Find(a); len(spans) != 0 {
+						t.Errorf("%s locates %v in the anchor %q; an anchor stands for a candidate a scan drops", p.Name(), spans, a)
+					}
+				}
 			}
 		})
 	}

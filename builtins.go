@@ -23,4 +23,29 @@ func AllBuiltinPatterns() []Pattern {
 // place which puts it in AllBuiltinPatterns and under the properties every
 // built-in is held to in builtins_test.go. The pattern itself stays in the
 // file it was declared in; only its name reaches this list.
-var builtins = []Pattern{anthropicAPIKey, awsAccessKeyID, githubToken, gitLabToken, googleAPIKey, grafanaServiceAccountToken, hashiCorpVaultToken, jsonWebToken, linearAPIKey, notionAPIToken, npmAccessToken, openAIAPIKey, openRouterAPIKey, pypiAPIToken, rubyGemsAPIKey, sendGridAPIKey, sentryAuthToken, slackToken, stripeAPIKey, supabasePersonalAccessToken}
+//
+// One name to a line, so that two patterns added at once are two insertions at
+// different lines rather than two rewrites of one. A list written on a single
+// line is one every addition conflicts with.
+var builtins = []Pattern{
+	anthropicAPIKey,
+	awsAccessKeyID,
+	githubToken,
+	gitLabToken,
+	googleAPIKey,
+	grafanaServiceAccountToken,
+	hashiCorpVaultToken,
+	jsonWebToken,
+	linearAPIKey,
+	notionAPIToken,
+	npmAccessToken,
+	openAIAPIKey,
+	openRouterAPIKey,
+	pypiAPIToken,
+	rubyGemsAPIKey,
+	sendGridAPIKey,
+	sentryAuthToken,
+	slackToken,
+	stripeAPIKey,
+	supabasePersonalAccessToken,
+}

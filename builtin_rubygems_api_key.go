@@ -122,13 +122,12 @@ func RubyGemsAPIKey() Pattern { return rubyGemsAPIKey }
 // Declining the demand behind is what the digest below turns on, so it is
 // weighed there rather than here.
 //
-// No key can be written inside another, which of the built-ins here the Stripe
-// and Supabase scans can say as well — the Supabase one by this scan's own
-// argument, the letter its prefix opens with standing in a token exactly once.
-// Everything a span covers past the prefix is a hexadecimal digit, and the
-// prefix itself opens with r — a letter no body is written with and one none
-// of the eight characters behind it is either. So no position inside a span
-// opens a prefix, and the spans of this pattern never overlap one another.
+// No key can be written inside another, and what this scan rests that on is the
+// letter its prefix opens with. Everything a span covers past the prefix is a
+// hexadecimal digit, and the prefix itself opens with r — a letter no body is
+// written with and one none of the eight characters behind it is either. So no
+// position inside a span opens a prefix, and the spans of this pattern never
+// overlap one another.
 // Test_RubyGemsAPIKey_noKeyBeginsInsideAnother is what holds the claim.
 //
 // The scan resumes one byte past the start of a candidate all the same, and

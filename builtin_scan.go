@@ -14,16 +14,18 @@ type segments struct {
 }
 
 // isBase64URLByte reports whether c belongs to the base64url alphabet of RFC
-// 4648, which encodes the parts of a JWT, the JWT a stateless GitHub
-// installation token carries, the body of a GitLab token, the body of a Google
-// API key, the run an OpenAI key is read as, the body of an Anthropic key, the
-// body of a PyPI token, both segments of a SendGrid key and the body of a
-// HashiCorp Vault token. All nine are here so that changing what the alphabet
-// admits is changed against every scan that reads it rather than the first
-// few; the Sentry scan says in its own file that the alphabet it reads is not
-// this one. Padding is not admitted: the compact serialization is defined
-// without it, and neither the routable payload GitLab encodes nor the key
-// Google shows carries any.
+// 4648. It is here rather than in the file of the first scan that needed it so
+// that what the alphabet admits is one declaration: a scan spelling the
+// alphabet again is one that can come to disagree about what a body may hold,
+// and widening it here is a change every scan reading it is measured against at
+// once. Which scans those are is what the callers say, and they are not listed
+// here — a list would have to be corrected by every pattern added, and the one
+// it left out would be the scan a widening was never weighed against. A scan
+// reading some other alphabet says so in its own file, as the Sentry scan does.
+//
+// Padding is not admitted: the compact serialization is defined without it, and
+// neither the routable payload GitLab encodes nor the key Google shows carries
+// any.
 func isBase64URLByte(c byte) bool {
 	return '0' <= c && c <= '9' ||
 		'A' <= c && c <= 'Z' ||
@@ -48,25 +50,24 @@ func base64URLRunEnd(src string, i int) int {
 }
 
 // isBase62Byte reports whether c belongs to the base62 alphabet: the letters of
-// both cases and the digits. It is what the body of a classic GitHub token is
-// written in, what the body of an npm access token is written in, what the body
-// of a Linear API key is written in, what the body of a Notion API token is
-// written in and what the secret of a Grafana service account token is written
-// in — npm's own announcement of its format says it matched GitHub's, and the
-// GitHub and npm bodies close with six characters of a checksum encoded in this
-// alphabet, while the alphabet is all Notion's own rulesets agree on behind
-// either of the prefixes it has issued and is the one Grafana's own generator
-// draws a secret from.
+// both cases and the digits. Why each scan reading it reads it is that scan's
+// to state — that npm's own announcement of its format says it matched
+// GitHub's, that the alphabet is all Notion's rulesets agree on behind either
+// prefix it has issued, that it is what Grafana's generator draws a secret
+// from — and each says so in its own file. What is shared is the alphabet, and
+// it is one declaration for the reason isBase64URLByte gives.
 //
 // What it leaves out is what separates it from base64url above: neither the
-// hyphen nor the underscore is admitted. The underscore is the character all
-// five of those prefixes close with, so a run read in this alphabet stops
-// where the next prefix begins, and that is what keeps the first four scans
-// from reading one run twice. Admitting it here would cost the first three
-// that guarantee at once and make every one of them quadratic on a run dense
-// in prefixes, would cost the Notion scan the character it finds a candidate
-// by at all, and would let a Grafana secret carry the character its own token
-// is divided from its checksum by.
+// hyphen nor the underscore is admitted. Leaving the underscore out is
+// load-bearing rather than incidental, and every scan reading this alphabet
+// rests on it. A prefix of each of them closes with an underscore, so a run
+// read here stops where the next prefix begins: a scan reading a body to the
+// end of its run cannot read a run a candidate before it already read, which
+// is what rules out the quadratic input a run dense in prefixes would
+// otherwise be, and the Notion scan finds a candidate by that character at
+// all. Admitting it here would cost every one of those at once, and would let
+// a Grafana secret carry the character such a token is divided from its
+// checksum by.
 func isBase62Byte(c byte) bool {
 	return '0' <= c && c <= '9' ||
 		'A' <= c && c <= 'Z' ||

@@ -108,8 +108,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Restore only: fourteen of these jobs run at once and would otherwise
-      # race to save one key, each carrying its own generated corpus.
+      # Restore only: these jobs run at once, as many as there are targets, and
+      # would otherwise race to save one key, each carrying its own generated
+      # corpus.
       - uses: ./.github/actions/setup
         with:
           cache: restore

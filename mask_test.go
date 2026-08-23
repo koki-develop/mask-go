@@ -310,8 +310,32 @@ func TestMasker_Mask_withoutMatchDoesNotAllocate(t *testing.T) {
 	// them is dropped. A scan that allocated per candidate — a prefix compared
 	// through a string conversion rather than against a slice of the input —
 	// would be measured by prose alone in neither of the cases above it.
+	//
+	// The anchors are read out of builtinPatterns rather than written out here.
+	// A string written out here covers whichever patterns existed when it was
+	// last edited, and the scan left out of it reads exactly like a scan that
+	// allocates nothing; reading the table is what makes a pattern arriving
+	// without one fail Test_builtins_entriesAreFilledIn instead. What the entry
+	// carries is still a choice made where the scan was written, and nothing
+	// here can tell an anchor that opens a candidate from one a scan turns away
+	// on its first byte — the note on the field says so.
+	//
+	// What an anchor may not do is reach work a scan means to pay for. The JWT
+	// scan decodes the header of a candidate and allocates for it, four times
+	// to the dot at most, so an anchor of eyJ and a dot would measure that
+	// decode rather than a scan allocating per candidate, and would fail here
+	// having found nothing wrong. Its anchor stops in front of the J.
 	prose := strings.Repeat("the quick brown fox ", 100)
-	candidates := strings.Repeat("ey.ey.ey sk-T3BlbkF ghp_0123456789 github_pat_0 AKIA0123456789ABCDE sk_live_ sntrys_ ntn_0123 npm_0123 pypi-AgE lin_api_0 SG.0.0 AIza0 xoxb-0 glpat-0 sk-ant- hvs.0123 hvb.0123 hvr.0123 glsa_0123 rubygems_0123 sk-or-v1-0 ", 20)
+	var anchors strings.Builder
+	for _, b := range builtinPatterns {
+		for _, a := range b.anchors {
+			anchors.WriteString(a)
+			// No built-in locates a value carrying a space, so a value cannot
+			// be built across a boundary out of two anchors that are none.
+			anchors.WriteByte(' ')
+		}
+	}
+	candidates := strings.Repeat(anchors.String(), 20)
 	for name, tt := range map[string]struct {
 		m   *Masker
 		src string

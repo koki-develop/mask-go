@@ -58,31 +58,36 @@ func spansPattern(name string, spans ...mask.Span) mask.Pattern {
 // built-in patterns as AllBuiltinPatterns reports them, which is how the
 // library is used. The name is the notation's, for the set a case falls back
 // to, and says nothing about which patterns a caller ought to reach for.
-var patternSets = map[string][]mask.Pattern{
-	// The built-in patterns, together and one at a time. A pattern alone is
-	// what says the pattern locates a value on its own; the whole set is what
-	// says the sets do not interfere.
-	"default":                        mask.AllBuiltinPatterns(),
-	"anthropic-api-key":              {mask.AnthropicAPIKey()},
-	"aws-access-key-id":              {mask.AWSAccessKeyID()},
-	"github-token":                   {mask.GitHubToken()},
-	"gitlab-token":                   {mask.GitLabToken()},
-	"google-api-key":                 {mask.GoogleAPIKey()},
-	"grafana-service-account-token":  {mask.GrafanaServiceAccountToken()},
-	"hashicorp-vault-token":          {mask.HashiCorpVaultToken()},
-	"jwt":                            {mask.JWT()},
-	"linear-api-key":                 {mask.LinearAPIKey()},
-	"notion-api-token":               {mask.NotionAPIToken()},
-	"npm-access-token":               {mask.NPMAccessToken()},
-	"openai-api-key":                 {mask.OpenAIAPIKey()},
-	"openrouter-api-key":             {mask.OpenRouterAPIKey()},
-	"pypi-api-token":                 {mask.PyPIAPIToken()},
-	"rubygems-api-key":               {mask.RubyGemsAPIKey()},
-	"sendgrid-api-key":               {mask.SendGridAPIKey()},
-	"sentry-auth-token":              {mask.SentryAuthToken()},
-	"slack-token":                    {mask.SlackToken()},
-	"stripe-api-key":                 {mask.StripeAPIKey()},
-	"supabase-personal-access-token": {mask.SupabasePersonalAccessToken()},
+//
+// The set holding one built-in and nothing else is not written here for any of
+// them. Every built-in gets one, named as the pattern names itself, derived
+// from AllBuiltinPatterns below — as builtinSets (properties_test.go) already
+// is. Writing them out would state a third time what builtins.go states and
+// what builtinPatterns (builtins_test.go) is held to restate, and a name long
+// enough to widen the column would rewrite every line beside it; neither buys a
+// disagreement anything could report.
+var patternSets = func() map[string][]mask.Pattern {
+	sets := make(map[string][]mask.Pattern, len(customPatternSets)+len(mask.AllBuiltinPatterns()))
+	for _, p := range mask.AllBuiltinPatterns() {
+		sets[p.Name()] = []mask.Pattern{p}
+	}
+	maps.Copy(sets, customPatternSets)
+	return sets
+}()
+
+// customPatternSets is every set that is not one built-in on its own: the whole
+// registry, the patterns this file builds, and the sets stating how spans are
+// resolved.
+//
+// It is kept apart from patternSets rather than written into it so that
+// Test_patternSets_nameNoBuiltinTwice can ask whether a name here also names a
+// built-in. Merged into one literal, such a collision would quietly replace the
+// set a corpus case meant with the other, and every case naming it would go on
+// passing against the wrong patterns.
+var customPatternSets = map[string][]mask.Pattern{
+	// Every built-in at once, which is what says the sets do not interfere.
+	// What each locates on its own is said by the set derived above.
+	"default": mask.AllBuiltinPatterns(),
 
 	// No pattern at all: a Masker given none redacts nothing.
 	"none": {},
@@ -179,20 +184,18 @@ func Test_patternSets_areUsable(t *testing.T) {
 	}
 }
 
-func Test_patternSets_holdEveryBuiltinAlone(t *testing.T) {
-	// Every built-in must have a set holding it and nothing else. It is what a
-	// case names to state what that pattern locates on its own, and what the
-	// clean cases TestCorpus_coversEveryBuiltinPattern counts are masked with —
-	// a pattern with no set of its own cannot be stated apart from the others.
+func Test_patternSets_nameNoBuiltinTwice(t *testing.T) {
+	// Every built-in has a set holding it and nothing else, which a case names
+	// to state what that pattern locates on its own and which the clean cases
+	// TestCorpus_coversEveryBuiltinPattern counts are masked with. Those sets
+	// are derived, so what can go wrong is not a missing one but a name written
+	// into customPatternSets that a built-in already answers to: the merge would
+	// hand that name to the hand-written set and every case naming it would go
+	// on passing against patterns the case never meant.
 	for _, p := range mask.AllBuiltinPatterns() {
-		t.Run(p.Name(), func(t *testing.T) {
-			for _, set := range patternSets {
-				if len(set) == 1 && set[0] == p {
-					return
-				}
-			}
-			t.Errorf("no pattern set holds %s and nothing else", p.Name())
-		})
+		if _, ok := customPatternSets[p.Name()]; ok {
+			t.Errorf("customPatternSets names %q, which is what the built-in of that name is derived under", p.Name())
+		}
 	}
 }
 

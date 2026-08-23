@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -342,6 +343,73 @@ func TestCorpus_coversEveryBuiltinPattern(t *testing.T) {
 				t.Errorf("the corpus has %d case(s) where %s alone locates nothing, want at least %d", alone[p.Name()], p.Name(), least)
 			}
 		})
+	}
+}
+
+func TestCorpus_everyBuiltinHasAFileOfItsOwn(t *testing.T) {
+	// The cases a pattern is stated by go in a file named for it, which is how
+	// a reader finds them and how a reviewer sees at a glance that a pattern
+	// arrived with any. Nothing else asks for it: the corpus is loaded by a
+	// glob over *.txt, so a file named some other way is read, its cases run
+	// and its pattern covered — TestCorpus_coversEveryBuiltinPattern counts
+	// cases, not files, and would be satisfied by cases written anywhere at
+	// all. The convention would then hold for every pattern but the one added
+	// last, and go on looking like a convention.
+	//
+	// The name is the pattern's own with the hyphens written as underscores,
+	// since that is what the rest of the repository does with it: the pattern
+	// named aws-access-key-id is declared in builtin_aws_access_key_id.go.
+	for _, p := range mask.AllBuiltinPatterns() {
+		want := "builtin_" + strings.ReplaceAll(p.Name(), "-", "_") + ".txt"
+		t.Run(p.Name(), func(t *testing.T) {
+			if _, err := os.Stat(filepath.Join(corpusDir, want)); err != nil {
+				t.Errorf("%s has no file of its own: %s", p.Name(), want)
+			}
+		})
+	}
+}
+
+// everyKindCase names the case whose name claims to hold one credential of
+// every kind the library knows, and the file it is read from.
+//
+// The file is part of the name here because a case name is unique within its
+// file and not across the corpus, as corpusCase.subtest says. Files are read in
+// name order, so a case of this name written into any of the builtin_*.txt
+// ahead of it would be the one found, and the case this is about could then
+// stop naming a pattern with nothing reporting it.
+const (
+	everyKindFile = "builtins_together.txt"
+	everyKindCase = "every kind of credential this library knows"
+)
+
+func TestCorpus_everyKindCaseHoldsEveryBuiltin(t *testing.T) {
+	// The case named above is the one place the corpus states that the patterns
+	// do not interfere with a line holding all of them at once, and its name is
+	// a claim about the whole registry rather than about its own text. No out
+	// line can contradict that name: a pattern added to the registry and left
+	// out of the case leaves the line masked exactly as it was, and the case
+	// goes on passing while claiming to cover a pattern it never held. So the
+	// count is done here, which is what conformance/CLAUDE.md asks of a comment
+	// or a name saying "every".
+	var found *corpusCase
+	for _, c := range corpusCases(t) {
+		if c.file == everyKindFile && c.name == everyKindCase {
+			found = c
+			break
+		}
+	}
+	if found == nil {
+		t.Fatalf("no case named %q in %s: it is what TestCorpus_everyKindCaseHoldsEveryBuiltin counts, so renaming or moving it needs changing here", everyKindCase, everyKindFile)
+	}
+
+	located := map[string]bool{}
+	for _, name := range found.names(t) {
+		located[name] = true
+	}
+	for _, p := range mask.AllBuiltinPatterns() {
+		if !located[p.Name()] {
+			t.Errorf("%s: the case locates no %s, which its name says it holds", found.id(), p.Name())
+		}
 	}
 }
 

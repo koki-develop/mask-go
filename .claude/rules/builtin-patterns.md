@@ -1,0 +1,231 @@
+---
+paths:
+  - "builtin_*.go"
+  - "builtins.go"
+  - "builtins_test.go"
+  - "benchmark_test.go"
+  - "mask_test.go"
+  - "fuzz_test.go"
+  - "source_test.go"
+  - "conformance/**"
+---
+
+# Built-in patterns
+
+What every built-in is held to. It loads when one of the files it names is
+opened, which is where all of it applies and nowhere else: none of it bears on
+`mask.go`, `pattern.go`, `redactor.go` or `option.go`.
+
+## Where a pattern states its own case
+
+A rule belongs here. Which patterns happen to fall on which side of it belongs
+in `builtin_<name>.go` and the `builtin_<name>_test.go` beside it, never in a
+list kept somewhere central.
+
+That is not a filing preference. A list of instances has to be corrected by
+every pattern added, so it grows with the registry while the rule does not; two
+patterns added at once each rewrite it, so it conflicts every time; and it is
+read nowhere near the code it describes, so it drifts without anything failing.
+Numbering the entries — "the third and the fifth are built on an expression" —
+is worse again: an entry inserted renumbers every one after it, so adding one
+rewrites the whole passage, and a passage rewritten under conflict that often
+comes to disagree with itself.
+
+So: state the rule and the test that holds it. Where a pattern is unusual, the
+unusual thing is written in that pattern's own file, next to the declaration it
+is about, where the next person to change that declaration is already reading.
+
+## Weighing one before adding it
+
+`AllBuiltinPatterns` is the whole registry, so a pattern added to `builtins`
+changes what every caller of it redacts with no signature moving to say so.
+That is safe while a built-in over-matches only on values opaque to a reader —
+being wrong about one of those costs the reader nothing. A grammar that admits a
+git SHA, an MD5 or a word of prose does not qualify, however rarely it would
+fire.
+
+What that rules out is the loose grammar, not the unlucky one. The question to
+ask of an over-match is whether the pattern could have been tighter: a bare
+forty hex characters, or `SK` and thirty-two, casts a net over values that carry
+meaning when a tighter net was available and was not taken. Where instead the
+grammar is already as tight as the vendor's own format and text still lands
+inside it, that text is indistinguishable from a credential — there is nothing
+left to read it by — and redacting is right, because declining it would mean
+declining every real credential of the same shape. A pattern relying on this
+states the collision in its own file and pins it with cases, so that it is a
+decision on the record rather than something the next reader discovers.
+
+## The declarations a pattern arrives with
+
+Three, and no more: the pattern in `builtins` (`builtins.go`), an entry in
+`builtinPatterns` (`builtins_test.go`), and cases in the conformance corpus
+(`conformance/CLAUDE.md`). Everything else is derived from one of them.
+
+`builtins` is what `AllBuiltinPatterns` reports, one name to a line.
+`builtinPatterns` is what holds a pattern to the properties every built-in
+shares: its name and the convention `Pattern.Name` asks for, one value per
+accessor, usable spans, no false positive on prose, agreement with its
+reference, masking that leaves nothing to find out of reach of what it redacted,
+concurrent use, benchmark cases holding the values they state, and a
+linear-time scan. The two are held to naming the same patterns in the same order
+by `Test_builtins_matchAllBuiltinPatterns`, so neither can be forgotten.
+
+An entry is held to being whole by `Test_builtins_entriesAreFilledIn`, which
+runs first in its file for that reason: a field left out leaves most of the
+properties with nothing to hold rather than failing, so the omission has to be
+reported as itself.
+
+- `samples` are the one place fixtures are shared. They say only "this is one of
+  these", which is all the properties need; what exactly is located, and what is
+  left alone, stays written out case by case in the pattern's own
+  `builtin_<name>_test.go`. Inputs crafted against what one scan remembers stay
+  with that scan too, as `Test_JWT_scanIsLinear` does.
+- `anchors` say the opposite: what opens a candidate with a body too short to be
+  a value. `TestMasker_Mask_withoutMatchDoesNotAllocate` (`mask_test.go`) builds
+  its input from them, so a scan that allocated per candidate is measured. It
+  reads the table rather than a string written out beside it so that the input
+  reaches the whole registry rather than whatever the registry held when the
+  string was last edited.
+
+  Two things to get right, because only the first is held.
+  `Test_builtins_anchorsAreNotValues` holds an anchor to locating nothing under
+  any built-in, not merely under its own: the anchors are masked with the whole
+  registry, so an anchor that is a value of some other pattern breaks that case
+  exactly as one of its own would. That an anchor opens a candidate at all is
+  not held and cannot be —
+  a scan reports spans, not the positions it looked at, so a misspelled anchor
+  and a real one report the same nothing — which is why the anchor is chosen
+  where the scan is written and by whoever knows what the cheapest rejection
+  there costs. And an anchor must stop short of work the scan means to pay for:
+  the JWT scan allocates to decode the header of a candidate, bounded at four
+  times to the dot, so an anchor reaching that decode would measure it and fail
+  the test having found nothing wrong.
+- `benchmarks` is named rather than carried, because what is worth timing in a
+  scan — the run its cursor walks once, the candidate crowded behind another,
+  the byte test that turns a log line away — is crafted against that scan and
+  belongs in its file as `<pattern>FindBenchmarks`. `BenchmarkBuiltins`
+  (`benchmark_test.go`) reads this table and nothing else, so a pattern cannot
+  be left untimed: a benchmark written as a function could be left unwritten and
+  nothing would report it, since `go test` runs no benchmark at all. Naming them
+  here also puts every case under
+  `Test_builtins_benchmarkCasesHoldTheirValues`, which holds it to the count it
+  states — a case named "many values" whose text stopped holding one would
+  otherwise time a scan finding nothing and report it as a speedup.
+  `Test_maskerMaskBenchmarks` does the same for `maskerMaskBenchmarks`.
+
+The conformance corpus needs no `patternSets` entry: the set holding one
+built-in alone is derived from `AllBuiltinPatterns` and named as the pattern
+names itself. What it does need is cases, and `conformance/CLAUDE.md` says how
+many and of what kind.
+
+## References
+
+Every built-in scanner is checked against a reference kept beside it in
+`builtin_<name>_test.go`, a plain implementation of the same rules, driven
+against the scan by a fuzz target. Four rules, each with a test:
+
+- **A reference shares no declaration with the scan it checks.** It spells the
+  prefixes, the counts and the character classes out again, so that the two can
+  disagree and the target report it.
+  `Test_references_shareNoDeclarationWithTheScans` (`source_test.go`) holds
+  this, and it is the rule the whole arrangement rests on: a reference reading
+  the scan's own declaration moves with whatever the scan is changed to, its
+  target then compares a rule with itself, and nothing else reports it — the two
+  agree on every input, the target passes and the corpus holds, because from
+  then on they are wrong together or right together and never apart. The check
+  type-checks the package and asks what each name resolves to rather than
+  matching names, which is what makes it exact: a declaration of the scans is
+  reached as a type, through a field of one, as the receiver of a method, as the
+  key of a map literal or as the right-hand side of a binding that shadows it,
+  and a walk of the syntax alone has a hole for each of those.
+- **A reference lives beside the scan it checks**, which is where
+  `Test_references_liveBesideTheScansTheyCheck` holds it: the rule above reads
+  `builtin_*_test.go` alone, so one lifted elsewhere would leave it with nothing
+  to hold rather than failing.
+- **A reference is a named declaration**, not written inline at the call or
+  bound to a local, since neither is one any rule reaches.
+  `Test_references_areNamedRatherThanWritten` holds this.
+- **A target keeps its own name.** The targets share their body through
+  `fuzzAgainstReference` (`fuzz_test.go`) but are named
+  `Fuzz<Pattern>_matchesReference` apiece, because the corpus under
+  `testdata/fuzz/` is keyed on the name — so never rename a target without
+  moving its corpus directory. There is one per built-in, which
+  `Test_references_areNamedRatherThanWritten` counts: it holds the calls to the
+  shared body to the size of the registry, so a pattern arriving without a
+  target fails there rather than going quietly unfuzzed. CI reads the targets
+  out of `go test -list` and gives each one a job, so nothing is listed by hand.
+
+Change scanner and reference together.
+
+### Whether to write a reference out or build it on an expression
+
+Either is allowed. What decides it is what an expression costs the fuzz target,
+and the pattern's own file states which way it went and why. The two things that
+have made an expression too slow to fuzz with, both measured rather than
+supposed:
+
+- **A floor spelled as a counted repetition** costs an engine a machine as wide
+  as the floor at every candidate. Where the input can crowd candidates
+  together, that is quadratic, and it has left targets reporting no executions
+  at all for most of their run. Exact counts do not cost this: the machine is
+  read once and stops.
+- **An opening written in the alphabet its own body is written in**, which makes
+  a run of that alphabet a candidate at every byte, so a reference asking at
+  every byte hands the engine the rest of the input each time.
+
+A third consideration is the literal an engine searches the text for: one
+literal in front of a grammar is what lets it skip, and an alternation of
+literals sharing no first characters leaves it walking its machine at every
+byte.
+
+A reference asks at every byte rather than resuming past a match. Usually that
+is because a value either scan locates can hold the start of the next one, so
+resuming would miss what the scan finds. Where a pattern's values cannot nest,
+asking at every byte is kept anyway — a reference is written to know nothing its
+scan claims, and non-nesting is a thing the scan claims.
+
+## What a scan does at a candidate
+
+**Advance, never consume the match.** A scan steps forward whether the candidate
+became a value or not. Consuming a match would step over a value written inside
+the one just found and leave it in the output whole.
+
+How far it advances, and what from, is the scan's own to decide and to justify
+in its own file:
+
+- A byte past the start of the candidate is the default, and needs no argument.
+- Anything else — a byte past the anchor rather than the candidate, or the whole
+  width of a prefix — is an optimisation resting on a claim about the grammar,
+  and the file makes the claim, names the test that drives it, and says why the
+  default would not do. A pattern whose values provably cannot nest is held to
+  that by a test of its own naming the claim, as
+  `Test_StripeAPIKey_noKeyBeginsInsideAnother` does.
+
+The cost of advancing rather than consuming is that a value nested in another —
+a JWT payload that is itself a header — is located too; the spans overlap and
+`Masker.locate` resolves them.
+
+## Linearity
+
+`Masker.locate` and every built-in scanner are deliberately linear-time and
+allocation-conscious. Advancing one byte along means a run can hold a candidate
+for every character it has, so every scan needs something that rules out a
+quadratic input. There are three ways one gets it, and a scan has whichever it
+has for a reason its file gives:
+
+- **A cursor over the run**, remembered between candidates. Every such cursor is
+  load-bearing, and is held to never moving back by a test of its own —
+  `Test_slackTokenPrefixes_bodyNeverMovesBack` and the two beside it — or by a
+  `Test_<Pattern>_scanIsLinear` driving the input that would find it wrong.
+- **A fixed count**, which bounds what a candidate reads without any state to be
+  wrong about.
+- **A prefix closing with a character no body of that scan is written with**, so
+  every body begins where a run begins and no two candidates can read the same
+  run. This is what `isBase62Byte` (`builtin_scan.go`) leaving the underscore
+  out is for, and it is why a scan resting on it can walk a payload of any
+  length without remembering where the last one ended. A pattern resting on it
+  is held to it by a test naming the character the guarantee rests on, as
+  `Test_npmAccessTokenPrefix_runsDoNotOverlap` does.
+
+Compare benchmarks before and after touching any scan — that scan's cases under
+`BenchmarkBuiltins` as well as `BenchmarkMasker_Mask`.

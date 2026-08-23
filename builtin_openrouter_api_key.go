@@ -94,11 +94,11 @@ func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 // sixty-four hexadecimal digits. Against that stands the assignment above,
 // which is text people write.
 //
-// No key can be written inside another, which puts this scan with the Stripe,
-// Supabase and RubyGems ones rather than with the fifteen that resume a byte
-// past the start of a candidate because a value can begin inside the one
-// before it. A candidate begins where sk-or-v1- begins, and the only s a span
-// covers is the one it opens with: the rest of the prefix is k, o, r, v, a
+// No key can be written inside another, which puts this scan with the few that
+// can say so rather than with the scans that resume a byte past the start of a
+// candidate because a value can begin inside the one before it. A candidate
+// begins where sk-or-v1- begins, and the only s a span covers is the one it
+// opens with: the rest of the prefix is k, o, r, v, a
 // digit and three hyphens, and a body is hexadecimal, which spells no s
 // either. The 1 of the version is the one character of the prefix a body may
 // also be written with, and it opens nothing. So the spans of this pattern
