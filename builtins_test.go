@@ -106,6 +106,19 @@ var builtinPatterns = []struct {
 		benchmarks: googleAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "hashicorp-vault-token",
+		pattern: HashiCorpVaultToken,
+		ref:     referenceHashiCorpVaultTokenFind,
+		samples: []string{
+			"VAULT_TOKEN=hvs.0123456789abcdef01234567",
+			"hvb.0123456789abcdef0123456789abcdef0123456789abcdef",
+			"hvr.0123456789abcdef01234567",
+			"hvs.0123456789abcdef-123456789_bcdef0123456789abcdef",
+			"hvs.0123456789abcdef01234hvs.0123456789abcdef01234567",
+		},
+		benchmarks: hashiCorpVaultTokenFindBenchmarks,
+	},
+	{
 		name:    "jwt",
 		pattern: JWT,
 		ref:     referenceJWTFind,

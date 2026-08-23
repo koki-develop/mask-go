@@ -59,14 +59,15 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `FuzzAnthropicAPIKey_matchesReference`, `FuzzStripeAPIKey_matchesReference`,
   `FuzzPyPIAPIToken_matchesReference`, `FuzzNPMToken_matchesReference`,
   `FuzzSendGridAPIKey_matchesReference`,
-  `FuzzSentryAuthToken_matchesReference`, `FuzzLinearAPIKey_matchesReference`
-  and `FuzzNotionAPIToken_matchesReference`. In `conformance`: `FuzzMask`,
+  `FuzzSentryAuthToken_matchesReference`, `FuzzLinearAPIKey_matchesReference`,
+  `FuzzNotionAPIToken_matchesReference` and
+  `FuzzHashiCorpVaultToken_matchesReference`. In `conformance`: `FuzzMask`,
   `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30 seconds.
 - `go test -bench . -benchmem` — benchmarks. `BenchmarkMasker_Mask` drives
   every pattern at once through the public API, which is what a caller pays;
   `BenchmarkBuiltins` drives each scan alone under the name its pattern
   reports, and that is what a change to a scan is compared against, since a
-  regression in one is a fifteenth of what the first reports. `go test -bench
+  regression in one is a sixteenth of what the first reports. `go test -bench
   Builtins/jwt -benchmem .` runs one of them.
 - `golangci-lint run` — lint (no config file; defaults).
 - `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
@@ -149,89 +150,98 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   (`builtin_npm_token_test.go`), `referenceSendGridAPIKeyFind`
   (`builtin_sendgrid_api_key_test.go`), `referenceSentryAuthTokenFind`
   (`builtin_sentry_auth_token_test.go`), `referenceLinearAPIKeyFind`
-  (`builtin_linear_api_key_test.go`) and `referenceNotionAPITokenFind`
-  (`builtin_notion_api_token_test.go`), plain implementations of the same
-  rules. The third, the fifth, the sixth, the seventh, the eleventh, the twelfth
-  and the fourteenth are built on a regular expression, and each tries it at
-  every byte rather than handing it to `FindAllStringIndex`: a value either scan
-  locates can hold the start of the next one, so a reference that resumed past a
-  match would miss what the scan finds — an access key ID can begin three
-  characters into the one before it, a GitLab body is written in an alphabet
-  that holds every letter a GitLab prefix is, a Google API key's prefix and an
-  OpenAI key's `sk-` are each written in the alphabet their own runs are, an npm
-  body can close with the three letters an npm prefix opens with, a SendGrid
-  key's `SG.` is two characters of a segment's own alphabet and the dot such a
-  key already carries between its segments, and a Linear key's `lin_api_` opens
-  with three characters a Linear body is written with. The first, the second,
-  the fourth, the eighth, the ninth, the tenth, the thirteenth and the fifteenth
-  are written out rather than built on a regular expression, and all eight start
-  afresh at every position — all but the ninth for that same reason, the
-  thirteenth because a Sentry organization payload is written in an alphabet
-  holding every letter a Sentry prefix is, closed by the underscore that prefix
-  ends on, the fifteenth because the `ntn` and `secret` in front of a Notion
-  prefix's underscore are characters a Notion body is written with, and the
-  ninth because a reference is written to know nothing its scan claims, and what
-  the Stripe scan claims is that no key can begin inside another. What the first
-  reads of a candidate — a decoded JOSE header, a run divided into segments — is
-  not what an expression states compactly; the grammars of the second, the
-  eighth and the tenth are, and they are written out anyway, because a floor
-  spelled as a counted repetition costs an engine a machine as wide as the floor
-  at every candidate, which left the fuzz targets of the second and the eighth
-  wedged on a grown input instead of fuzzing. An expression at the second
-  reaches forty-seven thousand executions in three seconds and reports none at
-  all for the twenty-seven after them, where the walks written out there run
-  seven million in forty seconds and do not stall. The Anthropic file measures
-  both. The ninth's grammar cannot be spelled in Go's syntax at all: the byte it
+  (`builtin_linear_api_key_test.go`), `referenceNotionAPITokenFind`
+  (`builtin_notion_api_token_test.go`) and `referenceHashiCorpVaultTokenFind`
+  (`builtin_hashicorp_vault_token_test.go`), plain implementations of the same
+  rules. The third, the fifth, the sixth, the seventh, the eleventh, the
+  twelfth, the fourteenth and the sixteenth are built on a regular expression,
+  and each tries it at every byte rather than handing it to
+  `FindAllStringIndex`: a value either scan locates can hold the start of the
+  next one, so a reference that resumed past a match would miss what the scan
+  finds — an access key ID can begin three characters into the one before it, a
+  GitLab body is written in an alphabet that holds every letter a GitLab prefix
+  is, a Google API key's prefix and an OpenAI key's `sk-` are each written in
+  the alphabet their own runs are, an npm body can close with the three letters
+  an npm prefix opens with, a SendGrid key's `SG.` is two characters of a
+  segment's own alphabet and the dot such a key already carries between its
+  segments, a Linear key's `lin_api_` opens with three characters a Linear body
+  is written with, and a Vault token's `hv` and the letter naming its kind are
+  three characters a Vault body is written with, in front of the separator such
+  a token already carries. The first, the second, the fourth, the eighth, the
+  ninth, the tenth, the thirteenth and the fifteenth are written out rather
+  than built on a regular expression, and all eight start afresh at every
+  position — all but the ninth for that same reason, the thirteenth because a
+  Sentry organization payload is written in an alphabet holding every letter a
+  Sentry prefix is, closed by the underscore that prefix ends on, the fifteenth
+  because the `ntn` and `secret` in front of a Notion prefix's underscore are
+  characters a Notion body is written with, and the ninth because a reference
+  is written to know nothing its scan claims, and what the Stripe scan claims
+  is that no key can begin inside another. What the first reads of a
+  candidate — a decoded JOSE header, a run divided into segments — is not what
+  an expression states compactly; the grammars of the second, the eighth and the
+  tenth are, and they are written out anyway, because a floor spelled as a
+  counted repetition costs an engine a machine as wide as the floor at every
+  candidate, which left the fuzz targets of the second and the eighth wedged on
+  a grown input instead of fuzzing. An expression at the second reaches
+  forty-seven thousand executions in three seconds and reports none at all for
+  the twenty-seven after them, where the walks written out there run seven
+  million in forty seconds and do not stall. The Anthropic file measures both.
+  The ninth's grammar cannot be spelled in Go's syntax at all: the byte it
   reads in front of a prefix admits the underscore where `\b` does not, and
-  there is no lookbehind to write the demand with instead. The eleventh spells a
-  floor as a counted repetition and is not wedged by it, for the reason its scan
-  needs no cursor: no input crowds two npm candidates inside one run, so the
-  walk an engine repeats at the eighth's candidates has nothing to repeat at its
-  own. The twelfth spells no floor at all: both its counts are exact, twenty-two
-  and forty-three, so the machine an engine builds for a candidate is read once
-  and stops. The thirteenth is written out too, and neither its counts nor its
-  repetition are why: sixty-four and forty-three are both exact and the group of
-  four repeated without limit is a loop rather than a width, so the machine an
-  engine builds for a candidate is bounded. What costs an expression there is
-  that the alphabet a Sentry payload is written in holds every letter a Sentry
-  opening is, so a run of them is a candidate at every byte and a reference
-  asking at every byte hands the engine the whole of the rest of the input at
-  each of them. Such an expression runs for three seconds of its target's thirty
-  and reports no executions at all for the twenty-seven after them, where the
-  walks written out there run seven million in forty-five seconds. It still
-  writes the one rule its scan reads as arithmetic, that a payload is a whole
-  number of base64 groups, as base64 itself writes it: groups of four walked one
-  at a time, the last able to close with padding, rather than a length divided.
-  That is the one place a reference and its scan state a rule differently on
-  purpose, since a reference restating the modulus would agree by construction
-  wherever the scan had the modulus wrong. The fourteenth spells a floor as a
-  counted repetition and is not wedged by it either, and for the eleventh's
-  reason: no input crowds two Linear candidates inside one run. The fifteenth is
-  written out for a reason none of the others has: its grammar is an alternation
-  of two literals, and an expression with one literal in front of it is scanned
-  for by searching the text for that literal where two leave the engine walking
-  its machine at every byte. A mebibyte of alphanumerics holding no token at all
-  costs the alternation seventeen milliseconds and either half of it alone
-  fourteen microseconds, and the mutator reaches inputs of that size — which had
-  the target running at speed for fifteen seconds and at nothing at all for the
-  rest of its run. What is written out there pays nothing for that: both counts
-  are counts, so a position reads at most fifty bytes and stops, and the walk is
-  linear where the eighth's is quadratic. It spells the two counts a body rather
-  than the one total the scan subtracts a prefix from, so the subtraction is
-  something the two can disagree about. A reference spells the prefixes, the
-  counts and the character classes its scan reads out again rather than sharing
-  the declarations, so that the two can disagree and the fuzz target report it.
+  there is no lookbehind to write the demand with instead. The eleventh spells
+  a floor as a counted repetition and is not wedged by it, for the reason its
+  scan needs no cursor: no input crowds two npm candidates inside one run, so
+  the walk an engine repeats at the eighth's candidates has nothing to repeat
+  at its own. The twelfth spells no floor at all: both its counts are exact,
+  twenty-two and forty-three, so the machine an engine builds for a candidate
+  is read once and stops. The thirteenth is written out too, and neither its
+  counts nor its repetition are why: sixty-four and forty-three are both exact
+  and the group of four repeated without limit is a loop rather than a width,
+  so the machine an engine builds for a candidate is bounded. What costs an
+  expression there is that the alphabet a Sentry payload is written in holds
+  every letter a Sentry opening is, so a run of them is a candidate at every
+  byte and a reference asking at every byte hands the engine the whole of the
+  rest of the input at each of them. Such an expression runs for three seconds
+  of its target's thirty and reports no executions at all for the twenty-seven
+  after them, where the walks written out there run seven million in forty-five
+  seconds. It still writes the one rule its scan reads as arithmetic, that a
+  payload is a whole number of base64 groups, as base64 itself writes it:
+  groups of four walked one at a time, the last able to close with padding,
+  rather than a length divided. That is the one place a reference and its scan
+  state a rule differently on purpose, since a reference restating the modulus
+  would agree by construction wherever the scan had the modulus wrong. The
+  fourteenth spells a floor as a counted repetition and is not wedged by it
+  either, and for the eleventh's reason: no input crowds two Linear candidates
+  inside one run. The sixteenth spells a floor as a counted repetition and is
+  not wedged by it for that same reason, and its alternation of three prefixes
+  costs it nothing either: all three open with the same two characters, so an
+  engine still has one literal to search the text for, where the fifteenth's
+  two share none. The fifteenth is written out for a reason none of the others
+  has: its grammar is an alternation of two literals, and an expression with
+  one literal in front of it is scanned for by searching the text for that
+  literal where two leave the engine walking its machine at every byte. A
+  mebibyte of alphanumerics holding no token at all costs the alternation
+  seventeen milliseconds and either half of it alone fourteen microseconds, and
+  the mutator reaches inputs of that size — which had the target running at
+  speed for fifteen seconds and at nothing at all for the rest of its run. What
+  is written out there pays nothing for that: both counts are counts, so a
+  position reads at most fifty bytes and stops, and the walk is linear where
+  the eighth's is quadratic. It spells the two counts a body rather than the
+  one total the scan subtracts a prefix from, so the subtraction is something
+  the two can disagree about. A reference spells the prefixes, the counts and
+  the character classes its scan reads out again rather than sharing the
+  declarations, so that the two can disagree and the fuzz target report it.
   `Test_references_shareNoDeclarationWithTheScans` (`source_test.go`) is what
-  holds this: a reference reading the scan's own declaration moves with whatever
-  the scan is changed to, its target then compares a rule with itself, and
-  nothing else reports it — the two agree on every input, the target passes and
-  the corpus holds, because from then on they are wrong together or right
+  holds this: a reference reading the scan's own declaration moves with
+  whatever the scan is changed to, its target then compares a rule with itself,
+  and nothing else reports it — the two agree on every input, the target passes
+  and the corpus holds, because from then on they are wrong together or right
   together and never apart. It type-checks the package and asks what each name
   resolves to rather than matching names, which is what makes it exact: a
   declaration of the scans is reached as a type, through a field of one, as the
-  receiver of a method, as the key of a map literal or as the right-hand side of
-  a binding that shadows it, and a walk of the syntax alone has a hole for each
-  of those. It reads `builtin_*_test.go` alone, which is where a reference
+  receiver of a method, as the key of a map literal or as the right-hand side
+  of a binding that shadows it, and a walk of the syntax alone has a hole for
+  each of those. It reads `builtin_*_test.go` alone, which is where a reference
   belongs, and `Test_references_liveBesideTheScansTheyCheck` holds them there:
   one lifted elsewhere would leave the rule with nothing to hold rather than
   failing. `Test_references_areNamedRatherThanWritten` holds the reference a
@@ -302,10 +312,15 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   swallows nothing too, and the `ntn` and `secret` in front of either of its
   prefixes' underscores are characters a body is written with, so a body
   closing with one of them hands the underscore written after the token to a
-  candidate three or six characters before that token ends. Consuming a match
-  would step over such a value and leave it in the output whole. The cost is
-  that a value nested in another — a JWT payload that is itself a header — is
-  located too; the spans overlap and `Masker.locate` resolves them.
+  candidate three or six characters before that token ends. A HashiCorp Vault
+  token is read to the end of its run as a Linear key is, and nests as one
+  does: the `hv` a prefix opens with and the letter naming its kind are three
+  characters a body may be written with, and the dot the prefix closes with is
+  none, so a token begins three characters before the one in front of it ends
+  and nowhere else inside it. Consuming a match would step over such a value
+  and leave it in the output whole. The cost is that a value nested in
+  another — a JWT payload that is itself a header — is located too; the spans
+  overlap and `Masker.locate` resolves them.
 - The Stripe scan is the exception and states why in its own file: a key begins
   only where no letter and no digit stands in front of it, and everything a span
   covers is one or the other but for the underscores of its prefix, so no key
@@ -344,24 +359,27 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   no separator to reason about. The AWS, Google, SendGrid and Notion scans keep
   no cursor and need none: a fixed count means a candidate reads a bounded
   number of bytes and stops, which is the same guarantee bought without state.
-  The Stripe, npm, Sentry and Linear scans keep none either, and share a
-  guarantee of their own: every prefix any of them reads closes with an
-  underscore and no body of any of them is written with one, so every body
-  begins where a run begins and no two candidates can read the same run. It is
-  what the classic alternative of the GitHub scan has for that same reason, and
-  it is what lets the Sentry scan walk an organization payload of any length
-  without remembering where the last one ended. The Notion scan reads that same
-  underscore and reads it as the anchor itself rather than as what ends a body,
-  which is what lets one search find two prefixes sharing no other character;
-  what bounds it is still its count. `Test_StripeAPIKey_scanIsLinear`,
-  `Test_NPMToken_scanIsLinear`, `Test_SentryAuthToken_scanIsLinear` and
-  `Test_LinearAPIKey_scanIsLinear` drive the inputs that would find it wrong,
-  and `Test_npmTokenPrefix_runsDoNotOverlap`,
-  `Test_sentryAuthTokenSeparator_runsDoNotOverlap` and
-  `Test_linearAPIKeyPrefix_runsDoNotOverlap` hold those three prefixes to the
-  character the guarantee rests on, as `Test_notionAPITokenPrefixes` holds the
-  two the Notion scan reads. Compare benchmarks before and after touching any
-  of them — that scan's cases under `BenchmarkBuiltins` as well as
+  The Stripe, npm, Sentry, Linear and Vault scans keep none either, and share a
+  guarantee of their own: every prefix any of them reads closes with a
+  character no body of that scan is written with — an underscore for the first
+  four, the dot Vault writes between a prefix and a body for the fifth — so
+  every body begins where a run begins and no two candidates can read the same
+  run. It is what the classic alternative of the GitHub scan has for that same
+  reason, and it is what lets the Sentry scan walk an organization payload of
+  any length without remembering where the last one ended. The Notion scan
+  reads that same underscore and reads it as the anchor itself rather than as
+  what ends a body, which is what lets one search find two prefixes sharing no
+  other character; what bounds it is still its count.
+  `Test_StripeAPIKey_scanIsLinear`, `Test_NPMToken_scanIsLinear`,
+  `Test_SentryAuthToken_scanIsLinear`, `Test_LinearAPIKey_scanIsLinear` and
+  `Test_HashiCorpVaultToken_scanIsLinear` drive the inputs that would find it
+  wrong, and `Test_npmTokenPrefix_runsDoNotOverlap`,
+  `Test_sentryAuthTokenSeparator_runsDoNotOverlap`,
+  `Test_linearAPIKeyPrefix_runsDoNotOverlap` and
+  `Test_hashiCorpVaultTokenSeparator_runsDoNotOverlap` hold those four prefixes
+  to the character the guarantee rests on, as `Test_notionAPITokenPrefixes`
+  holds the two the Notion scan reads. Compare benchmarks before and after
+  touching any of them — that scan's cases under `BenchmarkBuiltins` as well as
   `BenchmarkMasker_Mask`.
 - Published library: any change to an exported name, signature or behaviour is
   breaking. Keep `README.md` in sync with the exported API.

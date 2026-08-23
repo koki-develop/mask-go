@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd hvs.0123456789abcdef01234567
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «anthropic-api-key» «stripe-api-key» «pypi-api-token» «npm-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token» «hashicorp-vault-token»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -845,3 +845,44 @@ out:  NOTION_TOKEN=«notion-api-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
 case: a stripe prefix written against the end of a notion token
 in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdsk_live_0123456789abcdef01234567
 out:  «notion-api-token»sk_live_0123456789abcdef01234567
+
+# A Vault token beside the values it can be written inside of, and inside. The
+# two cases the Vault file states as its own over-matching open the block: the
+# Vault pattern reaches the tail of a JWT and of a SendGrid key from the dot
+# onward, the pattern that issued the value reaches the value whole, and the two
+# spans merge into it. The cases after them are the values a Vault body can hold
+# and the tokens written against either end of one, where a body read to the end
+# of its run reaches into what follows and a base62 body reaches into a Vault
+# prefix. Every one of them comes out as a single redaction.
+
+case: a jwt whose payload closes on a vault prefix
+in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQhvs.0123456789abcdef01234567
+out:  «jwt»
+
+case: a sendgrid key whose first segment closes on a vault prefix
+in:   SG.0123456789abcdef012hvb.0123456789abcdef0123456789abcdef0123456789a
+out:  «sendgrid-api-key»
+
+case: an access key id inside a vault token body
+in:   hvs.AKIA0123456789ABCDEF0123456
+out:  «hashicorp-vault-token»
+
+case: a google api key inside a vault token body
+in:   hvs.AIza0123456789abcdefghijklmnopqrstuvwxy
+out:  «hashicorp-vault-token»
+
+case: a vault token written straight after a classic github token
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzhvs.0123456789abcdef01234567
+out:  «github-token»
+
+case: a classic github token written straight after a vault token
+in:   hvs.0123456789abcdef01234567ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «hashicorp-vault-token»
+
+case: a vault token and a jwt on one line
+in:   VAULT_TOKEN=hvs.0123456789abcdef01234567 jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:  VAULT_TOKEN=«hashicorp-vault-token» jwt=«jwt»
+
+case: an environment file holding a vault token among the others
+in:   VAULT_TOKEN=hvs.0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  VAULT_TOKEN=«hashicorp-vault-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
