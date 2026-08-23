@@ -1,0 +1,257 @@
+# What RubyGems API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is: the body is that run written three times, which is the
+# forty-eight characters the pattern reads it at. The count is not an
+# abbreviation — a body shortened for readability would leave a case holding no
+# key at all — and its total with the prefix is the fifty-seven characters both
+# of the long examples in the RubyGems.org guides are. The run is written in
+# lowercase
+# throughout, because the body is the hexadecimal SecureRandom.hex returns and
+# Ruby documents that as 0-9 and a-f.
+
+patterns: rubygems-api-key
+
+# A key as it is written. One string serves every key RubyGems.org issues,
+# whatever scopes it carries and whichever gem it is scoped to, so what is below
+# differs in where the key stands rather than in what kind it is: the response
+# it is first read out of, the credentials file gem signin writes it to, and the
+# header it is sent in.
+
+case: a key in an environment assignment
+in:   RUBYGEMS_API_KEY=rubygems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  RUBYGEMS_API_KEY=«rubygems-api-key»
+
+case: a key in the response that first reports it
+in:   {"rubygems_api_key":"rubygems_0123456789abcdef0123456789abcdef0123456789abcdef","name":"ci"}
+out:  {"rubygems_api_key":"«rubygems-api-key»","name":"ci"}
+
+case: a key in an authorization header
+in:   Authorization: rubygems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  Authorization: «rubygems-api-key»
+
+case: a key in the credentials file
+in:   ---\n:rubygems_api_key: rubygems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  ---\n:rubygems_api_key: «rubygems-api-key»
+
+case: a key on a command line
+in:   curl -H "Authorization: rubygems_0123456789abcdef0123456789abcdef0123456789abcdef" https://rubygems.org/api/v1/gems.json
+out:  curl -H "Authorization: «rubygems-api-key»" https://rubygems.org/api/v1/gems.json
+
+case: a key at the end of a sentence
+in:   the key is rubygems_0123456789abcdef0123456789abcdef0123456789abcdef.
+out:  the key is «rubygems-api-key».
+
+# The alphabet. The body is what SecureRandom.hex returns, which Ruby documents
+# as 0-9 and a-f, so lowercase alone is read — unlike the Grafana checksum,
+# which stands behind a match a prefix and a secret have already decided and is
+# read in either case. Neither the hyphen nor the underscore belongs to it
+# either, so the underscore the prefix closes with cannot stand inside a body.
+
+case: an uppercase body
+in:   rubygems_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:  rubygems_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+case: one uppercase character in the body
+in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdeF
+out:  rubygems_0123456789abcdef0123456789abcdef0123456789abcdeF
+
+case: a letter past f in the body
+in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdeg
+out:  rubygems_0123456789abcdef0123456789abcdef0123456789abcdeg
+
+case: an underscore inside the body
+in:   rubygems_0123456789abcdef_123456789abcdef0123456789abcdef0
+out:  rubygems_0123456789abcdef_123456789abcdef0123456789abcdef0
+
+case: a hyphen inside the body
+in:   rubygems_0123456789abcdef-123456789abcdef0123456789abcdef0
+out:  rubygems_0123456789abcdef-123456789abcdef0123456789abcdef0
+
+# The lengths either side of the count. It is the generator's rather than an
+# observation: twenty-four is the argument it passes SecureRandom.hex, and Ruby
+# documents the result as twice its argument. So it is read as a count and not
+# as a floor, and the three cases below are what that means: a body one
+# character short is not a key, and a body run one character long is a key with
+# a character left over.
+
+case: a body of forty-eight characters is a key
+in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «rubygems-api-key»
+
+case: a body one character short is not
+in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcde
+out:  rubygems_0123456789abcdef0123456789abcdef0123456789abcde
+
+case: a body run one character longer is a key and the character after it
+in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdef0
+out:  «rubygems-api-key»0
+
+# What a key may be written against. There is no boundary on either side of the
+# prefix, so a key keeps its span whatever word character it abuts, and what
+# stands past the fifty-seventh character stays where it was written. The
+# tightening that would rule the first two out is the demand the Slack and
+# Stripe patterns make, that no letter and no digit stand in front of a prefix.
+# It is declined for the reason the AWS pattern declines it: what it costs is
+# the second case below, a key written straight against a letter, which would
+# then be left in the text whole rather than trimmed.
+
+case: a key after an underscore
+in:   RUBYGEMS_API_KEY_rubygems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  RUBYGEMS_API_KEY_«rubygems-api-key»
+
+case: a key after a letter
+in:   xrubygems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  x«rubygems-api-key»
+
+case: a word written against a key
+in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdefsuffix
+out:  «rubygems-api-key»suffix
+
+case: a hyphenated word written against a key
+in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdef-suffix
+out:  «rubygems-api-key»-suffix
+
+case: an underscored word written against a key
+in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdef_suffix
+out:  «rubygems-api-key»_suffix
+
+# Two keys written together, and a prefix written in front of one. No key can be
+# written inside another here, which of the built-in patterns the Stripe and
+# Supabase ones can say as well: everything a span covers past the prefix is a
+# hexadecimal digit, and the prefix opens with an r that neither a body nor the
+# rest of the prefix carries. So the spans of this pattern never overlap one
+# another, and two keys written with nothing between them are two redactions.
+# What the scan resuming a byte along is for is the third case: the first prefix
+# opens a candidate whose body would begin with the r of the second, and the
+# whole key stands at the second.
+
+case: two keys with nothing between them
+in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdefrubygems_abcdef0123456789abcdef0123456789abcdef0123456789
+out:  «rubygems-api-key»«rubygems-api-key»
+
+case: two keys separated by a space
+in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdef rubygems_abcdef0123456789abcdef0123456789abcdef0123456789
+out:  «rubygems-api-key» «rubygems-api-key»
+
+case: a prefix written in front of a key
+in:   rubygems_rubygems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  rubygems_«rubygems-api-key»
+
+# A digest written behind the prefix, which this pattern pays for rather than
+# ruling out. The Grafana format turns one away with the underscore dividing its
+# secret from its checksum, which a digest holds none of; here everything behind
+# the prefix is one class and a lowercase digest is written in it. The count
+# turns away the two digests shorter than it. It does not turn away the SHA-256,
+# which is sixteen characters longer: there is no boundary behind a match, so
+# the first forty-eight of it are a body and the sixteen past the count stay in
+# the text. The demand behind a match that would decline it is the one gitleaks,
+# kingfisher and trufflehog each write and this pattern does not, because it
+# would drop rather than trim a key with a hexadecimal character written
+# straight after it — which is the case named "a body run one character longer"
+# above.
+
+case: an md5 behind the prefix
+in:   rubygems_0123456789abcdef0123456789abcdef
+out:  rubygems_0123456789abcdef0123456789abcdef
+
+case: a sha1 behind the prefix
+in:   rubygems_0123456789abcdef0123456789abcdef01234567
+out:  rubygems_0123456789abcdef0123456789abcdef01234567
+
+case: a sha256 behind the prefix
+in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «rubygems-api-key»0123456789abcdef
+
+case: a sha256 in a cache key
+in:   key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# And what this pattern leaves alone. The first three are the prefix: the case
+# an environment variable writes it in, and the underscore it closes with
+# written as a hyphen and then left out. Then a run of the right length with no
+# prefix in front of it, a body a space has broken, the key of the credentials
+# file a key is stored in — which is the one snake_case name anybody writes with
+# this prefix, and whose second character is a p no body may hold — and the
+# prose and the log line no pattern here has anything to find in.
+
+case: an uppercase prefix
+in:   RUBYGEMS_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  RUBYGEMS_0123456789abcdef0123456789abcdef0123456789abcdef
+
+case: a hyphen where the prefix carries its underscore
+in:   rubygems-0123456789abcdef0123456789abcdef0123456789abcdef
+out:  rubygems-0123456789abcdef0123456789abcdef0123456789abcdef
+
+case: the prefix without its closing underscore
+in:   rubygems0123456789abcdef0123456789abcdef0123456789abcdef
+out:  rubygems0123456789abcdef0123456789abcdef0123456789abcdef
+
+case: a run of the right length opening with no prefix
+in:   xxxxxxxx_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  xxxxxxxx_0123456789abcdef0123456789abcdef0123456789abcdef
+
+case: a body broken by a space
+in:   rubygems_0123456789abcdef 123456789abcdef0123456789abcdef0
+out:  rubygems_0123456789abcdef 123456789abcdef0123456789abcdef0
+
+case: the credentials file key that names one
+in:   :rubygems_api_key: is where gem signin writes it
+out:  :rubygems_api_key: is where gem signin writes it
+
+case: prose
+in:   there is no credential in this sentence
+out:  there is no credential in this sentence
+
+case: a log line
+in:   time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://rubygems.org/api/v1/gems.json
+out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://rubygems.org/api/v1/gems.json
+
+# The key format RubyGems.org issued before this one, which is not read. It is
+# SecureRandom.hex(16): thirty-two lowercase hexadecimal characters with no
+# prefix at all, the migration into the ApiKey table having hashed the value
+# itself. Nothing tells such a value from an MD5, because there is nothing to
+# tell it by — it is an MD5's format exactly — so a pattern reading it would
+# redact every digest in every lock file, cache key and manifest a caller passes
+# through. The cases below are here to move with the scan: a shape invented for
+# that format would start locating them.
+
+case: a key of the format this one replaced
+in:   0123456789abcdef0123456789abcdef
+out:  0123456789abcdef0123456789abcdef
+
+case: a key of the format this one replaced in an environment assignment
+in:   RUBYGEMS_API_KEY=0123456789abcdef0123456789abcdef
+out:  RUBYGEMS_API_KEY=0123456789abcdef0123456789abcdef
+
+case: a key of the format this one replaced in the credentials file
+in:   ---\n:rubygems_api_key: 0123456789abcdef0123456789abcdef
+out:  ---\n:rubygems_api_key: 0123456789abcdef0123456789abcdef
+
+# The one place the RubyGems.org API guide and the code it documents disagree,
+# and the one documented value this pattern declines. The guide writes the
+# prefix with a body of thirty-two characters — forty-one altogether — as the
+# response of POST /api/v1/api_key, as the api_key parameter of the PATCH beside
+# it and as the response of the trusted publisher token exchange, where all
+# three of those endpoints build a key with generate_unique_rubygems_key, which
+# is SecureRandom.hex(24) and so forty-eight. The pattern's own file weighs the
+# two and reads the code. These cases are here so that the decision moves with
+# the scan: a count read as a floor, or read at thirty-two, would start
+# redacting them.
+#
+# The first of them is the same text as the case named "an md5 behind the
+# prefix" above, and the two say different things about it: there, that a digest
+# shorter than the count is turned away by the count; here, that the value the
+# guide prints is one of those.
+
+case: the shortened example the guide prints
+in:   rubygems_0123456789abcdef0123456789abcdef
+out:  rubygems_0123456789abcdef0123456789abcdef
+
+case: the shortened example in the response that prints it
+in:   {"rubygems_api_key":"rubygems_0123456789abcdef0123456789abcdef","status":"ok"}
+out:  {"rubygems_api_key":"rubygems_0123456789abcdef0123456789abcdef","status":"ok"}
+
+case: the shortened example as the parameter that updates its scopes
+in:   api_key=rubygems_0123456789abcdef0123456789abcdef
+out:  api_key=rubygems_0123456789abcdef0123456789abcdef

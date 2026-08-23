@@ -37,6 +37,7 @@ returns every pattern in the table below, and grows as patterns are added:
 | `NPMAccessToken()` | `npm_…` |
 | `OpenAIAPIKey()` | `sk-proj-…`, `sk-svcacct-…`, `sk-admin-…`, `sk-…` |
 | `PyPIAPIToken()` | `pypi-…` |
+| `RubyGemsAPIKey()` | `rubygems_…` |
 | `SendGridAPIKey()` | `SG.…` |
 | `SentryAuthToken()` | `sntryu_…`, `sntrya_…`, `sntryi_…`, `sntrys_…` |
 | `SlackToken()` | `xoxb-…`, `xoxp-…`, `xapp-…`, `xwfp-…`, `xoxe-…`, `xoxe.xoxb-…`, `xoxe.xoxp-…` |

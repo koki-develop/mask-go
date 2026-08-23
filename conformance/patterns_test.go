@@ -76,6 +76,7 @@ var patternSets = map[string][]mask.Pattern{
 	"npm-access-token":               {mask.NPMAccessToken()},
 	"openai-api-key":                 {mask.OpenAIAPIKey()},
 	"pypi-api-token":                 {mask.PyPIAPIToken()},
+	"rubygems-api-key":               {mask.RubyGemsAPIKey()},
 	"sendgrid-api-key":               {mask.SendGridAPIKey()},
 	"sentry-auth-token":              {mask.SentryAuthToken()},
 	"slack-token":                    {mask.SlackToken()},
