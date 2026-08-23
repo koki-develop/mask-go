@@ -61,15 +61,16 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `FuzzSendGridAPIKey_matchesReference`,
   `FuzzSentryAuthToken_matchesReference`, `FuzzLinearAPIKey_matchesReference`,
   `FuzzNotionAPIToken_matchesReference`,
-  `FuzzHashiCorpVaultToken_matchesReference` and
-  `FuzzGrafanaServiceAccountToken_matchesReference`. In `conformance`:
+  `FuzzHashiCorpVaultToken_matchesReference`,
+  `FuzzGrafanaServiceAccountToken_matchesReference` and
+  `FuzzSupabasePersonalAccessToken_matchesReference`. In `conformance`:
   `FuzzMask`, `FuzzMask_customPatterns`, `FuzzText`. CI gives each of them 30
   seconds.
 - `go test -bench . -benchmem` — benchmarks. `BenchmarkMasker_Mask` drives
   every pattern at once through the public API, which is what a caller pays;
   `BenchmarkBuiltins` drives each scan alone under the name its pattern
   reports, and that is what a change to a scan is compared against, since a
-  regression in one is a sixteenth of what the first reports. `go test -bench
+  regression in one is an eighteenth of what the first reports. `go test -bench
   Builtins/jwt -benchmem .` runs one of them.
 - `golangci-lint run` — lint (no config file; defaults).
 - `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
@@ -154,30 +155,39 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   (`builtin_sentry_auth_token_test.go`), `referenceLinearAPIKeyFind`
   (`builtin_linear_api_key_test.go`), `referenceNotionAPITokenFind`
   (`builtin_notion_api_token_test.go`), `referenceHashiCorpVaultTokenFind`
-  (`builtin_hashicorp_vault_token_test.go`) and
+  (`builtin_hashicorp_vault_token_test.go`),
   `referenceGrafanaServiceAccountTokenFind`
-  (`builtin_grafana_service_account_token_test.go`), plain implementations of
+  (`builtin_grafana_service_account_token_test.go`) and
+  `referenceSupabasePersonalAccessTokenFind`
+  (`builtin_supabase_personal_access_token_test.go`), plain implementations of
   the same rules. The third, the fifth, the sixth, the seventh, the eleventh,
-  the twelfth, the fourteenth, the sixteenth and the seventeenth are built on a
-  regular expression, and each tries it at every byte rather than handing it to
-  `FindAllStringIndex`: a value either scan locates can hold the start of the
-  next one, so a reference that resumed past a match would miss what the scan
-  finds — an access key ID can begin three characters into the one before it, a
-  GitLab body is written in an alphabet that holds every letter a GitLab prefix
-  is, a Google API key's prefix and an OpenAI key's `sk-` are each written in
-  the alphabet their own runs are, an npm body can close with the three letters
-  an npm prefix opens with, a SendGrid key's `SG.` is two characters of a
-  segment's own alphabet and the dot such a key already carries between its
-  segments, a Linear key's `lin_api_` opens with three characters a Linear body
-  is written with, and a Vault token's `hv` and the letter naming its kind are
-  three characters a Vault body is written with, in front of the separator such
-  a token already carries, and a Grafana token's `glsa_` is four characters a
-  secret is written with followed by the underscore such a token already
-  carries between its secret and its checksum. The first, the second, the
-  fourth, the eighth, the ninth, the tenth, the thirteenth and the fifteenth
-  are written out rather than built on a regular expression, and all eight
-  start afresh at every position — all but the ninth for that same reason, the
-  thirteenth because a Sentry organization payload is written in an alphabet
+  the twelfth, the fourteenth, the sixteenth, the seventeenth and the eighteenth
+  are built on a regular expression, and each tries it at every byte rather than
+  handing it to `FindAllStringIndex`. For all but the eighteenth that is because
+  a value either scan locates can hold the start of the next one, so a reference
+  that resumed past a match would miss what the scan finds — an access key ID
+  can begin three characters into the one before it, a GitLab body is written in
+  an alphabet that holds every letter a GitLab prefix is, a Google API key's
+  prefix and an OpenAI key's `sk-` are each written in the alphabet their own
+  runs are, an npm body can close with the three letters an npm prefix opens
+  with, a SendGrid key's `SG.` is two characters of a segment's own alphabet and
+  the dot such a key already carries between its segments, a Linear key's
+  `lin_api_` opens with three characters a Linear body is written with, and a
+  Vault token's `hv` and the letter naming its kind are three characters a Vault
+  body is written with, in front of the separator such a token already carries,
+  and a Grafana token's `glsa_` is four characters a secret is written with
+  followed by the underscore such a token already carries between its secret and
+  its checksum. The eighteenth is the exception and asks at every byte all the
+  same: a Supabase token carries the letter its prefix opens with at its first
+  character and nowhere else, since neither the `oauth_` of the longer form nor
+  a body written in hexadecimal digits holds one, so no token begins inside
+  another and `FindAllStringIndex` would report the same spans. What asking at
+  every byte buys there is that the reference restates the scan's own resumption
+  rather than a shorter rule that happens to agree with it. The first, the
+  second, the fourth, the eighth, the ninth, the tenth, the thirteenth and the
+  fifteenth are written out rather than built on a regular expression, and all
+  eight start afresh at every position — all but the ninth for that same reason,
+  the thirteenth because a Sentry organization payload is written in an alphabet
   holding every letter a Sentry prefix is, closed by the underscore that prefix
   ends on, the fifteenth because the `ntn` and `secret` in front of a Notion
   prefix's underscore are characters a Notion body is written with, and the
@@ -238,11 +248,14 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   seventeenth spells no floor either: both its counts are exact, thirty-two and
   eight, so the machine an engine builds for a candidate is read once and
   stops, and the one literal in front of them is what the engine searches the
-  text for. A reference spells the prefixes, the counts and the character
-  classes its scan reads out again rather than sharing the declarations, so
-  that the two can disagree and the fuzz target report it.
-  `Test_references_shareNoDeclarationWithTheScans` (`source_test.go`) is what
-  holds this: a reference reading the scan's own declaration moves with
+  text for. Nor does the eighteenth: its one count is exact, forty, and the
+  optional group in front of that count leaves the engine the literal both forms
+  of the token open with to search the text for, where the fifteenth's
+  alternation of two literals leaves it none. A reference spells the prefixes,
+  the counts and the character classes its scan reads out again rather than
+  sharing the declarations, so that the two can disagree and the fuzz target
+  report it. `Test_references_shareNoDeclarationWithTheScans` (`source_test.go`)
+  is what holds this: a reference reading the scan's own declaration moves with
   whatever the scan is changed to, its target then compares a rule with itself,
   and nothing else reports it — the two agree on every input, the target passes
   and the corpus holds, because from then on they are wrong together or right
@@ -287,7 +300,7 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   rather than on the variable, which is why the rule is about functions alone.
 - `Pattern` and `Redactor` implementations must be safe for concurrent use.
 - Every built-in scan advances a byte along whether the candidate became a value
-  or not rather than consuming a match, and in all but one of them that is
+  or not rather than consuming a match, and in all but two of them that is
   because a value can begin inside the one before it. What the byte is measured
   from is the start of the candidate in all but two: the Stripe scan and the
   Notion scan each measure from the anchor they searched for, and each says why
@@ -335,7 +348,17 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   over such a value and leave it in the output whole. The cost is that a value
   nested in another — a JWT payload that is itself a header — is located too;
   the spans overlap and `Masker.locate` resolves them.
-- The Stripe scan is the exception and states why in its own file: a key begins
+- The two scans that advance a byte for another reason are the Stripe one and
+  the Supabase one, and neither can have a value written inside another. The
+  Supabase scan says so in its own file and rests it on one character: the
+  letter `sbp_` opens with stands in a token exactly once, at its first
+  character, since the `oauth_` of the longer form carries none and a body is
+  written in lowercase hexadecimal digits, which carry none either. So its spans
+  never overlap one another and the byte buys nothing for a candidate that
+  became a token; what it is there for is the candidate that failed, since
+  `sbp_sbp_` opens one whose own prefix stands four characters in.
+  `Test_SupabasePersonalAccessToken_noTokenBeginsInsideAnother` holds the claim.
+- The Stripe scan is the other, and states why in its own file: a key begins
   only where no letter and no digit stands in front of it, and everything a
   span covers is one or the other but for the underscores of its prefix, so no
   key can be written inside another and its spans never overlap one another. It
@@ -370,20 +393,20 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   one by `Test_PyPIAPIToken_scanIsLinear`. The PyPI scan needs no
   `bodyNeverMovesBack` beside those: its body stands a fixed distance past the
   start of its candidate, so it moves forward with the candidates and there is
-  no separator to reason about. The AWS, Google, SendGrid, Notion and Grafana
-  scans keep no cursor and need none: a fixed count means a candidate reads a
-  bounded number of bytes and stops, which is the same guarantee bought without
-  state. The Stripe, npm, Sentry, Linear and Vault scans keep none either, and
-  share a guarantee of their own: every prefix any of them reads closes with a
-  character no body of that scan is written with — an underscore for the first
-  four, the dot Vault writes between a prefix and a body for the fifth — so
-  every body begins where a run begins and no two candidates can read the same
-  run. It is what the classic alternative of the GitHub scan has for that same
-  reason, and it is what lets the Sentry scan walk an organization payload of
-  any length without remembering where the last one ended. The Notion scan
-  reads that same underscore and reads it as the anchor itself rather than as
-  what ends a body, which is what lets one search find two prefixes sharing no
-  other character; what bounds it is still its count.
+  no separator to reason about. The AWS, Google, SendGrid, Notion, Grafana and
+  Supabase scans keep no cursor and need none: a fixed count means a candidate
+  reads a bounded number of bytes and stops, which is the same guarantee bought
+  without state. The Stripe, npm, Sentry, Linear and Vault scans keep none
+  either, and share a guarantee of their own: every prefix any of them reads
+  closes with a character no body of that scan is written with — an underscore
+  for the first four, the dot Vault writes between a prefix and a body for the
+  fifth — so every body begins where a run begins and no two candidates can read
+  the same run. It is what the classic alternative of the GitHub scan has for
+  that same reason, and it is what lets the Sentry scan walk an organization
+  payload of any length without remembering where the last one ended. The Notion
+  scan reads that same underscore and reads it as the anchor itself rather than
+  as what ends a body, which is what lets one search find two prefixes sharing
+  no other character; what bounds it is still its count.
   `Test_StripeAPIKey_scanIsLinear`, `Test_NPMAccessToken_scanIsLinear`,
   `Test_SentryAuthToken_scanIsLinear`, `Test_LinearAPIKey_scanIsLinear` and
   `Test_HashiCorpVaultToken_scanIsLinear` drive the inputs that would find it

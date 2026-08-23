@@ -25,8 +25,8 @@ import (
 //
 // The two measure different things and both are wanted. BenchmarkMasker_Mask is
 // what a caller pays, the whole of it: every pattern over the same text, the
-// spans sorted and merged, the output built. A regression in one scan is a
-// seventeenth of what it reports, which is why a change to a scan is compared
+// spans sorted and merged, the output built. A regression in one scan is an
+// eighteenth of what it reports, which is why a change to a scan is compared
 // against that scan's own cases under BenchmarkBuiltins as well.
 
 // maskerMaskBenchmarks is what a Masker holding every built-in is timed on.

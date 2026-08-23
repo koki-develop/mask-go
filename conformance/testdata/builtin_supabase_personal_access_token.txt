@@ -1,0 +1,289 @@
+# What Supabase personal access tokens the library redacts, and what it leaves
+# alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: the body is that run written twice and then as far as 7, which
+# is the forty characters the Supabase CLI's own validator asks for. It is not an
+# abbreviation — a body shortened for readability would leave a case holding no
+# token at all — and with the prefix in front it comes to forty-four characters,
+# with the marker an OAuth issued token carries as well to fifty. The run is
+# written in lowercase throughout, because that validator admits nothing else.
+
+patterns: supabase-personal-access-token
+
+# A token as it is written. One string serves the whole of the Management API
+# and carries the privileges of the account that created it, so what is below
+# differs in where the token stands rather than in what kind it is: the login
+# command the documentation prints, the bearer token header it is sent in, and
+# the response an OAuth application first reads one out of.
+
+case: a token in an environment assignment
+in:   SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567
+out:  SUPABASE_ACCESS_TOKEN=«supabase-personal-access-token»
+
+case: a token on the command line the documentation prints
+in:   supabase login --token sbp_0123456789abcdef0123456789abcdef01234567
+out:  supabase login --token «supabase-personal-access-token»
+
+case: a token in a bearer token header
+in:   Authorization: Bearer sbp_0123456789abcdef0123456789abcdef01234567
+out:  Authorization: Bearer «supabase-personal-access-token»
+
+case: a token in a curl invocation
+in:   curl -H "Authorization: Bearer sbp_0123456789abcdef0123456789abcdef01234567" https://api.supabase.com/v1/projects
+out:  curl -H "Authorization: Bearer «supabase-personal-access-token»" https://api.supabase.com/v1/projects
+
+case: a token in a configuration environment block
+in:   "env": {"SUPABASE_ACCESS_TOKEN": "sbp_0123456789abcdef0123456789abcdef01234567"}
+out:  "env": {"SUPABASE_ACCESS_TOKEN": "«supabase-personal-access-token»"}
+
+case: a token at the end of a sentence
+in:   the token is sbp_0123456789abcdef0123456789abcdef01234567.
+out:  the token is «supabase-personal-access-token».
+
+# The form an OAuth application is issued in a user's name, which writes oauth_
+# between the prefix and the same forty characters. It is the optional group of
+# the vendor's own expression, stored under the same variable and sent in the
+# same header, and no published ruleset locates anything in one at all: three
+# read alphabets the marker's underscore is not in, and the fourth admits the
+# underscore but closes its match on a quote, a space or the end of the input,
+# where a token puts six more hexadecimal digits.
+
+case: an oauth token in the response that first reports it
+in:   {"access_token":"sbp_oauth_0123456789abcdef0123456789abcdef01234567","token_type":"Bearer"}
+out:  {"access_token":"«supabase-personal-access-token»","token_type":"Bearer"}
+
+case: an oauth token in an environment assignment
+in:   SUPABASE_ACCESS_TOKEN=sbp_oauth_0123456789abcdef0123456789abcdef01234567
+out:  SUPABASE_ACCESS_TOKEN=«supabase-personal-access-token»
+
+case: an oauth token in a bearer token header
+in:   Authorization: Bearer sbp_oauth_0123456789abcdef0123456789abcdef01234567
+out:  Authorization: Bearer «supabase-personal-access-token»
+
+# The alphabet. A body is written in lowercase hexadecimal digits, which is what
+# the validator asks for and what it refuses an uppercase token against, with a
+# test named for refusing one. The letters stop at f, so the run of lowercase
+# letters that two rulesets need an entropy floor to hold back is turned away
+# here by the grammar; neither character base64url adds beyond the digits and
+# the letters is admitted, and the underscore is what the prefix itself closes
+# with.
+
+case: an uppercase body
+in:   sbp_0123456789ABCDEF0123456789ABCDEF01234567
+out:  sbp_0123456789ABCDEF0123456789ABCDEF01234567
+
+case: an uppercase oauth body
+in:   sbp_oauth_0123456789ABCDEF0123456789ABCDEF01234567
+out:  sbp_oauth_0123456789ABCDEF0123456789ABCDEF01234567
+
+case: a letter past f in the body
+in:   sbp_0123456789abcdefg123456789abcdef01234567
+out:  sbp_0123456789abcdefg123456789abcdef01234567
+
+case: a body of lowercase letters alone
+in:   sbp_abcdefghijklmnopqrstuvwxyzabcdefghijklmn
+out:  sbp_abcdefghijklmnopqrstuvwxyzabcdefghijklmn
+
+case: an underscore inside the body
+in:   sbp_0123456789abcdef_123456789abcdef01234567
+out:  sbp_0123456789abcdef_123456789abcdef01234567
+
+case: a hyphen inside the body
+in:   sbp_0123456789abcdef-123456789abcdef01234567
+out:  sbp_0123456789abcdef-123456789abcdef01234567
+
+# The lengths either side of the count. Forty is a count in the vendor's own
+# expression with a test on each side of it, so like the AWS access key ID, the
+# Google API key, the SendGrid key, the Sentry token, the Notion token and the
+# Grafana token, and unlike the GitHub, Stripe, PyPI, npm and Linear bodies, it
+# is read as a count and not as a floor: a body one character short is not a
+# token, and a run one character longer is a token with a character left over.
+
+case: a body of forty characters is a token
+in:   sbp_0123456789abcdef0123456789abcdef01234567
+out:  «supabase-personal-access-token»
+
+case: a body one character short is not
+in:   sbp_0123456789abcdef0123456789abcdef0123456
+out:  sbp_0123456789abcdef0123456789abcdef0123456
+
+case: an oauth body one character short is not
+in:   sbp_oauth_0123456789abcdef0123456789abcdef0123456
+out:  sbp_oauth_0123456789abcdef0123456789abcdef0123456
+
+case: a body run one character longer is a token and the character after it
+in:   sbp_0123456789abcdef0123456789abcdef012345678
+out:  «supabase-personal-access-token»8
+
+# What a token may be written against. There is no boundary on either side of
+# the prefix, so a token keeps its span whatever word character it abuts, and
+# what stands past the forty-fourth character stays where it was written. The
+# tightening that would rule the first two out is the demand the Slack and
+# Stripe patterns make, that no letter and no digit stand in front of a prefix.
+# It is declined for the reason the AWS pattern declines it: what it costs is
+# the second case below, a token written straight against a letter, which would
+# then be left in the text whole rather than trimmed.
+
+case: a token after an underscore
+in:   SUPABASE_TOKEN_sbp_0123456789abcdef0123456789abcdef01234567
+out:  SUPABASE_TOKEN_«supabase-personal-access-token»
+
+case: a token after a letter
+in:   xsbp_0123456789abcdef0123456789abcdef01234567
+out:  x«supabase-personal-access-token»
+
+case: a word written against a token
+in:   sbp_0123456789abcdef0123456789abcdef01234567suffix
+out:  «supabase-personal-access-token»suffix
+
+case: a hyphenated word written against a token
+in:   sbp_0123456789abcdef0123456789abcdef01234567-suffix
+out:  «supabase-personal-access-token»-suffix
+
+case: an underscored word written against a token
+in:   sbp_0123456789abcdef0123456789abcdef01234567_suffix
+out:  «supabase-personal-access-token»_suffix
+
+# Two tokens written together, and the one shape that reads like a token written
+# inside another and is not. The letter the prefix opens with stands in a token
+# exactly once, at its first character — the marker does not carry it and no body
+# may — so the prefix cannot be found inside a span and no token begins inside
+# another. What the first case below holds is the other side of that: a prefix in
+# front of a token opens a candidate whose body would have to begin with the
+# letter of the second prefix, and the scan advancing a byte rather than stepping
+# over what it declined is what reaches the token four characters in.
+
+case: a prefix in front of a token
+in:   sbp_sbp_0123456789abcdef0123456789abcdef01234567
+out:  sbp_«supabase-personal-access-token»
+
+case: two tokens with nothing between them
+in:   sbp_0123456789abcdef0123456789abcdef01234567sbp_0123456789abcdef0123456789abcdef01234567
+out:  «supabase-personal-access-token»«supabase-personal-access-token»
+
+case: an oauth token written straight after a personal one
+in:   sbp_0123456789abcdef0123456789abcdef01234567sbp_oauth_0123456789abcdef0123456789abcdef01234567
+out:  «supabase-personal-access-token»«supabase-personal-access-token»
+
+case: two tokens separated by a space
+in:   sbp_0123456789abcdef0123456789abcdef01234567 sbp_oauth_0123456789abcdef0123456789abcdef01234567
+out:  «supabase-personal-access-token» «supabase-personal-access-token»
+
+# A digest written behind the prefix, which this format pays for where the
+# Grafana one rules it out. There the character thirty-two past the prefix has to
+# be the underscore dividing a secret from its checksum and no digest holds one;
+# here there is nothing behind the prefix but the run, and forty lowercase
+# hexadecimal characters are a SHA-1 as readily as a token — which is what the
+# token in the first case of this file is written as. Redacting one is right
+# rather than a fault in the pattern, because the prefix and forty lowercase
+# hexadecimal digits are the vendor's format exactly and declining the run would
+# decline every token Supabase ever issued.
+#
+# What the count still rules out is the digest of another width. A SHA-256 is
+# read as the token its first forty characters are, with the rest left where it
+# was written, which is the trade every exact count here makes; an MD5 is
+# thirty-two where a token asks for forty and is not read at all. And a digest
+# carries no underscore, so it holds no prefix to be found at however long it
+# runs.
+
+case: a sha1 behind the prefix
+in:   sbp_0123456789abcdef0123456789abcdef01234567
+out:  «supabase-personal-access-token»
+
+case: a sha256 behind the prefix
+in:   sbp_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «supabase-personal-access-token»89abcdef0123456789abcdef
+
+case: an md5 behind the prefix
+in:   sbp_0123456789abcdef0123456789abcdef
+out:  sbp_0123456789abcdef0123456789abcdef
+
+case: a sha1 in a commit line
+in:   commit 0123456789abcdef0123456789abcdef01234567
+out:  commit 0123456789abcdef0123456789abcdef01234567
+
+case: a sha256 in a cache key
+in:   key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# And what this pattern leaves alone. The first three are the prefix: the case
+# the vendor writes it in, and the underscore it closes with written as a hyphen
+# and then left out. The three after them are the marker, which is read whole or
+# not at all — what stands behind an incomplete one is the letter it opens with,
+# which no body carries. Then a run of the right length with no prefix in front
+# of it, a body a space has broken, and the prose and the log line no pattern
+# here has anything to find in.
+
+case: an uppercase prefix
+in:   SBP_0123456789abcdef0123456789abcdef01234567
+out:  SBP_0123456789abcdef0123456789abcdef01234567
+
+case: a hyphen where the prefix carries its underscore
+in:   sbp-0123456789abcdef0123456789abcdef01234567
+out:  sbp-0123456789abcdef0123456789abcdef01234567
+
+case: the prefix without its closing underscore
+in:   sbp0123456789abcdef0123456789abcdef01234567
+out:  sbp0123456789abcdef0123456789abcdef01234567
+
+case: the marker without its closing underscore
+in:   sbp_oauth0123456789abcdef0123456789abcdef01234567
+out:  sbp_oauth0123456789abcdef0123456789abcdef01234567
+
+case: an uppercase marker
+in:   sbp_OAUTH_0123456789abcdef0123456789abcdef01234567
+out:  sbp_OAUTH_0123456789abcdef0123456789abcdef01234567
+
+case: the marker written twice
+in:   sbp_oauth_oauth_0123456789abcdef0123456789abcdef01234567
+out:  sbp_oauth_oauth_0123456789abcdef0123456789abcdef01234567
+
+case: a run of the right length opening with no prefix
+in:   xxx_0123456789abcdef0123456789abcdef01234567
+out:  xxx_0123456789abcdef0123456789abcdef01234567
+
+case: a body broken by a space
+in:   sbp_0123456789abcdef 123456789abcdef01234567
+out:  sbp_0123456789abcdef 123456789abcdef01234567
+
+case: prose
+in:   there is no credential in this sentence
+out:  there is no credential in this sentence
+
+case: a log line
+in:   time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.supabase.com/v1/projects
+out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.supabase.com/v1/projects
+
+# The other credentials Supabase issues, none of which this pattern reads. The
+# project API keys open with sb_publishable_ and sb_secret_, and nothing
+# published states what stands behind either prefix: the announcement and the
+# documentation write them as sb_publishable_xxx and sb_secret_xxx. The rules
+# written against them put the count in different places — exactly thirty-one for
+# sb_secret_ in one and thirty-one to thirty-six in two others, twenty-four to
+# forty for sb_publishable_ in the one rule reading it — and most of them need an
+# entropy floor behind the count to hold what its alphabet lets in. A floor
+# invented here would be a guess at the load-bearing part of the grammar, so both
+# are left in the text whole and the cases are here to move with the scan: a
+# shape invented for either would start locating them.
+#
+# The anon and service_role keys those replaced are JWTs signed with the
+# project's secret, carrying the role as a claim. This pattern finding nothing in
+# one is all it has to do about them, and what does read them is the JWT pattern
+# — which is what the case for it in builtins_together.txt shows.
+
+case: a project secret key
+in:   sb_secret_0123456789abcdef0123456789abcdef012
+out:  sb_secret_0123456789abcdef0123456789abcdef012
+
+case: a project secret key in an environment assignment
+in:   SUPABASE_SECRET_KEY=sb_secret_0123456789abcdef0123456789abcdef012
+out:  SUPABASE_SECRET_KEY=sb_secret_0123456789abcdef0123456789abcdef012
+
+case: a project publishable key
+in:   sb_publishable_0123456789abcdef0123456789abcd
+out:  sb_publishable_0123456789abcdef0123456789abcd
+
+case: an anon key of the format the project keys replaced
+in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.0123456789abcdef
+out:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.0123456789abcdef

@@ -41,6 +41,7 @@ returns every pattern in the table below, and grows as patterns are added:
 | `SentryAuthToken()` | `sntryu_…`, `sntrya_…`, `sntryi_…`, `sntrys_…` |
 | `SlackToken()` | `xoxb-…`, `xoxp-…`, `xapp-…`, `xwfp-…`, `xoxe-…`, `xoxe.xoxb-…`, `xoxe.xoxp-…` |
 | `StripeAPIKey()` | `sk_live_…`, `sk_test_…`, `rk_live_…`, `rk_test_…`, `pk_live_…`, `pk_test_…`, `sk_org_…` |
+| `SupabasePersonalAccessToken()` | `sbp_…`, `sbp_oauth_…` |
 
 One of these is worth knowing about before masking source code or stack traces
 with the whole set. Vault documents its token as a prefix and "24 or more"
