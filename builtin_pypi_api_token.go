@@ -17,11 +17,11 @@ import "strings"
 // Its name is "pypi-api-token".
 func PyPIAPIToken() Pattern { return pypiAPIToken }
 
-// What PyPI states and what PyPI shows are worth separating here, as they were
-// for Slack, GitLab, Google, OpenAI and Anthropic — but this format is the one
-// case where the separation barely matters, because the whole of it is readable
-// from the code that writes a token rather than from what anybody publishes
-// about the result.
+// What PyPI states and what PyPI shows are worth separating here, as they are
+// wherever a vendor names a prefix and leaves the rest of a format to be read
+// off the values it issued — but here the separation barely matters, because
+// the whole of it is readable from the code that writes a token rather than
+// from what anybody publishes about the result.
 //
 // The help page states two of the three things this pattern reads. It gives the
 // username a token is sent under, __token__; it says to set the password to the
@@ -120,12 +120,11 @@ func PyPIAPIToken() Pattern { return pypiAPIToken }
 // builtin_pypi_api_token_test.go pin both sides so that it stays a decision on
 // the record.
 //
-// There is no boundary on either side of a match, as there is none in the AWS,
-// GitLab, Google, OpenAI and Anthropic scans. A boundary in front would drop
-// the whole match rather than trim it wherever a token is written against a
-// word character, as PYPI_TOKEN_pypi-AgE... is, and one behind it would drop a
-// token followed by a character of the token's own alphabet — which, since the
-// span already reaches to the end of the run, is every token with anything
+// There is no boundary on either side of a match. A boundary in front would
+// drop the whole match rather than trim it wherever a token is written against
+// a word character, as PYPI_TOKEN_pypi-AgE... is, and one behind it would drop
+// a token followed by a character of the token's own alphabet — which, since
+// the span already reaches to the end of the run, is every token with anything
 // written against it.
 //
 // The scan resumes one byte past the start of a candidate whether it became a

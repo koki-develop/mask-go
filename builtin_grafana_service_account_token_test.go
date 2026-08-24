@@ -348,11 +348,11 @@ func Test_GrafanaServiceAccountToken_leavesWhatFollowsAlone(t *testing.T) {
 func Test_GrafanaServiceAccountToken_aDigestBehindThePrefix(t *testing.T) {
 	// The collision every prefix in this package leaves is a digest written
 	// behind it, and this is the one format that rules it out rather than
-	// paying for it. Hexadecimal digits are base62 and a digest carries nothing
-	// that ends a run, so the npm, Linear and Notion scans read a digest as a
-	// body and say so; here the character thirty-two past the prefix has to be
-	// the underscore dividing the secret from the checksum, and a digest holds
-	// none.
+	// paying for it. Hexadecimal digits are base62 and a digest carries
+	// nothing that ends a run, so a scan whose body is one class reads a
+	// digest as a body and says so; here the character thirty-two past the
+	// prefix has to be the underscore dividing the secret from the checksum,
+	// and a digest holds none.
 	//
 	// What is still located is a digest divided where a token divides: the
 	// tokens the rest of this file is written with are exactly that, thirty-two
@@ -607,10 +607,10 @@ var referenceGrafanaServiceAccountToken = regexp.MustCompile(`glsa_[0-9A-Za-z]{3
 // both and reports the two spans overlapping for a Masker to resolve, so the
 // reference must ask about both.
 //
-// As in the AWS, Google, SendGrid and Notion references, resuming a byte along
-// costs this one nothing beyond a constant: every candidate reads at most
-// forty-six characters, here as in the scan, so neither has a run to walk and
-// there is no cursor for either to be wrong about.
+// Resuming a byte along costs this one nothing beyond a constant: every
+// candidate reads at most forty-six characters, here as in the scan, so
+// neither has a run to walk and there is no cursor for either to be wrong
+// about.
 func referenceGrafanaServiceAccountTokenFind(src string) []Span {
 	var spans []Span
 	for i := 0; i < len(src); {

@@ -14,15 +14,14 @@ paths:
 
 # Built-in patterns
 
-What every built-in is held to. It loads when one of the files it names is
-opened, which is where all of it applies and nowhere else: none of it bears on
-`mask.go`, `pattern.go`, `redactor.go` or `option.go`.
+What every built-in is held to. It loads when one of the files named in `paths:`
+above is opened, which is where all of it applies and nowhere else.
 
 ## Where a pattern states its own case
 
-A rule belongs here. Which patterns happen to fall on which side of it belongs
-in `builtin_<name>.go` and the `builtin_<name>_test.go` beside it, never in a
-list kept somewhere central.
+A rule belongs here. Which side of it a pattern falls on belongs in that
+pattern's own `builtin_<name>.go` and the `builtin_<name>_test.go` beside it,
+never in a list kept somewhere central.
 
 That is not a filing preference. A list of instances has to be corrected by
 every pattern added, so it grows with the registry while the rule does not; two
@@ -32,6 +31,22 @@ Numbering the entries â€” "the third and the fifth are built on an expression" â
 is worse again: an entry inserted renumbers every one after it, so adding one
 rewrites the whole passage, and a passage rewritten under conflict that often
 comes to disagree with itself.
+
+A pattern's own file is no place for the list either, and what separates the two
+is which patterns a sentence has to be right about. A file says what its scan
+does and why: the count it reads and what makes that count readable, the thing
+that bounds it, the tightening it declines and what declining costs. Naming the
+other scans that reached the same answer states none of that and carries the
+whole registry into a file that cannot see it. Ask of such a sentence whether a
+built-in added tomorrow could make it false; where it could, it is the list
+again under another name, and the rule it was reaching for is what to write
+instead.
+
+What survives that question is a reference to one other pattern this one is
+coupled to: a declaration it borrows, the other half of a vendor's format, the
+worked precedent for an alternative being weighed, a collision one format rules
+out where this one pays for it. Those are about the pair rather than about the
+registry, and no pattern added can falsify them.
 
 So: state the rule and the test that holds it. Where a pattern is unusual, the
 unusual thing is written in that pattern's own file, next to the declaration it

@@ -25,7 +25,8 @@ func GoogleAPIKey() Pattern { return googleAPIKey }
 // stand either side is held back by the character class alone.
 //
 // What Google states and what Google shows are worth separating here, as they
-// were for Slack and GitLab, because on this format Google states nothing.
+// are wherever a vendor names a prefix and leaves the rest of a format to be
+// read off the values it issued, because on this format Google states nothing.
 //
 // The API keys page of the Cloud authentication documentation is the one place
 // the string itself is written down, and what it says of it is that a key is

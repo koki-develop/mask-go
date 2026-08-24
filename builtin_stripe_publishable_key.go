@@ -98,11 +98,11 @@ func StripePublishableKey() Pattern { return stripePublishableKey }
 // Test_stripeKeys_neitherKindBeginsInsideTheOther drives every pair of
 // prefixes.
 //
-// The scan resumes one byte past the start of a candidate, which is the default
-// and needs no argument beyond the one every scan here has: a candidate that
-// did not become a key says nothing about the next one. Since the anchor stands
-// at the start of a candidate rather than one byte into it, that is also one
-// byte past the anchor, so there is no step over anything to justify.
+// The scan resumes one byte past the start of a candidate, which is the
+// default and needs no argument beyond the one any scan has: a candidate that
+// did not become a key says nothing about the next one. Since the anchor
+// stands at the start of a candidate rather than one byte into it, that is
+// also one byte past the anchor, so there is no step over anything to justify.
 //
 // The scan keeps no cursor and needs none, for the reason the secret key scan
 // gives: every prefix closes with an underscore and no body is written with
@@ -180,9 +180,13 @@ const (
 	stripePublishableKeyAnchor = "pk_"
 
 	// stripePublishableKeyBodyChars is the count a body is held to, read as a
-	// floor rather than exactly, and it is the secret keys' floor because it is
-	// the same format. builtin_stripe_secret_key.go weighs it.
-	stripePublishableKeyBodyChars = 24
+	// floor rather than exactly. It reads the secret keys' floor rather than
+	// spelling a number of its own, because the two are halves of one vendor's
+	// format and neither can move the floor alone: a second literal here could
+	// come to disagree with the one builtin_stripe_secret_key.go weighs, and a
+	// caller running both patterns would get a minimum body that changed with
+	// the key type for no reason they could read.
+	stripePublishableKeyBodyChars = stripeSecretKeyBodyChars
 )
 
 // stripePublishableKeyPrefixAt returns the length of the prefix beginning at i

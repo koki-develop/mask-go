@@ -357,10 +357,10 @@ func Test_OpenAIAPIKey_insideAnOpaqueRun(t *testing.T) {
 	// carries the prefix in front of it, the run from that prefix to the end of
 	// the encoding is redacted.
 	//
-	// The cases are held to being redacted rather than to being spared. What is
-	// taken is a stretch of a value already opaque to a reader, and the only
-	// tightening on offer is a count — the thing builtin_openai_api_key.go sets
-	// out why this scan does not read. What the table is for is that the cases
+	// The cases are held to being redacted rather than to being spared. What
+	// is taken is a stretch of a value already opaque to a reader, and the
+	// only tightening on offer is a count; builtin_openai_api_key.go sets out
+	// why this scan does not read one. What the table is for is that the cases
 	// move with the scan: one of them ceasing to be located means the grammar
 	// changed, and that is a decision to be taken rather than noticed
 	// afterwards.
@@ -520,12 +520,12 @@ var referenceOpenAIAPIKey = regexp.MustCompile(`sk-[0-9A-Za-z_-]*T3BlbkFJ[0-9A-Z
 // would never go on to try. The scan finds both and reports the two spans
 // overlapping for a Masker to resolve, so the reference must ask about both.
 //
-// Unlike the AWS and Google references, and like the GitHub one, resuming a
-// byte along costs this one more than a constant: a match reads its run to the
-// end, so a run dense in prefixes is read once for every candidate in it. That
-// is what the reference is for — the scan remembers the run and the marker
-// across candidates and the reference remembers nothing, so the two agreeing is
-// the statement that the remembering is sound.
+// Resuming a byte along costs this one more than a constant, where a reference
+// reading a bounded count pays nothing: a match reads its run to the end, so a
+// run dense in prefixes is read once for every candidate in it. That is what
+// the reference is for — the scan remembers the run and the marker across
+// candidates and the reference remembers nothing, so the two agreeing is the
+// statement that the remembering is sound.
 func referenceOpenAIAPIKeyFind(src string) []Span {
 	var spans []Span
 	for i := 0; i < len(src); {

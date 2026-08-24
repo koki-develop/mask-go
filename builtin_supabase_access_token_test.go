@@ -638,11 +638,10 @@ var referenceSupabaseAccessToken = regexp.MustCompile(`sbp_(?:oauth_)?[0-9a-f]{4
 // spans: no token is written inside another, so nothing stands between the end
 // of a match and the next candidate. It is written this way all the same,
 // because it is the scan's own resumption and a reference restating the scan's
-// rules is what the target compares. As in the AWS, Google, SendGrid, Notion and
-// Grafana references, asking at every byte costs this one nothing beyond a
-// constant: every candidate reads at most fifty characters, here as in the scan,
-// so neither has a run to walk and there is no cursor for either to be wrong
-// about.
+// rules is what the target compares. Asking at every byte costs this one
+// nothing beyond a constant: every candidate reads at most fifty characters,
+// here as in the scan, so neither has a run to walk and there is no cursor for
+// either to be wrong about.
 func referenceSupabaseAccessTokenFind(src string) []Span {
 	var spans []Span
 	for i := 0; i < len(src); {

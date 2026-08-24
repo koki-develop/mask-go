@@ -20,17 +20,16 @@ func GrafanaServiceAccountToken() Pattern { return grafanaServiceAccountToken }
 
 // What Grafana states about this format it states in the code that writes it,
 // as the Vault and RubyGems formats are stated in theirs. Grafana is published
-// under AGPL and the generator is pkg/components/satokengen: a
-// prefixed key is the two letters gl, a service identifier, an underscore, a
-// secret and an underscore and a checksum, the secret is
-// util.GetRandomString(32) and the checksum is the CRC32 of everything in
-// front of it, four bytes little-endian, written out by encoding/hex. The
-// service identifier a service account token carries is the constant "sa". So
-// the prefix, the alphabet, both counts and the separator between them are
-// read off the thing that produces them rather than off the values it
-// produced, which is what the Slack, GitLab, Google, OpenAI, Anthropic,
-// Stripe, PyPI, npm, Sentry, Linear and Notion patterns each had to do
-// without.
+// under AGPL and the generator is pkg/components/satokengen: a prefixed key is
+// the two letters gl, a service identifier, an underscore, a secret and an
+// underscore and a checksum, the secret is util.GetRandomString(32) and the
+// checksum is the CRC32 of everything in front of it, four bytes
+// little-endian, written out by encoding/hex. The service identifier a service
+// account token carries is the constant "sa". So the prefix, the alphabet,
+// both counts and the separator between them are read off the thing that
+// produces them rather than off the values it produced, which is the firmest
+// footing a format here can be read on and firmer than a vendor page that
+// prints an example and states no shape.
 //
 // The documentation agrees and is the second source rather than the first. The
 // service account pages print glsa_iNValIdinValiDinvalidinvalidinva_5b582697,
@@ -57,18 +56,16 @@ func GrafanaServiceAccountToken() Pattern { return grafanaServiceAccountToken }
 // known false positives. The checksum's class stands behind a match the prefix
 // and the secret have already decided, so widening it draws in nothing further.
 //
-// The counts are therefore read exactly, which is where this scan stands with
-// the AWS, GitLab, Google, SendGrid, Sentry and Notion ones rather than with
-// the OpenAI, Anthropic, Stripe, PyPI, npm and Linear ones. Those six decline
-// an exact count because their vendor states no length and a count that is
-// wrong there costs the whole credential. Here the length is not an observation
-// at all: thirty-two is the argument the generator passes and eight is what
-// four bytes of hexadecimal come to, so the wager is smaller than the one AWS
-// and Google are read with and smaller than the one SendGrid is, since even
-// that number was written in prose rather than in code. What an exact count
-// costs is what it costs everywhere: a run longer than the count is not one
-// longer token but a token with something written after it, and only the token
-// is redacted.
+// The counts are therefore read exactly. A scan declines an exact count where
+// its vendor states no length, since the count is then read off the values
+// somebody was shown and being wrong about it costs the whole credential
+// rather than the end of one. Here the length is not an observation at all:
+// thirty-two is the argument the generator passes and eight is what four bytes
+// of hexadecimal come to, so the wager is smaller than one read off a
+// published example, and smaller than one read off a length a vendor stated in
+// prose. What an exact count costs is what it costs everywhere: a run longer
+// than the count is not one longer token but a token with something written
+// after it, and only the token is redacted.
 //
 // The secret's alphabet is base62, isBase62Byte in builtin_scan.go: the letters
 // of both cases and the digits. It is the alphanum constant GetRandomString
@@ -83,12 +80,13 @@ func GrafanaServiceAccountToken() Pattern { return grafanaServiceAccountToken }
 // would buy nothing: the eight characters stand behind a prefix and a
 // thirty-two character secret that have already decided the match, so no text
 // is admitted by the wider class that the narrower one would have turned away
-// in practice. What it would cost is the case where that one line changed —
-// a checksum upper-cased, or encoded by something else — where a scan asking
-// for lowercase locates nothing at all and every character of a live token
-// stays in the output. That asymmetry is the one the OpenAI, Anthropic, PyPI,
-// npm, Linear and Notion scans read their counts loosely for, and it is bought
-// here for one character class rather than for a count.
+// in practice. What it would cost is the case where that one line changed — a
+// checksum upper-cased, or encoded by something else — where a scan asking for
+// lowercase locates nothing at all and every character of a live token stays
+// in the output. That asymmetry — a reading that is too narrow costing the
+// whole credential where one that is too wide costs a tail — is what a count
+// read loosely buys elsewhere, and it is bought here for one character class
+// rather than for a count.
 //
 // The checksum is read as a shape and not verified, though Grafana's own Decode
 // verifies it and this scan could: the CRC32 is over the prefix and the secret,
@@ -111,13 +109,12 @@ func GrafanaServiceAccountToken() Pattern { return grafanaServiceAccountToken }
 // thirty-three characters further in. That second fact is why a token can begin
 // inside another, which the resumption below is about.
 //
-// There is no boundary on either side of a match, as there is none in any of
-// the scans beside this one but the Slack and Stripe ones. A word boundary in
-// front would drop the whole match rather than trim it wherever a token is
-// written against a word character, as GRAFANA_TOKEN_glsa_... is, and one
-// behind it would drop a token followed by a character of the token's own
-// alphabet. What may stand either side is held back by the character classes
-// and the two counts alone.
+// There is no boundary on either side of a match. A word boundary in front
+// would drop the whole match rather than trim it wherever a token is written
+// against a word character, as GRAFANA_TOKEN_glsa_... is, and one behind it
+// would drop a token followed by a character of the token's own alphabet. What
+// may stand either side is held back by the character classes and the two
+// counts alone.
 //
 // The tightening on offer in front is the one the Slack and Stripe scans take:
 // to ask that no letter and no digit stand before the prefix. It is declined
@@ -141,11 +138,10 @@ func GrafanaServiceAccountToken() Pattern { return grafanaServiceAccountToken }
 // step over that token and leave it in the output whole. The two spans then
 // overlap, which a Masker resolves into one.
 //
-// The scan keeps no cursor and needs none, as the AWS, Google, SendGrid and
-// Notion scans do not and for their reason: a candidate reads at most forty-six
-// bytes and stops, which is the guarantee the JWT, GitHub, GitLab, Slack,
-// OpenAI, Anthropic and PyPI scans buy with a run cursor, bought here by the
-// counts being counts.
+// The scan keeps no cursor and needs none: a candidate reads at most forty-six
+// bytes and stops, which bounds what it reads with no state to be wrong about
+// — the guarantee a scan reading a body to the end of its run has to buy with
+// a run cursor instead, bought here by the counts being counts.
 //
 // What this pattern over-matches on: forty-six characters of the right shape
 // that nobody issued, and there is little here to reach it by. Four letters
@@ -161,16 +157,16 @@ func GrafanaServiceAccountToken() Pattern { return grafanaServiceAccountToken }
 // snake_case name whose segment is spelled glsa, which is a name nobody has
 // written.
 //
-// The collision the npm, Linear and Notion prefixes leave is a digest written
-// behind one, and this format rules it out rather than paying for it. A digest
-// carries no underscore, so glsa_ and the sixty-four characters of a SHA-256
-// hold nothing at the thirty-third character but more of the digest, and the
-// candidate is turned away by one comparison; a SHA-1 and an MD5 written behind
-// the prefix are turned away by that comparison too wherever anything follows
-// them, and by the length where nothing does — forty-five characters and
-// thirty-seven where a token is forty-six. Where those three scans read a
-// digest as a body and say so, this one cannot, and
-// Test_GrafanaServiceAccountToken_aDigestBehindThePrefix pins it.
+// The collision a prefix leaves where everything behind it is one class is a
+// digest written there, and this format rules it out rather than paying for
+// it. A digest carries no underscore, so glsa_ and the sixty-four characters
+// of a SHA-256 hold nothing at the thirty-third character but more of the
+// digest, and the candidate is turned away by one comparison; a SHA-1 and an
+// MD5 written behind the prefix are turned away by that comparison too
+// wherever anything follows them, and by the length where nothing does —
+// forty-five characters and thirty-seven where a token is forty-six. Where a
+// scan whose body is one class reads a digest as a body and says so, this one
+// cannot, and Test_GrafanaServiceAccountToken_aDigestBehindThePrefix pins it.
 //
 // What reaches a span is never prose, never a git SHA and never an MD5. A token
 // holds an underscore at its fifth character and at its thirty-eighth and

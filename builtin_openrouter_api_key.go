@@ -18,15 +18,14 @@ import "strings"
 func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 
 // What OpenRouter states about this format it states by printing a whole key,
-// which is more than the Slack, GitLab, Google, OpenAI, Anthropic, Stripe,
-// PyPI, npm, Sentry, Linear and Notion pages state and less than the Grafana
-// generator does. The response that creates a key is the one place a key is
-// ever shown whole — OpenRouter's own documentation says the plaintext value
-// appears there and cannot be read back — and the example it carries is
-// sk-or-v1- and sixty-four hexadecimal digits, seventy-three characters
-// altogether. Everywhere else the same documentation writes the label a key is
-// listed under, sk-or-v1-abc...123, which states the prefix and abbreviates the
-// rest.
+// which is more than a vendor page abbreviating a key to its prefix and an
+// ellipsis states, and less than a published generator does. The response that
+// creates a key is the one place a key is ever shown whole — OpenRouter's own
+// documentation says the plaintext value appears there and cannot be read back
+// — and the example it carries is sk-or-v1- and sixty-four hexadecimal digits,
+// seventy-three characters altogether. Everywhere else the same documentation
+// writes the label a key is listed under, sk-or-v1-abc...123, which states the
+// prefix and abbreviates the rest.
 //
 // The rulesets agree, and on this format they agree exactly rather than
 // approximately. trufflehog reads sk-or-v1- and sixty-four lowercase
@@ -41,20 +40,18 @@ func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 // inferred from published keys, so the agreement above is agreement with
 // OpenRouter and not only between readers of the same examples.
 //
-// The count is therefore read exactly, which is where this scan stands with
-// the AWS, GitLab, Google, SendGrid, Sentry, Notion, Grafana, Supabase and
-// RubyGems ones rather than with the OpenAI, Anthropic, Stripe, PyPI, npm and
-// Linear ones. Those six decline an exact count because their vendor states no
-// length and a count that is wrong there costs the whole credential. The same
-// asymmetry holds here and is answered by the prefix rather than by the count:
-// sk-or-v1- carries a version, so a key whose shape is not this one is a key
-// whose prefix is not this one either. A scan reading sk-or-v1- is already
-// pinned to whatever v1 means, and the day v2 is issued it locates nothing
-// whether it counted sixty-four characters or read a run — so the count adds
-// no staleness the prefix does not already have, which is what the six
-// patterns above have no version segment to say. What an exact count costs is
-// what it costs everywhere: a run longer than the count is not one longer key
-// but a key with something written after it, and only the key is redacted.
+// The count is therefore read exactly. A scan declines an exact count where
+// its vendor states no length, since a count that is wrong there costs the
+// whole credential rather than the end of one. The same asymmetry holds here
+// and is answered by the prefix rather than by the count: sk-or-v1- carries a
+// version, so a key whose shape is not this one is a key whose prefix is not
+// this one either. A scan reading sk-or-v1- is already pinned to whatever v1
+// means, and the day v2 is issued it locates nothing whether it counted
+// sixty-four characters or read a run — so the count adds no staleness the
+// prefix does not already have, which is what a prefix carrying no version
+// segment cannot say. What an exact count costs is what it costs everywhere: a
+// run longer than the count is not one longer key but a key with something
+// written after it, and only the key is redacted.
 //
 // The alphabet is hexadecimal, isOpenRouterAPIKeyBodyByte below, read in either
 // case where every published key and two of the three rulesets are lowercase
@@ -73,16 +70,15 @@ func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 // locates nowhere, whatever the body's class admits, and the case named "an
 // uppercase prefix" in builtin_openrouter_api_key_test.go pins that.
 //
-// There is no boundary on either side of a match, as there is none in any of
-// the scans beside this one but the Slack and Stripe ones — and here that is a
+// There is no boundary on either side of a match, and here that is a
 // disagreement with all three rulesets rather than with none of them, since
 // each of the three writes a word boundary at both ends. A boundary in front
 // drops rather than trims the match wherever a key is written against a word
 // character, which is what OPENROUTER_API_KEY_sk-or-v1-... is and what a shell
 // writes into a log line; one behind it drops a key followed by a hexadecimal
-// digit, which under an exact count is a key with a character written after it.
-// What may stand either side is held back by the character class and the count
-// alone.
+// digit, which under an exact count is a key with a character written after
+// it. What may stand either side is held back by the character class and the
+// count alone.
 //
 // The tightening on offer in front is the one the Slack and Stripe scans take:
 // to ask that no letter and no digit stand before the prefix. It is declined
@@ -94,15 +90,13 @@ func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 // sixty-four hexadecimal digits. Against that stands the assignment above,
 // which is text people write.
 //
-// No key can be written inside another, which puts this scan with the few that
-// can say so rather than with the scans that resume a byte past the start of a
-// candidate because a value can begin inside the one before it. A candidate
+// No key can be written inside another, which is what lets this scan resume at
+// the body of a candidate rather than a byte past its start. A candidate
 // begins where sk-or-v1- begins, and the only s a span covers is the one it
-// opens with: the rest of the prefix is k, o, r, v, a
-// digit and three hyphens, and a body is hexadecimal, which spells no s
-// either. The 1 of the version is the one character of the prefix a body may
-// also be written with, and it opens nothing. So the spans of this pattern
-// never overlap one another, and
+// opens with: the rest of the prefix is k, o, r, v, a digit and three hyphens,
+// and a body is hexadecimal, which spells no s either. The 1 of the version is
+// the one character of the prefix a body may also be written with, and it
+// opens nothing. So the spans of this pattern never overlap one another, and
 // Test_OpenRouterAPIKey_noKeyBeginsInsideAnother drives the shapes that would
 // find that wrong.
 //
@@ -125,11 +119,11 @@ func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 // resumption rather than a shorter rule agreeing with it — where this one is
 // written to restate nothing the scan claims.
 //
-// The scan keeps no cursor and needs none, as the AWS, Google, SendGrid,
-// Notion, Grafana, Supabase and RubyGems scans do not and for their reason: a
-// candidate reads at most seventy-three bytes and stops, which is the
-// guarantee the JWT, GitHub, GitLab, Slack, OpenAI, Anthropic and PyPI scans
-// buy with a run cursor, bought here by the count being a count.
+// The scan keeps no cursor and needs none: a candidate reads at most
+// seventy-three bytes and stops, which bounds what it reads with no state to
+// be wrong about — the guarantee a scan reading a body to the end of its run
+// has to buy with a run cursor instead, bought here by the count being a
+// count.
 //
 // What this pattern over-matches on is one shape and it is worth stating
 // plainly: sixty-four hexadecimal digits are a SHA-256, so sk-or-v1- written in
@@ -149,17 +143,16 @@ func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 // and a key carries a hyphen at its third, sixth and ninth characters and
 // nowhere else, and holds no space.
 //
-// The two patterns beside this one that also read sk- are the OpenAI and
-// Anthropic ones, and neither locates what this one does. An OpenAI key is a
-// run carrying the eight characters T3BlbkFJ, which hexadecimal cannot spell,
-// and an Anthropic key names its kind between sk-ant- and its body. This
-// pattern in turn locates neither of theirs, since sixty-four hexadecimal
-// digits are not what either writes behind its own prefix. What does reach both
-// is an OpenRouter key written straight in front of base64url text carrying the
-// OpenAI marker: the key is seventy-three characters and the OpenAI run is
-// everything from the same sk- to the end of that text, so the two spans
-// overlap and a Masker resolves them into one. The
-// conformance/builtins_together.txt corpus carries the case.
+// The OpenAI and Anthropic patterns read sk- as well, and neither locates what
+// this one does. An OpenAI key is a run carrying the eight characters
+// T3BlbkFJ, which hexadecimal cannot spell, and an Anthropic key names its
+// kind between sk-ant- and its body. This pattern in turn locates neither of
+// theirs, since sixty-four hexadecimal digits are not what either writes
+// behind its own prefix. What does reach both is an OpenRouter key written
+// straight in front of base64url text carrying the OpenAI marker: the key is
+// seventy-three characters and the OpenAI run is everything from the same sk-
+// to the end of that text, so the two spans overlap and a Masker resolves them
+// into one. The conformance/builtins_together.txt corpus carries the case.
 //
 // The keys OpenRouter's key management endpoints are authenticated with are not
 // read as a format of their own, and nothing published says they are one:

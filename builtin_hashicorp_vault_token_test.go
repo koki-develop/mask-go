@@ -325,12 +325,12 @@ func Test_HashiCorpVaultToken_nextToWordCharacters(t *testing.T) {
 }
 
 func Test_HashiCorpVaultToken_readsToTheEndOfTheRun(t *testing.T) {
-	// The count is a floor and the span reaches to the end of the run, which is
-	// what a token longer than the floor needs and what a word written against
-	// one pays. base64url holds the hyphen and the underscore, so a hyphenated
-	// or underscored word written straight against a token is redacted with it
-	// — which is what tells this pattern from the npm, Linear and Notion ones,
-	// whose bodies are base62 and stop at either character.
+	// The count is a floor and the span reaches to the end of the run, which
+	// is what a token longer than the floor needs and what a word written
+	// against one pays. base64url holds the hyphen and the underscore, so a
+	// hyphenated or underscored word written straight against a token is
+	// redacted with it — which is what tells this pattern from one whose body
+	// is base62 and stops at either character.
 	tests := []struct {
 		name string
 		src  string
@@ -680,8 +680,8 @@ func Test_hashiCorpVaultTokenAnchor(t *testing.T) {
 
 func Test_hashiCorpVaultTokenSeparator_runsDoNotOverlap(t *testing.T) {
 	// The scan walks the run behind every candidate and keeps no cursor over
-	// it, where the JWT, GitHub, GitLab, Slack, OpenAI, Anthropic and PyPI
-	// scans each keep one. What makes the cursor unnecessary is that two
+	// it, where a scan whose prefix closes on a character its own body admits
+	// has to keep one. What makes the cursor unnecessary is that two
 	// candidates can never read the same run: a candidate asks for the
 	// separator at the character in front of its body, no body may be written
 	// with it, so the run of an earlier candidate has already ended there and

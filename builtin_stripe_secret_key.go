@@ -48,8 +48,9 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // exposure without distinguishing them.
 //
 // What Stripe states and what Stripe shows are worth separating here, as they
-// were for Slack, GitLab, Google, OpenAI and Anthropic, because on this format
-// Stripe states half of it and no more.
+// are wherever a vendor names a prefix and leaves the rest to be read off the
+// values it issued, because on this format Stripe states half of it and no
+// more.
 //
 // What Stripe states is the prefixes, in that table: rk_ for a restricted key
 // and sk_ for a secret key, each written with the mode behind it — rk_test_ and
@@ -120,17 +121,15 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // key, and it is what makes every body begin at the start of a run, which the
 // account of the scan's cost below rests on.
 //
-// The count is read as a floor and not as a count, which is where this scan
-// parts company with the AWS, GitLab and Google ones beside it and stands with
-// the OpenAI and Anthropic ones. Those read an exact count because the count is
-// most of what tells a value from the text around it. Here the eight characters
-// of the prefix have already done that, so a count would buy no discrimination
-// it does not have — and a count that is wrong is a key located nowhere. This
-// format has already been issued at two lengths, twenty-four and ninety-nine,
-// and one of the rulesets above admits two hundred and forty-seven, so a scan
-// asking for either published count exactly would leave live credentials of the
-// other in the output whole. Read as a floor, a key of any length at or above
-// it is located to the end of its run.
+// The count is read as a floor and not as a count. A count is read exactly
+// where it is most of what tells a value from the text around it. Here the
+// eight characters of the prefix have already done that, so a count would buy
+// no discrimination it does not have — and a count that is wrong is a key
+// located nowhere. This format has already been issued at two lengths,
+// twenty-four and ninety-nine, and one of the rulesets above admits two
+// hundred and forty-seven, so a scan asking for either published count exactly
+// would leave live credentials of the other in the output whole. Read as a
+// floor, a key of any length at or above it is located to the end of its run.
 //
 // The floor is twenty-four, which is the shortest body Stripe itself has
 // printed. What it holds back is the placeholder: sk_live_ and rk_test_ are
@@ -145,19 +144,19 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // builtin_stripe_secret_key_test.go pin it so that it stays a decision on the
 // record.
 //
-// The byte in front of the prefix may not be a letter or a digit, which few of
-// the scans here ask for and the Slack one does. The reason is Slack's reason
-// exactly: a prefix that can close a word needs something
-// holding it back, and both of these can. task_ and desk_ end in sk_, network_
-// and benchmark_ end in rk_, so task_test_, desk_live_, network_live_ and
-// benchmark_test_ each carry a whole prefix of this pattern inside an ordinary
-// snake_case name, and what follows such a name is a segment of letters and
-// digits — a run id, a timestamp and a digest joined, a fixture name — which
-// reaches twenty-four characters often enough to matter. gitleaks holds its own
-// Stripe rule to exactly this: the false positive it is validated against is
-// task_test_ and thirty alphanumerics. Those are values a reader reads, and a
-// tightening was available, so a grammar admitting them is one this pattern has
-// no business having.
+// The byte in front of the prefix may not be a letter or a digit, which the
+// Slack scan asks for too. The reason is Slack's reason exactly: a prefix that
+// can close a word needs something holding it back, and both of these can.
+// task_ and desk_ end in sk_, network_ and benchmark_ end in rk_, so
+// task_test_, desk_live_, network_live_ and benchmark_test_ each carry a whole
+// prefix of this pattern inside an ordinary snake_case name, and what follows
+// such a name is a segment of letters and digits — a run id, a timestamp and a
+// digest joined, a fixture name — which reaches twenty-four characters often
+// enough to matter. gitleaks holds its own Stripe rule to exactly this: the
+// false positive it is validated against is task_test_ and thirty
+// alphanumerics. Those are values a reader reads, and a tightening was
+// available, so a grammar admitting them is one this pattern has no business
+// having.
 //
 // It is not the word boundary a regular expression would write, and the
 // difference is the underscore. STRIPE_SECRET_KEY_sk_live_... is how a key
@@ -171,23 +170,23 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // written inside it; where it is not, a credential written that way is left
 // whole, and nothing has been seen written that way.
 //
-// There is no boundary behind the match, as there is none in any of the scans
-// beside this one. One there would drop rather than trim a key whose body runs
-// on into the text after it, and since the span already reaches the end of the
-// run, that is every key with a letter or a digit written against it.
+// There is no boundary behind the match. One there would drop rather than trim
+// a key whose body runs on into the text after it, and since the span already
+// reaches the end of the run, that is every key with a letter or a digit
+// written against it.
 //
-// No key of this pattern can be written inside another, which most of the scans
-// here cannot say: they resume a byte past a match because a value can begin
-// inside the span of the one in front of it. Here none can. A key begins only
-// where no letter and no digit stands in front of it, and everything a span
-// covers is one or the other except the underscores of the prefix — and none of
-// the positions those underscores open opens a prefix of its own, since what
-// stands at each of them is the rest of a mode or of the organization scope.
-// The body cannot open one either: a prefix wants an underscore at its third
-// character, and the third character of a body is a letter or a digit like the
-// rest of it. So the spans of this pattern never overlap one another.
-// Test_StripeSecretKey_noKeyBeginsInsideAnother drives every shape that would
-// find that wrong.
+// No key of this pattern can be written inside another, which is more than a
+// scan resuming a byte past a match can say: it resumes there because a value
+// can begin inside the span of the one in front of it. Here none can. A key
+// begins only where no letter and no digit stands in front of it, and
+// everything a span covers is one or the other except the underscores of the
+// prefix — and none of the positions those underscores open opens a prefix of
+// its own, since what stands at each of them is the rest of a mode or of the
+// organization scope. The body cannot open one either: a prefix wants an
+// underscore at its third character, and the third character of a body is a
+// letter or a digit like the rest of it. So the spans of this pattern never
+// overlap one another. Test_StripeSecretKey_noKeyBeginsInsideAnother drives
+// every shape that would find that wrong.
 //
 // No publishable key can begin inside one of these either, by the same
 // argument: a body holds no underscore, so it cannot carry that prefix, and
@@ -214,19 +213,19 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // in the other direction, and the same shape the Slack scan gives up for the
 // same demand.
 //
-// The scan keeps no cursor and needs none, which is neither the AWS and Google
-// answer nor the JWT, GitHub, GitLab, Slack, OpenAI and Anthropic one. Those
-// six keep a run cursor because a prefix written in the run's own alphabet lets
-// a run hold a candidate for every few characters it has, and each of them
-// would otherwise read that run to its end. No run here can hold two bodies.
-// Every prefix closes with an underscore and no body is written with one, so a
-// body always begins where a run of body characters begins — and two candidates
-// cannot begin one run between them, because the second would need an
-// underscore at the character before its body, which is a character inside the
-// first body's run and so a letter or a digit. Each run of the input is
-// therefore walked by at most one candidate, and the walks add up to a single
-// pass. Test_StripeSecretKey_scanIsLinear drives the inputs that would find
-// this wrong. The npm scan beside this one reaches the same answer by the same
+// The scan keeps no cursor and needs none, and gets that from the format
+// rather than from a bounded count. A scan keeps a run cursor where a prefix
+// written in the run's own alphabet lets a run hold a candidate for every few
+// characters it has, since each of those candidates would otherwise read that
+// run to its end. No run here can hold two bodies. Every prefix closes with an
+// underscore and no body is written with one, so a body always begins where a
+// run of body characters begins — and two candidates cannot begin one run
+// between them, because the second would need an underscore at the character
+// before its body, which is a character inside the first body's run and so a
+// letter or a digit. Each run of the input is therefore walked by at most one
+// candidate, and the walks add up to a single pass.
+// Test_StripeSecretKey_scanIsLinear drives the inputs that would find this
+// wrong. The npm scan beside this one reaches the same answer by the same
 // argument, its own prefix closing with an underscore no body of its own may
 // hold.
 //
@@ -343,6 +342,10 @@ const (
 	// in its own documentation; the keys it issues today are far longer, and one
 	// ruleset reads them longer still. The rationale above weighs both what a
 	// shorter floor would draw in and what a key shorter than this costs.
+	//
+	// The publishable key scan reads this rather than spelling a floor of its
+	// own, as it reads isStripeKeyWordByte below, so moving this number moves
+	// both halves of Stripe's format together.
 	stripeSecretKeyBodyChars = 24
 )
 

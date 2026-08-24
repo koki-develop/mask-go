@@ -563,15 +563,15 @@ func Test_linearAPIKeyPrefix(t *testing.T) {
 
 func Test_linearAPIKeyPrefix_runsDoNotOverlap(t *testing.T) {
 	// The scan walks the run behind every candidate and keeps no cursor over
-	// it, where the JWT, GitHub, GitLab, Slack, OpenAI, Anthropic and PyPI
-	// scans each keep one. What makes the cursor unnecessary is that two
+	// it, where a scan whose prefix closes on a character its own body admits
+	// has to keep one. What makes the cursor unnecessary is that two
 	// candidates can never read the same run: a candidate asks for the last
 	// character of the prefix directly in front of its body, no body may be
 	// written with it, so the run of an earlier candidate has already ended
 	// there and the later candidate's run begins past it. Were that character
-	// one a body admits, a run dense in prefixes would be walked once for every
-	// candidate in it and the scan would cost time quadratic in the length of
-	// such a line.
+	// one a body admits, a run dense in prefixes would be walked once for
+	// every candidate in it and the scan would cost time quadratic in the
+	// length of such a line.
 	if linearAPIKeyPrefix == "" {
 		t.Fatal("the pattern carries no prefix, so there is no candidate to reason about")
 	}

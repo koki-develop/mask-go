@@ -387,13 +387,13 @@ func Test_PyPIAPIToken_insideAnOpaqueRun(t *testing.T) {
 	// in that alphabet carries them somewhere, and the run from there to the
 	// end of the encoding is redacted.
 	//
-	// The cases are held to being redacted rather than to being spared. What is
-	// taken is a stretch of a value already opaque to a reader, and the
-	// tightening on offer is the location — the thing
-	// builtin_pypi_api_token.go sets out why this scan does not read. What the
-	// table is for is that the cases move with the scan: one of them ceasing to
-	// be located means the grammar changed, and that is a decision to be taken
-	// rather than noticed afterwards.
+	// The cases are held to being redacted rather than to being spared. What
+	// is taken is a stretch of a value already opaque to a reader, and the
+	// tightening on offer is the location; builtin_pypi_api_token.go sets out
+	// why this scan does not read it. What the table is for is that the cases
+	// move with the scan: one of them ceasing to be located means the grammar
+	// changed, and that is a decision to be taken rather than noticed
+	// afterwards.
 	tests := []struct {
 		name string
 		src  string
@@ -582,17 +582,17 @@ func Test_PyPIAPIToken_scanIsLinear(t *testing.T) {
 // before it. The scan finds both and reports the two spans overlapping for a
 // Masker to resolve, so the reference must ask about both.
 //
-// It is written out rather than built on a regular expression, as the JWT,
-// Slack and Anthropic references are, and for the reason the Anthropic one
-// gives: the grammar states compactly as pypi-AgE[0-9A-Za-z_-]{47,}, and a
-// counted repetition is what an engine has the least room to skip, so a run the
-// anchor can be written inside is re-walked at every candidate through a
-// machine forty-seven states wide. The walk below re-walks the same run and
-// nothing more, which still costs time quadratic in the length of such a run —
-// that is the price of a reference with no cursor to be wrong about, and the
-// reason the seeds below keep such a run short rather than inviting the mutator
-// to grow it. Test_builtins_scanIsLinear and Test_PyPIAPIToken_scanIsLinear are
-// where the cost the scan pays is held down.
+// It is written out rather than built on a regular expression, for the reason
+// the Anthropic reference gives: the grammar states compactly as
+// pypi-AgE[0-9A-Za-z_-]{47,}, and a counted repetition is what an engine has
+// the least room to skip, so a run the anchor can be written inside is
+// re-walked at every candidate through a machine forty-seven states wide. The
+// walk below re-walks the same run and nothing more, which still costs time
+// quadratic in the length of such a run — that is the price of a reference
+// with no cursor to be wrong about, and the reason the seeds below keep such a
+// run short rather than inviting the mutator to grow it.
+// Test_builtins_scanIsLinear and Test_PyPIAPIToken_scanIsLinear are where the
+// cost the scan pays is held down.
 func referencePyPIAPITokenFind(src string) []Span {
 	const (
 		prefix    = "pypi-"

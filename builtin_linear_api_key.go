@@ -45,17 +45,15 @@ func LinearAPIKey() Pattern { return linearAPIKey }
 // makes every body begin where a run begins — which the account of the scan's
 // cost below rests on.
 //
-// The count is read as a floor and not as a count, which is where this scan
-// stands with the GitHub, Stripe, PyPI and npm ones and parts company with the
-// AWS, GitLab, Google and SendGrid ones. Those four read an exact count because
-// the count is most of what tells a value from the text around it, or — for
-// SendGrid — because the vendor wrote the length down. Here the vendor wrote
-// the prefix down and stopped there: forty is a number two rulesets read off
-// the keys they were shown, and there is no page to hold Linear to it. Were
-// Linear to lengthen the random part, a scan asking for forty exactly would
-// locate the first forty-eight characters of a key and leave the rest of it in
-// the output. Read as a floor, a key of any length at or above it is located
-// to the end of its run.
+// The count is read as a floor and not as a count. A count is read exactly
+// where it is most of what tells a value from the text around it, or where the
+// vendor wrote the length down. Here the vendor wrote the prefix down and
+// stopped there: forty is a number two rulesets read off the keys they were
+// shown, and there is no page to hold Linear to it. Were Linear to lengthen
+// the random part, a scan asking for forty exactly would locate the first
+// forty-eight characters of a key and leave the rest of it in the output. Read
+// as a floor, a key of any length at or above it is located to the end of its
+// run.
 //
 // What the floor costs is the key shorter than it. A line cut to a column limit
 // partway through one leaves a prefix and a body too short to be a body, and
@@ -74,13 +72,12 @@ func LinearAPIKey() Pattern { return linearAPIKey }
 // of the alphabet a body is held to, which the next underscore of the name ends
 // long before.
 //
-// There is no boundary on either side of a match, as there is none in the AWS,
-// GitLab, Google, OpenAI, Anthropic, npm and SendGrid scans. A boundary in
-// front would drop the whole match rather than trim it wherever a key is
-// written against a word character, as LINEAR_API_KEY_lin_api_... is, and one
-// behind it would drop a key followed by a character of the key's own alphabet
-// — which, since the span already reaches to the end of the run, is every key
-// with a letter or a digit written against it.
+// There is no boundary on either side of a match. A boundary in front would
+// drop the whole match rather than trim it wherever a key is written against a
+// word character, as LINEAR_API_KEY_lin_api_... is, and one behind it would
+// drop a key followed by a character of the key's own alphabet — which, since
+// the span already reaches to the end of the run, is every key with a letter
+// or a digit written against it.
 //
 // The tightening on offer in front is the one the Slack and Stripe scans take:
 // to ask that no letter and no digit stand before the prefix. That is exactly
@@ -109,12 +106,11 @@ func LinearAPIKey() Pattern { return linearAPIKey }
 // front of its body and base62 holds none, so the underscore of the next
 // candidate can be no earlier than the byte that ends this run, and the run
 // that candidate reads therefore begins past this one. Successive candidates
-// read runs that do not overlap, and reading all of them comes to the length of
-// the input — the guarantee the Stripe and npm scans reach by the same
-// argument, bought without state, where the JWT, GitHub, GitLab, Slack, OpenAI,
-// Anthropic and PyPI scans have to keep a cursor for want of it.
-// Test_linearAPIKeyPrefix_runsDoNotOverlap holds the prefix to the one thing
-// that argument rests on, and Test_LinearAPIKey_scanIsLinear drives it.
+// read runs that do not overlap, and reading all of them comes to the length
+// of the input — the guarantee a scan whose prefix closes on a character its
+// own body admits has to keep a run cursor for instead, bought here without
+// state. Test_linearAPIKeyPrefix_runsDoNotOverlap holds the prefix to the one
+// thing that argument rests on, and Test_LinearAPIKey_scanIsLinear drives it.
 //
 // What this pattern over-matches on: forty characters of base62 behind
 // lin_api_ inside something nobody issued. The two underscores are what make

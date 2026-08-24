@@ -19,8 +19,8 @@ import "strings"
 func OpenAIAPIKey() Pattern { return openAIAPIKey }
 
 // What OpenAI states and what OpenAI shows are worth separating here, as they
-// were for Slack, GitLab and Google, because on this format OpenAI states
-// nothing.
+// are wherever a vendor names a prefix and leaves the rest of a format to be
+// read off the values it issued, because on this format OpenAI states nothing.
 //
 // The API reference names the kinds of key — a project key, a service account
 // key, an Admin API key — and gives each of them an endpoint that reports a
@@ -60,20 +60,19 @@ func OpenAIAPIKey() Pattern { return openAIAPIKey }
 // same eight characters in every key anyone has published, old or new, and in
 // every ruleset that reads one.
 //
-// So the runs either side of the marker are read as runs and not as counts,
-// which is where this scan parts company with the AWS, GitLab and Google ones
-// beside it. Those read an exact count because the count is most of what tells
-// a value from the text around it, and a run longer than the count is a value
-// with something written after it. Here the count tells nothing apart — the
-// marker has already done that — and a count that is wrong is a key located
-// nowhere: were OpenAI to issue a key with sixty-six characters in front of the
-// marker, a scan asking for fifty-eight or seventy-four would find nothing at
-// all and leave a live credential in the output whole. Reading to the end of
-// the run is the far side of that choice and costs the smaller thing: where a
-// key is written with no space in front of a character of its own alphabet,
-// that character is redacted with the key. It is the same trade the GitLab scan
-// takes on a routable payload, and for the same reason — a wrong shape costs
-// the end of an identifier, a wrong count costs the credential.
+// So the runs either side of the marker are read as runs and not as counts. A
+// count is read exactly where it is most of what tells a value from the text
+// around it, since a run longer than it is then a value with something written
+// after it. Here the count tells nothing apart — the marker has already done
+// that — and a count that is wrong is a key located nowhere: were OpenAI to
+// issue a key with sixty-six characters in front of the marker, a scan asking
+// for fifty-eight or seventy-four would find nothing at all and leave a live
+// credential in the output whole. Reading to the end of the run is the far
+// side of that choice and costs the smaller thing: where a key is written with
+// no space in front of a character of its own alphabet, that character is
+// redacted with the key. It is the same trade the GitLab scan takes on a
+// routable payload, and for the same reason — a wrong shape costs the end of
+// an identifier, a wrong count costs the credential.
 //
 // The alphabet is the base64url one, isBase64URLByte in builtin_scan.go. It is
 // what the published keys carry: the runs of a project, service account or
@@ -217,10 +216,10 @@ const (
 	openAIAPIKeyPrefix = "sk-"
 
 	// openAIAPIKeyMarker is the eight characters every published key carries
-	// between its two runs of random ones: the base64 encoding of OpenAI. It is
-	// what tells a key from the text around it, in place of the counts the
-	// scans beside this one read, for the reasons the rationale above gives.
-	// Its characters belong to the run alphabet as well, which is what lets it
-	// stand inside a run rather than divide one.
+	// between its two runs of random ones: the base64 encoding of OpenAI. It
+	// is what tells a key from the text around it, in place of a count, for
+	// the reasons the rationale above gives. Its characters belong to the run
+	// alphabet as well, which is what lets it stand inside a run rather than
+	// divide one.
 	openAIAPIKeyMarker = "T3BlbkFJ"
 )

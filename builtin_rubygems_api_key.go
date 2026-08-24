@@ -28,7 +28,7 @@ func RubyGemsAPIKey() Pattern { return rubyGemsAPIKey }
 // each call it and nothing else builds a key. So the prefix and everything
 // behind it are read off the thing that produces them rather than off the
 // values it produced, which is the firmest footing a format here can be read
-// on and the one most of the patterns beside this one have to do without.
+// on and firmer than a vendor page that prints an example and states no shape.
 //
 // The count and the alphabet are Ruby's rather than RubyGems.org's, which is
 // firmer still. SecureRandom.hex(n) is random_bytes(n).unpack1("H*"), and
@@ -83,21 +83,20 @@ func RubyGemsAPIKey() Pattern { return rubyGemsAPIKey }
 // costs over-matching and buys no case that a narrower one loses, and every
 // published rule reads the narrower one.
 //
-// The count is therefore read exactly rather than as a floor. Several of the
-// scans here read a floor instead, and each of them for one reason: their
-// vendor states no length, so a count would be read off the keys somebody was
-// shown, and a count that is wrong there costs the whole credential. Here the
-// length is not an observation at all — twenty-four is the argument the
-// generator passes and Ruby documents what doubles it — so there is nothing for
-// a floor to protect against. What an exact count costs is what it costs
-// everywhere: a run longer than the count is not one longer key but a key with
-// something written after it, and only the key is redacted.
+// The count is therefore read exactly rather than as a floor. A scan reads a
+// floor instead for one reason: its vendor states no length, so a count would
+// be read off the keys somebody was shown, and a count that is wrong there
+// costs the whole credential rather than the end of one. Here the length is
+// not an observation at all — twenty-four is the argument the generator passes
+// and Ruby documents what doubles it — so there is nothing for a floor to
+// protect against. What an exact count costs is what it costs everywhere: a
+// run longer than the count is not one longer key but a key with something
+// written after it, and only the key is redacted.
 //
-// There is no boundary on either side of a match, as there is none in any of
-// the scans beside this one but the Slack and Stripe ones. A word boundary in
-// front would drop the whole match rather than trim it wherever a key is
-// written against a word character, as RUBYGEMS_API_KEY_rubygems_... is, and
-// one behind it would drop a key followed by a character of the key's own
+// There is no boundary on either side of a match. A word boundary in front
+// would drop the whole match rather than trim it wherever a key is written
+// against a word character, as RUBYGEMS_API_KEY_rubygems_... is, and one
+// behind it would drop a key followed by a character of the key's own
 // alphabet. What may stand either side is held back by the character class and
 // the count alone.
 //
@@ -141,11 +140,10 @@ func RubyGemsAPIKey() Pattern { return rubyGemsAPIKey }
 // overlap, and the search below skips from one byte past the candidate to the
 // next occurrence whichever of the two it was told to start from.
 //
-// The scan keeps no cursor and needs none, as the AWS, Google, SendGrid, Notion
-// and Grafana scans do not and for their reason: a candidate reads at most
-// fifty-seven bytes and stops, which is the guarantee the JWT, GitHub, GitLab,
-// Slack, OpenAI, Anthropic and PyPI scans buy with a run cursor, bought here by
-// the count being a count.
+// The scan keeps no cursor and needs none: a candidate reads at most
+// fifty-seven bytes and stops, which bounds what it reads with no state to be
+// wrong about — the guarantee a scan reading a body to the end of its run has
+// to buy with a run cursor instead, bought here by the count being a count.
 //
 // What this pattern over-matches on: fifty-seven characters of the right shape
 // that nobody issued. Eight characters spelling a word and an underscore have

@@ -388,13 +388,13 @@ func Test_AnthropicAPIKey_insideAnOpaqueRun(t *testing.T) {
 	// follow inside the same run, everything from the prefix to the end of that
 	// run is redacted.
 	//
-	// The cases are held to being redacted rather than to being spared. What is
-	// taken is a stretch of a value already opaque to a reader, and the only
-	// tightening on offer is the table of kind names builtin_anthropic_api_key.go
-	// sets out why this scan does not read. What the table is for is that the
-	// cases move with the scan: one of them ceasing to be located means the
-	// grammar changed, and that is a decision to be taken rather than noticed
-	// afterwards.
+	// The cases are held to being redacted rather than to being spared. What
+	// is taken is a stretch of a value already opaque to a reader, and the
+	// only tightening on offer is the table of kind names;
+	// builtin_anthropic_api_key.go sets out why this scan does not read it.
+	// What the table is for is that the cases move with the scan: one of them
+	// ceasing to be located means the grammar changed, and that is a decision
+	// to be taken rather than noticed afterwards.
 	tests := []struct {
 		name string
 		src  string
@@ -605,16 +605,16 @@ func Test_AnthropicAPIKey_scanIsLinear(t *testing.T) {
 // reports the two spans overlapping for a Masker to resolve, so the reference
 // must ask about both.
 //
-// It is written out rather than built on a regular expression, as the JWT and
-// Slack references are, and for a reason of its own: the grammar states
-// compactly as sk-ant-[0-9a-z]+-[0-9A-Za-z_-]{95,}, but a counted repetition is
-// what an engine has the least room to skip, and greedy repetition behind one
-// makes it re-walk the run at every candidate through a machine ninety-five
-// states wide. Measured on sk-ant-a- written over and over, that expression
-// costs thirteen seconds on a hundred and fifteen kilobytes where the walks
-// below cost a third of one — and the mutator reaches such an input within
-// seconds, which left the fuzz target wedged on it for the rest of its run and
-// buying almost no fuzzing at all.
+// It is written out rather than built on a regular expression, for a reason of
+// its own: the grammar states compactly as
+// sk-ant-[0-9a-z]+-[0-9A-Za-z_-]{95,}, but a counted repetition is what an
+// engine has the least room to skip, and greedy repetition behind one makes it
+// re-walk the run at every candidate through a machine ninety-five states
+// wide. Measured on sk-ant-a- written over and over, that expression costs
+// thirteen seconds on a hundred and fifteen kilobytes where the walks below
+// cost a third of one — and the mutator reaches such an input within seconds,
+// which left the fuzz target wedged on it for the rest of its run and buying
+// almost no fuzzing at all.
 //
 // Walking the run at every position is what the cursor saves the scan from, so
 // this still costs time quadratic in the length of a run the prefix can be

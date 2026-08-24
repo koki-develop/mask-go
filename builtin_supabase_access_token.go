@@ -106,8 +106,7 @@ func SupabaseAccessToken() Pattern { return supabaseAccessToken }
 // longer token but a token with something written after it, and only the token
 // is redacted.
 //
-// There is no boundary on either side of a match, as there is none in any of the
-// scans beside this one but the Slack and Stripe ones. A word boundary in front
+// There is no boundary on either side of a match. A word boundary in front
 // would drop the whole match rather than trim it wherever a token is written
 // against a word character, as SUPABASE_TOKEN_sbp_... is, and one behind it
 // would drop a token followed by a hexadecimal digit.
@@ -122,23 +121,20 @@ func SupabaseAccessToken() Pattern { return supabaseAccessToken }
 // be left in the output whole rather than trimmed.
 //
 // The scan resumes one byte past the start of a candidate whether it became a
-// token or not, and unlike most of the scans here that is not because a token
-// can begin inside the one before it. None can, and the reason is one
-// character: the letter the prefix opens with stands in a token exactly once,
-// at its first character. The prefix carries one, oauth_ carries none, and a
-// body is written in hexadecimal digits, which carry none either — so the
-// anchor cannot be found inside a span, and the spans this scan reports never
-// overlap one another. Test_SupabaseAccessToken_noTokenBeginsInsideAnother
-// holds the claim. Which other scans can say the same is not written here: it
-// is a fact about them, it changes whenever one is added, and this file would
-// go on asserting whatever was true when it was last edited.
+// token or not, and here that is not because a token can begin inside the one
+// before it. None can, and the reason is one character: the letter the prefix
+// opens with stands in a token exactly once, at its first character. The
+// prefix carries one, oauth_ carries none, and a body is written in
+// hexadecimal digits, which carry none either — so the anchor cannot be found
+// inside a span, and the spans this scan reports never overlap one another.
+// Test_SupabaseAccessToken_noTokenBeginsInsideAnother holds the claim.
 //
 // What the resumption is for is the candidate that failed. sbp_sbp_ opens one
 // whose own prefix stands four characters in, and a scan stepping over what it
 // declined would lose the token behind it. For a candidate that became a token
 // the byte buys nothing and is advanced all the same, because a loop with one
-// exit is what the rest of this package is written as and because the cost is a
-// search over at most forty-nine bytes that finds nothing.
+// exit is the simpler thing to write and because the cost is a search over at
+// most forty-nine bytes that finds nothing.
 //
 // The two readings of a candidate cannot both apply, which is what lets the scan
 // take the marker wherever it stands rather than trying the shorter reading
@@ -146,11 +142,10 @@ func SupabaseAccessToken() Pattern { return supabaseAccessToken }
 // with, so a candidate carrying the marker has a letter where the shorter
 // reading needs a digit. Test_supabaseAccessTokenOAuthMarker holds it.
 //
-// The scan keeps no cursor and needs none, as the AWS, Google, SendGrid, Notion
-// and Grafana scans do not and for their reason: a candidate reads at most fifty
-// bytes and stops, which is the guarantee the JWT, GitHub, GitLab, Slack,
-// OpenAI, Anthropic and PyPI scans buy with a run cursor, bought here by the
-// count being a count.
+// The scan keeps no cursor and needs none: a candidate reads at most fifty
+// bytes and stops, which bounds what it reads with no state to be wrong about
+// — the guarantee a scan reading a body to the end of its run has to buy with
+// a run cursor instead, bought here by the count being a count.
 //
 // What this pattern over-matches on is a digest written behind the prefix, and
 // this format pays for that collision where the Grafana one rules it out. There

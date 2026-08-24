@@ -27,17 +27,16 @@ import "strings"
 // Its name is "hashicorp-vault-token".
 func HashiCorpVaultToken() Pattern { return hashiCorpVaultToken }
 
-// What the vendor states here it states twice over, in prose and in the source,
-// and it is worth saying which part comes from where. The page on token
-// concepts carries a table of the three prefixes
-// against the three kinds of token, says that "after the prefix, a string of 24
-// or more randomly-generated characters is appended", and prints a service
-// token as an example; Vault's own source states the same three prefixes as
+// What the vendor states here it states twice over, in prose and in the
+// source, and it is worth saying which part comes from where. The page on
+// token concepts carries a table of the three prefixes against the three kinds
+// of token, says that "after the prefix, a string of 24 or more
+// randomly-generated characters is appended", and prints a service token as an
+// example; Vault's own source states the same three prefixes as
 // ServiceTokenPrefix, BatchTokenPrefix and RecoveryTokenPrefix, and the same
 // twenty-four as TokenLength. So the prefixes, the count and the fact that the
-// count is a floor are the vendor's rather than read off the keys a ruleset was
-// shown — which is what the Linear count is by its own file's account, and what
-// the Notion counts are by theirs.
+// count is a floor are the vendor's rather than read off the keys a ruleset
+// was shown, which is the firmer of the two footings a count here is read on.
 //
 // The alphabet is the one thing the prose does not state, and the source does.
 // One grammar serves all three prefixes because what it leaves is one alphabet
@@ -104,26 +103,25 @@ func HashiCorpVaultToken() Pattern { return hashiCorpVaultToken }
 // this floor redacts them, and a grammar asking for exactly twenty-four or at
 // least ninety-one would leave every one of them in the output. The second is
 // that ninety-one is arithmetic over Vault's current protobuf — the field
-// numbers, an inner token that itself carries the hvs. prefix, a SHA-256 HMAC —
-// and every one of those may move without the documented format moving, where
-// what the vendor actually promises is "24 or more". A floor read from the
-// implementation breaks silently on a release that stays inside the
+// numbers, an inner token that itself carries the hvs. prefix, a SHA-256 HMAC
+// — and every one of those may move without the documented format moving,
+// where what the vendor actually promises is "24 or more". A floor read from
+// the implementation breaks silently on a release that stays inside the
 // documentation, and it breaks by locating nothing. Raising the floor short of
-// ninety-one rather than to it only trades the same coin at a worse rate: a cut
-// falling uniformly inside a ninety-one character body leaves something this
-// floor redacts three times in four, where a floor of forty redacts it a little
-// over half the time and one of fifty fewer than half. The third is that no
-// minimum is established for a batch token at all: its length is whatever the
-// encrypted entry comes to, the rulesets disagree about it, and the source
-// states none. So the count is read from what Vault documents in preference to
-// the shapes it currently emits, and being wrong that way over-matches where
-// being wrong the other way would miss a credential. That is the trade the
-// OpenAI, Anthropic, Stripe, PyPI, npm and Linear scans each make for their own
-// counts, and the one this package settled on before this pattern existed; what
-// is unusual here is only that the vendor wrote the floor down, where those six
-// read theirs off a ruleset.
-// Test_HashiCorpVaultToken_aBodyBetweenTheShapes pins the window and the
-// truncated token that is the reason for it.
+// ninety-one rather than to it only trades the same coin at a worse rate: a
+// cut falling uniformly inside a ninety-one character body leaves something
+// this floor redacts three times in four, where a floor of forty redacts it a
+// little over half the time and one of fifty fewer than half. The third is
+// that no minimum is established for a batch token at all: its length is
+// whatever the encrypted entry comes to, the rulesets disagree about it, and
+// the source states none. So the count is read from what Vault documents in
+// preference to the shapes it currently emits, and being wrong that way
+// over-matches where being wrong the other way would miss a credential. That
+// is the trade a scan makes wherever it reads a floor rather than a count;
+// what is unusual here is only which side of it the vendor underwrites, since
+// Vault wrote the floor down where a floor is usually read off a ruleset
+// instead. Test_HashiCorpVaultToken_aBodyBetweenTheShapes pins the window and
+// the truncated token that is the reason for it.
 //
 // The floor is also the whole of what turns text away, since three characters
 // and a dot are little to find a candidate by. Twenty-four unbroken characters
@@ -172,17 +170,12 @@ func HashiCorpVaultToken() Pattern { return hashiCorpVaultToken }
 // reaches into the sentence a token was written in.
 // Test_HashiCorpVaultToken_aNamespacedBatchToken pins what is left.
 //
-// There is no boundary on either side of a match, as there is none in any
-// of the scans beside this one but the Slack and Stripe ones. It is put that
-// way — exhaustively, as the more recent files put it — rather than as the
-// list of scans the older ones carry, and for the reason those files changed
-// to it: such a list is a thing the next pattern added leaves behind, and one
-// of them was already incomplete by the time this was written.
-// A boundary in front would drop the whole match rather than trim it
-// wherever a token is written against a word character, and one behind it
-// would drop a token followed by a character of the token's own alphabet —
-// which, since the span already reaches to the end of the run, is every
-// token with a letter or a digit written against it.
+// There is no boundary on either side of a match. A boundary in front would
+// drop the whole match rather than trim it wherever a token is written against
+// a word character, and one behind it would drop a token followed by a
+// character of the token's own alphabet — which, since the span already
+// reaches to the end of the run, is every token with a letter or a digit
+// written against it.
 //
 // The tightening on offer in front is to ask that no character of base64url
 // stand before the prefix, and it is declined. What it would buy is the first
@@ -230,12 +223,11 @@ func HashiCorpVaultToken() Pattern { return hashiCorpVaultToken }
 // earlier than the byte that ends this run, and the run that candidate reads
 // therefore begins past this one. Successive candidates read runs that do not
 // overlap, and reading all of them comes to the length of the input — the
-// guarantee the Stripe, npm, Sentry and Linear scans reach by the same
-// argument, bought without state, where the JWT, GitHub, GitLab, Slack, OpenAI,
-// Anthropic and PyPI scans have to keep a cursor for want of it.
-// Test_hashiCorpVaultTokenSeparator_runsDoNotOverlap holds the separator to the
-// one thing that argument rests on, and Test_HashiCorpVaultToken_scanIsLinear
-// drives it.
+// guarantee a scan whose prefix closes on a character its own body admits has
+// to keep a run cursor for instead, bought here without state.
+// Test_hashiCorpVaultTokenSeparator_runsDoNotOverlap holds the separator to
+// the one thing that argument rests on, and
+// Test_HashiCorpVaultToken_scanIsLinear drives it.
 //
 // What the scan searches the input for is the two letters in front of the kind
 // rather than any one prefix. The three prefixes agree on those two and on the
@@ -245,15 +237,14 @@ func HashiCorpVaultToken() Pattern { return hashiCorpVaultToken }
 // encoding it stands about once in four thousand characters, each time costing
 // the two byte tests that follow it and no more.
 //
-// What this pattern over-matches on: twenty-four characters of base64url behind
-// hv, a letter and a dot inside something nobody issued. The dot is what makes
-// that rare and what decides where it is reachable at all. Standard base64
-// writes none, a base64url encoding writes none, and neither does a run of
-// hexadecimal, so a certificate, a PEM body, an embedded image or a digest
+// What this pattern over-matches on: twenty-four characters of base64url
+// behind hv, a letter and a dot inside something nobody issued. The dot is
+// what makes that rare and what decides where it is reachable at all. Standard
+// base64 writes none, a base64url encoding writes none, and neither does a run
+// of hexadecimal, so a certificate, a PEM body, an embedded image or a digest
 // carries no prefix to be found at however long it runs — which is the
-// collision a pattern whose prefix closes on a character a body is written with
-// has to state, as the npm, Linear and Notion files each do, and this one does
-// not have.
+// collision a pattern whose prefix closes on a character a body is written
+// with has to state, and this one does not have.
 //
 // Where it is reachable is a value written as dot-separated segments of
 // base64url, and a JWT is the one everybody has. Three characters of a segment

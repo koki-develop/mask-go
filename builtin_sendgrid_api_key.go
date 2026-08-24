@@ -18,10 +18,10 @@ import "strings"
 func SendGridAPIKey() Pattern { return sendGridAPIKey }
 
 // What SendGrid states and what SendGrid shows are worth separating here, as
-// they were for Slack, GitLab, Google, OpenAI, Anthropic, Stripe and PyPI. On
-// this format the separation comes out the other way round from all seven:
-// SendGrid states the one thing none of their vendors states, which is the
-// length.
+// they are wherever a vendor names a prefix and leaves the rest of a format to
+// be read off the values it issued. On this format the separation comes out
+// the other way round: SendGrid states the length, which is the part a vendor
+// usually withholds, and leaves the division inside it to be read off keys.
 //
 // What SendGrid states is that a key is sixty-nine characters, always. The
 // support article answering whether a shorter key can be issued says a key is
@@ -62,19 +62,16 @@ func SendGridAPIKey() Pattern { return sendGridAPIKey }
 // carries and what two of the three rulesets total, and the ranges are one
 // ruleset's slack around it.
 //
-// The counts are therefore read exactly, which is where this scan stands with
-// the AWS, GitLab and Google ones beside it rather than with the OpenAI,
-// Anthropic, Stripe, PyPI and npm ones. Those five decline an exact count —
-// three of them reading a floor and the OpenAI and Anthropic ones reading to
-// the end of a run — because their vendor states no length, and several of
-// them have already issued values at more than one, so a count that is wrong
-// there costs the whole credential. Here the vendor states the length itself,
-// in a support article whose subject is that it never varies, and the wager on
-// an exact count is correspondingly smaller than the one AWS and Google are
-// read with — those two are exact on an observation of examples alone. What it
-// costs is what it costs there: a segment longer than the count is not one
-// longer key but a key with something written after it, and only the key is
-// redacted.
+// The counts are therefore read exactly. A scan declines an exact count — for
+// a floor, or for the end of a run — where its vendor states no length, since
+// a count is then read off the values somebody was shown, a vendor that stated
+// none may already have issued more than one length, and being wrong costs the
+// whole credential rather than the end of one. Here the vendor states the
+// length itself, in a support article whose subject is that it never varies,
+// so the wager is smaller than one resting on an observation of examples
+// alone. What it costs is what an exact count costs everywhere: a segment
+// longer than the count is not one longer key but a key with something written
+// after it, and only the key is redacted.
 //
 // The alphabet is the base64url one, isBase64URLByte in builtin_scan.go. Both
 // characters that distinguish it from the alphanumerics stand in the keys
@@ -95,13 +92,12 @@ func SendGridAPIKey() Pattern { return sendGridAPIKey }
 // second fact is why a key can begin inside another, which the resumption below
 // is about.
 //
-// There is no boundary on either side of a match, as there is none in any of
-// the scans beside this one but the Slack and Stripe ones. A word boundary in
-// front would drop the whole match rather than trim it wherever a key is
-// written against a word character, as SENDGRID_API_KEY_SG... is, and one
-// behind it would drop a key followed by a character of the key's own
-// alphabet. What may stand either side is held back by the character classes
-// and the two counts alone.
+// There is no boundary on either side of a match. A word boundary in front
+// would drop the whole match rather than trim it wherever a key is written
+// against a word character, as SENDGRID_API_KEY_SG... is, and one behind it
+// would drop a key followed by a character of the key's own alphabet. What may
+// stand either side is held back by the character classes and the two counts
+// alone.
 //
 // The tightening that is on offer in front is the one the Slack and Stripe
 // scans take: to ask that no letter and no digit stand before the prefix. SG.
@@ -131,10 +127,10 @@ func SendGridAPIKey() Pattern { return sendGridAPIKey }
 // match would step over that key and leave it in the output whole. The two
 // spans then overlap, which a Masker resolves into one.
 //
-// The scan keeps no cursor and needs none, as the AWS and Google scans do not
-// and for their reason: a candidate reads at most sixty-nine bytes and stops,
-// which is the guarantee the JWT, GitHub, GitLab, Slack, OpenAI, Anthropic and
-// PyPI scans buy with a run cursor, bought here by the counts being counts.
+// The scan keeps no cursor and needs none: a candidate reads at most
+// sixty-nine bytes and stops, which bounds what it reads with no state to be
+// wrong about — the guarantee a scan reading a body to the end of its run has
+// to buy with a run cursor instead, bought here by the counts being counts.
 //
 // What this pattern over-matches on: text somebody wrote whose shape is a
 // key's exactly. A digest, a base64 payload and a base64url one carry no dot,

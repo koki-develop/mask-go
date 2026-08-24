@@ -21,13 +21,13 @@ import "strings"
 // Its name is "sentry-auth-token".
 func SentryAuthToken() Pattern { return sentryAuthToken }
 
-// What Sentry states of this format it states in code rather than in prose, and
-// states more there than Slack, GitLab, Google, OpenAI, Anthropic and Stripe
-// state of theirs anywhere. The prose documentation on auth tokens names the
-// three kinds a reader can create and gives no prefix, no length and no
-// alphabet for any of them; everything below is read off what Sentry publishes
-// beside it — the server that mints the tokens, the command line tool that
-// parses them, and the RFC the organization token was designed in.
+// What Sentry states of this format it states in code rather than in prose,
+// and states more there than a vendor naming a prefix and stopping does. The
+// prose documentation on auth tokens names the three kinds a reader can create
+// and gives no prefix, no length and no alphabet for any of them; everything
+// below is read off what Sentry publishes beside it — the server that mints
+// the tokens, the command line tool that parses them, and the RFC the
+// organization token was designed in.
 //
 // The prefixes are an enumeration of their own, AuthTokenType in
 // src/sentry/types/token.py, whose four members are sntryu_ for a user token,
@@ -72,14 +72,13 @@ func SentryAuthToken() Pattern { return sentryAuthToken }
 // characters and forty-four.
 //
 // The alphabet of both segments is the standard base64 one of RFC 4648 and not
-// the base64url alphabet the JWT, GitHub, GitLab, Google and SendGrid scans
-// read: Sentry writes them with Python's b64encode and sentry-cli reads them
-// with data_encoding's BASE64, both of which are the alphabet with + and /.
-// Both of those characters stand in the published tokens — one of the secrets
-// carries a slash and another two pluses — so neither is inferred. The two
-// characters base64url writes in their place are the ones this alphabet leaves
-// out, and the underscore among them is what the whole of the reading below
-// rests on.
+// the base64url alphabet isBase64URLByte in builtin_scan.go holds: Sentry
+// writes them with Python's b64encode and sentry-cli reads them with
+// data_encoding's BASE64, both of which are the alphabet with + and /. Both of
+// those characters stand in the published tokens — one of the secrets carries
+// a slash and another two pluses — so neither is inferred. The two characters
+// base64url writes in their place are the ones this alphabet leaves out, and
+// the underscore among them is what the whole of the reading below rests on.
 //
 // The payload carries its padding and the secret does not, which is the one
 // asymmetry in the format and is written into both ends of it: the secret is
@@ -93,24 +92,22 @@ func SentryAuthToken() Pattern { return sentryAuthToken }
 // itself rather than a count anybody chose: a payload that is not one is a
 // payload Sentry could not have written and sentry-cli would refuse to read.
 //
-// The counts are read exactly, which is where this scan stands with the AWS,
-// GitLab, Google and SendGrid ones rather than with the OpenAI, Anthropic,
-// Stripe, PyPI and npm ones. Those five decline an exact count because their
-// vendor states no length and a count that is wrong there costs the whole
-// credential. Here both counts are the width of thirty-two random bytes in the
-// encoding the vendor's own minting code names, and the vendor's own parser
-// rejects anything either side of them, so the wager is as small as it is for
-// any pattern here. What it costs is what it costs there: a run longer than the
-// count is not one longer token but a token with something written after it,
-// and only the token is redacted.
+// The counts are read exactly. A scan declines an exact count where its vendor
+// states no length, since a count that is wrong there costs the whole
+// credential rather than the end of one. Here both counts are the width of
+// thirty-two random bytes in the encoding the vendor's own minting code names,
+// and the vendor's own parser rejects anything either side of them, so there
+// is nothing left for a floor to protect against. What it costs is what an
+// exact count costs everywhere: a run longer than the count is not one longer
+// token but a token with something written after it, and only the token is
+// redacted.
 //
-// There is no boundary on either side of a match, as there is none in any of
-// the scans beside this one but the Slack and Stripe ones. A word boundary in
-// front would drop the whole match rather than trim it wherever a token is
-// written against a word character, as SENTRY_AUTH_TOKEN_sntryu_... is, and one
-// behind it would drop a token followed by a character of the token's own
-// alphabet. What may stand either side is held back by the character classes
-// and the counts alone.
+// There is no boundary on either side of a match. A word boundary in front
+// would drop the whole match rather than trim it wherever a token is written
+// against a word character, as SENTRY_AUTH_TOKEN_sntryu_... is, and one behind
+// it would drop a token followed by a character of the token's own alphabet.
+// What may stand either side is held back by the character classes and the
+// counts alone.
 //
 // The tightening the Slack and Stripe scans take — that no letter and no digit
 // stand in front of the prefix — would rule out nothing here and is not taken.

@@ -294,8 +294,8 @@ func Test_RubyGemsAPIKey_leavesWhatFollowsAlone(t *testing.T) {
 			want: "*********************************************************-suffix",
 		},
 		{
-			// The underscore belongs to it either, however much of the format
-			// is written with one: the count is what ends a key, so an
+			// The underscore does not belong to it either, however much of the
+			// format is written with one: the count is what ends a key, so an
 			// underscored word against one is left where it stands as a
 			// hyphenated one is.
 			name: "underscored word",
@@ -606,10 +606,10 @@ var referenceRubyGemsAPIKey = regexp.MustCompile(`rubygems_[0-9a-f]{48}`)
 // the things the target below is for. FindAllStringIndex would be the shorter
 // way to write this and would be that claim written into the reference.
 //
-// As in the AWS, Google, SendGrid, Notion and Grafana references, resuming a
-// byte along costs this one nothing beyond a constant: every candidate reads at
-// most fifty-seven characters, here as in the scan, so neither has a run to
-// walk and there is no cursor for either to be wrong about.
+// Resuming a byte along costs this one nothing beyond a constant: every
+// candidate reads at most fifty-seven characters, here as in the scan, so
+// neither has a run to walk and there is no cursor for either to be wrong
+// about.
 func referenceRubyGemsAPIKeyFind(src string) []Span {
 	var spans []Span
 	for i := 0; i < len(src); {

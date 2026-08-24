@@ -18,14 +18,14 @@ import "strings"
 func NPMAccessToken() Pattern { return npmAccessToken }
 
 // What npm states of this format it states in one place, the announcement of
-// it, and states more there than Slack, GitLab, Google, OpenAI and Anthropic
-// state of theirs anywhere. A token opens with npm and an underscore behind it,
-// where the format before this one was a bare UUID; the random part carries a
-// hundred and seventy-eight bits of entropy where that UUID carried a hundred
-// and twenty-eight; the last six characters are a CRC32 checksum encoded in
-// npm's own base62. And the reason given for all three is that npm matched the
-// format GitHub had shipped for its own tokens, which is the format the classic
-// alternative of the GitHub scan beside this one reads.
+// it, and states more there than a vendor naming a prefix and stopping does. A
+// token opens with npm and an underscore behind it, where the format before
+// this one was a bare UUID; the random part carries a hundred and
+// seventy-eight bits of entropy where that UUID carried a hundred and
+// twenty-eight; the last six characters are a CRC32 checksum encoded in npm's
+// own base62. And the reason given for all three is that npm matched the
+// format GitHub had shipped for its own tokens, which is the format the
+// classic alternative of the GitHub scan beside this one reads.
 //
 // The count follows from those numbers rather than being stated as one.
 // Sixty-two characters carry log2(62) bits each, so a hundred and
@@ -52,16 +52,15 @@ func NPMAccessToken() Pattern { return npmAccessToken }
 // the expired tokens a caller has this library to redact carry checksums that
 // verify, so the digits rule none of them out.
 //
-// The count is read as a floor and not as a count, which is where this scan
-// stands with the GitHub one it copies and parts company with the AWS, GitLab
-// and Google ones. Those read an exact count because the count is most of what
-// tells a value from the text around it, and a run longer than the count is a
-// value with something written after it. Here the anchor is doing that work,
-// and the thirty-six is a number derived from an entropy figure rather than one
-// npm has written down: were npm to lengthen the random part, a scan asking for
+// The count is read as a floor and not as a count, as it is in the GitHub scan
+// this format copies. A count is read exactly where it is most of what tells a
+// value from the text around it, since a run longer than it is then a value
+// with something written after it. Here the anchor is doing that work, and the
+// thirty-six is a number derived from an entropy figure rather than one npm
+// has written down: were npm to lengthen the random part, a scan asking for
 // thirty-six exactly would locate the first forty characters of a token and
-// leave the rest of it in the output. Read as a floor, a token of any length at
-// or above it is located to the end of its run.
+// leave the rest of it in the output. Read as a floor, a token of any length
+// at or above it is located to the end of its run.
 //
 // What the floor costs is the token shorter than it. A line cut to a column
 // limit partway through a token leaves a prefix and a body too short to be one,
@@ -70,13 +69,12 @@ func NPMAccessToken() Pattern { return npmAccessToken }
 // builtin_npm_access_token_test.go pin it so that it stays a decision on the
 // record.
 //
-// There is no boundary on either side of a match, as there is none in the AWS,
-// GitLab, Google, OpenAI and Anthropic scans. A boundary in front would drop
-// the whole match rather than trim it wherever a token is written against a
-// word character, as NPM_TOKEN_npm_... is, and one behind it would drop a token
-// followed by a character of the token's own alphabet — which, since the span
-// already reaches to the end of the run, is every token with anything written
-// against it.
+// There is no boundary on either side of a match. A boundary in front would
+// drop the whole match rather than trim it wherever a token is written against
+// a word character, as NPM_TOKEN_npm_... is, and one behind it would drop a
+// token followed by a character of the token's own alphabet — which, since the
+// span already reaches to the end of the run, is every token with anything
+// written against it.
 //
 // The Stripe scan beside this one does ask that the byte in front be no letter
 // and no digit, and what makes that worth its cost there makes it worthless
@@ -101,9 +99,9 @@ func NPMAccessToken() Pattern { return npmAccessToken }
 // earlier than the byte that ends this run, and the run that candidate reads
 // therefore begins past this one. Successive candidates read runs that do not
 // overlap, and reading all of them comes to the length of the input — the
-// guarantee the Stripe scan and the classic alternative of the GitHub scan
-// reach by the same argument, bought without state, where the JWT, GitLab,
-// Slack, OpenAI and Anthropic scans have to keep a cursor for want of it.
+// guarantee a scan whose prefix closes on a character its own body admits has
+// to keep a run cursor for instead, bought here without state, as the classic
+// alternative of the GitHub scan buys it by the same argument.
 // Test_npmAccessTokenPrefix_runsDoNotOverlap holds the prefix to the one thing
 // that argument rests on, and Test_NPMAccessToken_scanIsLinear drives it.
 //

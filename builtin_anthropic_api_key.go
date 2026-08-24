@@ -18,8 +18,9 @@ import "strings"
 func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 
 // What Anthropic states and what Anthropic shows are worth separating here, as
-// they were for Slack, GitLab, Google and OpenAI, because on this format
-// Anthropic states nothing.
+// they are wherever a vendor names a prefix and leaves the rest of a format to
+// be read off the values it issued, because on this format Anthropic states
+// nothing.
 //
 // The API documentation gives the header a request carries a key in, x-api-key,
 // and the Console page a key is created on. No length, no alphabet and no
@@ -65,17 +66,16 @@ func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 // being read from one — a body may carry hyphens of its own, so only the first
 // one behind the prefix divides the two.
 //
-// The count is read as a floor and not as a count, which is where this scan
-// parts company with the AWS, GitLab and Google ones beside it and stands with
-// the OpenAI one. Those read an exact count because the count is most of what
-// tells a value from the text around it. Here the anchor is doing that work:
-// seven characters of prefix, a kind, a hyphen and a run of ninety-five is a
-// far narrower thing than AIza and thirty-five. A count read exactly would buy
-// no discrimination it does not already have, and a count that is wrong is a
-// key located nowhere — were Anthropic to issue a kind whose body is a hundred
-// and twenty characters, a scan asking for ninety-five exactly would find
-// nothing and leave a live credential in the output whole. Read as a floor, a
-// key of any length at or above it is located to the end of its run.
+// The count is read as a floor and not as a count. A count is read exactly
+// where it is most of what tells a value from the text around it. Here the
+// anchor is doing that work: seven characters of prefix, a kind, a hyphen and
+// a run of ninety-five is a far narrower thing than AIza and thirty-five. A
+// count read exactly would buy no discrimination it does not already have, and
+// a count that is wrong is a key located nowhere — were Anthropic to issue a
+// kind whose body is a hundred and twenty characters, a scan asking for
+// ninety-five exactly would find nothing and leave a live credential in the
+// output whole. Read as a floor, a key of any length at or above it is located
+// to the end of its run.
 //
 // What the floor is for, beyond stating the count that is known, is telling a
 // credential from a hyphenated identifier. The prefix carries two hyphens, so
@@ -104,13 +104,12 @@ func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 // with a character of its own alphabet written against it does not close with
 // AA at all, and neither does a key inside a longer blob.
 //
-// There is no boundary on either side of a match, as there is none in the AWS,
-// GitLab, Google and OpenAI scans. A boundary in front would drop the whole
-// match rather than trim it wherever a key is written against a word character,
-// as ANTHROPIC_API_KEY_sk-ant-api03-... is, and one behind it would drop a key
-// followed by a character of the key's own alphabet — which, since the span
-// already reaches to the end of the run, is every key with anything written
-// against it.
+// There is no boundary on either side of a match. A boundary in front would
+// drop the whole match rather than trim it wherever a key is written against a
+// word character, as ANTHROPIC_API_KEY_sk-ant-api03-... is, and one behind it
+// would drop a key followed by a character of the key's own alphabet — which,
+// since the span already reaches to the end of the run, is every key with
+// anything written against it.
 //
 // The scan resumes one byte past the start of a candidate whether it became a
 // key or not. Every character of sk-ant- belongs to the alphabet a body is

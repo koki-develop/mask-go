@@ -27,14 +27,13 @@ func NotionAPIToken() Pattern { return notionAPIToken }
 // and nothing in it reads a character of one.
 //
 // So this pattern rests on the tokens published and on the rulesets reading
-// them, as the Slack, GitLab, Google, OpenAI, Anthropic, Stripe, PyPI, npm,
-// Sentry and Linear ones do — and further on them than any of those, because
-// what Notion declines to state is not the length alone but the alphabet, the
-// structure, and whether either survives the next change. What is written
-// below is therefore written to be wrong cheaply rather than to be exact:
-// where a reading could be tighter and the vendor has not underwritten the
-// tightening, it is left loose, and the paragraphs on the eleven digits and on
-// the over-matching are the two places that choice is paid for.
+// them, and rests further on them than a pattern whose vendor withholds the
+// length alone: what Notion declines to state is the alphabet and the
+// structure as well, and whether either survives the next change. What is
+// written below is therefore written to be wrong cheaply rather than to be
+// exact: where a reading could be tighter and the vendor has not underwritten
+// the tightening, it is left loose, and the paragraphs on the eleven digits
+// and on the over-matching are the two places that choice is paid for.
 //
 // What Notion does state is the prefix, and why there is one. Public API tokens
 // generated from 25 September 2024 open with ntn_ where the ones before them
@@ -58,11 +57,11 @@ func NotionAPIToken() Pattern { return notionAPIToken }
 // Both counts come to the same fifty characters with the prefix in front, and
 // that is what makes either worth reading exactly rather than as a floor: the
 // prefix lost three characters when Notion changed it and the body gained
-// three, so a token stayed the length it had been. A number reached twice, from
-// two formats a vendor rewrote between and from rulesets that did not read it
-// off each other, is a different thing from a number read off one set of
-// examples — which is what the AWS and Google counts are, and they are read
-// exactly too.
+// three, so a token stayed the length it had been. A number reached twice,
+// from two formats a vendor rewrote between and from rulesets that did not
+// read it off each other, is a different thing from a number read off one set
+// of examples — and a count read off one set of examples is read exactly here
+// anyway, wherever nothing better is to be had.
 //
 // The tightening on offer behind ntn_ is the one gitleaks and kingfisher take:
 // that the first eleven characters of a body are digits. It is not taken, and
@@ -82,10 +81,10 @@ func NotionAPIToken() Pattern { return notionAPIToken }
 // eleven digits and handed a token whose numeric part is ten or twelve locates
 // nothing, and every character of a live token stays in the output. What
 // declining it costs is the over-match set out below. The asymmetry is the one
-// the OpenAI, Anthropic, Stripe, PyPI, npm and Linear scans read their counts
-// loosely for, and it is sharper here than in any of them: a ruleset is
-// reporting a finding to somebody who will read it and weigh it, where this
-// library is writing over a value nobody will see again.
+// a count read loosely is bought against everywhere, and it is sharper here
+// than in a ruleset: a ruleset is reporting a finding to somebody who will
+// read it and weigh it, where this library is writing over a value nobody will
+// see again.
 //
 // Reading fifty exactly is a wager of the same kind, and the vendor's warning
 // covers it as squarely, so what separates the two is worth writing down. The
@@ -101,12 +100,10 @@ func NotionAPIToken() Pattern { return notionAPIToken }
 // Being wrong costs differently as well, and that is the third thing. A token
 // longer than fifty is located for its first fifty and the characters past
 // them are left in the output, which is what an exact count costs wherever it
-// is read and what the AWS, Google, SendGrid and Sentry scans pay too — all
-// four read a count rather than a floor; a token shorter than fifty is located
-// nowhere, which is the far side of it. The eleven digits have no near side: a
-// token whose numeric part is ten characters or twelve is located nowhere at
-// any length. The cases in builtin_notion_api_token_test.go pin both sides of
-// the count.
+// is read; a token shorter than fifty is located nowhere, which is the far
+// side of it. The eleven digits have no near side: a token whose numeric part
+// is ten characters or twelve is located nowhere at any length. The cases in
+// builtin_notion_api_token_test.go pin both sides of the count.
 //
 // The alphabet is base62, isBase62Byte in builtin_scan.go: the letters of both
 // cases and the digits. It is what all three rulesets admit behind either
@@ -133,22 +130,21 @@ func NotionAPIToken() Pattern { return notionAPIToken }
 // below.
 //
 // Reading backwards is also what makes the order of the spans worth an
-// argument, where every scan beside this one reports them in the order it walks
+// argument, where a scan reading forwards reports them in the order it walks
 // the text. Take two candidates, one at an underscore a and a later one at b,
-// and suppose the second began in front of the first. Its start is b+1 less the
-// length of its prefix, so beginning earlier than a+1 less the length of the
-// first's means b-a is smaller than the second's prefix — which puts a inside
-// that prefix and somewhere other than its last character, where no prefix
-// carries the anchor. So a later underscore never opens an earlier candidate,
-// the spans come out ascending, and the reference below can be compared against
-// them span for span.
+// and suppose the second began in front of the first. Its start is b+1 less
+// the length of its prefix, so beginning earlier than a+1 less the length of
+// the first's means b-a is smaller than the second's prefix — which puts a
+// inside that prefix and somewhere other than its last character, where no
+// prefix carries the anchor. So a later underscore never opens an earlier
+// candidate, the spans come out ascending, and the reference below can be
+// compared against them span for span.
 //
-// There is no boundary on either side of a match, as there is none in any of
-// the scans beside this one but the Slack and Stripe ones. A word boundary in
-// front would drop the whole match rather than trim it wherever a token is
-// written against a word character, as NOTION_TOKEN_ntn_... is, and one behind
-// it would drop a token followed by a character of the token's own alphabet.
-// What may stand either side is held back by the alphabet and the count alone.
+// There is no boundary on either side of a match. A word boundary in front
+// would drop the whole match rather than trim it wherever a token is written
+// against a word character, as NOTION_TOKEN_ntn_... is, and one behind it
+// would drop a token followed by a character of the token's own alphabet. What
+// may stand either side is held back by the alphabet and the count alone.
 //
 // The tightening on offer in front is the one the Slack and Stripe scans take,
 // to ask that no letter and no digit stand before the prefix. It would buy
@@ -161,11 +157,10 @@ func NotionAPIToken() Pattern { return notionAPIToken }
 // declines for the same reason.
 //
 // The scan advances one byte past the anchor whether the candidate became a
-// token or not, and steps over nothing by doing so. That is a weaker claim than
-// the one the scans beside this one make when they resume a byte past the start
-// of a candidate, and it holds for a different reason: a candidate is found by
-// its own underscore, a body carries none, and every underscore in the input is
-// looked at in turn.
+// token or not, and steps over nothing by doing so. That is a weaker claim
+// than a scan resuming a byte past the start of a candidate makes, and it
+// holds for a different reason: a candidate is found by its own underscore, a
+// body carries none, and every underscore in the input is looked at in turn.
 //
 // A token can still be written inside another, and is still found. The
 // characters in front of either anchor belong to the alphabet a body is written
@@ -176,12 +171,12 @@ func NotionAPIToken() Pattern { return notionAPIToken }
 // it is one this scan has not yet passed. The two spans then overlap, which a
 // Masker resolves into one.
 //
-// The scan keeps no cursor and needs none, as the AWS, Google and SendGrid
-// scans do not and for their reason: a candidate reads at most fifty bytes and
-// stops, which is the guarantee the JWT, GitHub, GitLab, Slack, OpenAI,
-// Anthropic and PyPI scans buy with a run cursor, bought here by the count
-// being a count. What opens a candidate at all is an underscore, and the input
-// holds no more of those than it has characters.
+// The scan keeps no cursor and needs none: a candidate reads at most fifty
+// bytes and stops, which bounds what it reads with no state to be wrong about
+// — the guarantee a scan reading a body to the end of its run has to buy with
+// a run cursor instead, bought here by the count being a count. What opens a
+// candidate at all is an underscore, and the input holds no more of those than
+// it has characters.
 //
 // What this pattern over-matches on: fifty characters of the right shape that
 // nobody issued. The two prefixes are worth separating here, because only one
@@ -305,11 +300,11 @@ const (
 // notionAPITokenPrefixAt returns the length of the prefix closing at the anchor
 // standing at i in src, or zero where none does.
 //
-// It reads backwards, unlike the prefix lookups the Slack, GitLab and Stripe
-// scans keep, because what the scan searches for is the character a prefix ends
-// on rather than the one it begins with. The bound is checked here rather than
-// left to the caller: a prefix longer than the text in front of the anchor is
-// the ordinary case near the start of an input, not an error.
+// It reads backwards, where a prefix lookup ordinarily reads forwards, because
+// what the scan searches for is the character a prefix ends on rather than the
+// one it begins with. The bound is checked here rather than left to the
+// caller: a prefix longer than the text in front of the anchor is the ordinary
+// case near the start of an input, not an error.
 func notionAPITokenPrefixAt(src string, i int) int {
 	for _, prefix := range notionAPITokenPrefixes {
 		if start := i + 1 - len(prefix); start >= 0 && src[start:i+1] == prefix {

@@ -511,15 +511,15 @@ func Test_sentryAuthTokenHexTokenChars(t *testing.T) {
 
 func Test_sentryAuthTokenSeparator_runsDoNotOverlap(t *testing.T) {
 	// The scan walks the payload run behind every organization candidate and
-	// keeps no cursor over it, where the JWT, GitLab, Slack, OpenAI, Anthropic
-	// and PyPI scans each keep one. What makes the cursor unnecessary is that
-	// two candidates can never read the same run: a candidate asks for the
-	// separator seven characters in, no payload and no secret may be written
-	// with it, so the run of an earlier candidate has already ended there and
-	// the later candidate's run begins past it. Were the separator a character
-	// a payload admits, a run dense in prefixes would be walked once for every
-	// candidate in it and the scan would cost time quadratic in the length of
-	// such a line.
+	// keeps no cursor over it, where a scan whose prefix closes on a character
+	// its own body admits has to keep one. What makes the cursor unnecessary
+	// is that two candidates can never read the same run: a candidate asks for
+	// the separator seven characters in, no payload and no secret may be
+	// written with it, so the run of an earlier candidate has already ended
+	// there and the later candidate's run begins past it. Were the separator a
+	// character a payload admits, a run dense in prefixes would be walked once
+	// for every candidate in it and the scan would cost time quadratic in the
+	// length of such a line.
 	if isSentryAuthTokenBase64Byte(sentryAuthTokenSeparator) {
 		t.Errorf("the separator %q belongs to the alphabet a payload is written in, so two candidates can read the same run", sentryAuthTokenSeparator)
 	}

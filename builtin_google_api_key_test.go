@@ -13,8 +13,9 @@ import (
 // What every built-in shares — the convention its name follows, one value per
 // accessor, usable spans, no false positive on prose, agreement with the
 // reference below, masking that leaves nothing to find out of reach of what it
-// redacted, concurrent use and a linear-time scan — is held to in builtins_test.go, which drives every
-// built-in from one table rather than a set of tests apiece.
+// redacted, concurrent use and a linear-time scan — is held to in
+// builtins_test.go, which drives every built-in from one table rather than a
+// set of tests apiece.
 //
 // The keys written out below are made only of ordered characters: valid in
 // shape, obviously not real. The run they are built from,
@@ -396,10 +397,10 @@ var referenceGoogleAPIKey = regexp.MustCompile(`AIza[0-9A-Za-z_-]{35}`)
 // would never go on to try. The scan finds both and reports the two spans
 // overlapping for a Masker to resolve, so the reference must ask about both.
 //
-// As in the AWS reference, and unlike the GitHub one, resuming a byte along
-// costs this one nothing beyond a constant: every candidate reads at most
-// thirty-nine characters, here as in the scan, so neither has a run to walk and
-// there is no cursor for either to be wrong about.
+// Resuming a byte along costs this one nothing beyond a constant, where a
+// reference reading a body to the end of its run pays for it: every candidate
+// reads at most thirty-nine characters, here as in the scan, so neither has a
+// run to walk and there is no cursor for either to be wrong about.
 func referenceGoogleAPIKeyFind(src string) []Span {
 	var spans []Span
 	for i := 0; i < len(src); {

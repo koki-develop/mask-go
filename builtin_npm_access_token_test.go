@@ -118,8 +118,8 @@ func Test_NPMAccessToken_noMatch(t *testing.T) {
 			src:  "NPM_0123456789abcdefghijklmnopqrstuvwxyz",
 		},
 		{
-			// The prefix closes with the underscore npm moved to, not with the
-			// hyphen a delimiter used to be elsewhere.
+			// The prefix closes with an underscore, so a hyphen written in its
+			// place opens no candidate at all.
 			name: "a hyphen where the prefix carries an underscore",
 			src:  "npm-0123456789abcdefghijklmnopqrstuvwxyz",
 		},
@@ -470,14 +470,15 @@ func Test_npmAccessTokenPrefix(t *testing.T) {
 
 func Test_npmAccessTokenPrefix_runsDoNotOverlap(t *testing.T) {
 	// The scan walks the run behind every candidate and keeps no cursor over
-	// it, where the JWT, GitLab, Slack, OpenAI and Anthropic scans each keep
-	// one. What makes the cursor unnecessary is that two candidates can never
-	// read the same run: a candidate asks for the last character of the prefix
-	// four characters in, no body may be written with it, so the run of an
-	// earlier candidate has already ended there and the later candidate's run
-	// begins past it. Were that character one a body admits, a run dense in
-	// prefixes would be walked once for every candidate in it and the scan
-	// would cost time quadratic in the length of such a line.
+	// it, where a scan whose prefix closes on a character its own body admits
+	// has to keep one. What makes the cursor unnecessary is that two
+	// candidates can never read the same run: a candidate asks for the last
+	// character of the prefix four characters in, no body may be written with
+	// it, so the run of an earlier candidate has already ended there and the
+	// later candidate's run begins past it. Were that character one a body
+	// admits, a run dense in prefixes would be walked once for every candidate
+	// in it and the scan would cost time quadratic in the length of such a
+	// line.
 	if npmAccessTokenPrefix == "" {
 		t.Fatal("the pattern carries no prefix, so there is no candidate to reason about")
 	}

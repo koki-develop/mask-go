@@ -413,12 +413,11 @@ func Test_OpenRouterAPIKey_noKeyBeginsInsideAnother(t *testing.T) {
 
 func Test_OpenRouterAPIKey_scanIsLinear(t *testing.T) {
 	// This scan keeps no cursor, and what holds it linear is the count being a
-	// count: a candidate reads at most seventy-three bytes and stops. The AWS,
-	// Google, SendGrid, Notion and Grafana scans reach it the same way. These
-	// are the inputs that would find it wrong here — a line that is nothing but
-	// prefixes, a line that is nothing but keys, and a single hexadecimal run
-	// as long as the line, which is where a scan reading a run instead of a
-	// count would show itself.
+	// count: a candidate reads at most seventy-three bytes and stops. These
+	// are the inputs that would find it wrong here — a line that is nothing
+	// but prefixes, a line that is nothing but keys, and a single hexadecimal
+	// run as long as the line, which is where a scan reading a run instead of
+	// a count would show itself.
 	//
 	// The generic guard in builtins_test.go repeats the samples, which carry a
 	// whole body apiece and so hold a candidate every seventy-three bytes at
@@ -557,8 +556,7 @@ var referenceOpenRouterAPIKey = regexp.MustCompile(`sk-or-v1-[0-9A-Fa-f]{64}`)
 // what holds the two together. It is the Stripe reference's arrangement, and it
 // is here for the Stripe reference's reason.
 //
-// Resuming a byte along costs this one nothing beyond a constant, as it costs
-// the AWS, Google, SendGrid, Notion and Grafana references nothing: every
+// Resuming a byte along costs this one nothing beyond a constant: every
 // candidate reads at most seventy-three characters, here as in the scan, so
 // neither has a run to walk and there is no cursor for either to be wrong
 // about.

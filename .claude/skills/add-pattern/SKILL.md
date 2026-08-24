@@ -42,8 +42,11 @@ pattern locates. Points that don't follow from the file layout alone:
   where fuzzing's own findings get checked in.
 - Whatever is unusual about this pattern — why the reference went the way it
   did, how far the scan advances at a candidate, what rules out a quadratic
-  input — is written in these two files and nowhere else. Do not add it to a
-  list in `CLAUDE.md`; there is deliberately no such list to add to.
+  input — is written in these two files and nowhere else.
+- The rationale states this scan's own rule, not where the pattern sits among
+  the others. A neighbouring file is the wrong thing to copy the shape of a
+  sentence from here: the rules file's "Where a pattern states its own case"
+  gives the question to ask of one that names another scan.
 
 ## 3. Conformance last
 

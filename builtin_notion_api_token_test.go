@@ -590,18 +590,18 @@ func Test_isNotionAPITokenBody(t *testing.T) {
 // the two spans overlapping for a Masker to resolve, so the reference must ask
 // about both.
 //
-// It is written out rather than built on a regular expression, as the JWT,
-// Slack, Anthropic, Stripe and PyPI references are, and for a reason of its
-// own. The grammar states compactly as
+// It is written out rather than built on a regular expression, for a reason of
+// its own. The grammar states compactly as
 // ntn_[0-9A-Za-z]{46}|secret_[0-9A-Za-z]{43}, and it is the alternation rather
 // than either count that costs: an expression with one literal in front of it
-// is scanned for by searching the text for that literal, and two literals leave
-// the engine walking its machine at every byte instead. Measured on a mebibyte
-// of alphanumerics holding no token at all, the alternation costs seventeen
-// milliseconds where either half of it alone costs fourteen microseconds — a
-// thousandfold, on the text a fuzzer spends its time in — and the mutator
-// reaches inputs of that size, which left this target running at speed for
-// fifteen seconds and then at nothing at all for the rest of its run.
+// is scanned for by searching the text for that literal, and two literals
+// leave the engine walking its machine at every byte instead. Measured on a
+// mebibyte of alphanumerics holding no token at all, the alternation costs
+// seventeen milliseconds where either half of it alone costs fourteen
+// microseconds — a thousandfold, on the text a fuzzer spends its time in — and
+// the mutator reaches inputs of that size, which left this target running at
+// speed for fifteen seconds and then at nothing at all for the rest of its
+// run.
 //
 // What is below has neither problem, and does not pay for it the way the
 // Anthropic reference does. Both counts are counts, so a position reads at most

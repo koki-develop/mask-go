@@ -17,11 +17,9 @@ type segments struct {
 // 4648. It is here rather than in the file of the first scan that needed it so
 // that what the alphabet admits is one declaration: a scan spelling the
 // alphabet again is one that can come to disagree about what a body may hold,
-// and widening it here is a change every scan reading it is measured against at
-// once. Which scans those are is what the callers say, and they are not listed
-// here — a list would have to be corrected by every pattern added, and the one
-// it left out would be the scan a widening was never weighed against. A scan
-// reading some other alphabet says so in its own file, as the Sentry scan does.
+// and widening it here is a change every scan reading it is measured against
+// at once. Which scans those are is what the callers say. A scan reading some
+// other alphabet says so in its own file, as the Sentry scan does.
 //
 // Padding is not admitted: the compact serialization is defined without it, and
 // neither the routable payload GitLab encodes nor the key Google shows carries
@@ -49,13 +47,12 @@ func base64URLRunEnd(src string, i int) int {
 	return i
 }
 
-// isBase62Byte reports whether c belongs to the base62 alphabet: the letters of
-// both cases and the digits. Why each scan reading it reads it is that scan's
-// to state — that npm's own announcement of its format says it matched
-// GitHub's, that the alphabet is all Notion's rulesets agree on behind either
-// prefix it has issued, that it is what Grafana's generator draws a secret
-// from — and each says so in its own file. What is shared is the alphabet, and
-// it is one declaration for the reason isBase64URLByte gives.
+// isBase62Byte reports whether c belongs to the base62 alphabet: the letters
+// of both cases and the digits. Why a scan reading it reads it — a vendor's
+// own announcement of the format, the one thing every ruleset behind a prefix
+// agrees on, the alphabet a generator draws from — is that scan's to state,
+// and it says so in its own file. What is shared is the alphabet, and it is
+// one declaration for the reason isBase64URLByte gives.
 //
 // What it leaves out is what separates it from base64url above: neither the
 // hyphen nor the underscore is admitted. Leaving the underscore out is

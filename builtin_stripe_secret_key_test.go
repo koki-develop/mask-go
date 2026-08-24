@@ -326,9 +326,9 @@ func Test_StripeSecretKey_inContext(t *testing.T) {
 }
 
 func Test_StripeSecretKey_afterAWordCharacter(t *testing.T) {
-	// A demand few of the scans here make, and the Slack one does: the byte in
-	// front of a prefix may be no letter and no digit. Both key types here can
-	// close a word, so without it a snake_case name is read as a key.
+	// The demand the Slack scan makes too: the byte in front of a prefix may
+	// be no letter and no digit. Both key types here can close a word, so
+	// without it a snake_case name is read as a key.
 	//
 	// It is not the word boundary a regular expression writes, and the
 	// difference is the underscore: a key reaching a log line from a shell
@@ -468,12 +468,12 @@ func Test_StripeSecretKey_insideASnakeCaseName(t *testing.T) {
 	// letters and digits.
 	//
 	// The cases are held to being redacted rather than to being spared. Such a
-	// name is a key's format exactly, so nothing is left in the text to read the
-	// two apart by, and the only tightening on offer is the count
-	// builtin_stripe_secret_key.go sets out why this scan reads as a floor. What
-	// the cases are for is that they move with the scan: one of them ceasing to
-	// be located means the grammar changed, and that is a decision to be taken
-	// rather than noticed afterwards.
+	// name is a key's format exactly, so nothing is left in the text to read
+	// the two apart by, and the only tightening on offer is the count;
+	// builtin_stripe_secret_key.go sets out why this scan reads it as a floor.
+	// What the cases are for is that they move with the scan: one of them
+	// ceasing to be located means the grammar changed, and that is a decision
+	// to be taken rather than noticed afterwards.
 	tests := []struct {
 		name string
 		src  string
@@ -672,14 +672,14 @@ func Test_stripeSecretKeyPrefixAt(t *testing.T) {
 
 func Test_StripeSecretKey_scanIsLinear(t *testing.T) {
 	// This scan reads a run to its end and keeps no cursor, so what holds it
-	// linear is a property of the format rather than state: every prefix closes
-	// with an underscore, no body is written with one, and so no two candidates
-	// can read the same run. The npm, Sentry and Linear scans reach it by the
-	// same argument and each drives inputs of its own for it, which is why the
-	// argument is written out in several files rather than borrowed from one.
-	// These are the inputs that would find it wrong here — a line that is
-	// nothing but candidates, a line that is nothing but anchors, and a single
-	// run as long as the line.
+	// linear is a property of the format rather than state: every prefix
+	// closes with an underscore, no body is written with one, and so no two
+	// candidates can read the same run. A scan reaching linearity that way
+	// drives inputs of its own for it rather than borrowing another's, since
+	// what the argument rests on is this format's prefix and this format's
+	// alphabet. These are the inputs that would find it wrong here — a line
+	// that is nothing but candidates, a line that is nothing but anchors, and
+	// a single run as long as the line.
 	//
 	// The generic guard in builtins_test.go repeats the samples, which carry a
 	// whole body apiece and so hold a candidate every thirty-two bytes at their
@@ -733,12 +733,11 @@ func Test_StripeSecretKey_scanIsLinear(t *testing.T) {
 // but the reference is written to know nothing the scan claims, and where the
 // scan resumes is one of the things the target below is for.
 //
-// It is written out rather than built on a regular expression, as the JWT,
-// Slack and Anthropic references are, and for the reason the Slack one gives:
-// the byte this pattern reads in front of a prefix is not the word boundary an
-// expression writes. \b in Go's syntax counts the underscore as a word
-// character and would drop STRIPE_SECRET_KEY_sk_live_... entirely, and there is
-// no lookbehind to write the demand with instead.
+// It is written out rather than built on a regular expression, for the reason
+// the Slack reference gives: the byte this pattern reads in front of a prefix
+// is not the word boundary an expression writes. \b in Go's syntax counts the
+// underscore as a word character and would drop STRIPE_SECRET_KEY_sk_live_...
+// entirely, and there is no lookbehind to write the demand with instead.
 //
 // Unlike the references beside it this one costs no more than the scan does.
 // Walking the run at every position is what a cursor saves a scan from, and

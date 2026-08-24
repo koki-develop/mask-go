@@ -797,6 +797,16 @@ func stripePublishableKeyFindBenchmarks() []benchmarkCase {
 			spans: 0,
 		},
 		{
+			// A name closing on the key type at every candidate, which is the
+			// one byte in front turning each of them away before the prefix
+			// table is reached at all. topk_ is what the rationale in
+			// builtin_stripe_publishable_key.go names as the shape that
+			// carries a whole prefix, and it is what this guard is kept for.
+			name:  "a name closing on the key type",
+			src:   strings.Repeat("topk_live_0123456789abcdef01234567 ", 128),
+			spans: 0,
+		},
+		{
 			// Keys crowded as close as a separator lets them be, which is the
 			// densest a run of them can be located. What it times is the walk
 			// over a body, once per key and no more.
