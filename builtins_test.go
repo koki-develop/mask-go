@@ -83,6 +83,20 @@ var builtinPatterns = []struct {
 		benchmarks: awsAccessKeyIDFindBenchmarks,
 	},
 	{
+		name:    "cloudflare-api-key",
+		pattern: CloudflareAPIKey,
+		ref:     referenceCloudflareAPIKeyFind,
+		samples: []string{
+			"CLOUDFLARE_API_KEY=cfk_0123456789abcdef0123456789abcdef0123456789abcdef",
+			"cfk_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+			"cfk_0123456789abcdefghijklmnopqrstuvwxyzABCD0123abcd",
+			"cfk_cfk_0123456789abcdef0123456789abcdef0123456789abcdef",
+			"cfk_0123456789abcdef0123456789abcdef01234567012345cfk_0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"cfk_0123"},
+		benchmarks: cloudflareAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "cloudflare-api-token",
 		pattern: CloudflareAPIToken,
 		ref:     referenceCloudflareAPITokenFind,

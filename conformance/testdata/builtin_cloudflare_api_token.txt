@@ -138,12 +138,15 @@ case: an underscored word written against a token
 in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdef_suffix
 out:  «cloudflare-api-token»_suffix
 
-# Two tokens written together, and a token written inside another. A checksum is
-# hexadecimal, so it can close on the two characters a prefix opens with, and
-# ut_ written straight after such a token completes a prefix beginning two
-# characters before that token ends. The scan advances rather than consuming its
-# match for exactly that shape: the two spans overlap and are redacted as one,
-# where a scan consuming the first would have left the second whole.
+# Two tokens written together, and a token written inside another. The
+# underscore every prefix closes with is written in no body, so it has to fall
+# past the first token's last character: the overlap is at most the four
+# characters in front of it, and all four land in the checksum. Standing there
+# they have to be hexadecimal, which stops cfut_ at cf and cfat_ at cfa — two
+# characters and three. Each is below at its deepest, with the rest of its
+# prefix written after the token it begins inside. The scan advances rather than
+# consuming its match for that shape: the two spans overlap and are redacted as
+# one, where a scan consuming the first would have left the second whole.
 
 case: two tokens with nothing between them
 in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdefcfat_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
@@ -153,8 +156,12 @@ case: two tokens separated by a space
 in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdef cfat_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
 out:  «cloudflare-api-token» «cloudflare-api-token»
 
-case: a token beginning inside another
+case: a token a user owns beginning two characters inside another
 in:   cfut_0123456789abcdef0123456789abcdef012345670123abcfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «cloudflare-api-token»
+
+case: a token an account owns beginning three characters inside another
+in:   cfut_0123456789abcdef0123456789abcdef0123456701234cfat_0123456789abcdef0123456789abcdef0123456789abcdef
 out:  «cloudflare-api-token»
 
 case: a candidate whose body opens with a prefix
@@ -191,12 +198,13 @@ out:  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 # And what this pattern leaves alone. First the prefix: the case Cloudflare
 # writes it in, the third prefix it issues, which stands in front of the
-# credential it calls a key rather than a token, a kind it issues neither of, and
-# a hyphen where the underscore belongs. Then the format issued before the
-# prefixes existed, which is forty characters with nothing in front of them and
-# is read nowhere whatever alphabet it is written in: a scan anchored on nothing
-# but a count of forty is a scan of any forty character run. Then a body of the right shape
-# with no prefix, a token a space has broken, the two characters the scan
+# credential it calls a key rather than a token and is what cloudflare-api-key
+# locates, a kind it issues neither of, and a hyphen where the underscore
+# belongs. Then the format issued before the prefixes existed, which is forty
+# characters with nothing in front of them and is read nowhere whatever alphabet
+# it is written in: a scan anchored on nothing but a count of forty is a scan of
+# any forty character run. Then a body of the right shape with no prefix, a
+# token a space has broken, the two characters the scan
 # searches for as prose writes them, and the log line no pattern here has
 # anything to find in.
 
