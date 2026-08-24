@@ -30,6 +30,7 @@ import (
 var vendorAccessors = map[string]func() []Pattern{
 	"AnthropicPatterns":  AnthropicPatterns,
 	"AWSPatterns":        AWSPatterns,
+	"CloudflarePatterns": CloudflarePatterns,
 	"GitHubPatterns":     GitHubPatterns,
 	"GitLabPatterns":     GitLabPatterns,
 	"GooglePatterns":     GooglePatterns,

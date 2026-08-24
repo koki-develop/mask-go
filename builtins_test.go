@@ -83,6 +83,21 @@ var builtinPatterns = []struct {
 		benchmarks: awsAccessKeyIDFindBenchmarks,
 	},
 	{
+		name:    "cloudflare-api-token",
+		pattern: CloudflareAPIToken,
+		ref:     referenceCloudflareAPITokenFind,
+		samples: []string{
+			"CLOUDFLARE_API_TOKEN=cfut_0123456789abcdef0123456789abcdef0123456789abcdef",
+			"cfat_0123456789abcdef0123456789abcdef0123456789abcdef",
+			"cfut_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+			"cfut_0123456789abcdefghijklmnopqrstuvwxyzABCD0123abcd",
+			"cfut_cfut_0123456789abcdef0123456789abcdef0123456789abcdef",
+			"cfut_0123456789abcdef0123456789abcdef012345670123abcfut_0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"cfut_0123", "cfat_0123"},
+		benchmarks: cloudflareAPITokenFindBenchmarks,
+	},
+	{
 		name:    "github-token",
 		pattern: GitHubToken,
 		ref:     referenceGitHubTokenFind,
