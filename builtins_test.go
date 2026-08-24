@@ -343,6 +343,20 @@ var builtinPatterns = []struct {
 		benchmarks: stripeSecretKeyFindBenchmarks,
 	},
 	{
+		name:    "stripe-webhook-signing-secret",
+		pattern: StripeWebhookSigningSecret,
+		ref:     referenceStripeWebhookSigningSecretFind,
+		samples: []string{
+			"STRIPE_WEBHOOK_SECRET=whsec_0123456789abcdef0123456789abcdef",
+			"whsec_0123456789ABCDEF0123456789ABCDEF",
+			"whsec_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"whsec_0123456789abcdef0123456789awhsec_0123456789abcdef0123456789abcdef",
+			"whsec_0123456789abcdef0123456789abcdefwhsec_0123456789ABCDEF0123456789ABCDEF",
+		},
+		anchors:    []string{"whsec_0123"},
+		benchmarks: stripeWebhookSigningSecretFindBenchmarks,
+	},
+	{
 		name:    "supabase-access-token",
 		pattern: SupabaseAccessToken,
 		ref:     referenceSupabaseAccessTokenFind,

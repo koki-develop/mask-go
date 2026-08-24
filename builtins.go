@@ -48,5 +48,6 @@ var builtins = []Pattern{
 	slackToken,
 	stripePublishableKey,
 	stripeSecretKey,
+	stripeWebhookSigningSecret,
 	supabaseAccessToken,
 }
