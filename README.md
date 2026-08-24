@@ -40,6 +40,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | --- | --- |
 | `AnthropicPatterns()` | Anthropic API keys — the keys the Claude Console issues and the Admin API keys — and the OAuth tokens and session keys Anthropic writes the same way |
 | `AWSPatterns()` | AWS access key IDs: the long-term key of an IAM user or of the account root user, and the temporary credentials AWS STS issues |
+| `CloudflarePatterns()` | Cloudflare API tokens, the ones a user owns and the ones an account owns, in the prefixed format Cloudflare issues today |
 | `GitHubPatterns()` | GitHub personal access tokens, classic and fine-grained; OAuth app access tokens; GitHub App user access tokens; GitHub App installation access tokens; and GitHub App refresh tokens |
 | `GitLabPatterns()` | GitLab personal, project, group and impersonation access tokens; OAuth application secrets; deploy tokens; runner authentication tokens; CI/CD job tokens; pipeline trigger tokens; feed tokens; incoming mail tokens; GitLab agent for Kubernetes tokens; SCIM OAuth tokens; and feature flags client tokens — in the classic form and the routable one |
 | `GooglePatterns()` | Google API keys, the one string every Google API that takes a key rather than a credentialled principal accepts — Maps, YouTube Data, Firebase, the Gemini API and the Cloud APIs reaching no private user data among them |
