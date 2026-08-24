@@ -43,11 +43,13 @@ func CloudflareAPIToken() Pattern { return cloudflareAPIToken }
 // The two prefixes read here are the two Cloudflare calls tokens. The third,
 // cfk_, is the Global API Key, which Cloudflare names a key rather than a token
 // throughout, documents on pages of its own and describes as the credential a
-// token is to be preferred over. A pattern reading it would be a pattern of its
-// own under that name, and leaving it out is a decision on the record rather
-// than an oversight: this pattern is named for what Cloudflare calls an API
-// token, so reading cfk_ here would leave the name covering less than the scan
-// locates.
+// token is to be preferred over. It is read by CloudflareAPIKey
+// (builtin_cloudflare_api_key.go) rather than by a third entry in the table
+// below, because this pattern is named for what Cloudflare calls an API token
+// and reading cfk_ here would leave the name covering less than the scan
+// locates. What the two do share is everything behind the prefix, which is why
+// the counts and the character classes below are named for the vendor rather
+// than for either credential.
 //
 // The tokens issued before the format changed are not read, and cannot be. A
 // token then was forty characters with nothing in front of them — no prefix, no
@@ -58,8 +60,7 @@ func CloudflareAPIToken() Pattern { return cloudflareAPIToken }
 // not be. Nothing was revoked when the format changed, so such tokens are live
 // and are left in the output whole; Cloudflare's own profile row declines them
 // in the same words, saying only credentials generated after the format update
-// are matched. The prefix is the whole of what makes this format readable, and
-// it is why the pattern arrives now rather than earlier.
+// are matched. The prefix is the whole of what makes this format readable.
 //
 // The counts are therefore read exactly, both of them. A scan declines an exact
 // count where its vendor states no length, since the count is then read off the
@@ -139,14 +140,20 @@ func CloudflareAPIToken() Pattern { return cloudflareAPIToken }
 // The scan advances one byte past the start of a candidate whether that
 // candidate became a token or not, and here advancing rather than consuming the
 // match is load-bearing rather than a habit. A token can be written inside
-// another, and the two characters it takes are the last two of a checksum: a
-// checksum closing on cf hands those to a candidate beginning two characters
-// before the token ends, where ut_ or at_ written straight after the token
-// completes the prefix and forty-eight characters behind that complete the
-// second token. Consuming the first match would step over the second and leave
-// it in the output whole. The two spans then overlap, which a Masker resolves
-// into one, and Test_CloudflareAPIToken_aTokenBeginningInsideAnother drives the
-// shape.
+// another, and how far in is settled by the prefix in two steps rather than
+// chosen. Every prefix closes with an underscore and no body is written with
+// one, so that underscore has to fall past the first token's last character:
+// the overlap is at most the four characters in front of it, and all four land
+// in the eight character checksum. Standing in a checksum they then have to be
+// hexadecimal, which stops cfut_ at cf and cfat_ at cfa — two characters and
+// three. Whatever of the prefix is left over is written straight after the
+// token, t_ behind a cfa and ut_ or at_ behind a cf, and forty-eight characters
+// behind that complete the second token; a position shallower than a prefix's
+// deepest works the same way with more of the prefix falling outside.
+// Consuming the first match would step over the second and leave it in the
+// output whole. The two spans then overlap, which a Masker resolves into one,
+// and Test_CloudflareAPIToken_aTokenBeginningInsideAnother drives each prefix
+// at its deepest.
 //
 // The scan keeps no cursor and needs none: a candidate reads at most fifty-three
 // bytes and stops, which bounds what it reads with no state to be wrong about —
@@ -183,15 +190,12 @@ func CloudflareAPIToken() Pattern { return cloudflareAPIToken }
 // holds an underscore at its fifth character and nowhere else, and holds no
 // space.
 //
-// The other Cloudflare credentials are not read, and each is declined for a
-// reason of its own. An Origin CA key opens with v1.0- and carries hyphenated
-// hexadecimal runs behind it, which is a format this scan's prefix has nothing
-// to do with and a pattern somebody would add under its own name, written on
-// what Cloudflare publishes about that format rather than on this one. A zone or
-// account identifier is thirty-two hexadecimal
-// characters with no prefix at all — an MD5's shape exactly, published in
-// dashboards and URLs by design, and not a secret. The Global API Key is
-// covered above.
+// Two Cloudflare formats stand close enough to this one to say where the line
+// falls. An Origin CA key opens with v1.0- and carries hyphenated hexadecimal
+// runs behind it, which this scan's prefix has nothing to do with. A zone or
+// account identifier is thirty-two hexadecimal characters with no prefix at
+// all — an MD5's shape exactly, published in dashboards and URLs by design, and
+// not a secret. The Global API Key is covered above.
 //
 // referenceCloudflareAPIToken in builtin_cloudflare_api_token_test.go keeps the
 // grammar as a regular expression, spelling both prefixes, both counts and both
@@ -208,9 +212,9 @@ var cloudflareAPIToken = NewPattern("cloudflare-api-token", func(src string) []S
 		start := offset + i
 
 		// The scan resumes here whether this candidate became a token or not,
-		// for the reason the rationale above gives: a checksum closing on cf
-		// carries the opening of a prefix, so a token can begin two characters
-		// before the one in front of it ends.
+		// for the reason the rationale above gives: a checksum is hexadecimal,
+		// so it carries the opening of a prefix and a token can begin as far as
+		// three characters before the one in front of it ends.
 		offset = start + 1
 
 		prefix := cloudflareAPITokenPrefixAt(src, start)
@@ -219,7 +223,7 @@ var cloudflareAPIToken = NewPattern("cloudflare-api-token", func(src string) []S
 		}
 
 		body := start + prefix
-		if end := body + cloudflareAPITokenBodyChars; end <= len(src) && isCloudflareAPITokenBody(src[body:end]) {
+		if end := body + cloudflareCredentialBodyChars; end <= len(src) && isCloudflareCredentialBody(src[body:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
@@ -248,18 +252,22 @@ const (
 	// rather than on the underscore each prefix closes with.
 	cloudflareAPITokenOpening = "cf"
 
-	// The counts a token is written to, both of them stated by Cloudflare
-	// rather than read off a value: forty characters of secret, and the eight
-	// hexadecimal digits four bytes of a CRC32 come to.
-	cloudflareAPITokenSecretChars   = 40
-	cloudflareAPITokenChecksumChars = 8
+	// The counts a Cloudflare credential is written to, both of them stated by
+	// Cloudflare rather than read off a value: forty characters of secret, and
+	// the eight hexadecimal digits four bytes of a CRC32 come to. They carry
+	// the vendor's name rather than this pattern's because the format page
+	// states them once over every credential it lists, so the key scan reads
+	// them here rather than spelling a second pair that could come to disagree.
+	cloudflareCredentialSecretChars   = 40
+	cloudflareCredentialChecksumChars = 8
 
-	// cloudflareAPITokenBodyChars is everything behind the prefix: the secret
+	// cloudflareCredentialBodyChars is everything behind the prefix: the secret
 	// and the checksum, with nothing between them. It is what the format page
 	// holds constant across the three credentials it lists, where the prefix in
 	// front of it is four characters for one of them and five for the other
 	// two, so the scan reads the body from wherever the prefix it matched ends
-	// rather than cutting a token to one width.
+	// rather than cutting a token to one width. The key scan reads it from the
+	// other side of that same sentence.
 	//
 	// That is the scan alone. A prefix of another length is still a change
 	// somebody has to make deliberately, because the sentence on
@@ -267,7 +275,7 @@ const (
 	// span written in the tests is that wide: Test_cloudflareAPITokenPrefixes
 	// fails for such a prefix on purpose, and what it is asking for is that the
 	// documentation be brought along rather than that the scan be rewritten.
-	cloudflareAPITokenBodyChars = cloudflareAPITokenSecretChars + cloudflareAPITokenChecksumChars
+	cloudflareCredentialBodyChars = cloudflareCredentialSecretChars + cloudflareCredentialChecksumChars
 )
 
 // cloudflareAPITokenPrefixAt returns the length of the prefix standing at i in
@@ -290,48 +298,55 @@ func cloudflareAPITokenPrefixAt(src string, i int) int {
 	return 0
 }
 
-// isCloudflareAPITokenBody reports whether s is everything behind the prefix of
-// a token: exactly cloudflareAPITokenSecretChars characters of the secret's
-// alphabet, and exactly cloudflareAPITokenChecksumChars hexadecimal digits
-// behind them.
+// isCloudflareCredentialBody reports whether s is everything behind the prefix
+// of a Cloudflare credential: exactly cloudflareCredentialSecretChars
+// characters of the secret's alphabet, and exactly
+// cloudflareCredentialChecksumChars hexadecimal digits behind them.
+//
+// It is named for the vendor rather than for the token because the scan in
+// builtin_cloudflare_api_key.go reads it too. The body is the half of the
+// format neither credential can change alone, and a second copy of it beside
+// the key's prefix is a copy that could come to disagree with this one while
+// both scans went on passing.
 //
 // It is handed the counts as well as the characters so that they are checked in
 // one place rather than left to the caller to have cut correctly. The secret is
 // walked before the checksum because that is where a candidate that is not a
-// token usually stops: the character straight behind a prefix is the one most
-// text written this way fails on, and reaching the checksum at all means forty
-// letters and digits have already been read.
-func isCloudflareAPITokenBody(s string) bool {
-	if len(s) != cloudflareAPITokenBodyChars {
+// credential usually stops: the character straight behind a prefix is the one
+// most text written this way fails on, and reaching the checksum at all means
+// forty letters and digits have already been read.
+func isCloudflareCredentialBody(s string) bool {
+	if len(s) != cloudflareCredentialBodyChars {
 		return false
 	}
-	for i := range cloudflareAPITokenSecretChars {
+	for i := range cloudflareCredentialSecretChars {
 		if !isBase62Byte(s[i]) {
 			return false
 		}
 	}
-	for i := cloudflareAPITokenSecretChars; i < len(s); i++ {
-		if !isCloudflareAPITokenChecksumByte(s[i]) {
+	for i := cloudflareCredentialSecretChars; i < len(s); i++ {
+		if !isCloudflareCredentialChecksumByte(s[i]) {
 			return false
 		}
 	}
 	return true
 }
 
-// isCloudflareAPITokenChecksumByte reports whether c is a hexadecimal digit,
+// isCloudflareCredentialChecksumByte reports whether c is a hexadecimal digit,
 // which is what the checksum is written in.
 //
-// It stays in this file rather than joining the byte tests in builtin_scan.go,
-// which hold what more than one scan reads. Hexadecimal is not one class
-// several formats are defined over but a coincidence of the same sixteen
-// characters between formats that could each widen without the other: a shared
-// test named for the class rather than for what reads it would make widening
-// either of them a change to all of them, which is a change nothing would
-// report.
+// Two scans read it and it stays here anyway, where the byte tests in
+// builtin_scan.go are what any scan may reach for. The two are the halves of
+// one vendor's format and widen together or not at all. Between formats,
+// hexadecimal is not one class several are defined over but a coincidence of
+// the same sixteen characters: a test named for the class rather than for what
+// reads it would make widening one format a change to all of them, which is a
+// change nothing would report. Named for the vendor it is one declaration
+// exactly where it is one decision.
 //
 // Either case is admitted where an encoder writes lowercase alone, for the
 // reason the rationale above gives.
-func isCloudflareAPITokenChecksumByte(c byte) bool {
+func isCloudflareCredentialChecksumByte(c byte) bool {
 	return '0' <= c && c <= '9' ||
 		'A' <= c && c <= 'F' ||
 		'a' <= c && c <= 'f'

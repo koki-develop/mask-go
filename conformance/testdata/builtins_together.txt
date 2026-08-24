@@ -35,8 +35,8 @@ in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGc
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd hvs.0123456789abcdef01234567 glsa_0123456789abcdef0123456789abcdef_01234567 sbp_0123456789abcdef0123456789abcdef01234567 rubygems_0123456789abcdef0123456789abcdef0123456789abcdef cfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «openrouter-api-key» «anthropic-api-key» «stripe-secret-key» «stripe-publishable-key» «pypi-api-token» «npm-access-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token» «hashicorp-vault-token» «grafana-service-account-token» «supabase-access-token» «rubygems-api-key» «cloudflare-api-token»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd hvs.0123456789abcdef01234567 glsa_0123456789abcdef0123456789abcdef_01234567 sbp_0123456789abcdef0123456789abcdef01234567 rubygems_0123456789abcdef0123456789abcdef0123456789abcdef cfut_0123456789abcdef0123456789abcdef0123456789abcdef cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «openrouter-api-key» «anthropic-api-key» «stripe-secret-key» «stripe-publishable-key» «pypi-api-token» «npm-access-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token» «hashicorp-vault-token» «grafana-service-account-token» «supabase-access-token» «rubygems-api-key» «cloudflare-api-token» «cloudflare-api-key»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -1202,3 +1202,48 @@ out:  «openrouter-api-key»sk_live_0123456789abcdef01234567
 case: a stripe key a space away from an openrouter key
 in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk_live_0123456789abcdef01234567
 out:  «openrouter-api-key» «stripe-secret-key»
+
+# The two Cloudflare patterns, which read the two halves of one format: the same
+# forty characters of secret and eight of checksum behind a prefix that says
+# which credential it is. A caller running both gets each under its own name,
+# which is what the boundary between them is for — a key carries everything the
+# user holding it can do, where a token carries what it was scoped to.
+#
+# Written side by side, each keeps its own name and its own span, whether or not
+# anything stands between them.
+
+case: a cloudflare key and a cloudflare token on one line
+in:   CLOUDFLARE_API_KEY=cfk_0123456789abcdef0123456789abcdef0123456789abcdef CLOUDFLARE_API_TOKEN=cfut_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:  CLOUDFLARE_API_KEY=«cloudflare-api-key» CLOUDFLARE_API_TOKEN=«cloudflare-api-token»
+
+case: a cloudflare key and a cloudflare token with nothing between them
+in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdefcfut_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:  «cloudflare-api-key»«cloudflare-api-token»
+
+# They also reach into each other, and how far is settled by the prefix rather
+# than chosen by either scan. Every prefix closes with an underscore that no
+# body is written with, so the underscore has to fall past the first value's
+# last character: the overlap is at most the characters in front of it, and they
+# land in the checksum. Standing there they have to be hexadecimal, which stops
+# cfk_ and cfut_ at cf, two characters, and cfat_ at cfa, three — and any
+# position shallower than the deepest works as well, with more of the prefix
+# falling past the value's last character. The four cases below are the deepest
+# reach of each of the three prefixes and the shallowest of one, and in each of
+# them the two spans overlap and are redacted as one, attributed to whichever
+# starts earliest, which is the outer value.
+
+case: a cloudflare key beginning two characters inside a cloudflare token
+in:   cfut_0123456789abcdef0123456789abcdef01234567012345cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «cloudflare-api-token»
+
+case: a cloudflare key beginning one character inside a cloudflare token
+in:   cfut_0123456789abcdef0123456789abcdef012345670123456cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «cloudflare-api-token»
+
+case: a cloudflare token beginning two characters inside a cloudflare key
+in:   cfk_0123456789abcdef0123456789abcdef01234567012345cfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «cloudflare-api-key»
+
+case: an account owned cloudflare token beginning three characters inside a cloudflare key
+in:   cfk_0123456789abcdef0123456789abcdef0123456701234cfat_0123456789abcdef0123456789abcdef0123456789abcdef
+out:  «cloudflare-api-key»

@@ -35,7 +35,7 @@ func AWSPatterns() []Pattern { return []Pattern{awsAccessKeyID} }
 // Cloudflare issues.
 //
 // The returned slice is freshly allocated and may be modified by the caller.
-func CloudflarePatterns() []Pattern { return []Pattern{cloudflareAPIToken} }
+func CloudflarePatterns() []Pattern { return []Pattern{cloudflareAPIKey, cloudflareAPIToken} }
 
 // GitHubPatterns returns every built-in pattern that locates a credential
 // GitHub issues.
