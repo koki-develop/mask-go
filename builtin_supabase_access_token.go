@@ -2,12 +2,14 @@ package mask
 
 import "strings"
 
-// SupabasePersonalAccessToken locates Supabase personal access tokens: the
+// SupabaseAccessToken locates the access tokens the Supabase Management API
+// takes: the personal access token a user creates for themselves, which is the
 // prefix sbp_ and the forty lowercase hexadecimal digits behind it, forty-four
 // characters altogether, and the token an OAuth application is issued in a
-// user's name, which writes oauth_ between the two and so is fifty. One string
-// serves the whole of the Management API and carries the privileges of the
-// account that created it, so nothing in a token says what it is allowed to do.
+// user's name, which writes oauth_ between the two and so is fifty. Nothing in
+// either says what it is allowed to do — a personal access token carries the
+// whole of the account that created it, and an OAuth issued one the scopes that
+// account approved — so one string serves the Management API either way.
 //
 // A token is located wherever it is written, with no word boundary either side,
 // and exactly forty-four or fifty characters of it are. So text of that shape is
@@ -15,8 +17,8 @@ import "strings"
 // or a run of the wrong length ends the reading, so text as it is ordinarily
 // written is not affected.
 //
-// Its name is "supabase-personal-access-token".
-func SupabasePersonalAccessToken() Pattern { return supabasePersonalAccessToken }
+// Its name is "supabase-access-token".
+func SupabaseAccessToken() Pattern { return supabaseAccessToken }
 
 // What Supabase states about this format it states in the code that reads it.
 // The CLI is published under MIT and validates a token before any Management API
@@ -71,15 +73,16 @@ func SupabasePersonalAccessToken() Pattern { return supabasePersonalAccessToken 
 // rather than the alphabet wider, and a token somebody's integration holds is
 // redacted instead of being left whole.
 //
-// That form is read under this name rather than under one of its own for the
-// same reason. It is the same credential behind the same prefix, validated by
-// the same expression, stored under the same SUPABASE_ACCESS_TOKEN and sent in
-// the same Authorization header; what differs is that an OAuth application was
-// issued it in the user's name and that it carries the scopes the user approved
-// rather than the whole of their account. Splitting it out would be a second
-// pattern with a longer prefix and nothing else of its own, and declining it
-// would leave a live Management API credential in the output for the sake of a
-// word in a name.
+// The two forms are read together because they are one credential to a caller.
+// They stand behind the same prefix, pass the same expression, are stored under
+// the same SUPABASE_ACCESS_TOKEN and are sent in the same Authorization header,
+// and nothing about either asks to be switched on without the other or
+// labelled apart from it. Access token is what Supabase calls the two of them:
+// the personal one is what a user creates for themselves, and the other is what
+// the OAuth flow returns to an application in that user's name. Splitting them
+// would be a second pattern with a longer prefix and nothing else of its own,
+// and declining the OAuth form would leave a live Management API credential in
+// the output.
 //
 // The alphabet is lowercase hexadecimal alone, where the Grafana checksum
 // beside it is read in either case, and the two decisions are opposite on
@@ -125,9 +128,10 @@ func SupabasePersonalAccessToken() Pattern { return supabasePersonalAccessToken 
 // at its first character. The prefix carries one, oauth_ carries none, and a
 // body is written in hexadecimal digits, which carry none either — so the
 // anchor cannot be found inside a span, and the spans this scan reports never
-// overlap one another. That puts it with the Stripe and RubyGems scans and
-// nowhere else, and
-// Test_SupabasePersonalAccessToken_noTokenBeginsInsideAnother holds the claim.
+// overlap one another. Test_SupabaseAccessToken_noTokenBeginsInsideAnother
+// holds the claim. Which other scans can say the same is not written here: it
+// is a fact about them, it changes whenever one is added, and this file would
+// go on asserting whatever was true when it was last edited.
 //
 // What the resumption is for is the candidate that failed. sbp_sbp_ opens one
 // whose own prefix stands four characters in, and a scan stepping over what it
@@ -140,7 +144,7 @@ func SupabasePersonalAccessToken() Pattern { return supabasePersonalAccessToken 
 // take the marker wherever it stands rather than trying the shorter reading
 // after the longer one failed: oauth_ opens with a character no body is written
 // with, so a candidate carrying the marker has a letter where the shorter
-// reading needs a digit. Test_supabasePersonalAccessTokenOAuthMarker holds it.
+// reading needs a digit. Test_supabaseAccessTokenOAuthMarker holds it.
 //
 // The scan keeps no cursor and needs none, as the AWS, Google, SendGrid, Notion
 // and Grafana scans do not and for their reason: a candidate reads at most fifty
@@ -169,7 +173,7 @@ func SupabasePersonalAccessToken() Pattern { return supabasePersonalAccessToken 
 // long it runs, and a base64url encoding puts the four characters of the prefix
 // at a position about once in sixteen million, with the forty behind them having
 // then to fall in the sixteen characters of an alphabet of sixty-four.
-// Test_SupabasePersonalAccessToken_aDigestBehindThePrefix pins all of it.
+// Test_SupabaseAccessToken_aDigestBehindThePrefix pins all of it.
 //
 // What reaches a span is never prose and never a word. A token carries an
 // underscore at its fourth character, and behind that underscore — or behind the
@@ -194,7 +198,7 @@ func SupabasePersonalAccessToken() Pattern { return supabasePersonalAccessToken 
 // is load-bearing, in an alphabet holding the hyphen and the underscore, and
 // the examples those rules are written from divide their thirty-one characters
 // with an underscore that no published sentence says is there.
-// Test_SupabasePersonalAccessToken_theOtherSupabaseCredentials pins the
+// Test_SupabaseAccessToken_theOtherSupabaseCredentials pins the
 // decision, so that reading sb_secret_ is a change somebody argues for rather
 // than one somebody notices afterwards.
 //
@@ -203,16 +207,16 @@ func SupabasePersonalAccessToken() Pattern { return supabasePersonalAccessToken 
 // and JWT in builtin_jwt.go locates them as what they are; a second pattern
 // reading the same string would report a span the first already covers.
 //
-// referenceSupabasePersonalAccessToken in
-// builtin_supabase_personal_access_token_test.go keeps the grammar as a regular
+// referenceSupabaseAccessToken in
+// builtin_supabase_access_token_test.go keeps the grammar as a regular
 // expression, spelling the prefix, the marker, the count and the character class
 // again so that the two are changed together, and the fuzz target beside it
 // holds this scan to that expression.
-var supabasePersonalAccessToken = NewPattern("supabase-personal-access-token", func(src string) []Span {
+var supabaseAccessToken = NewPattern("supabase-access-token", func(src string) []Span {
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], supabasePersonalAccessTokenPrefix)
+		i := strings.Index(src[offset:], supabaseAccessTokenPrefix)
 		if i < 0 {
 			break
 		}
@@ -224,11 +228,11 @@ var supabasePersonalAccessToken = NewPattern("supabase-personal-access-token", f
 		// over the prefix standing four characters in.
 		offset = start + 1
 
-		secret := start + len(supabasePersonalAccessTokenPrefix)
-		if strings.HasPrefix(src[secret:], supabasePersonalAccessTokenOAuthMarker) {
-			secret += len(supabasePersonalAccessTokenOAuthMarker)
+		secret := start + len(supabaseAccessTokenPrefix)
+		if strings.HasPrefix(src[secret:], supabaseAccessTokenOAuthMarker) {
+			secret += len(supabaseAccessTokenOAuthMarker)
 		}
-		if end := secret + supabasePersonalAccessTokenSecretChars; end <= len(src) && isSupabasePersonalAccessTokenSecret(src[secret:end]) {
+		if end := secret + supabaseAccessTokenSecretChars; end <= len(src) && isSupabaseAccessTokenSecret(src[secret:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
@@ -236,54 +240,54 @@ var supabasePersonalAccessToken = NewPattern("supabase-personal-access-token", f
 })
 
 const (
-	// supabasePersonalAccessTokenPrefix is what every token opens with, and what
+	// supabaseAccessTokenPrefix is what every token opens with, and what
 	// the scan searches the input for. Both forms carry it, so one search finds
 	// either. Its first character is the one no body and no marker is written
 	// with, which is what keeps a token from being written inside another, and
 	// its last is an underscore, which is what keeps a body from beginning
 	// anywhere but where a prefix ends.
-	// Test_supabasePersonalAccessTokenPrefix holds it to both.
-	supabasePersonalAccessTokenPrefix = "sbp_"
+	// Test_supabaseAccessTokenPrefix holds it to both.
+	supabaseAccessTokenPrefix = "sbp_"
 
-	// supabasePersonalAccessTokenOAuthMarker stands between the prefix and the
+	// supabaseAccessTokenOAuthMarker stands between the prefix and the
 	// body of a token an OAuth application was issued in a user's name, and is
 	// the optional group of the vendor's own expression. It opens with a
 	// character no body is written with, so the two readings of a candidate
 	// cannot both apply.
-	// Test_supabasePersonalAccessTokenOAuthMarker holds it there.
-	supabasePersonalAccessTokenOAuthMarker = "oauth_"
+	// Test_supabaseAccessTokenOAuthMarker holds it there.
+	supabaseAccessTokenOAuthMarker = "oauth_"
 
-	// supabasePersonalAccessTokenSecretChars is what stands behind the prefix,
+	// supabaseAccessTokenSecretChars is what stands behind the prefix,
 	// and the count the vendor's expression asks for on both forms.
-	supabasePersonalAccessTokenSecretChars = 40
+	supabaseAccessTokenSecretChars = 40
 
-	// supabasePersonalAccessTokenChars is the whole of a personal access token,
-	// and supabasePersonalAccessTokenOAuthChars the whole of the form carrying
-	// the marker. Test_supabasePersonalAccessTokenChars holds them to those
+	// supabaseAccessTokenChars is the whole of a personal access token,
+	// and supabaseAccessTokenOAuthChars the whole of the form carrying
+	// the marker. Test_supabaseAccessTokenChars holds them to those
 	// numbers.
-	supabasePersonalAccessTokenChars      = len(supabasePersonalAccessTokenPrefix) + supabasePersonalAccessTokenSecretChars
-	supabasePersonalAccessTokenOAuthChars = supabasePersonalAccessTokenChars + len(supabasePersonalAccessTokenOAuthMarker)
+	supabaseAccessTokenChars      = len(supabaseAccessTokenPrefix) + supabaseAccessTokenSecretChars
+	supabaseAccessTokenOAuthChars = supabaseAccessTokenChars + len(supabaseAccessTokenOAuthMarker)
 )
 
-// isSupabasePersonalAccessTokenSecret reports whether s is everything behind the
-// prefix of a token: exactly supabasePersonalAccessTokenSecretChars characters
+// isSupabaseAccessTokenSecret reports whether s is everything behind the
+// prefix of a token: exactly supabaseAccessTokenSecretChars characters
 // of the alphabet a body is written in.
 //
 // It is handed the count as well as the characters so that the two are checked
 // in one place rather than left to the caller to have cut correctly.
-func isSupabasePersonalAccessTokenSecret(s string) bool {
-	if len(s) != supabasePersonalAccessTokenSecretChars {
+func isSupabaseAccessTokenSecret(s string) bool {
+	if len(s) != supabaseAccessTokenSecretChars {
 		return false
 	}
 	for i := range len(s) {
-		if !isSupabasePersonalAccessTokenSecretByte(s[i]) {
+		if !isSupabaseAccessTokenSecretByte(s[i]) {
 			return false
 		}
 	}
 	return true
 }
 
-// isSupabasePersonalAccessTokenSecretByte reports whether c is a lowercase
+// isSupabaseAccessTokenSecretByte reports whether c is a lowercase
 // hexadecimal digit, which is what a body is written in.
 //
 // It stays in this file rather than joining the byte tests in builtin_scan.go,
@@ -296,6 +300,6 @@ func isSupabasePersonalAccessTokenSecret(s string) bool {
 // reason the rationale above gives: this class is the whole of a body rather
 // than eight characters behind a decided match, and the vendor's own validator
 // refuses an uppercase token.
-func isSupabasePersonalAccessTokenSecretByte(c byte) bool {
+func isSupabaseAccessTokenSecretByte(c byte) bool {
 	return '0' <= c && c <= '9' || 'a' <= c && c <= 'f'
 }

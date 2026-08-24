@@ -322,9 +322,8 @@ func Test_RubyGemsAPIKey_leavesWhatFollowsAlone(t *testing.T) {
 }
 
 func Test_RubyGemsAPIKey_noKeyBeginsInsideAnother(t *testing.T) {
-	// The claim builtin_rubygems_api_key.go makes, which of the built-ins here
-	// only the Stripe pattern can make as well: the spans of this pattern never
-	// overlap one another. Everything a span covers past the prefix is a
+	// The claim builtin_rubygems_api_key.go makes: the spans of this pattern
+	// never overlap one another. Everything a span covers past the prefix is a
 	// hexadecimal digit, and the prefix opens with an r that none of the eight
 	// characters behind it is and no body may hold, so no position inside a
 	// span opens a prefix.

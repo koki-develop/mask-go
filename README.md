@@ -20,30 +20,44 @@ fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
 ## Patterns
 
 A `Masker` scans only with the patterns it is given. `AllBuiltinPatterns()`
-returns every pattern in the table below, and grows as patterns are added:
+returns every built-in pattern, and grows as patterns are added:
 
-| Pattern | Locates |
+```go
+m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
+```
+
+Each vendor also has an accessor of its own, for a caller who wants some of them
+and not all:
+
+```go
+m := mask.New(mask.WithPatterns(slices.Concat(
+	mask.AWSPatterns(),
+	mask.GitHubPatterns(),
+)...))
+```
+
+| Accessor | Locates |
 | --- | --- |
-| `AnthropicAPIKey()` | `sk-ant-api03-…`, `sk-ant-admin01-…` |
-| `AWSAccessKeyID()` | `AKIA…`, `ASIA…` |
-| `GitHubToken()` | `ghp_…`, `gho_…`, `ghu_…`, `ghs_…`, `ghr_…`, `github_pat_…` |
-| `GitLabToken()` | `glpat-…`, `gldt-…`, `glrt-…`, `glrtr-…`, `glcbt-…`, `glptt-…`, `glft-…`, `glimt-…`, `glagent-…`, `gloas-…`, `glsoat-…`, `glffct-…` |
-| `GoogleAPIKey()` | `AIza…` |
-| `GrafanaServiceAccountToken()` | `glsa_…` |
-| `HashiCorpVaultToken()` | `hvs.…`, `hvb.…`, `hvr.…` |
-| `JWT()` | JSON Web Tokens |
-| `LinearAPIKey()` | `lin_api_…` |
-| `NotionAPIToken()` | `ntn_…`, `secret_…` |
-| `NPMAccessToken()` | `npm_…` |
-| `OpenAIAPIKey()` | `sk-proj-…`, `sk-svcacct-…`, `sk-admin-…`, `sk-…` |
-| `OpenRouterAPIKey()` | `sk-or-v1-…` |
-| `PyPIAPIToken()` | `pypi-…` |
-| `RubyGemsAPIKey()` | `rubygems_…` |
-| `SendGridAPIKey()` | `SG.…` |
-| `SentryAuthToken()` | `sntryu_…`, `sntrya_…`, `sntryi_…`, `sntrys_…` |
-| `SlackToken()` | `xoxb-…`, `xoxp-…`, `xapp-…`, `xwfp-…`, `xoxe-…`, `xoxe.xoxb-…`, `xoxe.xoxp-…` |
-| `StripeAPIKey()` | `sk_live_…`, `sk_test_…`, `rk_live_…`, `rk_test_…`, `pk_live_…`, `pk_test_…`, `sk_org_…` |
-| `SupabasePersonalAccessToken()` | `sbp_…`, `sbp_oauth_…` |
+| `AnthropicPatterns()` | Anthropic API keys — the keys the Claude Console issues and the Admin API keys — and the OAuth tokens and session keys Anthropic writes the same way |
+| `AWSPatterns()` | AWS access key IDs: the long-term key of an IAM user or of the account root user, and the temporary credentials AWS STS issues |
+| `GitHubPatterns()` | GitHub personal access tokens, classic and fine-grained; OAuth app access tokens; GitHub App user access tokens; GitHub App installation access tokens; and GitHub App refresh tokens |
+| `GitLabPatterns()` | GitLab personal, project, group and impersonation access tokens; OAuth application secrets; deploy tokens; runner authentication tokens; CI/CD job tokens; pipeline trigger tokens; feed tokens; incoming mail tokens; GitLab agent for Kubernetes tokens; SCIM OAuth tokens; and feature flags client tokens — in the classic form and the routable one |
+| `GooglePatterns()` | Google API keys, the one string every Google API that takes a key rather than a credentialled principal accepts — Maps, YouTube Data, Firebase, the Gemini API and the Cloud APIs reaching no private user data among them |
+| `GrafanaPatterns()` | Grafana service account tokens |
+| `HashiCorpPatterns()` | HashiCorp Vault service tokens, batch tokens and recovery tokens |
+| `JWT()` | JSON Web Tokens in the compact serialization, signed and encrypted alike |
+| `LinearPatterns()` | Linear personal API keys |
+| `NotionPatterns()` | Notion API tokens: the static token of an internal connection, the OAuth access token of a public one, and a personal access token alike, under both prefixes Notion has issued |
+| `NPMPatterns()` | npm access tokens: the granular access tokens npmjs.com issues today, and the classic read-only, automation and publish tokens issued until npm disabled them |
+| `OpenAIPatterns()` | OpenAI API keys: project keys, service account keys, Admin API keys, and the user keys issued before projects existed |
+| `OpenRouterPatterns()` | OpenRouter API keys |
+| `PyPIPatterns()` | PyPI API tokens: the upload tokens pypi.org issues, the ones test.pypi.org issues beside them, and the short-lived ones minted for a Trusted Publisher |
+| `RubyGemsPatterns()` | RubyGems.org API keys |
+| `SendGridPatterns()` | Twilio SendGrid API keys, whatever access level they carry — full access, custom access and billing access alike |
+| `SentryPatterns()` | Sentry user auth tokens, organization auth tokens, user application tokens and internal integration tokens |
+| `SlackPatterns()` | Slack bot tokens, user tokens, app-level tokens and workflow tokens, and the pair token rotation issues: refresh tokens and the rotatable bot and user access tokens written behind them |
+| `StripePatterns()` | Stripe publishable API keys, restricted API keys, secret API keys and organization API keys |
+| `SupabasePatterns()` | Supabase Management API access tokens: the personal access token a user creates for themselves, and the token an OAuth application is issued in that user's name |
 
 `MustRegexp` builds a pattern from a regular expression:
 

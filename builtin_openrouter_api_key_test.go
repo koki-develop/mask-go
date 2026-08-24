@@ -376,11 +376,10 @@ func Test_OpenRouterAPIKey_aDigestBehindThePrefix(t *testing.T) {
 }
 
 func Test_OpenRouterAPIKey_noKeyBeginsInsideAnother(t *testing.T) {
-	// The claim builtin_openrouter_api_key.go makes that only the Stripe
-	// pattern makes beside it: the spans of this pattern never overlap one
-	// another. A candidate begins where an s begins, and the only s a span
-	// covers is the one its prefix opens with — the rest of the prefix is k, o,
-	// r, v, a digit and three hyphens, and a body is hexadecimal.
+	// The claim builtin_openrouter_api_key.go makes: the spans of this pattern
+	// never overlap one another. A candidate begins where an s begins, and the
+	// only s a span covers is the one its prefix opens with — the rest of the
+	// prefix is k, o, r, v, a digit and three hyphens, and a body is hexadecimal.
 	//
 	// It is what lets the scan resume at the body of a candidate rather than a
 	// byte past its start, and it is not a claim one input can state, so the

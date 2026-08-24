@@ -23,6 +23,16 @@ func ExampleAllBuiltinPatterns() {
 	// Output: token=**************************************** jwt=************************************************************************
 }
 
+func ExampleStripePatterns() {
+	// Every vendor has an accessor of its own, returning the built-in patterns
+	// that read what that vendor issues. A vendor with more than one is given
+	// whole by it.
+	m := mask.New(mask.WithPatterns(mask.StripePatterns()...))
+
+	fmt.Println(m.Mask("secret=sk_live_0123456789abcdef01234567 publishable=pk_live_0123456789abcdef01234567"))
+	// Output: secret=******************************** publishable=********************************
+}
+
 func ExampleAWSAccessKeyID() {
 	m := mask.New(mask.WithPatterns(mask.AWSAccessKeyID()))
 
@@ -63,6 +73,17 @@ func ExampleSlackToken() {
 
 	fmt.Println(m.Mask("SLACK_BOT_TOKEN=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn"))
 	// Output: SLACK_BOT_TOKEN=********************************************************
+}
+
+func ExampleStripeSecretKey() {
+	// Stripe marks the publishable key safe to expose and the restricted,
+	// secret and organization keys not, so the two are patterns of their own.
+	// Reaching for this one alone redacts the keys that matter and leaves the
+	// publishable key, which belongs in the page it initializes.
+	m := mask.New(mask.WithPatterns(mask.StripeSecretKey()))
+
+	fmt.Println(m.Mask("secret=sk_live_0123456789abcdef01234567 publishable=pk_live_0123456789abcdef01234567"))
+	// Output: secret=******************************** publishable=pk_live_0123456789abcdef01234567
 }
 
 func ExampleWithPatterns() {

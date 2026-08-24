@@ -1,0 +1,229 @@
+# What Stripe publishable keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is, written out until it is the twenty-four characters the pattern
+# holds a body to. That count is a floor and not an abbreviation: a body
+# shortened for readability would leave a case holding no key at all. One case
+# carries the ninety-nine characters Stripe issues today, to say that the floor
+# is not a count.
+#
+# Stripe's own table of key types carries a column reading safe to expose, and
+# the publishable key is the one row where it reads yes: the key is embedded in
+# the page it initializes, so a reader who has one has taken nothing. It is a
+# pattern of its own for that reason. A caller masking a frontend bundle or a
+# browser console log has no reason to redact a value that belongs there, and a
+# caller masking a configuration dump they are about to share may want it gone;
+# the two reach for different patterns and get what they asked for. The
+# restricted, secret and organization keys are the other half of the format and
+# have a corpus file of their own.
+#
+# The two cases under the over-match heading are not keys and nobody issued
+# them. What they hold is a name whose first segment ends in pk, whose second is
+# a mode and whose third is long enough to be a body, which is the whole of what
+# the pattern asks for.
+
+patterns: stripe-publishable-key
+
+# The two modes, which is the whole of what a publishable key is written in.
+
+case: a live publishable key in an environment assignment
+in:   STRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef01234567
+out:  STRIPE_PUBLISHABLE_KEY=«stripe-publishable-key»
+
+case: a sandbox publishable key
+in:   pk_test_0123456789abcdef01234567
+out:  «stripe-publishable-key»
+
+case: a publishable key in a client side configuration object
+in:   {"publishableKey":"pk_test_0123456789abcdef01234567","locale":"auto"}
+out:  {"publishableKey":"«stripe-publishable-key»","locale":"auto"}
+
+case: a publishable key in the script that initializes a page with it
+in:   const stripe = Stripe('pk_live_0123456789abcdef01234567');
+out:  const stripe = Stripe('«stripe-publishable-key»');
+
+# How long a body is, which is the one count this pattern reads, and it is the
+# floor the secret keys are held to because it is the same format. Twenty-four
+# characters is the shortest body Stripe has printed in its own documentation:
+# the ninety-nine characters it issues today are redacted whole, and so would a
+# length nobody has published be. What the floor holds back is the placeholder a
+# template carries where a key goes, which for a publishable key is written into
+# documentation far more often than a key is.
+#
+# What it leaves over is the key cut short. A line cut to a column limit partway
+# through one leaves a prefix and a body too short to be a body, and every
+# random character written before the cut comes through in the clear.
+
+case: the length Stripe issues today
+in:   pk_live_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:  «stripe-publishable-key»
+
+case: a body one character longer than the floor
+in:   pk_live_0123456789abcdef01234567z
+out:  «stripe-publishable-key»
+
+case: a key one character short of the floor
+in:   STRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef0123456
+out:  STRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef0123456
+
+case: a key cut off at its prefix
+in:   STRIPE_PUBLISHABLE_KEY=pk_live_
+out:  STRIPE_PUBLISHABLE_KEY=pk_live_
+
+case: a placeholder where a key goes
+in:   STRIPE_PUBLISHABLE_KEY=pk_test_yourkeyhere
+out:  STRIPE_PUBLISHABLE_KEY=pk_test_yourkeyhere
+
+# The mode. It is read as one of the names Stripe writes rather than as any
+# lowercase word at all, which is what makes the anchor eight characters instead
+# of the three a key type is. What that wagers is a mode Stripe has not written
+# yet.
+
+case: a mode no Stripe page names
+in:   pk_prod_0123456789abcdef01234567
+out:  pk_prod_0123456789abcdef01234567
+
+case: a key type with no mode behind it
+in:   pk_0123456789abcdef01234567
+out:  pk_0123456789abcdef01234567
+
+# The alphabet a body is written in: the letters of both cases and the ten
+# digits. Neither the underscore nor the hyphen is in it, so either of them ends
+# a body where it stands and what is left in front of it is too short to be one.
+
+case: a body written in capitals
+in:   pk_live_0123456789ABCDEF01234567
+out:  «stripe-publishable-key»
+
+case: an underscore in the body
+in:   pk_live_0123456789abcdef_01234567
+out:  pk_live_0123456789abcdef_01234567
+
+case: a hyphen in the body
+in:   pk_live_0123456789abcdef-01234567
+out:  pk_live_0123456789abcdef-01234567
+
+# What a key may be written against. The byte in front of a prefix may be no
+# letter and no digit, which is the demand the secret keys are held to and is
+# read from the same declaration. Fewer words close on this key type than on
+# those, but topk_ does — it is how the top-k operation is spelled in a name —
+# so topk_live_ carries a whole prefix and is turned away by the letter in front
+# of it. It would be kept even where it bought nothing, because the two halves
+# of one format may not disagree about where a key may begin.
+#
+# Behind the key the redaction reaches to the end of the run, which is the price
+# of reading a floor rather than a count. A letter or a digit written straight
+# after a key is redacted with it; an underscore, a hyphen, a space or a quote
+# ends the run and stays.
+
+case: a key after an underscore
+in:   STRIPE_PUBLISHABLE_KEY_pk_live_0123456789abcdef01234567
+out:  STRIPE_PUBLISHABLE_KEY_«stripe-publishable-key»
+
+case: a key after a letter
+in:   xpk_live_0123456789abcdef01234567
+out:  xpk_live_0123456789abcdef01234567
+
+case: a key after a digit
+in:   1pk_live_0123456789abcdef01234567
+out:  1pk_live_0123456789abcdef01234567
+
+case: a snake_case name closing on the publishable key type
+in:   the topk_live_0123456789abcdef01234567 fixture was rebuilt
+out:  the topk_live_0123456789abcdef01234567 fixture was rebuilt
+
+case: a key at the end of a sentence
+in:   the key is pk_live_0123456789abcdef01234567.
+out:  the key is «stripe-publishable-key».
+
+case: a key before a word
+in:   pk_live_0123456789abcdef01234567suffix
+out:  «stripe-publishable-key»
+
+case: a key before an underscore, which ends the run
+in:   pk_live_0123456789abcdef01234567_suffix
+out:  «stripe-publishable-key»_suffix
+
+# The other half of Stripe's format, which this pattern leaves alone. That is
+# the boundary between the two: Stripe's safe to expose column reads no for
+# every one of these three and yes for the key above.
+
+case: a secret key
+in:   STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567
+out:  STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567
+
+case: a restricted key
+in:   rk_live_0123456789abcdef01234567
+out:  rk_live_0123456789abcdef01234567
+
+case: an organization key
+in:   sk_org_0123456789abcdef01234567
+out:  sk_org_0123456789abcdef01234567
+
+# Two keys written together. No publishable key can begin inside the span of
+# another, and none inside a secret key's span either: a key opens only where no
+# letter and no digit stands in front of it, and everything a span covers is one
+# or the other but for the underscores of the prefix. So the second of two keys
+# written with nothing at all between them opens nothing. That is the far side
+# of the byte in front, and it is why a caller running both halves of the format
+# gets no span reaching into another's and none nested inside one.
+
+case: two keys separated by a space
+in:   pk_live_0123456789abcdef01234567 pk_test_0123456789abcdef01234567
+out:  «stripe-publishable-key» «stripe-publishable-key»
+
+case: a key written straight onto the end of another
+in:   pk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
+out:  «stripe-publishable-key»_test_0123456789abcdef01234567
+
+case: a key written straight onto the end of a secret key
+in:   sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
+out:  sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
+
+case: an underscore between a secret key and one of these
+in:   sk_live_0123456789abcdef01234567_pk_test_0123456789abcdef01234567
+out:  sk_live_0123456789abcdef01234567_«stripe-publishable-key»
+
+# What this pattern redacts that nobody issued. A prefix carries two
+# underscores, so no base64 payload holds one and no digest does; what is left
+# is text somebody wrote — a name whose first segment ends in pk, whose second
+# is a mode, and whose third is twenty-four unbroken letters and digits.
+#
+# That is the answer rather than a fault in it: such a name is a key's format
+# exactly, so nothing is left in the text to read the two apart by, and the only
+# tightening on offer is the count, which the pattern's own file weighs and
+# reads as a floor for the reason a wrong count costs a whole credential.
+
+case: a name whose segments spell a prefix, with a digest behind it
+in:   pk_live_0123456789abcdef0123456789abcdef
+out:  «stripe-publishable-key»
+
+case: the same name at the start of a shell word
+in:   cat pk_test_0123456789abcdef01234567.json
+out:  cat «stripe-publishable-key».json
+
+# And what this pattern leaves alone. The first two are the prefix: read in its
+# own case, and written with the underscores Stripe writes rather than the
+# hyphens the Anthropic and OpenAI keys carry. The digest carries no underscore
+# and so holds no prefix to be found at, and no word of prose is spelled
+# pk_live_.
+
+case: an uppercase prefix
+in:   PK_LIVE_0123456789abcdef01234567
+out:  PK_LIVE_0123456789abcdef01234567
+
+case: hyphens where the prefix carries underscores
+in:   pk-live-0123456789abcdef01234567
+out:  pk-live-0123456789abcdef01234567
+
+case: a run of the right length opening with no prefix
+in:   0123456789abcdef01234567
+out:  0123456789abcdef01234567
+
+case: a hexadecimal digest
+in:   sha1=0123456789abcdef0123456789abcdef01234567
+out:  sha1=0123456789abcdef0123456789abcdef01234567
+
+case: prose
+in:   there is no credential in this sentence
+out:  there is no credential in this sentence

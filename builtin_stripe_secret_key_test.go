@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// The Stripe API key pattern: what it locates and what it leaves alone, written
-// out case by case, and the reference its scan is held to.
+// The Stripe secret key pattern: what it locates and what it leaves alone,
+// written out case by case, and the reference its scan is held to.
 //
 // What every built-in shares — the convention its name follows, one value per
 // accessor, usable spans, no false positive on prose, agreement with the
@@ -17,6 +17,10 @@ import (
 // builtins_test.go, which drives every built-in from one table rather than a
 // set of tests apiece.
 //
+// The publishable key is the other half of Stripe's format and has a file of
+// its own. A case here carries one only where what is being stated is that this
+// pattern leaves it alone.
+//
 // The keys written out below are made only of ordered characters: valid in
 // shape, obviously not real. The run they are built from, 0123456789abcdef, is
 // written out until the body is twenty-four characters, which is the shortest
@@ -24,7 +28,7 @@ import (
 // case holding no key at all. One case carries the ninety-nine characters
 // Stripe issues today, to say that the floor is not a count.
 
-func Test_StripeAPIKey(t *testing.T) {
+func Test_StripeSecretKey(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -53,21 +57,6 @@ func Test_StripeAPIKey(t *testing.T) {
 		{
 			name: "a test restricted key",
 			src:  "rk_test_0123456789abcdef01234567",
-			want: []Span{{0, 32}},
-		},
-		{
-			// Stripe documents a publishable key as safe to embed in the page
-			// it initializes. It is located all the same, for the reason
-			// builtin_stripe_api_key.go gives: a caller redacting Stripe keys
-			// is redacting what a log line carries, and nothing in the string
-			// tells the four kinds apart before the mode has been read.
-			name: "a live publishable key",
-			src:  "pk_live_0123456789abcdef01234567",
-			want: []Span{{0, 32}},
-		},
-		{
-			name: "a test publishable key",
-			src:  "pk_test_0123456789abcdef01234567",
 			want: []Span{{0, 32}},
 		},
 		{
@@ -111,22 +100,24 @@ func Test_StripeAPIKey(t *testing.T) {
 			want: []Span{{0, 33}},
 		},
 		{
-			// Two keys with nothing at all between them. The second begins
-			// against a digit, so it opens nothing, and the first is redacted
-			// to the end of its run — which reaches the two characters of the
-			// second's key type and stops at the underscore behind them. That
-			// is what the byte in front costs, and it is the shape nobody
-			// writes: a list of keys carries a separator.
-			name: "a key written straight onto the end of another",
+			// A publishable key written straight onto the end of a secret one.
+			// The second begins against a digit, so it opens nothing for either
+			// pattern, and the first is redacted to the end of its run — which
+			// reaches the two characters of the publishable key type and stops
+			// at the underscore behind them. That is what the byte in front
+			// costs, and it is the shape nobody writes: a list of keys carries
+			// a separator.
+			name: "a publishable key written straight onto the end of one of these",
 			src:  "sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567",
 			want: []Span{{0, 34}},
 		},
 		{
 			// The same two keys with an underscore between them, which is a
-			// byte a key may be written after. Both go.
-			name: "two keys with an underscore between them",
+			// byte a key may be written after. This pattern takes the first;
+			// the publishable one takes the second.
+			name: "an underscore between one of these and a publishable key",
 			src:  "sk_live_0123456789abcdef01234567_pk_test_0123456789abcdef01234567",
-			want: []Span{{0, 32}, {33, 65}},
+			want: []Span{{0, 32}},
 		},
 		{
 			name: "a key after an underscore",
@@ -135,21 +126,21 @@ func Test_StripeAPIKey(t *testing.T) {
 		},
 		{
 			name: "two keys separated by a space",
-			src:  "sk_live_0123456789abcdef01234567 pk_live_0123456789abcdef01234567",
+			src:  "sk_live_0123456789abcdef01234567 rk_live_0123456789abcdef01234567",
 			want: []Span{{0, 32}, {33, 65}},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := StripeAPIKey().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got := StripeSecretKey().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_StripeAPIKey_noMatch(t *testing.T) {
+func Test_StripeSecretKey_noMatch(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -162,7 +153,7 @@ func Test_StripeAPIKey_noMatch(t *testing.T) {
 			// Twenty-three characters where the pattern asks for twenty-four.
 			// This is the shape a line cut to a column limit leaves, and the
 			// characters in front of the cut stay in the text: the far side of
-			// reading a floor, which builtin_stripe_api_key.go weighs.
+			// reading a floor, which builtin_stripe_secret_key.go weighs.
 			name: "a body one character too short",
 			src:  "sk_live_0123456789abcdef0123456",
 		},
@@ -186,6 +177,14 @@ func Test_StripeAPIKey_noMatch(t *testing.T) {
 			// wager the case above states.
 			name: "an organization key in a mode no Stripe page names",
 			src:  "sk_org_prod_0123456789abcdef01234567",
+		},
+		{
+			// The publishable key type, which is the other half of Stripe's
+			// format and belongs to the pattern in
+			// builtin_stripe_publishable_key.go. This pattern carries no name
+			// for it, which is what the boundary between the two is.
+			name: "a publishable key",
+			src:  "pk_live_0123456789abcdef01234567",
 		},
 		{
 			name: "a key type this pattern carries no name for",
@@ -244,10 +243,6 @@ func Test_StripeAPIKey_noMatch(t *testing.T) {
 			src:  "network_live_0123456789abcdef01234567",
 		},
 		{
-			name: "a snake_case name whose segment closes the publishable key type",
-			src:  "backup_live_0123456789abcdef01234567",
-		},
-		{
 			name: "a digit in front of the prefix",
 			src:  "1sk_live_0123456789abcdef01234567",
 		},
@@ -265,14 +260,14 @@ func Test_StripeAPIKey_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := StripeAPIKey().Find(tt.src); len(got) != 0 {
+			if got := StripeSecretKey().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
 	}
 }
 
-func Test_StripeAPIKey_inContext(t *testing.T) {
+func Test_StripeSecretKey_inContext(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -290,8 +285,8 @@ func Test_StripeAPIKey_inContext(t *testing.T) {
 		},
 		{
 			name: "json",
-			src:  `{"publishableKey":"pk_live_0123456789abcdef01234567"}`,
-			want: `{"publishableKey":"********************************"}`,
+			src:  `{"restrictedKey":"rk_live_0123456789abcdef01234567"}`,
+			want: `{"restrictedKey":"********************************"}`,
 		},
 		{
 			// The way Stripe's own documentation writes a request: the key as
@@ -308,19 +303,19 @@ func Test_StripeAPIKey_inContext(t *testing.T) {
 		},
 		{
 			name: "twice",
-			src:  "sk_live_0123456789abcdef01234567 pk_live_0123456789abcdef01234567",
+			src:  "sk_live_0123456789abcdef01234567 rk_live_0123456789abcdef01234567",
 			want: "******************************** ********************************",
 		},
 		{
 			// Two keys with an underscore between them, which is a byte a key
 			// may be written after. Both go, and the underscore stays.
 			name: "two keys with an underscore between them",
-			src:  "sk_live_0123456789abcdef01234567_pk_test_0123456789abcdef01234567",
+			src:  "sk_live_0123456789abcdef01234567_rk_test_0123456789abcdef01234567",
 			want: "********************************_********************************",
 		},
 	}
 
-	m := New(WithPatterns(StripeAPIKey()))
+	m := New(WithPatterns(StripeSecretKey()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -330,11 +325,10 @@ func Test_StripeAPIKey_inContext(t *testing.T) {
 	}
 }
 
-func Test_StripeAPIKey_afterAWordCharacter(t *testing.T) {
-	// The one demand this pattern makes that only the Slack one beside it makes
-	// too: the byte in front of a prefix may be no letter and no digit. Two of
-	// the three key types can close a word, so without it a snake_case name is
-	// read as a key.
+func Test_StripeSecretKey_afterAWordCharacter(t *testing.T) {
+	// A demand few of the scans here make, and the Slack one does: the byte in
+	// front of a prefix may be no letter and no digit. Both key types here can
+	// close a word, so without it a snake_case name is read as a key.
 	//
 	// It is not the word boundary a regular expression writes, and the
 	// difference is the underscore: a key reaching a log line from a shell
@@ -362,7 +356,7 @@ func Test_StripeAPIKey_afterAWordCharacter(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(StripeAPIKey()))
+	m := New(WithPatterns(StripeSecretKey()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -372,7 +366,7 @@ func Test_StripeAPIKey_afterAWordCharacter(t *testing.T) {
 	}
 }
 
-func Test_StripeAPIKey_reachesTheEndOfTheRun(t *testing.T) {
+func Test_StripeSecretKey_reachesTheEndOfTheRun(t *testing.T) {
 	// The far side of reading a floor rather than a count. Where a key ends is
 	// where its alphabet stops, so ordinary punctuation ends one and nothing
 	// written after it joins it — but a letter or a digit written straight
@@ -415,7 +409,7 @@ func Test_StripeAPIKey_reachesTheEndOfTheRun(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(StripeAPIKey()))
+	m := New(WithPatterns(StripeSecretKey()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -425,7 +419,7 @@ func Test_StripeAPIKey_reachesTheEndOfTheRun(t *testing.T) {
 	}
 }
 
-func Test_StripeAPIKey_cutShortOfTheFloor(t *testing.T) {
+func Test_StripeSecretKey_cutShortOfTheFloor(t *testing.T) {
 	// What the floor costs, held to being left in the text rather than
 	// redacted. A line cut to a column limit partway through a key leaves a
 	// prefix and a body too short to be one, and the random characters written
@@ -452,11 +446,11 @@ func Test_StripeAPIKey_cutShortOfTheFloor(t *testing.T) {
 			// The other side of the same count: what a lower floor would draw
 			// in is the placeholder a template carries where a key goes.
 			name: "a placeholder where a key goes",
-			src:  "STRIPE_PUBLISHABLE_KEY=pk_test_yourkeyhere",
+			src:  "STRIPE_SECRET_KEY=sk_test_yourkey",
 		},
 	}
 
-	m := New(WithPatterns(StripeAPIKey()))
+	m := New(WithPatterns(StripeSecretKey()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.src {
@@ -466,7 +460,7 @@ func Test_StripeAPIKey_cutShortOfTheFloor(t *testing.T) {
 	}
 }
 
-func Test_StripeAPIKey_insideASnakeCaseName(t *testing.T) {
+func Test_StripeSecretKey_insideASnakeCaseName(t *testing.T) {
 	// What this pattern redacts that nobody issued. A prefix carries two
 	// underscores, so no base64 payload holds one and no digest does; what is
 	// left is text somebody wrote — a snake_case name whose first segment is a
@@ -476,7 +470,7 @@ func Test_StripeAPIKey_insideASnakeCaseName(t *testing.T) {
 	// The cases are held to being redacted rather than to being spared. Such a
 	// name is a key's format exactly, so nothing is left in the text to read the
 	// two apart by, and the only tightening on offer is the count
-	// builtin_stripe_api_key.go sets out why this scan reads as a floor. What
+	// builtin_stripe_secret_key.go sets out why this scan reads as a floor. What
 	// the cases are for is that they move with the scan: one of them ceasing to
 	// be located means the grammar changed, and that is a decision to be taken
 	// rather than noticed afterwards.
@@ -492,12 +486,12 @@ func Test_StripeAPIKey_insideASnakeCaseName(t *testing.T) {
 		},
 		{
 			name: "the same name at the start of a shell word",
-			src:  "cat pk_test_0123456789abcdef01234567.json",
+			src:  "cat sk_test_0123456789abcdef01234567.json",
 			want: "cat ********************************.json",
 		},
 	}
 
-	m := New(WithPatterns(StripeAPIKey()))
+	m := New(WithPatterns(StripeSecretKey()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -507,13 +501,12 @@ func Test_StripeAPIKey_insideASnakeCaseName(t *testing.T) {
 	}
 }
 
-func Test_StripeAPIKey_noKeyBeginsInsideAnother(t *testing.T) {
-	// The claim builtin_stripe_api_key.go makes that only the RubyGems,
-	// Supabase and OpenRouter patterns make beside it: the spans of this
-	// pattern never overlap one another, because a key begins only where no
-	// letter and no digit stands in front of it and everything a span covers
-	// is one or the other but for the underscores of the prefix — none of
-	// which opens a prefix of its own.
+func Test_StripeSecretKey_noKeyBeginsInsideAnother(t *testing.T) {
+	// The claim builtin_stripe_secret_key.go makes: the spans of this pattern
+	// never overlap one another, because a key begins
+	// only where no letter and no digit stands in front of it and everything a
+	// span covers is one or the other but for the underscores of the prefix —
+	// none of which opens a prefix of its own.
 	//
 	// It is what the scan resuming past a match would rest on, were it to
 	// resume there, and it is what the paragraph on the second of two keys
@@ -522,10 +515,10 @@ func Test_StripeAPIKey_noKeyBeginsInsideAnother(t *testing.T) {
 	// of a body, where a body begins, and one character short of a body so that
 	// the outer candidate is rejected and the inner is all there is.
 	body := "0123456789abcdef01234567"
-	p := StripeAPIKey()
+	p := StripeSecretKey()
 
-	for _, outer := range stripeAPIKeyPrefixes {
-		for _, inner := range stripeAPIKeyPrefixes {
+	for _, outer := range stripeSecretKeyPrefixes {
+		for _, inner := range stripeSecretKeyPrefixes {
 			for _, src := range []string{
 				outer + body + inner + body,
 				outer + inner + body,
@@ -544,11 +537,11 @@ func Test_StripeAPIKey_noKeyBeginsInsideAnother(t *testing.T) {
 	}
 }
 
-func Test_stripeAPIKeyPrefixes(t *testing.T) {
+func Test_stripeSecretKeyPrefixes(t *testing.T) {
 	// Four things hold the table together, and none of them shows anywhere else.
 	//
 	// The anchor is what the scan searches the input for, and a candidate opens
-	// stripeAPIKeyAnchorIndex bytes in front of it: an entry not carrying it
+	// stripeSecretKeyAnchorIndex bytes in front of it: an entry not carrying it
 	// there is an entry the scan never reaches. The character an entry closes
 	// with may not be one a body is written in, which is what makes every body
 	// begin where a run begins — the whole of why this scan needs no run cursor.
@@ -559,81 +552,69 @@ func Test_stripeAPIKeyPrefixes(t *testing.T) {
 	// a rule and not the courtesy it is in the Slack and GitLab tables: sk_org_
 	// matches wherever sk_org_live_ does, and the scan takes the first entry
 	// that matches.
-	if len(stripeAPIKeyPrefixes) == 0 {
+	if len(stripeSecretKeyPrefixes) == 0 {
 		t.Fatal("the pattern carries no prefix, so it locates nothing")
 	}
 
-	for i, prefix := range stripeAPIKeyPrefixes {
+	for i, prefix := range stripeSecretKeyPrefixes {
 		t.Run(prefix, func(t *testing.T) {
-			if len(prefix) <= stripeAPIKeyAnchorIndex+len(stripeAPIKeyAnchor) {
-				t.Fatalf("the prefix is too short to carry the anchor %q and a body behind it", stripeAPIKeyAnchor)
+			if len(prefix) <= stripeSecretKeyAnchorIndex+len(stripeSecretKeyAnchor) {
+				t.Fatalf("the prefix is too short to carry the anchor %q and a body behind it", stripeSecretKeyAnchor)
 			}
-			at := prefix[stripeAPIKeyAnchorIndex : stripeAPIKeyAnchorIndex+len(stripeAPIKeyAnchor)]
-			if at != stripeAPIKeyAnchor {
-				t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", at, stripeAPIKeyAnchor)
+			at := prefix[stripeSecretKeyAnchorIndex : stripeSecretKeyAnchorIndex+len(stripeSecretKeyAnchor)]
+			if at != stripeSecretKeyAnchor {
+				t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", at, stripeSecretKeyAnchor)
 			}
-			if c := prefix[len(prefix)-1]; isStripeAPIKeyBodyByte(c) {
+			if c := prefix[len(prefix)-1]; isBase62Byte(c) {
 				t.Errorf("the prefix closes with %q, which a body may be written with, so a body need not begin where a run does", c)
 			}
-			for j := range stripeAPIKeyAnchorIndex + 1 {
-				if c := prefix[j]; !isStripeAPIKeyWordByte(c) {
+			for j := range stripeSecretKeyAnchorIndex + 1 {
+				if c := prefix[j]; !isStripeKeyWordByte(c) {
 					t.Errorf("the prefix holds %q at %d, which no word is written with, so nothing can close on the key type", c, j)
 				}
 			}
-			if i > 0 && len(prefix) > len(stripeAPIKeyPrefixes[i-1]) {
-				t.Errorf("the prefix is longer than %q in front of it, so a longer prefix could be read as a shorter one and a body of the difference", stripeAPIKeyPrefixes[i-1])
+			if i > 0 && len(prefix) > len(stripeSecretKeyPrefixes[i-1]) {
+				t.Errorf("the prefix is longer than %q in front of it, so a longer prefix could be read as a shorter one and a body of the difference", stripeSecretKeyPrefixes[i-1])
 			}
 			for j := range i {
-				if strings.HasPrefix(prefix, stripeAPIKeyPrefixes[j]) {
-					t.Errorf("this prefix opens with %q in front of it, so it is never reached", stripeAPIKeyPrefixes[j])
+				if strings.HasPrefix(prefix, stripeSecretKeyPrefixes[j]) {
+					t.Errorf("this prefix opens with %q in front of it, so it is never reached", stripeSecretKeyPrefixes[j])
 				}
 			}
 		})
 	}
 }
 
-func Test_stripeAPIKeyAnchor(t *testing.T) {
+func Test_stripeSecretKeyAnchor(t *testing.T) {
 	// The scan resumes one byte past the anchor rather than one byte past the
 	// start of the candidate, because resuming at the start would find the same
 	// anchor again and never advance. That skips nothing only while two
 	// candidates cannot begin one byte apart, and what settles it is that the
 	// anchor cannot begin one byte into itself: a candidate at the next byte
 	// would need the anchor's first character where this one carries its second.
-	if len(stripeAPIKeyAnchor) < 2 {
+	if len(stripeSecretKeyAnchor) < 2 {
 		t.Fatal("the anchor is a single byte, so resuming past it is resuming past the candidate")
 	}
-	if stripeAPIKeyAnchor[0] == stripeAPIKeyAnchor[1] {
-		t.Errorf("the anchor %q opens with the character behind it, so a candidate one byte along would be stepped over", stripeAPIKeyAnchor)
+	if stripeSecretKeyAnchor[0] == stripeSecretKeyAnchor[1] {
+		t.Errorf("the anchor %q opens with the character behind it, so a candidate one byte along would be stepped over", stripeSecretKeyAnchor)
 	}
 }
 
-func Test_isStripeAPIKeyBodyByte(t *testing.T) {
-	// The alphabet a body is written in, stated over every byte rather than by
-	// example: the letters of both cases and the digits, and neither the hyphen
-	// nor the underscore.
+func Test_isStripeKeyWordByte(t *testing.T) {
+	// What may not stand in front of a Stripe prefix, stated over every byte
+	// rather than by example. It holds the same characters as the base62
+	// alphabet a body is written in and is asked separately, so that the day one
+	// of them widens the other is not carried along with it.
 	for c := range 256 {
 		b := byte(c)
 		want := '0' <= b && b <= '9' || 'A' <= b && b <= 'Z' || 'a' <= b && b <= 'z'
-		if got := isStripeAPIKeyBodyByte(b); got != want {
-			t.Errorf("isStripeAPIKeyBodyByte(%q) = %v, want %v", b, got, want)
+		if got := isStripeKeyWordByte(b); got != want {
+			t.Errorf("isStripeKeyWordByte(%q) = %v, want %v", b, got, want)
 		}
 	}
 }
 
-func Test_isStripeAPIKeyWordByte(t *testing.T) {
-	// What may not stand in front of a prefix, stated the same way. It holds
-	// the same characters as the body alphabet and is asked separately, so that
-	// the day one of them widens the other is not carried along with it.
-	for c := range 256 {
-		b := byte(c)
-		want := '0' <= b && b <= '9' || 'A' <= b && b <= 'Z' || 'a' <= b && b <= 'z'
-		if got := isStripeAPIKeyWordByte(b); got != want {
-			t.Errorf("isStripeAPIKeyWordByte(%q) = %v, want %v", b, got, want)
-		}
-	}
-}
-
-func Test_stripeAPIKeyPrefixAt(t *testing.T) {
+func Test_stripeSecretKeyPrefixAt(t *testing.T) {
 	// Which prefix is read at a position, and how much of it. What the length
 	// then buys is where the body begins, so the organization cases are the
 	// ones that matter: read as the shorter of the two, a key written with a
@@ -649,8 +630,8 @@ func Test_stripeAPIKeyPrefixAt(t *testing.T) {
 			want: 8,
 		},
 		{
-			name: "a publishable key",
-			src:  "pk_test_0123456789abcdef01234567",
+			name: "a restricted key",
+			src:  "rk_test_0123456789abcdef01234567",
 			want: 8,
 		},
 		{
@@ -664,6 +645,11 @@ func Test_stripeAPIKeyPrefixAt(t *testing.T) {
 			want: 12,
 		},
 		{
+			name: "a publishable key, which belongs to the other pattern",
+			src:  "pk_live_0123456789abcdef01234567",
+			want: 0,
+		},
+		{
 			name: "a mode no Stripe page names",
 			src:  "sk_prod_0123456789abcdef01234567",
 			want: 0,
@@ -673,78 +659,24 @@ func Test_stripeAPIKeyPrefixAt(t *testing.T) {
 			src:  "sk_0123456789abcdef01234567",
 			want: 0,
 		},
-		{
-			name: "a prefix cut short",
-			src:  "sk_liv",
-			want: 0,
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := stripeAPIKeyPrefixAt(tt.src, 0); got != tt.want {
-				t.Errorf("stripeAPIKeyPrefixAt(%q, 0) = %d, want %d", tt.src, got, tt.want)
+			if got := stripeSecretKeyPrefixAt(tt.src, 0); got != tt.want {
+				t.Errorf("stripeSecretKeyPrefixAt(%q, 0) = %d, want %d", tt.src, got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_stripeAPIKeyBodyEnd(t *testing.T) {
-	// Where a body stops. How long it then is, is the scan's to measure against
-	// the floor, so what is stated here is the alphabet alone.
-	tests := []struct {
-		name string
-		src  string
-		want int
-	}{
-		{
-			name: "a run reaching the end of the input",
-			src:  "0123abcdABCD",
-			want: 12,
-		},
-		{
-			name: "a run closed by an underscore",
-			src:  "0123abcd_ABCD",
-			want: 8,
-		},
-		{
-			name: "a run closed by a hyphen",
-			src:  "0123abcd-ABCD",
-			want: 8,
-		},
-		{
-			name: "a run closed by a dot",
-			src:  "0123abcd.ABCD",
-			want: 8,
-		},
-		{
-			name: "no run at all",
-			src:  "-0123abcd",
-			want: 0,
-		},
-		{
-			name: "the empty string",
-			src:  "",
-			want: 0,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := stripeAPIKeyBodyEnd(tt.src, 0); got != tt.want {
-				t.Errorf("stripeAPIKeyBodyEnd(%q, 0) = %d, want %d", tt.src, got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_StripeAPIKey_scanIsLinear(t *testing.T) {
+func Test_StripeSecretKey_scanIsLinear(t *testing.T) {
 	// This scan reads a run to its end and keeps no cursor, so what holds it
 	// linear is a property of the format rather than state: every prefix closes
 	// with an underscore, no body is written with one, and so no two candidates
 	// can read the same run. The npm, Sentry and Linear scans reach it by the
 	// same argument and each drives inputs of its own for it, which is why the
-	// argument is written out in four files rather than borrowed from one.
+	// argument is written out in several files rather than borrowed from one.
 	// These are the inputs that would find it wrong here — a line that is
 	// nothing but candidates, a line that is nothing but anchors, and a single
 	// run as long as the line.
@@ -774,7 +706,7 @@ func Test_StripeAPIKey_scanIsLinear(t *testing.T) {
 		"a run that runs the length of the line": "sk_" + strings.Repeat("a", 2000000),
 	}
 
-	m := New(WithPatterns(StripeAPIKey()))
+	m := New(WithPatterns(StripeSecretKey()))
 	for name, src := range sources {
 		t.Run(name, func(t *testing.T) {
 			start := time.Now()
@@ -786,9 +718,9 @@ func Test_StripeAPIKey_scanIsLinear(t *testing.T) {
 	}
 }
 
-// referenceStripeAPIKeyFind locates keys the plain way: every position in turn,
-// the byte in front of it read, each prefix tried at it and the body behind
-// that walked to the end of its run, with nothing remembered between
+// referenceStripeSecretKeyFind locates keys the plain way: every position in
+// turn, the byte in front of it read, each prefix tried at it and the body
+// behind that walked to the end of its run, with nothing remembered between
 // candidates. The prefixes, the floor and the two character classes are spelled
 // again here rather than shared with the scan. A reference reading those
 // declarations could not disagree with it about them, and it is exactly that
@@ -796,7 +728,7 @@ func Test_StripeAPIKey_scanIsLinear(t *testing.T) {
 // together or reported apart.
 //
 // Every position is a starting point in its own right, a match included. No key
-// can begin inside the span of another here, which builtin_stripe_api_key.go
+// can begin inside the span of another here, which builtin_stripe_secret_key.go
 // sets out, so nothing turns on asking at a position a match already covers —
 // but the reference is written to know nothing the scan claims, and where the
 // scan resumes is one of the things the target below is for.
@@ -812,13 +744,12 @@ func Test_StripeAPIKey_scanIsLinear(t *testing.T) {
 // Walking the run at every position is what a cursor saves a scan from, and
 // this scan keeps none: no two candidates can read the same run, so the walks
 // here telescope exactly as the scan's do.
-func referenceStripeAPIKeyFind(src string) []Span {
+func referenceStripeSecretKeyFind(src string) []Span {
 	const bodyChars = 24
 	prefixes := []string{
 		"sk_org_live_", "sk_org_test_",
 		"sk_live_", "sk_test_",
 		"rk_live_", "rk_test_",
-		"pk_live_", "pk_test_",
 		"sk_org_",
 	}
 
@@ -857,25 +788,26 @@ func referenceStripeAPIKeyFind(src string) []Span {
 	return spans
 }
 
-// FuzzStripeAPIKey_matchesReference guards the hand-written scan: the two bytes
-// it searches for, the byte it reads in front of a prefix, the order it reads
-// the prefixes in, the floor it holds a body to, the alphabet it reads that
-// body in and the byte it resumes at may none of them change which keys are
-// located.
+// FuzzStripeSecretKey_matchesReference guards the hand-written scan: the two
+// bytes it searches for, the byte it reads in front of a prefix, the order it
+// reads the prefixes in, the floor it holds a body to, the alphabet it reads
+// that body in and the byte it resumes at may none of them change which keys
+// are located.
 //
 // The seeds spell each prefix once and then the edges the anchor, the floor and
 // the byte in front live on — a body one character short, a mode nobody names,
 // an organization key read as the shorter of its two prefixes, a key closing a
-// word, a key written inside another, and a line that is nothing but anchors.
-// There is no checked-in corpus for this target, so what the seeds reach is all
-// a cold run starts from.
-func FuzzStripeAPIKey_matchesReference(f *testing.F) {
+// word, a key written inside another, the publishable key type this pattern
+// declines, and a line that is nothing but anchors. There is no checked-in
+// corpus for this target, so what the seeds reach is all a cold run starts
+// from.
+func FuzzStripeSecretKey_matchesReference(f *testing.F) {
 	f.Add("nothing to see here")
 	f.Add("STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567")
 	f.Add("sk_test_0123456789abcdef01234567")
 	f.Add("rk_live_0123456789abcdef01234567")
 	f.Add("rk_test_0123456789abcdef01234567")
-	f.Add("pk_live_0123456789abcdef01234567")
+	f.Add("pk_live_0123456789abcdef01234567") // the other half of the format
 	f.Add("pk_test_0123456789abcdef01234567")
 	f.Add("sk_org_0123456789abcdef01234567")
 	f.Add("sk_org_live_0123456789abcdef01234567")
@@ -895,11 +827,11 @@ func FuzzStripeAPIKey_matchesReference(f *testing.F) {
 	f.Add("xsk_live_0123456789abcdef01234567")                                                                           // a letter in front, which is a word closing on the prefix
 	f.Add("task_test_0123456789abcdef01234567")                                                                          // the snake_case name that word turns away
 	f.Add("network_live_0123456789abcdef01234567")
-	f.Add("sk_live_0123456789abcdef01234567 pk_live_0123456789abcdef01234567")
-	f.Add("sk_live_0123456789abcdef01234567\npk_test_0123456789abcdef01234567")
+	f.Add("sk_live_0123456789abcdef01234567 rk_live_0123456789abcdef01234567")
+	f.Add("sk_live_0123456789abcdef01234567\nrk_test_0123456789abcdef01234567")
 	// A key beginning inside the span of the one before it, which a scan
 	// resuming past a match steps over.
-	f.Add("sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567")
+	f.Add("sk_live_0123456789abcdef01234567rk_test_0123456789abcdef01234567")
 	// Candidate positions crowded as close as they can be, with a body behind
 	// none of them, and the two bytes the scan searches for on their own.
 	f.Add(strings.Repeat("sk_live_", 8))
@@ -910,15 +842,16 @@ func FuzzStripeAPIKey_matchesReference(f *testing.F) {
 	f.Add("payload=zzzzsk_live_0123456789abcdef01234567zzzz")
 	f.Add("payload=zzzz_sk_live_0123456789abcdef01234567zzzz")
 
-	fuzzAgainstReference(f, StripeAPIKey().Find, referenceStripeAPIKeyFind)
+	fuzzAgainstReference(f, StripeSecretKey().Find, referenceStripeSecretKeyFind)
 }
 
-// stripeAPIKeyFindBenchmarks is what this scan is timed on. The builtinPatterns
-// entry for the pattern names it, and BenchmarkBuiltins times every case it
-// holds under the pattern's own name, so that a built-in cannot arrive without
-// a benchmark. Every case is held to the count it states under a plain go test
-// as well, which is what a benchmark nobody has run yet cannot be.
-func stripeAPIKeyFindBenchmarks() []benchmarkCase {
+// stripeSecretKeyFindBenchmarks is what this scan is timed on. The
+// builtinPatterns entry for the pattern names it, and BenchmarkBuiltins times
+// every case it holds under the pattern's own name, so that a built-in cannot
+// arrive without a benchmark. Every case is held to the count it states under a
+// plain go test as well, which is what a benchmark nobody has run yet cannot
+// be.
+func stripeSecretKeyFindBenchmarks() []benchmarkCase {
 	// Nothing in an ordinary line carries the two bytes the scan searches for,
 	// so what the line times is that search — which is most of what this pattern
 	// costs a caller whose text holds no key.

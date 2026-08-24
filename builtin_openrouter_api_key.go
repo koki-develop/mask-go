@@ -241,8 +241,8 @@ func isOpenRouterAPIKeyBody(s string) bool {
 // what a body is written in.
 //
 // It holds the same characters as isGrafanaServiceAccountTokenChecksumByte and
-// is written apart from it, as isStripeAPIKeyWordByte is written apart from
-// isStripeAPIKeyBodyByte and for that reason: the two answer different
+// is written apart from it, as isStripeKeyWordByte is written apart from
+// isBase62Byte and for that reason: the two answer different
 // questions. One is the class Grafana writes four bytes of a CRC32 in, the
 // other is the alphabet OpenRouter writes a key's body in, and sharing the one
 // function would mean that widening either — the day a checksum is encoded some

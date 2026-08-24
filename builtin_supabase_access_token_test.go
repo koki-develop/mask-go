@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-// The Supabase personal access token pattern: what it locates and what it leaves
-// alone, written out case by case, and the reference its scan is held to.
+// The Supabase access token pattern: what it locates and what it leaves alone,
+// written out case by case, and the reference its scan is held to.
 //
 // What every built-in shares — the convention its name follows, one value per
 // accessor, usable spans, no false positive on prose, agreement with the
@@ -24,7 +24,7 @@ import (
 // else. With the prefix in front it comes to forty-four characters, and with the
 // marker of an OAuth issued token as well to fifty.
 
-func Test_SupabasePersonalAccessToken(t *testing.T) {
+func Test_SupabaseAccessToken(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -79,14 +79,14 @@ func Test_SupabasePersonalAccessToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SupabasePersonalAccessToken().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got := SupabaseAccessToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_SupabasePersonalAccessToken_noMatch(t *testing.T) {
+func Test_SupabaseAccessToken_noMatch(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -195,14 +195,14 @@ func Test_SupabasePersonalAccessToken_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SupabasePersonalAccessToken().Find(tt.src); len(got) != 0 {
+			if got := SupabaseAccessToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
 	}
 }
 
-func Test_SupabasePersonalAccessToken_inContext(t *testing.T) {
+func Test_SupabaseAccessToken_inContext(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -244,7 +244,7 @@ func Test_SupabasePersonalAccessToken_inContext(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(SupabasePersonalAccessToken()))
+	m := New(WithPatterns(SupabaseAccessToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -254,11 +254,11 @@ func Test_SupabasePersonalAccessToken_inContext(t *testing.T) {
 	}
 }
 
-func Test_SupabasePersonalAccessToken_nextToWordCharacters(t *testing.T) {
+func Test_SupabaseAccessToken_nextToWordCharacters(t *testing.T) {
 	// A word boundary either side of the pattern would not trim these matches
 	// but drop them, letting the token through whole. The first of them is also
 	// what the tightening the Slack and Stripe scans take would cost here, which
-	// builtin_supabase_personal_access_token.go weighs against what it would buy
+	// builtin_supabase_access_token.go weighs against what it would buy
 	// — which, since no word closes on sbp, is nothing.
 	tests := []struct {
 		name string
@@ -287,7 +287,7 @@ func Test_SupabasePersonalAccessToken_nextToWordCharacters(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(SupabasePersonalAccessToken()))
+	m := New(WithPatterns(SupabaseAccessToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -297,7 +297,7 @@ func Test_SupabasePersonalAccessToken_nextToWordCharacters(t *testing.T) {
 	}
 }
 
-func Test_SupabasePersonalAccessToken_leavesWhatFollowsAlone(t *testing.T) {
+func Test_SupabaseAccessToken_leavesWhatFollowsAlone(t *testing.T) {
 	// A token is forty-four characters and no more, so what is written after one
 	// stays whatever it is written in.
 	tests := []struct {
@@ -340,7 +340,7 @@ func Test_SupabasePersonalAccessToken_leavesWhatFollowsAlone(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(SupabasePersonalAccessToken()))
+	m := New(WithPatterns(SupabaseAccessToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -350,25 +350,25 @@ func Test_SupabasePersonalAccessToken_leavesWhatFollowsAlone(t *testing.T) {
 	}
 }
 
-func Test_SupabasePersonalAccessToken_noTokenBeginsInsideAnother(t *testing.T) {
-	// The claim builtin_supabase_personal_access_token.go makes that only the
-	// Stripe scan makes beside it: the spans of this pattern never overlap one
-	// another. It rests on one character. The letter the prefix opens with is
-	// written nowhere else in a token — the marker does not carry it and no body
-	// may — so the anchor stands at a token's first character and at no other,
-	// and a candidate found inside a span is not a thing this scan can be handed.
+func Test_SupabaseAccessToken_noTokenBeginsInsideAnother(t *testing.T) {
+	// The claim builtin_supabase_access_token.go makes: the spans of this
+	// pattern never overlap one another. It rests on one character. The letter
+	// the prefix opens with is written nowhere else in a token — the marker does
+	// not carry it and no body may — so the anchor stands at a token's first
+	// character and at no other, and a candidate found inside a span is not a
+	// thing this scan can be handed.
 	//
 	// That is what makes the byte the scan resumes at a choice rather than a
 	// necessity for a candidate that became a token, and it is what the
 	// paragraph on two tokens written together rests on. Neither is a claim one
 	// input can state, so it is stated of the format first and then driven.
-	if isSupabasePersonalAccessTokenSecretByte(supabasePersonalAccessTokenPrefix[0]) {
+	if isSupabaseAccessTokenSecretByte(supabaseAccessTokenPrefix[0]) {
 		t.Errorf("the prefix opens with %q, which a body may be written with, so a token can hold a prefix of its own",
-			supabasePersonalAccessTokenPrefix[0])
+			supabaseAccessTokenPrefix[0])
 	}
-	if strings.IndexByte(supabasePersonalAccessTokenOAuthMarker, supabasePersonalAccessTokenPrefix[0]) >= 0 {
+	if strings.IndexByte(supabaseAccessTokenOAuthMarker, supabaseAccessTokenPrefix[0]) >= 0 {
 		t.Errorf("the marker holds %q, which the prefix opens with, so an oauth token can hold a prefix of its own",
-			supabasePersonalAccessTokenPrefix[0])
+			supabaseAccessTokenPrefix[0])
 	}
 
 	// And driven, with every way one token can be written against another: at
@@ -376,10 +376,10 @@ func Test_SupabasePersonalAccessToken_noTokenBeginsInsideAnother(t *testing.T) {
 	// so that the outer candidate is declined and the inner is all there is.
 	body := "0123456789abcdef0123456789abcdef01234567"
 	prefixes := []string{
-		supabasePersonalAccessTokenPrefix,
-		supabasePersonalAccessTokenPrefix + supabasePersonalAccessTokenOAuthMarker,
+		supabaseAccessTokenPrefix,
+		supabaseAccessTokenPrefix + supabaseAccessTokenOAuthMarker,
 	}
-	p := SupabasePersonalAccessToken()
+	p := SupabaseAccessToken()
 
 	for _, outer := range prefixes {
 		for _, inner := range prefixes {
@@ -401,7 +401,7 @@ func Test_SupabasePersonalAccessToken_noTokenBeginsInsideAnother(t *testing.T) {
 	}
 }
 
-func Test_SupabasePersonalAccessToken_aDigestBehindThePrefix(t *testing.T) {
+func Test_SupabaseAccessToken_aDigestBehindThePrefix(t *testing.T) {
 	// The collision every prefix in this package leaves, and the one this format
 	// pays for where the Grafana one rules it out. There the character
 	// thirty-two past the prefix has to be the underscore dividing a secret from
@@ -450,17 +450,17 @@ func Test_SupabasePersonalAccessToken_aDigestBehindThePrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SupabasePersonalAccessToken().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got := SupabaseAccessToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_SupabasePersonalAccessToken_theOtherSupabaseCredentials(t *testing.T) {
+func Test_SupabaseAccessToken_theOtherSupabaseCredentials(t *testing.T) {
 	// The credentials Supabase issues beside a personal access token, none of
 	// which this pattern reads. The project API keys open with sb_publishable_
-	// and sb_secret_, and builtin_supabase_personal_access_token.go says why
+	// and sb_secret_, and builtin_supabase_access_token.go says why
 	// they are declined: nothing published states what stands behind either
 	// prefix, and the rules written against them put the count in different
 	// places, most of them behind an entropy floor doing the work it cannot. The
@@ -494,121 +494,120 @@ func Test_SupabasePersonalAccessToken_theOtherSupabaseCredentials(t *testing.T) 
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SupabasePersonalAccessToken().Find(tt.src); len(got) != 0 {
+			if got := SupabaseAccessToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
 	}
 }
 
-func Test_supabasePersonalAccessTokenPrefix(t *testing.T) {
+func Test_supabaseAccessTokenPrefix(t *testing.T) {
 	// The two things the prefix is doing beyond naming the format. Its last
 	// character belongs to no body, so a body begins where a prefix ends and
 	// nowhere else; its first belongs to no body either, which is what
-	// Test_SupabasePersonalAccessToken_noTokenBeginsInsideAnother rests on. A
+	// Test_SupabaseAccessToken_noTokenBeginsInsideAnother rests on. A
 	// prefix built any other way would leave both of those claims standing for
 	// nothing, which is not a failure anything else here reports.
-	if supabasePersonalAccessTokenPrefix == "" {
+	if supabaseAccessTokenPrefix == "" {
 		t.Fatal("the pattern carries no prefix, so it locates nothing")
 	}
-	if c := supabasePersonalAccessTokenPrefix[len(supabasePersonalAccessTokenPrefix)-1]; isSupabasePersonalAccessTokenSecretByte(c) {
+	if c := supabaseAccessTokenPrefix[len(supabaseAccessTokenPrefix)-1]; isSupabaseAccessTokenSecretByte(c) {
 		t.Errorf("the prefix closes with %q, which a body is written with", c)
 	}
-	if c := supabasePersonalAccessTokenPrefix[0]; isSupabasePersonalAccessTokenSecretByte(c) {
+	if c := supabaseAccessTokenPrefix[0]; isSupabaseAccessTokenSecretByte(c) {
 		t.Errorf("the prefix opens with %q, which a body is written with", c)
 	}
 }
 
-func Test_supabasePersonalAccessTokenOAuthMarker(t *testing.T) {
+func Test_supabaseAccessTokenOAuthMarker(t *testing.T) {
 	// The marker is read greedily: a candidate carrying it is read as the longer
 	// form and never as the shorter one afterwards. That is only sound while the
 	// two readings cannot both apply, and what makes them exclusive is the
 	// marker's first character — where the shorter reading needs a character of
 	// the body's alphabet, the marker puts one that is not.
-	if supabasePersonalAccessTokenOAuthMarker == "" {
+	if supabaseAccessTokenOAuthMarker == "" {
 		t.Fatal("the marker is empty, so the two forms are the same and the reading is not greedy at all")
 	}
-	if c := supabasePersonalAccessTokenOAuthMarker[0]; isSupabasePersonalAccessTokenSecretByte(c) {
+	if c := supabaseAccessTokenOAuthMarker[0]; isSupabaseAccessTokenSecretByte(c) {
 		t.Errorf("the marker opens with %q, which a body is written with, so a candidate could be read both ways", c)
 	}
 
 	// And it closes with a character no body carries, so the body of an oauth
 	// token begins where the marker ends as the body of a personal one begins
 	// where the prefix does.
-	if c := supabasePersonalAccessTokenOAuthMarker[len(supabasePersonalAccessTokenOAuthMarker)-1]; isSupabasePersonalAccessTokenSecretByte(c) {
+	if c := supabaseAccessTokenOAuthMarker[len(supabaseAccessTokenOAuthMarker)-1]; isSupabaseAccessTokenSecretByte(c) {
 		t.Errorf("the marker closes with %q, which a body is written with", c)
 	}
 }
 
-func Test_supabasePersonalAccessTokenChars(t *testing.T) {
+func Test_supabaseAccessTokenChars(t *testing.T) {
 	// Forty is the count in the vendor's own expression, and the length of the
 	// example the Management API introduction prints: four hexadecimal
 	// characters, thirty-two masked and four more. Forty-four and fifty are what
 	// it comes to behind the prefix and behind the prefix and the marker, which
 	// is what the two constants the scan reads must still be.
 	const documentedBody = 4 + 32 + 4
-	if supabasePersonalAccessTokenSecretChars != documentedBody {
-		t.Errorf("a body is read as %d characters, the documented example is %d", supabasePersonalAccessTokenSecretChars, documentedBody)
+	if supabaseAccessTokenSecretChars != documentedBody {
+		t.Errorf("a body is read as %d characters, the documented example is %d", supabaseAccessTokenSecretChars, documentedBody)
 	}
-	if want := 44; supabasePersonalAccessTokenChars != want {
-		t.Errorf("a token is read as %d characters, want %d", supabasePersonalAccessTokenChars, want)
+	if want := 44; supabaseAccessTokenChars != want {
+		t.Errorf("a token is read as %d characters, want %d", supabaseAccessTokenChars, want)
 	}
-	if want := 50; supabasePersonalAccessTokenOAuthChars != want {
-		t.Errorf("an oauth token is read as %d characters, want %d", supabasePersonalAccessTokenOAuthChars, want)
+	if want := 50; supabaseAccessTokenOAuthChars != want {
+		t.Errorf("an oauth token is read as %d characters, want %d", supabaseAccessTokenOAuthChars, want)
 	}
 }
 
-func Test_isSupabasePersonalAccessTokenSecretByte(t *testing.T) {
+func Test_isSupabaseAccessTokenSecretByte(t *testing.T) {
 	// The lowercase hexadecimal digits and nothing else, stated over every byte
 	// rather than by example. Uppercase is not admitted, where the Grafana
 	// checksum admits it, for the reason
-	// builtin_supabase_personal_access_token.go weighs.
+	// builtin_supabase_access_token.go weighs.
 	for c := range 256 {
 		b := byte(c)
 		want := '0' <= b && b <= '9' || 'a' <= b && b <= 'f'
-		if got := isSupabasePersonalAccessTokenSecretByte(b); got != want {
-			t.Errorf("isSupabasePersonalAccessTokenSecretByte(%q) = %v, want %v", b, got, want)
+		if got := isSupabaseAccessTokenSecretByte(b); got != want {
+			t.Errorf("isSupabaseAccessTokenSecretByte(%q) = %v, want %v", b, got, want)
 		}
 	}
 }
 
-func Test_isSupabasePersonalAccessTokenSecret(t *testing.T) {
+func Test_isSupabaseAccessTokenSecret(t *testing.T) {
 	// The count and the character class together, stated over every byte rather
 	// than by example.
-	body := strings.Repeat("a", supabasePersonalAccessTokenSecretChars)
+	body := strings.Repeat("a", supabaseAccessTokenSecretChars)
 
-	if !isSupabasePersonalAccessTokenSecret(body) {
-		t.Errorf("isSupabasePersonalAccessTokenSecret(%q) = false, want a run of %d characters to be one", body, supabasePersonalAccessTokenSecretChars)
+	if !isSupabaseAccessTokenSecret(body) {
+		t.Errorf("isSupabaseAccessTokenSecret(%q) = false, want a run of %d characters to be one", body, supabaseAccessTokenSecretChars)
 	}
 	for _, s := range []string{body[:len(body)-1], body + "a"} {
-		if isSupabasePersonalAccessTokenSecret(s) {
-			t.Errorf("isSupabasePersonalAccessTokenSecret(%q) = true, want only %d characters to be one", s, supabasePersonalAccessTokenSecretChars)
+		if isSupabaseAccessTokenSecret(s) {
+			t.Errorf("isSupabaseAccessTokenSecret(%q) = true, want only %d characters to be one", s, supabaseAccessTokenSecretChars)
 		}
 	}
 
-	for i := range supabasePersonalAccessTokenSecretChars {
+	for i := range supabaseAccessTokenSecretChars {
 		for c := range 256 {
 			b := byte(c)
 			src := body[:i] + string([]byte{b}) + body[i+1:]
 
-			want := isSupabasePersonalAccessTokenSecretByte(b)
-			if got := isSupabasePersonalAccessTokenSecret(src); got != want {
-				t.Errorf("isSupabasePersonalAccessTokenSecret(%q) = %v with %q at %d, want %v", src, got, b, i, want)
+			want := isSupabaseAccessTokenSecretByte(b)
+			if got := isSupabaseAccessTokenSecret(src); got != want {
+				t.Errorf("isSupabaseAccessTokenSecret(%q) = %v with %q at %d, want %v", src, got, b, i, want)
 			}
 		}
 	}
 }
 
-// referenceSupabasePersonalAccessToken is the expression the scan in
-// builtin_supabase_personal_access_token.go reads by hand: the statement of what
-// a Supabase personal access token is, kept here so that the scan can be held to
-// it.
+// referenceSupabaseAccessToken is the expression the scan in
+// builtin_supabase_access_token.go reads by hand: the statement of what a
+// Supabase access token is, kept here so that the scan can be held to it.
 //
 // The prefix, the marker, the count and the character class are spelled again
-// rather than built from supabasePersonalAccessTokenPrefix,
-// supabasePersonalAccessTokenOAuthMarker,
-// supabasePersonalAccessTokenSecretChars and
-// isSupabasePersonalAccessTokenSecretByte. A reference sharing those
+// rather than built from supabaseAccessTokenPrefix,
+// supabaseAccessTokenOAuthMarker,
+// supabaseAccessTokenSecretChars and
+// isSupabaseAccessTokenSecretByte. A reference sharing those
 // declarations could not disagree with the scan about them, and it is exactly
 // that disagreement the fuzz target below is for: the two have to be changed
 // together or reported apart.
@@ -627,11 +626,11 @@ func Test_isSupabasePersonalAccessTokenSecret(t *testing.T) {
 // stands and never tries the shorter reading. The two coincide because the
 // marker opens with a character no body is written with, so the branch the scan
 // does not try is one that cannot match — which is what
-// Test_supabasePersonalAccessTokenOAuthMarker holds and what this target would
+// Test_supabaseAccessTokenOAuthMarker holds and what this target would
 // report were it to stop being true.
-var referenceSupabasePersonalAccessToken = regexp.MustCompile(`sbp_(?:oauth_)?[0-9a-f]{40}`)
+var referenceSupabaseAccessToken = regexp.MustCompile(`sbp_(?:oauth_)?[0-9a-f]{40}`)
 
-// referenceSupabasePersonalAccessTokenFind locates tokens the plain way: the
+// referenceSupabaseAccessTokenFind locates tokens the plain way: the
 // leftmost match of the expression above, then the leftmost one beginning after
 // that match's first byte, over and over, with nothing remembered between them.
 //
@@ -644,10 +643,10 @@ var referenceSupabasePersonalAccessToken = regexp.MustCompile(`sbp_(?:oauth_)?[0
 // constant: every candidate reads at most fifty characters, here as in the scan,
 // so neither has a run to walk and there is no cursor for either to be wrong
 // about.
-func referenceSupabasePersonalAccessTokenFind(src string) []Span {
+func referenceSupabaseAccessTokenFind(src string) []Span {
 	var spans []Span
 	for i := 0; i < len(src); {
-		loc := referenceSupabasePersonalAccessToken.FindStringIndex(src[i:])
+		loc := referenceSupabaseAccessToken.FindStringIndex(src[i:])
 		if loc == nil {
 			break
 		}
@@ -658,11 +657,11 @@ func referenceSupabasePersonalAccessTokenFind(src string) []Span {
 	return spans
 }
 
-// FuzzSupabasePersonalAccessToken_matchesReference guards the hand-written scan:
+// FuzzSupabaseAccessToken_matchesReference guards the hand-written scan:
 // the prefix it searches for, the marker it reads behind that prefix, the count
 // it reads behind either of them, the character class it reads them in and the
 // byte it resumes at may none of them change which tokens are located.
-func FuzzSupabasePersonalAccessToken_matchesReference(f *testing.F) {
+func FuzzSupabaseAccessToken_matchesReference(f *testing.F) {
 	f.Add("nothing to see here")
 	f.Add("SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567")
 	f.Add("sbp_oauth_0123456789abcdef0123456789abcdef01234567")       // the oauth form
@@ -700,15 +699,15 @@ func FuzzSupabasePersonalAccessToken_matchesReference(f *testing.F) {
 	f.Add("sb_secret_0123456789abcdef0123456789abcdef012")
 	f.Add("sb_publishable_0123456789abcdef0123456789abcd")
 
-	fuzzAgainstReference(f, SupabasePersonalAccessToken().Find, referenceSupabasePersonalAccessTokenFind)
+	fuzzAgainstReference(f, SupabaseAccessToken().Find, referenceSupabaseAccessTokenFind)
 }
 
-// supabasePersonalAccessTokenFindBenchmarks is what this scan is timed on. The
+// supabaseAccessTokenFindBenchmarks is what this scan is timed on. The
 // builtinPatterns entry for the pattern names it, and BenchmarkBuiltins times
 // every case it holds under the pattern's own name, so that a built-in cannot
 // arrive without a benchmark. Every case is held to the count it states under a
 // plain go test as well, which is what a benchmark nobody has run yet cannot be.
-func supabasePersonalAccessTokenFindBenchmarks() []benchmarkCase {
+func supabaseAccessTokenFindBenchmarks() []benchmarkCase {
 	// Nothing in an ordinary line opens the prefix, so what the line times is
 	// the search for it — which is most of what this pattern costs a caller
 	// whose text holds no token.

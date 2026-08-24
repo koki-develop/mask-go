@@ -274,13 +274,13 @@ var notionAPIToken = NewPattern("notion-api-token", func(src string) []Span {
 // issues today, and the one it issued until September 2024 and has not revoked.
 //
 // They are written longest first as a courtesy rather than as a rule, as the
-// Slack and GitLab tables are and unlike the Stripe one. No two of them match
-// at the same anchor: each closes with the anchor and carries it nowhere else,
-// and neither is the suffix of the other, so at most one stands in front of any
-// underscore whichever order they are tried in. Test_notionAPITokenPrefixes
-// holds them to all of that, and to carrying nothing in front of the anchor but
-// characters a body is written with — which is what lets one token be written
-// inside another.
+// Slack and GitLab tables are and unlike stripeSecretKeyPrefixes. No two of
+// them match at the same anchor: each closes with the anchor and carries it
+// nowhere else, and neither is the suffix of the other, so at most one stands
+// in front of any underscore whichever order they are tried in.
+// Test_notionAPITokenPrefixes holds them to all of that, and to carrying
+// nothing in front of the anchor but characters a body is written with — which
+// is what lets one token be written inside another.
 var notionAPITokenPrefixes = [...]string{
 	"secret_", // until 25 September 2024, and still valid
 	"ntn_",    // since

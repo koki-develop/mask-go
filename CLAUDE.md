@@ -3,7 +3,7 @@
 A Go library that redacts credentials (API keys, access tokens) from text.
 Public surface: `Masker` (`mask.go`), `Pattern` (`pattern.go`), `Redactor`
 (`redactor.go`), `Option` (`option.go`), built-in patterns (`builtins.go` and
-the `builtin_*.go` beside it).
+the `builtin_*.go` beside it) and the vendor accessors (`vendors.go`).
 
 What every built-in pattern is held to is in `.claude/rules/builtin-patterns.md`.
 It loads on opening any of the files it governs — the `builtin_*.go`, the tables
@@ -24,13 +24,21 @@ the `Masker` targets and the body the per-pattern targets share,
 `benchmark_test.go` holds every benchmark there is, and `source_test.go` holds
 the rules about how this package is written rather than about what it computes,
 read out of the syntax tree. Adding a pattern should touch the registry, the
-property table, two new files and the conformance corpus — nothing else. Keep it
-that way rather than letting a shared `builtin.go` grow back.
+vendor accessor, the property table, two new files and the conformance corpus —
+nothing else. Keep it that way rather than letting a shared `builtin.go` grow
+back.
 
-One pattern may read another's declarations where the credentials themselves
-nest, rather than spelling the borrowed anchor again and coming to disagree
-about it. Such a borrowing belongs where it is defined, not in
-`builtin_scan.go`, and the file doing the borrowing says so.
+`vendors.go` is the vendor accessors alone, one `<Vendor>Patterns` apiece, with
+`vendors_test.go` holding them and the registry to naming the same patterns.
+Which pattern belongs to which accessor, and where the boundary between two
+patterns of one vendor falls, is in `.claude/rules/builtin-patterns.md`.
+
+One pattern may read another's declarations rather than spelling the borrowed
+rule again and coming to disagree about it. Two things make a borrowing right:
+the credentials nest, so one scan needs the other's anchor; or the two patterns
+are halves of one vendor's format, which neither of them can change alone. Such
+a borrowing belongs where it is defined, not in `builtin_scan.go`, and the file
+doing the borrowing says so.
 
 `conformance/` states the library end to end: a corpus of cases and one harness
 holding each of them to every property masking must have, through the public API

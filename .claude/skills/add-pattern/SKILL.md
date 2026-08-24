@@ -19,8 +19,18 @@ from memory — formats change, and the scanner rationale comment in
 
 ## 2. Implement, with the pattern's own tests
 
-The declarations to touch are named in the rules file. Points that don't follow
-from the file layout alone:
+The declarations to touch are named in the rules file. Decide the exported name
+and the boundary before writing the scan — the rules file's "Where one pattern
+ends and the next begins" is what settles whether this is one pattern or two,
+and the name is held to a term the vendor itself uses for the whole of what the
+pattern locates. Points that don't follow from the file layout alone:
+
+- The vendor accessor in `vendors.go` is one of the declarations. A pattern for
+  a vendor already there joins that vendor's slice; a pattern for a new vendor
+  brings a `<Vendor>Patterns` of its own and an entry in `vendorAccessors`
+  (`vendors_test.go`). A pattern naming a format rather than a vendor's
+  credential goes in `patternsWithNoVendor` instead, which is a line a reviewer
+  reads rather than an omission.
 
 - The exhaustive edge cases — what is located, what is left alone — belong in
   the behaviour tables of `builtin_<name>_test.go`, not in conformance. Writing
@@ -55,4 +65,7 @@ would.
 - `go test -bench . -benchmem` against `main` if `builtin_scan.go` or another
   scan's shared declarations moved.
 - `golangci-lint run` and `betterleaks git`.
-- The built-in table in `README.md` names the new pattern.
+- `README.md` is in step with the change: its table is one row a vendor, so a
+  pattern for a vendor already there may only widen that row's description,
+  while a new vendor adds one. A vendor whose patterns a caller now has to
+  choose between wants a sentence saying what the choice is.

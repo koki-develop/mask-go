@@ -1,5 +1,4 @@
-# What Supabase personal access tokens the library redacts, and what it leaves
-# alone.
+# What Supabase access tokens the library redacts, and what it leaves alone.
 #
 # Every token here is built from the ordered run 0123456789abcdef, which no real
 # credential is: the body is that run written twice and then as far as 7, which
@@ -9,37 +8,39 @@
 # with the marker an OAuth issued token carries as well to fifty. The run is
 # written in lowercase throughout, because that validator admits nothing else.
 
-patterns: supabase-personal-access-token
+patterns: supabase-access-token
 
 # A token as it is written. One string serves the whole of the Management API
-# and carries the privileges of the account that created it, so what is below
-# differs in where the token stands rather than in what kind it is: the login
-# command the documentation prints, the bearer token header it is sent in, and
-# the response an OAuth application first reads one out of.
+# whichever form it is in, and nothing in either says what it is allowed to do:
+# a personal access token carries the whole of the account that created it, and
+# an OAuth issued one the scopes that account approved. So what is below differs
+# in where the token stands rather than in what it can do — the login command
+# the documentation prints, the bearer token header it is sent in, and the
+# response an OAuth application first reads one out of.
 
 case: a token in an environment assignment
 in:   SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567
-out:  SUPABASE_ACCESS_TOKEN=«supabase-personal-access-token»
+out:  SUPABASE_ACCESS_TOKEN=«supabase-access-token»
 
 case: a token on the command line the documentation prints
 in:   supabase login --token sbp_0123456789abcdef0123456789abcdef01234567
-out:  supabase login --token «supabase-personal-access-token»
+out:  supabase login --token «supabase-access-token»
 
 case: a token in a bearer token header
 in:   Authorization: Bearer sbp_0123456789abcdef0123456789abcdef01234567
-out:  Authorization: Bearer «supabase-personal-access-token»
+out:  Authorization: Bearer «supabase-access-token»
 
 case: a token in a curl invocation
 in:   curl -H "Authorization: Bearer sbp_0123456789abcdef0123456789abcdef01234567" https://api.supabase.com/v1/projects
-out:  curl -H "Authorization: Bearer «supabase-personal-access-token»" https://api.supabase.com/v1/projects
+out:  curl -H "Authorization: Bearer «supabase-access-token»" https://api.supabase.com/v1/projects
 
 case: a token in a configuration environment block
 in:   "env": {"SUPABASE_ACCESS_TOKEN": "sbp_0123456789abcdef0123456789abcdef01234567"}
-out:  "env": {"SUPABASE_ACCESS_TOKEN": "«supabase-personal-access-token»"}
+out:  "env": {"SUPABASE_ACCESS_TOKEN": "«supabase-access-token»"}
 
 case: a token at the end of a sentence
 in:   the token is sbp_0123456789abcdef0123456789abcdef01234567.
-out:  the token is «supabase-personal-access-token».
+out:  the token is «supabase-access-token».
 
 # The form an OAuth application is issued in a user's name, which writes oauth_
 # between the prefix and the same forty characters. It is the optional group of
@@ -51,15 +52,15 @@ out:  the token is «supabase-personal-access-token».
 
 case: an oauth token in the response that first reports it
 in:   {"access_token":"sbp_oauth_0123456789abcdef0123456789abcdef01234567","token_type":"Bearer"}
-out:  {"access_token":"«supabase-personal-access-token»","token_type":"Bearer"}
+out:  {"access_token":"«supabase-access-token»","token_type":"Bearer"}
 
 case: an oauth token in an environment assignment
 in:   SUPABASE_ACCESS_TOKEN=sbp_oauth_0123456789abcdef0123456789abcdef01234567
-out:  SUPABASE_ACCESS_TOKEN=«supabase-personal-access-token»
+out:  SUPABASE_ACCESS_TOKEN=«supabase-access-token»
 
 case: an oauth token in a bearer token header
 in:   Authorization: Bearer sbp_oauth_0123456789abcdef0123456789abcdef01234567
-out:  Authorization: Bearer «supabase-personal-access-token»
+out:  Authorization: Bearer «supabase-access-token»
 
 # The alphabet. A body is written in lowercase hexadecimal digits, which is what
 # the validator asks for and what it refuses an uppercase token against, with a
@@ -102,7 +103,7 @@ out:  sbp_0123456789abcdef-123456789abcdef01234567
 
 case: a body of forty characters is a token
 in:   sbp_0123456789abcdef0123456789abcdef01234567
-out:  «supabase-personal-access-token»
+out:  «supabase-access-token»
 
 case: a body one character short is not
 in:   sbp_0123456789abcdef0123456789abcdef0123456
@@ -114,7 +115,7 @@ out:  sbp_oauth_0123456789abcdef0123456789abcdef0123456
 
 case: a body run one character longer is a token and the character after it
 in:   sbp_0123456789abcdef0123456789abcdef012345678
-out:  «supabase-personal-access-token»8
+out:  «supabase-access-token»8
 
 # What a token may be written against. There is no boundary on either side of
 # the prefix, so a token keeps its span whatever word character it abuts, and
@@ -127,23 +128,23 @@ out:  «supabase-personal-access-token»8
 
 case: a token after an underscore
 in:   SUPABASE_TOKEN_sbp_0123456789abcdef0123456789abcdef01234567
-out:  SUPABASE_TOKEN_«supabase-personal-access-token»
+out:  SUPABASE_TOKEN_«supabase-access-token»
 
 case: a token after a letter
 in:   xsbp_0123456789abcdef0123456789abcdef01234567
-out:  x«supabase-personal-access-token»
+out:  x«supabase-access-token»
 
 case: a word written against a token
 in:   sbp_0123456789abcdef0123456789abcdef01234567suffix
-out:  «supabase-personal-access-token»suffix
+out:  «supabase-access-token»suffix
 
 case: a hyphenated word written against a token
 in:   sbp_0123456789abcdef0123456789abcdef01234567-suffix
-out:  «supabase-personal-access-token»-suffix
+out:  «supabase-access-token»-suffix
 
 case: an underscored word written against a token
 in:   sbp_0123456789abcdef0123456789abcdef01234567_suffix
-out:  «supabase-personal-access-token»_suffix
+out:  «supabase-access-token»_suffix
 
 # Two tokens written together, and the one shape that reads like a token written
 # inside another and is not. The letter the prefix opens with stands in a token
@@ -156,19 +157,19 @@ out:  «supabase-personal-access-token»_suffix
 
 case: a prefix in front of a token
 in:   sbp_sbp_0123456789abcdef0123456789abcdef01234567
-out:  sbp_«supabase-personal-access-token»
+out:  sbp_«supabase-access-token»
 
 case: two tokens with nothing between them
 in:   sbp_0123456789abcdef0123456789abcdef01234567sbp_0123456789abcdef0123456789abcdef01234567
-out:  «supabase-personal-access-token»«supabase-personal-access-token»
+out:  «supabase-access-token»«supabase-access-token»
 
 case: an oauth token written straight after a personal one
 in:   sbp_0123456789abcdef0123456789abcdef01234567sbp_oauth_0123456789abcdef0123456789abcdef01234567
-out:  «supabase-personal-access-token»«supabase-personal-access-token»
+out:  «supabase-access-token»«supabase-access-token»
 
 case: two tokens separated by a space
 in:   sbp_0123456789abcdef0123456789abcdef01234567 sbp_oauth_0123456789abcdef0123456789abcdef01234567
-out:  «supabase-personal-access-token» «supabase-personal-access-token»
+out:  «supabase-access-token» «supabase-access-token»
 
 # A digest written behind the prefix, which this format pays for where the
 # Grafana one rules it out. There the character thirty-two past the prefix has to
@@ -189,11 +190,11 @@ out:  «supabase-personal-access-token» «supabase-personal-access-token»
 
 case: a sha1 behind the prefix
 in:   sbp_0123456789abcdef0123456789abcdef01234567
-out:  «supabase-personal-access-token»
+out:  «supabase-access-token»
 
 case: a sha256 behind the prefix
 in:   sbp_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «supabase-personal-access-token»89abcdef0123456789abcdef
+out:  «supabase-access-token»89abcdef0123456789abcdef
 
 case: an md5 behind the prefix
 in:   sbp_0123456789abcdef0123456789abcdef

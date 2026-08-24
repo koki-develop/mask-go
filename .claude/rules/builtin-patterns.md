@@ -3,6 +3,8 @@ paths:
   - "builtin_*.go"
   - "builtins.go"
   - "builtins_test.go"
+  - "vendors.go"
+  - "vendors_test.go"
   - "benchmark_test.go"
   - "mask_test.go"
   - "fuzz_test.go"
@@ -55,11 +57,79 @@ declining every real credential of the same shape. A pattern relying on this
 states the collision in its own file and pins it with cases, so that it is a
 decision on the record rather than something the next reader discovers.
 
+## Where one pattern ends and the next begins
+
+A `Pattern` is what a caller switches on with `WithPatterns`, the name a
+`Redactor` reads out of `Match.Pattern`, and an accessor they find in the
+documentation. Those are three faces of one question, and it is the only
+question the boundary between two built-ins turns on: is this one thing to the
+caller, or two?
+
+How the scanning is arranged has no say in it. `Find` may run two searches over
+the input and return the spans of both, so a grammar shared or not shared, an
+anchor standing in the value or in the text around it, a cursor kept or not
+kept, argue for no boundary and against none. The exported surface is decided
+first and the scan is written to it.
+
+Three things put a boundary in, and one of them is enough.
+
+- **The caller has reason to enable one and not the other.** Two credentials a
+  vendor issues need not be worth the same to redact: one is published by design
+  where the other authenticates, or one is the identifier a log is kept for and
+  the other the secret standing beside it. A caller who can state that decision
+  needs two switches to act on it.
+- **The caller has reason to tell them apart in the output.** A redactor keying
+  on `Match.Pattern.Name()` can write only the distinction the boundary hands
+  it.
+- **No term the vendor uses covers both**, which the next section is about.
+
+What puts no boundary in is the count of prefixes. A vendor naming a dozen kinds
+of token and giving each a prefix of its own is one pattern wherever the caller
+redacts all of them together, labels none of them apart from the rest and has a
+name for the whole of them — and there twelve switches are worse than one, since
+a caller reaching for that vendor would have to know all twelve to redact what
+it issues.
+
+### The name
+
+The exported accessor and the string `Pattern.Name` reports are held to a term
+the vendor itself uses for the whole of what the pattern locates. That is
+checkable against the same documentation the scan's rationale is already built
+on, and it goes stale only when the pattern is widened, which is when it is
+being read anyway.
+
+A name covering less than the pattern locates is usually a name to change rather
+than a pattern to split: where the vendor has a wider term, renaming to it
+leaves the credentials under one scan, which is where they belong when nothing
+above puts a boundary between them. The boundary is wrong only where no term of
+the vendor's covers the whole, and then the pattern splits along the terms that
+do.
+
+## Vendor accessors
+
+Every vendor has an accessor of its own, `<Vendor>Patterns() []Pattern`,
+returning the built-ins that read what that vendor issues. It is written for
+every vendor, including one with a single pattern, so that a caller reaching for
+a vendor never has to know how many patterns it has, nor whether it is one of
+the vendors that has an accessor.
+
+A pattern naming a format rather than a vendor's credential has none.
+
+The boundary between patterns is the caller's and is decided above. The boundary
+between accessors is the vendor's, and it moves only when a vendor does.
+
 ## The declarations a pattern arrives with
 
-Three, and no more: the pattern in `builtins` (`builtins.go`), an entry in
-`builtinPatterns` (`builtins_test.go`), and cases in the conformance corpus
-(`conformance/CLAUDE.md`). Everything else is derived from one of them.
+Four, and no more: the pattern in `builtins` (`builtins.go`), its vendor's
+accessor (`vendors.go`), an entry in `builtinPatterns` (`builtins_test.go`), and
+cases in the conformance corpus (`conformance/CLAUDE.md`). Everything else is
+derived from one of them.
+
+A pattern arriving with a vendor no accessor covers brings a fifth, that
+accessor's entry in `vendorAccessors` (`vendors_test.go`). Without it the
+accessor is held to nothing —
+`Test_vendorAccessors_nameEveryAccessorDeclared` reads the declarations out of
+the syntax tree and fails for exactly that reason.
 
 `builtins` is what `AllBuiltinPatterns` reports, one name to a line.
 `builtinPatterns` is what holds a pattern to the properties every built-in
@@ -199,7 +269,7 @@ in its own file:
   and the file makes the claim, names the test that drives it, and says why the
   default would not do. A pattern whose values provably cannot nest is held to
   that by a test of its own naming the claim, as
-  `Test_StripeAPIKey_noKeyBeginsInsideAnother` does.
+  `Test_StripeSecretKey_noKeyBeginsInsideAnother` does.
 
 The cost of advancing rather than consuming is that a value nested in another —
 a JWT payload that is itself a header — is located too; the spans overlap and
