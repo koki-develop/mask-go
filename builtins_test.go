@@ -269,6 +269,21 @@ var builtinPatterns = []struct {
 		benchmarks: openRouterAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "private-key",
+		pattern: PrivateKey,
+		ref:     referencePrivateKeyFind,
+		samples: []string{
+			"-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----",
+			"-----BEGIN OPENSSH PRIVATE KEY-----\n0123456789abcdef\n-----END OPENSSH PRIVATE KEY-----",
+			"-----BEGIN PGP PRIVATE KEY BLOCK-----\nVersion: GnuPG v2\n\n0123456789abcdef\n=0123\n-----END PGP PRIVATE KEY BLOCK-----",
+			`{"private_key":"-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\n"}`,
+			"-----BEGIN PRIVATE KEY-----\r\n0123456789abcdef\r\n-----END PRIVATE KEY-----",
+			"-----BEGIN PRIVATE KEY-----\n0123456789abcdef",
+		},
+		anchors:    []string{"-----BEGIN PRIVATE KEY-----"},
+		benchmarks: privateKeyFindBenchmarks,
+	},
+	{
 		name:    "pypi-api-token",
 		pattern: PyPIAPIToken,
 		ref:     referencePyPIAPITokenFind,

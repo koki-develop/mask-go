@@ -33,7 +33,31 @@ paths = ['''_test\.go$''', '''conformance/testdata/[^/]+\.txt$''', '''(^|/)built
 regexTarget = "secret"
 regexes = ['''0123456789abcdef''', '''0123456789ABCDEF''']
 
-# A fuzz corpus is the one place the ordered run cannot be asked for. What is
+# The private key pattern is a place the ordered run cannot be asked for, and
+# the reason is what the rule reports rather than what the tests hold. The
+# private-key rule matches a region and not a value: it opens on a BEGIN
+# boundary and closes on the next END one, over whatever stands between, so in a
+# file that writes those boundaries case after case the secret it reports is a
+# stretch of source — the tail of one case, the Go or the notation between them,
+# the head of the next. Whether the ordered run falls inside such a stretch is
+# decided by where the cases were written and not by what any of them holds, and
+# the cases that state a boundary with nothing behind it, or a body the scan
+# must turn away, carry no run to be found at all.
+#
+# So this rests on the rule and the paths, which is weaker than the condition
+# above and is why it is written to that one rule rather than added to it. What
+# it gives up is a real private key pasted into a test of this package or into
+# the corpus. What stands in its place is that every value in those files is
+# written out by hand from the ordered run, which is a line a reviewer reads —
+# and that a private key is the one credential whose armor announces what it is,
+# so a body that is not the run is not something a reader has to recognise.
+
+[[allowlists]]
+description = "the armor the private key pattern is written about, which is never a key"
+targetRules = ["private-key"]
+paths = ['''_test\.go$''', '''conformance/testdata/[^/]+\.txt$''', '''(^|/)builtin_[a-z0-9_]+\.go$''']
+
+# A fuzz corpus cannot be asked for the ordered run either. What is
 # under testdata/fuzz is written by the fuzzer, not by anyone: an input that
 # found a failure is kept so that it is checked from then on, and it is whatever
 # the fuzzer arrived at — which, for targets seeded from the corpus above, is

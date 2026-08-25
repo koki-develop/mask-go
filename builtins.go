@@ -43,6 +43,7 @@ var builtins = []Pattern{
 	npmAccessToken,
 	openAIAPIKey,
 	openRouterAPIKey,
+	privateKey,
 	pypiAPIToken,
 	rubyGemsAPIKey,
 	sendGridAPIKey,
