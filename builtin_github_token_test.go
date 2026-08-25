@@ -371,6 +371,58 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 	}
 }
 
+// Test_githubTokenAnchor holds both prefixes to carrying the byte the scan
+// searches the input for at the index each is read back from. One search finds
+// candidates of both forms only while both spell that byte at their own depth,
+// and a prefix that did not would be one no candidate is ever found at.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_githubTokenAnchor(t *testing.T) {
+	if githubTokenAnchorIndex >= len(githubTokenOpening) {
+		t.Fatalf("the anchor stands at %d, the opening is %d characters", githubTokenAnchorIndex, len(githubTokenOpening))
+	}
+	if c := githubTokenOpening[githubTokenAnchorIndex]; c != githubTokenAnchor {
+		t.Errorf("the opening carries %q where the scan searches for %q, so no candidate is ever found at it",
+			c, byte(githubTokenAnchor))
+	}
+	if githubPATAnchorIndex >= len(githubPATPrefix) {
+		t.Fatalf("the anchor stands at %d, the fine grained prefix is %d characters", githubPATAnchorIndex, len(githubPATPrefix))
+	}
+	if c := githubPATPrefix[githubPATAnchorIndex]; c != githubTokenAnchor {
+		t.Errorf("the fine grained prefix carries %q where the scan searches for %q, so no candidate is ever found at it",
+			c, byte(githubTokenAnchor))
+	}
+
+	// And each carries the anchor at that depth and nowhere else, so an anchor
+	// opens one candidate of a form rather than several. Without it the two
+	// read-backs could land on the same prefix from different depths and the
+	// scan would report the same token twice.
+	for name, prefix := range map[string]string{"the opening": githubTokenOpening, "the fine grained prefix": githubPATPrefix} {
+		for i := range len(prefix) {
+			if i != githubTokenAnchorIndex && i != githubPATAnchorIndex && prefix[i] == githubTokenAnchor {
+				t.Errorf("%s carries %q at %d as well as at the depth it is read back from, so an anchor opens a candidate at more than one position",
+					name, byte(githubTokenAnchor), i)
+			}
+		}
+	}
+
+	// And the two are read back from different depths, which is what keeps one
+	// anchor from opening the same candidate under both readings.
+	if githubTokenAnchorIndex == githubPATAnchorIndex {
+		t.Error("both prefixes are read back from the same depth, so an anchor opens the same candidate twice")
+	}
+}
+
+// Test_githubTokenSeparator holds the character a classic prefix closes on to
+// belonging to no classic body. That is what keeps a run from holding two
+// candidates, and so what lets the scan read a body to the end of its run
+// without a cursor over it.
+func Test_githubTokenSeparator(t *testing.T) {
+	if isBase62Byte(githubTokenSeparator) {
+		t.Errorf("the separator %q belongs to the alphabet a classic body is written in, so two candidates could read the same run",
+			byte(githubTokenSeparator))
+	}
+}
+
 // referenceGitHubTokenAt reports where a GitHub token written at start ends,
 // and whether one is written there at all. It is the statement of what the scan
 // in builtin_github_token.go locates, kept here so that the scan can be held to

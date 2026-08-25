@@ -352,6 +352,18 @@ func Test_googleAPIKeyPrefix(t *testing.T) {
 	}
 }
 
+// Test_googleAPIKeyAnchor holds the prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_googleAPIKeyAnchor(t *testing.T) {
+	if googleAPIKeyAnchorIndex >= len(googleAPIKeyPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", googleAPIKeyAnchorIndex, len(googleAPIKeyPrefix))
+	}
+	if c := googleAPIKeyPrefix[googleAPIKeyAnchorIndex]; c != googleAPIKeyAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(googleAPIKeyAnchor))
+	}
+}
+
 func Test_isGoogleAPIKeyBody(t *testing.T) {
 	// The count and the alphabet together, stated over every byte rather than
 	// by example: a body is exactly googleAPIKeyBodyChars characters and each

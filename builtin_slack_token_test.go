@@ -556,22 +556,35 @@ func Test_SlackToken_whatEndsABody(t *testing.T) {
 }
 
 func Test_slackTokenPrefixes(t *testing.T) {
-	// The scan finds candidate positions with one IndexByte and divides a body
-	// into segments at one separator, so a prefix not opening with that byte
-	// is one the scan never reaches, and one not closing with the separator
-	// would have its last characters read as the opening of a body. Neither
-	// shows as a failing case: the pattern would quietly stop locating that
-	// kind of token, or start locating it a few characters short.
+	// The scan reads a candidate back to the byte every prefix opens with and
+	// divides a body into segments at one separator, so a prefix not opening
+	// with that byte is one the scan turns away unread, and one not closing
+	// with the separator would have its last characters read as the opening of
+	// a body. Neither shows as a failing case: the pattern would quietly stop
+	// locating that kind of token, or start locating it a few characters short.
+	//
+	// A prefix carrying the separator anywhere but at its end is the third, and
+	// the one that shows as nothing at all. The scan searches for that
+	// character, so an interior one is an anchor of its own, and a shorter
+	// prefix read back from it lands at a start the longer prefix beside it
+	// does not — which is a span reported out of the order the spans begin in.
+	// Test_slackTokenPrefixChars below is what that order is load-bearing for.
 	if len(slackTokenPrefixes) == 0 {
 		t.Fatal("no prefix is documented, so the pattern locates nothing")
 	}
 	for _, prefix := range slackTokenPrefixes {
 		t.Run(prefix, func(t *testing.T) {
 			if prefix == "" || prefix[0] != slackTokenFirstByte {
-				t.Errorf("the prefix does not open with %q, which is what the scan searches for", slackTokenFirstByte)
+				t.Errorf("the prefix does not open with %q, which is what a candidate is read back to", slackTokenFirstByte)
 			}
 			if prefix == "" || prefix[len(prefix)-1] != slackTokenSeparator {
 				t.Errorf("the prefix does not close with %q, so a body would not begin at a segment", slackTokenSeparator)
+			}
+			for i := range len(prefix) - 1 {
+				if prefix[i] == slackTokenSeparator {
+					t.Errorf("the prefix carries %q at %d as well as at its end, so a candidate is read back from a position no prefix ends at",
+						byte(slackTokenSeparator), i)
+				}
 			}
 		})
 	}
@@ -585,6 +598,26 @@ func Test_slackTokenPrefixes(t *testing.T) {
 				t.Errorf("the prefix %q opens %q, so which of them is read depends on the order of the table", prefix, other)
 			}
 		}
+	}
+}
+
+// Test_slackTokenPrefixChars holds the lengths the scan walks to being held
+// longest first.
+//
+// The lengths themselves are read off the table, so which of them are there is
+// not a thing that can be wrong. The order is: two prefixes can close at the
+// same separator — xoxe.xoxb- closes where xoxb- does — so both are reported,
+// and a longer prefix begins earlier than the shorter one closing beside it.
+// Spans are reported in the order they begin, so walking the lengths any other
+// way reports them out of order.
+//
+// The argument holds two prefixes closing together to beginning in the order
+// their lengths give, which is true while a separator closes a prefix and
+// stands nowhere else in one. Test_slackTokenPrefixes above holds the table to
+// that.
+func Test_slackTokenPrefixChars(t *testing.T) {
+	if !slices.IsSortedFunc(slackTokenPrefixChars, func(a, b int) int { return b - a }) {
+		t.Errorf("the lengths are held as %v, which is not longest first, so spans are reported out of order", slackTokenPrefixChars)
 	}
 }
 

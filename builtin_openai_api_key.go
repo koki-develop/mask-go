@@ -169,17 +169,32 @@ var openAIAPIKey = NewPattern("openai-api-key", func(src string) []Span {
 	}
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], openAIAPIKeyPrefix)
+		i := strings.IndexByte(src[offset:], openAIAPIKeyAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a key or not, for
 		// the reason the rationale above gives: the prefix is written in the
 		// alphabet a run is, so a key can begin inside the span of the one
-		// before it.
-		offset = start + 1
+		// before it. Stepping one byte past the anchor is
+		// what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < openAIAPIKeyAnchorIndex {
+			continue
+		}
+		start := anchor - openAIAPIKeyAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != openAIAPIKeyPrefix[0] || !strings.HasPrefix(src[start:], openAIAPIKeyPrefix) {
+			continue
+		}
 
 		body := start + len(openAIAPIKeyPrefix)
 		if body >= runEnd {
@@ -214,6 +229,26 @@ const (
 	// and is why the scan resumes a byte along; Test_openAIAPIKeyPrefix holds
 	// it to that.
 	openAIAPIKeyPrefix = "sk-"
+
+	// openAIAPIKeyAnchor is the byte the scan searches the input for and
+	// openAIAPIKeyAnchorIndex is where it stands in the prefix, so a candidate
+	// begins that many bytes in front of what a search reported.
+	// builtin_scan.go says why a scan searches for one byte of its prefix
+	// rather than for the prefix itself, and this is the prefix that argument
+	// is worst for: sk- is three characters and only two of them are candidates
+	// to be the rare one. Over the log line these benchmarks are written on the
+	// s stands eight times and the hyphen twice.
+	//
+	// The k is rarer still on that line — it stands not once — and is passed
+	// over all the same, because it is the one character of the three the
+	// marker also carries. A run of keys or of markers would then be walked
+	// twice over, once at each k, where the hyphen opens one candidate per
+	// prefix and no more. What the hyphen gives up is the hyphenated word the
+	// rationale above names: risk-register and task-list carry the whole
+	// prefix, hyphen included, so they reach the body of the loop, and it is
+	// the marker seeded before the loop that keeps a line of them cheap.
+	openAIAPIKeyAnchor      = '-'
+	openAIAPIKeyAnchorIndex = 2
 
 	// openAIAPIKeyMarker is the eight characters every published key carries
 	// between its two runs of random ones: the base64 encoding of OpenAI. It

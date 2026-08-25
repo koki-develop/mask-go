@@ -156,17 +156,32 @@ var npmAccessToken = NewPattern("npm-access-token", func(src string) []Span {
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], npmAccessTokenPrefix)
+		i := strings.IndexByte(src[offset:], npmAccessTokenAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not,
-		// for the reason the rationale above gives: a body may close with the
-		// three letters the prefix opens with, so a token can begin three
-		// characters before the end of the one before it.
-		offset = start + 1
+		// The scan resumes here whether this candidate became a token or not, for
+		// the reason the rationale above gives: a body may close with the three
+		// letters the prefix opens with, so a token can begin three characters
+		// before the end of the one before it. Stepping one byte past the anchor is
+		// what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < npmAccessTokenAnchorIndex {
+			continue
+		}
+		start := anchor - npmAccessTokenAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != npmAccessTokenPrefix[0] || !strings.HasPrefix(src[start:], npmAccessTokenPrefix) {
+			continue
+		}
 
 		body := start + len(npmAccessTokenPrefix)
 		if end := base62RunEnd(src, body); end-body >= npmAccessTokenBodyChars {
@@ -178,13 +193,26 @@ var npmAccessToken = NewPattern("npm-access-token", func(src string) []Span {
 
 const (
 	// npmAccessTokenPrefix is what every token npm issues in this format opens
-	// with, and what the scan searches the input for. Its first three characters
-	// belong to the alphabet a body is written in, which is what lets one token
-	// begin inside another and is why the scan resumes a byte along; the
-	// underscore closing it does not, which is what keeps two candidates from ever
-	// reading the same run. Test_npmAccessTokenPrefix holds it to the first and
-	// Test_npmAccessTokenPrefix_runsDoNotOverlap to the second.
+	// with, and what the scan reads back from its anchor. Its first three
+	// characters belong to the alphabet a body is written in, which is what lets
+	// one token begin inside another and is why the scan resumes a byte along;
+	// the underscore closing it does not, which is what keeps two candidates from
+	// ever reading the same run. Test_npmAccessTokenPrefix holds it to the first
+	// and Test_npmAccessTokenPrefix_runsDoNotOverlap to the second.
 	npmAccessTokenPrefix = "npm_"
+
+	// npmAccessTokenAnchor is the byte the scan searches the input for and
+	// npmAccessTokenAnchorIndex is where it stands in the prefix, so a
+	// candidate begins that many bytes in front of what a search reported.
+	// builtin_scan.go says why a scan searches for one byte of its prefix
+	// rather than for the prefix itself; what makes it this byte is that the
+	// three letters in front of it are ordinary ones — over the log line these
+	// benchmarks are written on the n and the m stand three times each and the
+	// p four — where the underscore stands not once. It is the same character
+	// the run guarantee rests on, so a candidate found by it is a candidate
+	// whose body is the run beginning one byte along.
+	npmAccessTokenAnchor      = '_'
+	npmAccessTokenAnchorIndex = 3
 
 	// npmAccessTokenBodyChars is the count a body is held to, read as a floor
 	// rather than exactly. Thirty-six is thirty random characters — the hundred

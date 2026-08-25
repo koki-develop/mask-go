@@ -105,20 +105,29 @@ func CloudflareAPIToken() Pattern { return cloudflareAPIToken }
 // for this pattern to fire is set out below, and it is not text anybody writes.
 // Test_CloudflareAPIToken_checksumIsNotVerified pins the decision.
 //
-// What the scan searches the input for is cf, the two characters both prefixes
-// open with. One search over the text serves both where a search for each would
-// be two, and the alternative anchor is the underscore each prefix closes with,
-// which is declined on how often it stands in text this library is pointed at:
-// an environment variable, a snake_case name and a log field are written with
-// underscores and are not written with cf, so anchoring there would open a
-// candidate on a great deal of ordinary text to reject it again. Reading
-// forwards from a shared opening also asks nothing of the table beyond every
-// prefix beginning with that opening, where reading backwards from a closing
-// character asks that no prefix carry the anchor anywhere but at its end and
-// that none be the suffix of another. Test_cloudflareAPITokenPrefixes holds the
-// table to the one thing this arrangement does need — every prefix opens with
-// what the scan searches for — and to coming to fifty-three characters with the
-// body behind it.
+// What the scan searches the input for is the underscore each prefix closes
+// with, and the prefix is read back from it. One search over the text serves
+// both prefixes where a search for each would be two, and either the opening or
+// the closing character could carry it: what settles the choice is how often
+// each is written in the text this library is pointed at, for the reason
+// builtin_scan.go gives. Over the log line these benchmarks are written on the
+// c stands four times — the word calling, this vendor's own name, the client
+// path, the com — and the underscore not once. On the line of nothing but cf
+// this pattern's own worst case is written from, the c stands at every other
+// byte and the underscore nowhere at all.
+//
+// What the underscore costs is a candidate opened at every environment
+// variable, snake_case name and log field, none of which is written with cf.
+// Each of those is turned away by the four characters read back, which is one
+// comparison; against it stands a stop at every c in the text. The underscore
+// is ahead on the ordinary line and far ahead on every crowded one.
+//
+// Reading backwards asks two things of the table in return. It asks that every
+// prefix close on the anchor and carry it nowhere else, so that a candidate is
+// read back from the right place, and that all of them be the same length, so
+// that one index serves the table. Test_cloudflareAPITokenAnchor holds both:
+// a prefix closing on something other than the anchor, or standing a different
+// width, is a prefix no candidate is ever found at.
 //
 // There is no boundary on either side of a match. A word boundary in front
 // would drop the whole match rather than trim it wherever a token is written
@@ -205,18 +214,32 @@ var cloudflareAPIToken = NewPattern("cloudflare-api-token", func(src string) []S
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], cloudflareAPITokenOpening)
+		i := strings.IndexByte(src[offset:], cloudflareAPITokenAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not,
-		// for the reason the rationale above gives: a checksum is hexadecimal,
-		// so it carries the opening of a prefix and a token can begin as far as
-		// three characters before the one in front of it ends.
-		offset = start + 1
+		// The scan resumes here whether this candidate became a token or not, for
+		// the reason the rationale above gives: a checksum is hexadecimal, so it
+		// carries the opening of a prefix and a token can begin as far as three
+		// characters before the one in front of it ends. Stepping one byte past the
+		// anchor is what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = anchor + 1
 
+		if anchor < cloudflareAPITokenAnchorIndex {
+			continue
+		}
+		start := anchor - cloudflareAPITokenAnchorIndex
+
+		// The byte every prefix opens with is tested before the table is
+		// walked. Every anchor the search stops at reaches this line, and all
+		// but the few that open a candidate are turned away by one byte where
+		// the table is two comparisons.
+		if src[start] != cloudflareAPITokenOpening[0] {
+			continue
+		}
 		prefix := cloudflareAPITokenPrefixAt(src, start)
 		if prefix == 0 {
 			continue
@@ -235,22 +258,31 @@ var cloudflareAPIToken = NewPattern("cloudflare-api-token", func(src string) []S
 // Cloudflare calls API tokens.
 //
 // Test_cloudflareAPITokenPrefixes holds them to what the scan needs of them:
-// that every one opens with the two characters the search is for, without which
-// a prefix is one the scan never reaches; that no one of them opens another, so
-// at most one matches at any position and the order they are written in decides
-// nothing; and that each leaves a fifty-three character token with the body
-// behind it.
+// that every one opens with the two characters a candidate is read back to,
+// without which a prefix is one the scan never reaches; that no one of them
+// opens another, so at most one matches at any position and the order they are
+// written in decides nothing; and that each leaves a fifty-three character
+// token with the body behind it.
 var cloudflareAPITokenPrefixes = [...]string{
 	"cfut_", // owned by a user
 	"cfat_", // owned by an account
 }
 
 const (
-	// cloudflareAPITokenOpening is what every prefix begins with and what the
-	// scan searches the input for. Two characters are what the two prefixes
-	// share, and the rationale above says why the search is anchored on them
-	// rather than on the underscore each prefix closes with.
+	// cloudflareAPITokenOpening is what every prefix begins with. Two characters
+	// are what the two prefixes share at their start, and the rationale above
+	// says why the search is anchored on the underscore each closes with rather
+	// than on these.
 	cloudflareAPITokenOpening = "cf"
+
+	// cloudflareAPITokenAnchor is the byte the scan searches the input for and
+	// cloudflareAPITokenAnchorIndex is where it stands in both prefixes, so a
+	// candidate begins that many bytes in front of what a search reported. Both
+	// prefixes are five characters, which the fifty-three a token comes to with
+	// the body behind it fixes and Test_cloudflareAPITokenPrefixes holds them
+	// to, so one index serves the whole table.
+	cloudflareAPITokenAnchor      = '_'
+	cloudflareAPITokenAnchorIndex = 4
 
 	// The counts a Cloudflare credential is written to, both of them stated by
 	// Cloudflare rather than read off a value: forty characters of secret, and

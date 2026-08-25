@@ -1,6 +1,9 @@
 package mask
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 // GitLabToken locates GitLab credentials that carry a token prefix: personal,
 // project, group and impersonation access tokens (glpat-), OAuth application
@@ -202,11 +205,11 @@ var gitLabToken = NewPattern("gitlab-token", func(src string) []Span {
 	runEnd := -1
 
 	for offset := 0; offset < len(src); {
-		i := strings.IndexByte(src[offset:], gitLabTokenFirstByte)
+		i := strings.IndexByte(src[offset:], gitLabTokenAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a token or not.
 		// The body alphabet holds the letters the prefixes are written in, so a
@@ -214,22 +217,16 @@ var gitLabToken = NewPattern("gitlab-token", func(src string) []Span {
 		// twenty-two characters into
 		// glpat-0123456789abcdefglpat-0123456789abcdefghij does, and consuming
 		// a match would step over that token and leave it in the output whole.
-		// The two spans then overlap, which a Masker resolves into one.
-		offset = start + 1
+		// The two spans then overlap, which a Masker resolves into one. Stepping one
+		// byte past the anchor is what leaves the next candidate of every
+		// length one byte past this one, which builtin_scan.go sets out.
+		offset = anchor + 1
 
-		// The byte test comes before the prefix table because it is one
-		// comparison where that is up to twelve, and every g in a word reaches
-		// this line. Searching for the two bytes together with strings.Index is
-		// the shorter way to write the same thing and is slower by about a
-		// fifteenth on a log line, measured: what the second byte rules out is
-		// cheaper to rule out here than inside a search for a two byte needle.
-		if start+1 >= len(src) || src[start+1] != gitLabTokenSecondByte {
-			continue
-		}
-		kind := gitLabTokenKindAt(src, start)
+		kind := gitLabTokenKindEndingAt(src, anchor)
 		if kind == nil {
 			continue
 		}
+		start := anchor + 1 - len(kind.prefix)
 
 		body := start + len(kind.prefix)
 		if body >= runEnd {
@@ -275,8 +272,8 @@ type gitLabTokenKind struct {
 // every other at a position both of them have — glrt- and glrtr- differ at the
 // fifth, glpat- and glptt- at the fourth, glft- and glffct- at the fourth.
 // Test_gitLabTokenKinds holds them to that, and to opening with the two bytes a
-// candidate is found by, closing with a hyphen, and naming a body long enough
-// to be one.
+// candidate is read back to, closing with the hyphen a candidate is found by,
+// and naming a body long enough to be one.
 //
 // The rationale above says where each count comes from.
 var gitLabTokenKinds = [...]gitLabTokenKind{
@@ -297,10 +294,28 @@ var gitLabTokenKinds = [...]gitLabTokenKind{
 }
 
 const (
-	// The two bytes every prefix opens with. The scan searches the input for
-	// the first and tests the second before it reaches the table at all.
-	gitLabTokenFirstByte  = 'g'
-	gitLabTokenSecondByte = 'l'
+	// gitLabTokenOpening is what every prefix opens with, and what a candidate
+	// is read back to from the hyphen the scan searches for.
+	// gitLabTokenKindEndingAt tests the byte it opens with before it compares a
+	// prefix at all and leaves the rest of it to that comparison, but the whole
+	// of it is load-bearing: a suffix of one of these prefixes would have to
+	// carry the opening somewhere past its own start, and that is the argument
+	// no two entries close at the same position rests on.
+	//
+	// The hyphen is the anchor rather than this, for the reason builtin_scan.go
+	// gives. A g opens log, message and every word a GitLab path is made of —
+	// over the line these benchmarks are written on it stands four times
+	// against the hyphen's two — and text carrying the opening without the
+	// hyphen behind it, which prose does wherever it spells a word with gl in
+	// the middle, reaches the table at every g under that anchor and at nothing
+	// under this one.
+	gitLabTokenOpening = "gl"
+
+	// gitLabTokenAnchor is the hyphen every prefix closes with and the byte the
+	// scan searches the input for. It is the one character every entry of the
+	// table shares at a position of its own, which is what lets one search find
+	// all twelve; Test_gitLabTokenKinds holds them to closing on it.
+	gitLabTokenAnchor = '-'
 
 	// gitLabTokenPartitionSeparator divides the partition id of a CI/CD job
 	// token from the body behind it, and gitLabTokenPartitionChars is the most
@@ -337,16 +352,68 @@ const (
 	gitLabTokenTailChars     = gitLabTokenLengthChars + gitLabTokenChecksumChars
 )
 
-// gitLabTokenKindAt returns the kind whose prefix begins at i in src, or nil
-// where none does.
-func gitLabTokenKindAt(src string, i int) *gitLabTokenKind {
-	for k := range gitLabTokenKinds {
-		if strings.HasPrefix(src[i:], gitLabTokenKinds[k].prefix) {
-			return &gitLabTokenKinds[k]
+// gitLabTokenKindEndingAt returns the kind whose prefix closes at the anchor
+// standing at i in src, or nil where none does.
+//
+// It reads backwards, where a prefix lookup ordinarily reads forwards, because
+// what the scan searches for is the hyphen a prefix ends on rather than the
+// letter it begins with. At most one entry can close at any position, so which
+// one is found does not depend on the order the table is walked in: two
+// entries closing together would mean the shorter were a suffix of the longer,
+// and a suffix of one of these carries the gl it opens with somewhere past its
+// own start, which none of them does.
+//
+// That is the suffix relation, and it is not the relation
+// Test_gitLabTokenKinds holds the table to — that one rules out a prefix
+// opening another, which is what a forward lookup needs. A table breaking the
+// suffix relation would have the winner decided by the order
+// gitLabTokenPrefixChars happens to hold the lengths in, silently and only for
+// that pair. Slack's table is the worked example of one that does break it, and
+// the scan there reports both candidates rather than choosing between them.
+//
+// The byte the opening begins with is tested before the prefix is compared,
+// which is what makes the walk over the table cheap enough to do at every
+// hyphen: a hyphen with no g standing four to seven characters in front of it
+// is turned away by one byte an entry, where comparing twelve prefixes against
+// the text would be twelve lengths and twelve reads. The l behind the g is
+// left to the comparison rather than tested here — it would be a second read
+// at every entry to rule out what the first read has already ruled out almost
+// everywhere.
+func gitLabTokenKindEndingAt(src string, i int) *gitLabTokenKind {
+	for _, n := range gitLabTokenPrefixChars {
+		start := i + 1 - n
+		if start < 0 || src[start] != gitLabTokenOpening[0] {
+			continue
+		}
+		for k := range gitLabTokenKinds {
+			kind := &gitLabTokenKinds[k]
+			if len(kind.prefix) == n && src[start:i+1] == kind.prefix {
+				return kind
+			}
 		}
 	}
 	return nil
 }
+
+// gitLabTokenPrefixChars are the lengths the table holds, each of them once.
+// The walk above reads it rather than the table itself so that entries sharing
+// a length cost one read of the text between them: prefixes of a length are
+// read back to the same byte, and asking each of them the same question about
+// that byte is asking it over again for nothing.
+//
+// It is worked out from the table rather than written beside it, so that it
+// cannot come to disagree with what the table holds — a length written down
+// here and left behind by an entry added would be a kind no candidate is ever
+// found at, and nothing would say so.
+var gitLabTokenPrefixChars = func() []int {
+	var chars []int
+	for _, kind := range gitLabTokenKinds {
+		if !slices.Contains(chars, len(kind.prefix)) {
+			chars = append(chars, len(kind.prefix))
+		}
+	}
+	return chars
+}()
 
 // gitLabTokenRoutableEnd returns where the routable token whose payload begins
 // at body in src ends, and whether one is written there. runEnd is where the

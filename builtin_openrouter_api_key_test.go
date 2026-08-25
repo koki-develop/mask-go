@@ -474,6 +474,21 @@ func Test_openRouterAPIKeyPrefix(t *testing.T) {
 	}
 }
 
+// Test_openRouterAPIKeyAnchor holds the prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from.
+// builtin_scan.go says why that is held here rather than left to the targets.
+//
+// What the scan's resume at the body rests on is the prefix carrying its
+// opening character once, which Test_openRouterAPIKeyPrefix above holds.
+func Test_openRouterAPIKeyAnchor(t *testing.T) {
+	if openRouterAPIKeyAnchorIndex >= len(openRouterAPIKeyPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", openRouterAPIKeyAnchorIndex, len(openRouterAPIKeyPrefix))
+	}
+	if c := openRouterAPIKeyPrefix[openRouterAPIKeyAnchorIndex]; c != openRouterAPIKeyAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(openRouterAPIKeyAnchor))
+	}
+}
+
 func Test_openRouterAPIKeyChars(t *testing.T) {
 	// Seventy-three is what the count comes to with the prefix in front of it,
 	// and what the example in OpenRouter's own documentation is. The count

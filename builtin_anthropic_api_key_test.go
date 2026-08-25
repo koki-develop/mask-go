@@ -442,6 +442,18 @@ func Test_anthropicAPIKeyPrefix(t *testing.T) {
 	}
 }
 
+// Test_anthropicAPIKeyAnchor holds the prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_anthropicAPIKeyAnchor(t *testing.T) {
+	if anthropicAPIKeyAnchorIndex >= len(anthropicAPIKeyPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", anthropicAPIKeyAnchorIndex, len(anthropicAPIKeyPrefix))
+	}
+	if c := anthropicAPIKeyPrefix[anthropicAPIKeyAnchorIndex]; c != anthropicAPIKeyAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(anthropicAPIKeyAnchor))
+	}
+}
+
 func Test_anthropicAPIKeyPrefix_bodyNeverMovesBack(t *testing.T) {
 	// The scan keeps one run cursor for every candidate and reuses it wherever
 	// a body begins inside the run already read. That is sound only while a

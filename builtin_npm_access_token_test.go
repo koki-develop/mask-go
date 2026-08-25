@@ -468,6 +468,18 @@ func Test_npmAccessTokenPrefix(t *testing.T) {
 	}
 }
 
+// Test_npmAccessTokenAnchor holds the prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_npmAccessTokenAnchor(t *testing.T) {
+	if npmAccessTokenAnchorIndex >= len(npmAccessTokenPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", npmAccessTokenAnchorIndex, len(npmAccessTokenPrefix))
+	}
+	if c := npmAccessTokenPrefix[npmAccessTokenAnchorIndex]; c != npmAccessTokenAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(npmAccessTokenAnchor))
+	}
+}
+
 func Test_npmAccessTokenPrefix_runsDoNotOverlap(t *testing.T) {
 	// The scan walks the run behind every candidate and keeps no cursor over
 	// it, where a scan whose prefix closes on a character its own body admits
@@ -511,10 +523,13 @@ func Test_NPMAccessToken_scanIsLinear(t *testing.T) {
 		// One candidate whose body is the whole line, which is the walk over a
 		// run reading the length of the input and finding a token.
 		"a body that runs the length of the line": "npm_" + strings.Repeat("a", 1800000),
-		// The prefix's own letters written over and over with no underscore
-		// among them, which is the search for the prefix reading a whole line
-		// and finding no candidate at all.
-		"the letters of the prefix with no underscore": strings.Repeat("npm", 600000),
+		// An anchor every other byte with nothing in front of it that opens a
+		// prefix, which is the cheapest way a position is declined: one byte
+		// read and the candidate gone.
+		"an anchor that opens no candidate": strings.Repeat("a_", 900000),
+		// And the prefix's own letters with no anchor among them, which is the
+		// walk reading a whole line and stopping nowhere in it.
+		"the letters of the prefix with no anchor": strings.Repeat("npm", 600000),
 	}
 
 	m := New(WithPatterns(NPMAccessToken()))

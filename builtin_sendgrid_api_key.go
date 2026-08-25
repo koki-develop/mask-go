@@ -160,17 +160,27 @@ var sendGridAPIKey = NewPattern("sendgrid-api-key", func(src string) []Span {
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], sendGridAPIKeyPrefix)
+		i := strings.IndexByte(src[offset:], sendGridAPIKeyAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a key or not, for
-		// the reason the rationale above gives: the prefix is two characters a
-		// segment is written with and the separator a key already carries, so a
-		// key can begin two characters before the end of the one before it.
-		offset = start + 1
+		// The scan resumes here whether this candidate became a key or not, for the
+		// reason the rationale above gives: the prefix is two characters a segment
+		// is written with and the separator a key already carries, so a key can
+		// begin two characters before the end of the one before it. Stepping one
+		// byte past the anchor is what leaves the next candidate one byte past this
+		// one, which builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < sendGridAPIKeyAnchorIndex {
+			continue
+		}
+		start := anchor - sendGridAPIKeyAnchorIndex
+		if !strings.HasPrefix(src[start:], sendGridAPIKeyPrefix) {
+			continue
+		}
 
 		body := start + len(sendGridAPIKeyPrefix)
 		if end := start + sendGridAPIKeyChars; end <= len(src) && isSendGridAPIKeyBody(src[body:end]) {
@@ -181,13 +191,31 @@ var sendGridAPIKey = NewPattern("sendgrid-api-key", func(src string) []Span {
 })
 
 const (
-	// sendGridAPIKeyPrefix is what every key opens with, and what the scan
-	// searches the input for. It closes with the character the two segments are
+	// sendGridAPIKeyPrefix is what every key opens with, and what the scan reads
+	// back from its anchor. It closes with the character the two segments are
 	// separated by, which is what lets one key be written inside another and is
 	// why the scan resumes a byte along; Test_sendGridAPIKeyPrefix holds it to
-	// closing with that character and to carrying nothing but segment
-	// characters in front of it.
+	// closing with that character and to carrying nothing but segment characters
+	// in front of it.
 	sendGridAPIKeyPrefix = "SG."
+
+	// sendGridAPIKeyAnchor is the byte the scan searches the input for and
+	// sendGridAPIKeyAnchorIndex is where it stands in the prefix, so a
+	// candidate begins that many bytes in front of what a search reported.
+	// builtin_scan.go says why a scan searches for one byte of its prefix
+	// rather than for the prefix itself. This prefix is the one case where the
+	// choice buys nothing on the text: both capitals are rare, neither stands
+	// in the log line these benchmarks are written on, and a search for the
+	// prefix is already a search for the S. So the byte is the one the prefix
+	// opens with, and all that separates the two is the walk — one pass
+	// looking for a single byte against a pass that stops to compare.
+	//
+	// The G is the rarer capital in prose and is worse here all the same: a
+	// key carries the alphabet's own G in its secret as often as not, so a
+	// line of keys opens two candidates at each of them where the S opens
+	// one.
+	sendGridAPIKeyAnchor      = 'S'
+	sendGridAPIKeyAnchorIndex = 0
 
 	// sendGridAPIKeySeparator divides the identifier from the secret. It
 	// belongs to no segment, which is what ends a segment where it stands and

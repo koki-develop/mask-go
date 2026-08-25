@@ -554,6 +554,18 @@ func Test_cloudflareAPIKeyPrefix(t *testing.T) {
 	}
 }
 
+// Test_cloudflareAPIKeyAnchor holds the prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_cloudflareAPIKeyAnchor(t *testing.T) {
+	if cloudflareAPIKeyAnchorIndex >= len(cloudflareAPIKeyPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", cloudflareAPIKeyAnchorIndex, len(cloudflareAPIKeyPrefix))
+	}
+	if c := cloudflareAPIKeyPrefix[cloudflareAPIKeyAnchorIndex]; c != cloudflareAPIKeyAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(cloudflareAPIKeyAnchor))
+	}
+}
+
 // referenceCloudflareAPIKey is the expression the scan in
 // builtin_cloudflare_api_key.go reads by hand: the statement of what a
 // Cloudflare API key is, kept here so that the scan can be held to it.
@@ -647,9 +659,9 @@ func FuzzCloudflareAPIKey_matchesReference(f *testing.F) {
 // plain go test as well, which is what a benchmark nobody has run yet cannot
 // be.
 func cloudflareAPIKeyFindBenchmarks() []benchmarkCase {
-	// Nothing in an ordinary line carries the prefix the scan searches for, so
-	// what the line times is the search for it — which is most of what this
-	// pattern costs a caller whose text holds no key.
+	// Nothing in an ordinary line carries the byte the scan searches for, so
+	// what the line times is that search — which is most of what this pattern
+	// costs a caller whose text holds no key.
 	line := `time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/user `
 	key := "cfk_0123456789abcdef0123456789abcdef0123456789abcdef"
 

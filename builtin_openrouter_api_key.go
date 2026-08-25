@@ -169,19 +169,49 @@ var openRouterAPIKey = NewPattern("openrouter-api-key", func(src string) []Span 
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], openRouterAPIKeyPrefix)
-		if i < 0 {
-			break
+		// The byte at the resume point is tested before a search is started
+		// from it. This scan resumes at the anchor of the next candidate it
+		// could not rule out, so on a line of prefixes written one against the
+		// next that byte is the anchor itself every time, and a search there is
+		// a call into the byte scanner to be told what the comparison already
+		// says. Measured on such a line those calls are the whole of what the
+		// scan costs; against them this test is one byte read wherever the
+		// resume point is not an anchor.
+		anchor := offset
+		if src[anchor] != openRouterAPIKeyAnchor {
+			i := strings.IndexByte(src[anchor+1:], openRouterAPIKeyAnchor)
+			if i < 0 {
+				break
+			}
+			anchor += i + 1
 		}
-		start := offset + i
+
+		// A candidate that is not one steps one byte past the anchor, which
+		// leaves the next candidate one byte past where this one would have
+		// begun.
+		offset = anchor + 1
+
+		if anchor < openRouterAPIKeyAnchorIndex {
+			continue
+		}
+		start := anchor - openRouterAPIKeyAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != openRouterAPIKeyPrefix[0] || !strings.HasPrefix(src[start:], openRouterAPIKeyPrefix) {
+			continue
+		}
 		body := start + len(openRouterAPIKeyPrefix)
 
-		// The scan resumes at the body whether this candidate became a key or
-		// not, for the reason the rationale above gives: no key begins inside
-		// another, and the nine characters stepped over here are the prefix
-		// that has just matched, which carries no s for a second candidate to
-		// open at.
-		offset = body
+		// A candidate that is one resumes at the body instead, whether it
+		// became a key or not, for the reason the rationale above gives: no key
+		// begins inside another, and what is stepped over here is the rest of
+		// the prefix that has just matched, which carries no s for a second
+		// candidate to open at. What the search resumes at is the anchor of a
+		// candidate beginning at the body, which is the first one left.
+		offset = body + openRouterAPIKeyAnchorIndex
 
 		if end := start + openRouterAPIKeyChars; end <= len(src) && isOpenRouterAPIKeyBody(src[body:end]) {
 			spans = append(spans, Span{Start: start, End: end})
@@ -192,7 +222,7 @@ var openRouterAPIKey = NewPattern("openrouter-api-key", func(src string) []Span 
 
 const (
 	// openRouterAPIKeyPrefix is what every key opens with, and what the scan
-	// searches the input for. The version it carries is what the rationale
+	// reads back from its anchor. The version it carries is what the rationale
 	// above reads the count exactly on the strength of. Two properties of it
 	// are what keep one key from being written inside another, and so what let
 	// the scan resume at the body rather than a byte along: the s it opens with
@@ -200,6 +230,18 @@ const (
 	// and no second s stands anywhere in it, so no prefix opens inside a
 	// prefix. Test_openRouterAPIKeyPrefix holds it to both.
 	openRouterAPIKeyPrefix = "sk-or-v1-"
+
+	// openRouterAPIKeyAnchor is the byte the scan searches the input for and
+	// openRouterAPIKeyAnchorIndex is where it stands in the prefix, so a
+	// candidate begins that many bytes in front of what a search reported.
+	// builtin_scan.go says why a scan searches for one byte of its prefix
+	// rather than for the prefix itself; what makes it this byte is that the k
+	// is the one character of sk-or-v1- ordinary text does not carry. Over the
+	// log line these benchmarks are written on the s stands three times, the o
+	// five and the hyphen twice, and the k not once. The k stands in the prefix
+	// once as well, which is what lets the scan step over the rest of it.
+	openRouterAPIKeyAnchor      = 'k'
+	openRouterAPIKeyAnchorIndex = 1
 
 	// openRouterAPIKeyBodyChars is how many hexadecimal digits stand behind the
 	// prefix. It is read exactly rather than as a floor, for the reason the

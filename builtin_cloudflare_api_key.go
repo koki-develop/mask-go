@@ -63,11 +63,10 @@ func CloudflareAPIKey() Pattern { return cloudflareAPIKey }
 // credentials generated after the format update are matched. The prefix is the
 // whole of what makes this format readable.
 //
-// What the scan searches the input for is the whole prefix, four characters
+// What a candidate is tested against is the whole prefix, four characters
 // closing on the underscore. One prefix is what this pattern has, so the whole
-// of it is available as the literal a search skips along, where the token scan
-// shares its search between two prefixes and can ask for only the two
-// characters they have in common. The underscore is what makes that literal
+// of it is compared at once, where the token scan shares a prefix table between
+// two and reads the length it matched. The underscore is what makes the prefix
 // rare in the text this library is pointed at: cfk written as a word is not,
 // and cfk_ is not written at all outside a snake_case name whose segment is
 // spelled that way. Test_cloudflareAPIKeyPrefix holds the prefix to closing on
@@ -163,17 +162,31 @@ var cloudflareAPIKey = NewPattern("cloudflare-api-key", func(src string) []Span 
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], cloudflareAPIKeyPrefix)
+		i := strings.IndexByte(src[offset:], cloudflareAPIKeyAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a key or not,
-		// for the reason the rationale above gives: a checksum closing on cf
-		// carries the opening of the prefix, so a key can begin one or two
-		// characters before the one in front of it ends.
-		offset = start + 1
+		// The scan resumes here whether this candidate became a key or not, for the
+		// reason the rationale above gives: a checksum closing on cf carries the
+		// opening of the prefix, so a key can begin one or two characters before the
+		// one in front of it ends. Stepping one byte past the anchor is what leaves
+		// the next candidate one byte past this one, which builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < cloudflareAPIKeyAnchorIndex {
+			continue
+		}
+		start := anchor - cloudflareAPIKeyAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != cloudflareAPIKeyPrefix[0] || !strings.HasPrefix(src[start:], cloudflareAPIKeyPrefix) {
+			continue
+		}
 
 		body := start + len(cloudflareAPIKeyPrefix)
 		if end := body + cloudflareCredentialBodyChars; end <= len(src) && isCloudflareCredentialBody(src[body:end]) {
@@ -183,10 +196,10 @@ var cloudflareAPIKey = NewPattern("cloudflare-api-key", func(src string) []Span 
 	return spans
 })
 
-// cloudflareAPIKeyPrefix is what a key opens with and what the scan searches the
-// input for. It is the whole prefix rather than a part of it, which is what one
-// prefix affords and two do not, and it stands at the start of a candidate, so
-// the position a search reports is the position a key would begin at.
+// cloudflareAPIKeyPrefix is what a key opens with and what the scan reads back
+// from its anchor. It is the whole prefix rather than a part of it, which is
+// what one prefix affords and two do not, and it stands at the start of a
+// candidate, so what the scan tests is the whole of what opens a key.
 //
 // Test_cloudflareAPIKeyPrefix holds it to the two things this arrangement
 // rests on: that it closes with a character no body is written with, which is
@@ -197,3 +210,21 @@ var cloudflareAPIKey = NewPattern("cloudflare-api-key", func(src string) []Span 
 // the body behind it, which is the count the sentence on CloudflareAPIKey
 // promises a caller.
 const cloudflareAPIKeyPrefix = "cfk_"
+
+// cloudflareAPIKeyAnchor is the byte the scan searches the input for and
+// cloudflareAPIKeyAnchorIndex is where it stands in the prefix, so a candidate
+// begins that many bytes in front of what a search reported. builtin_scan.go
+// says why a scan searches for one byte of its prefix rather than for the
+// prefix itself; what makes it this byte is that the k is the one character of
+// cfk_ ordinary text does not carry. Over the log line these benchmarks are
+// written on the c stands four times — the word calling, the vendor's own name,
+// the com behind it and the client path — and the k not once. The underscore is
+// rarer still there and is passed over for the reason the token scan beside
+// this one gives: it is
+// what an environment variable, a snake_case name and a log field are written
+// with, so a scan anchored on it opens a candidate on a great deal of ordinary
+// text to reject it again.
+const (
+	cloudflareAPIKeyAnchor      = 'k'
+	cloudflareAPIKeyAnchorIndex = 2
+)

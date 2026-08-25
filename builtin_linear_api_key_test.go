@@ -580,13 +580,37 @@ func Test_linearAPIKeyPrefix_runsDoNotOverlap(t *testing.T) {
 	}
 }
 
+// Test_linearAPIKeyAnchor holds the prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from, and to
+// the one thing the scan's resume rests on. builtin_scan.go says why the first
+// is held here rather than left to the targets.
+//
+// The resume is the second. A candidate that carries the prefix resumes at its
+// body rather than a byte along, which steps over the positions inside the
+// prefix, and that is sound only while no key can begin at one of them. The
+// prefix carries the character it opens with nowhere else, so none can.
+func Test_linearAPIKeyAnchor(t *testing.T) {
+	if linearAPIKeyAnchorIndex >= len(linearAPIKeyPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", linearAPIKeyAnchorIndex, len(linearAPIKeyPrefix))
+	}
+	if c := linearAPIKeyPrefix[linearAPIKeyAnchorIndex]; c != linearAPIKeyAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(linearAPIKeyAnchor))
+	}
+	if i := strings.IndexByte(linearAPIKeyPrefix[1:], linearAPIKeyPrefix[0]); i >= 0 {
+		t.Errorf("the prefix carries %q again at %d, so a key can begin inside one and the resume at the body steps over it",
+			linearAPIKeyPrefix[0], i+1)
+	}
+}
+
 func Test_LinearAPIKey_scanIsLinear(t *testing.T) {
-	// Rejecting a candidate resumes one byte along, so a line dense in prefixes
-	// holds a candidate for every eight characters it has. The one thing a
-	// candidate reads that is a walk over the rest of the input rather than a
-	// bounded test is where its run ends, and repeating that walk at every
-	// candidate would cost time quadratic in the length of the line. The bound
-	// here is far above a linear scan and far below a quadratic one.
+	// A line dense in prefixes holds a candidate for every eight characters it
+	// has, whether the scan resumes one byte along or at the body of the
+	// candidate it just read — the second only skips positions no key can begin
+	// at. The one thing a candidate reads that is a walk over the rest of the
+	// input rather than a bounded test is where its run ends, and repeating
+	// that walk at every candidate would cost time quadratic in the length of
+	// the line. The bound here is far above a linear scan and far below a
+	// quadratic one.
 	//
 	// The generic guard in builtins_test.go repeats the samples, which hold a
 	// candidate every forty-five bytes where they are densest, because a sample
@@ -604,10 +628,13 @@ func Test_LinearAPIKey_scanIsLinear(t *testing.T) {
 		// One candidate whose body is the whole line, which is the walk over a
 		// run reading the length of the input and finding a key.
 		"a body that runs the length of the line": "lin_api_" + strings.Repeat("a", 1800000),
-		// The prefix's own letters written over and over with no underscore
-		// among them, which is the search for the prefix reading a whole line
-		// and finding no candidate at all.
-		"the letters of the prefix with no underscore": strings.Repeat("linapi", 300000),
+		// An anchor every other byte with nothing in front of it that opens a
+		// prefix, which is the cheapest way a position is declined: one byte
+		// read and the candidate gone.
+		"an anchor that opens no candidate": strings.Repeat("a_", 900000),
+		// And the prefix's own letters with no anchor among them, which is the
+		// walk reading a whole line and stopping nowhere in it.
+		"the letters of the prefix with no anchor": strings.Repeat("linapi", 300000),
 	}
 
 	m := New(WithPatterns(LinearAPIKey()))

@@ -524,6 +524,18 @@ func Test_rubyGemsAPIKeyPrefix(t *testing.T) {
 	}
 }
 
+// Test_rubyGemsAPIKeyAnchor holds the prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_rubyGemsAPIKeyAnchor(t *testing.T) {
+	if rubyGemsAPIKeyAnchorIndex >= len(rubyGemsAPIKeyPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", rubyGemsAPIKeyAnchorIndex, len(rubyGemsAPIKeyPrefix))
+	}
+	if c := rubyGemsAPIKeyPrefix[rubyGemsAPIKeyAnchorIndex]; c != rubyGemsAPIKeyAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(rubyGemsAPIKeyAnchor))
+	}
+}
+
 func Test_rubyGemsAPIKeyChars(t *testing.T) {
 	// Fifty-seven is what the count comes to with the prefix in front of it,
 	// and what both of the long examples in the RubyGems.org guides are. The

@@ -163,8 +163,8 @@ func Test_CloudflareAPIToken_noMatch(t *testing.T) {
 			src:  "cfk_0123456789abcdef0123456789abcdef0123456789abcdef",
 		},
 		{
-			// The two letters the scan searches for with neither kind behind
-			// them.
+			// The two letters a candidate is read back to with neither kind
+			// behind them.
 			name: "the opening with no kind behind it",
 			src:  "cfxt_0123456789abcdef0123456789abcdef0123456789abcdef",
 		},
@@ -491,12 +491,13 @@ func Test_CloudflareAPIToken_scanIsLinear(t *testing.T) {
 	//
 	// The generic guard in builtins_test.go repeats the samples, which carry a
 	// whole body apiece and so hold a candidate every fifty-three bytes at their
-	// densest. The crowding a line can actually carry, a candidate every two,
+	// densest. The crowding a line can actually carry, a candidate every five,
 	// stays here.
 	sources := map[string]string{
-		// A candidate every two characters, each turned away before a body is
-		// looked at because no prefix stands there.
-		"a candidate every two characters": strings.Repeat("cf", 1000000),
+		// A candidate every five characters, each read back whole and turned
+		// away by the table before a body is looked at because no prefix
+		// stands there.
+		"a candidate the table turns away": strings.Repeat("cfxt_", 400000),
 		// A candidate every five, each turned away at the fifth character of
 		// its body, which is the underscore the next prefix closes with.
 		"a candidate every five characters": strings.Repeat("cfut_", 400000),
@@ -532,8 +533,10 @@ func Test_cloudflareAPITokenPrefixes(t *testing.T) {
 	// else here reports: a prefix nothing locates simply locates nothing, and
 	// the cases above would go on passing for the prefix that still works.
 	//
-	// The first is that every prefix opens with the characters the search is
-	// for, since one that does not is a prefix the scan never reaches.
+	// The first is that every prefix opens with the characters a candidate is
+	// read back to, since one that does not is a prefix the scan turns away
+	// unread. Where the search stops, and what that asks of the table, is
+	// Test_cloudflareAPITokenAnchor's to hold.
 	//
 	// The second is that no prefix is written inside another at its first
 	// character, which is what lets cloudflareAPITokenPrefixAt return the first
@@ -560,7 +563,7 @@ func Test_cloudflareAPITokenPrefixes(t *testing.T) {
 	}
 	for i, prefix := range cloudflareAPITokenPrefixes {
 		if !strings.HasPrefix(prefix, cloudflareAPITokenOpening) {
-			t.Errorf("the prefix %q does not open with %q, which the scan searches for", prefix, cloudflareAPITokenOpening)
+			t.Errorf("the prefix %q does not open with %q, which a candidate is read back to", prefix, cloudflareAPITokenOpening)
 		}
 		if got := len(prefix) + cloudflareCredentialBodyChars; got != documentedChars {
 			t.Errorf("a token opening %q is read as %d characters, the documentation promises %d", prefix, got, documentedChars)
@@ -570,6 +573,42 @@ func Test_cloudflareAPITokenPrefixes(t *testing.T) {
 				t.Errorf("the prefix %q opens %q, so the two match at one position and the order of the table decides which", prefix, other)
 			}
 		}
+	}
+}
+
+// Test_cloudflareAPITokenAnchor holds the table to what reading a candidate
+// backwards asks of it, which is more than reading one forwards asked and is
+// what Test_cloudflareAPITokenPrefixes above does not reach.
+//
+// Every prefix must carry the anchor at the index the scan reads back from and
+// carry it nowhere else, or the position a search reports is not the position a
+// prefix ends at. And every prefix must be the same length, since one index
+// serves the whole table. builtin_scan.go says why both are held here rather
+// than left to the targets.
+func Test_cloudflareAPITokenAnchor(t *testing.T) {
+	if len(cloudflareAPITokenPrefixes) == 0 {
+		t.Fatal("no prefix is documented, so the pattern locates nothing")
+	}
+	width := len(cloudflareAPITokenPrefixes[0])
+	for _, prefix := range cloudflareAPITokenPrefixes {
+		t.Run(prefix, func(t *testing.T) {
+			if len(prefix) != width {
+				t.Errorf("the prefix is %d characters where the first is %d, so one anchor index cannot serve both", len(prefix), width)
+			}
+			if cloudflareAPITokenAnchorIndex >= len(prefix) {
+				t.Fatalf("the anchor stands at %d, the prefix is %d characters", cloudflareAPITokenAnchorIndex, len(prefix))
+			}
+			if c := prefix[cloudflareAPITokenAnchorIndex]; c != cloudflareAPITokenAnchor {
+				t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it",
+					c, byte(cloudflareAPITokenAnchor))
+			}
+			for i := range len(prefix) {
+				if i != cloudflareAPITokenAnchorIndex && prefix[i] == cloudflareAPITokenAnchor {
+					t.Errorf("the prefix carries %q again at %d, so a token opens a candidate at more than one position",
+						byte(cloudflareAPITokenAnchor), i)
+				}
+			}
+		})
 	}
 }
 
@@ -694,8 +733,8 @@ func FuzzCloudflareAPIToken_matchesReference(f *testing.F) {
 	f.Add("cfut_0123456789abcdef0123456789abcdef0123456701234cfat_0123456789abcdef0123456789abcdef0123456789abcdef")
 	f.Add("cfut_0123456789abcdef0123456789abcdef0123456789abcdefcfat_0123456789abcdef0123456789abcdef0123456789abcdef")
 	// Candidate positions crowded as close as they can be, a run of the
-	// characters the scan searches for, and a base62 run with no prefix in
-	// front of it.
+	// characters a candidate is read back to, and a base62 run with no prefix
+	// in front of it.
 	f.Add(strings.Repeat("cfut_", 32))
 	f.Add(strings.Repeat("cfut_", 32) + "0123456789abcdef0123456789abcdef0123456789abcdef")
 	f.Add(strings.Repeat("cf", 128))
@@ -711,9 +750,9 @@ func FuzzCloudflareAPIToken_matchesReference(f *testing.F) {
 // plain go test as well, which is what a benchmark nobody has run yet cannot
 // be.
 func cloudflareAPITokenFindBenchmarks() []benchmarkCase {
-	// Nothing in an ordinary line carries the two characters the scan searches
-	// for, so what the line times is the search for them — which is most of
-	// what this pattern costs a caller whose text holds no token.
+	// Nothing in an ordinary line carries the underscore the scan searches for,
+	// so what the line times is the search for it — which is most of what this
+	// pattern costs a caller whose text holds no token.
 	line := `time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/zones `
 	token := "cfut_0123456789abcdef0123456789abcdef0123456789abcdef"
 
@@ -724,12 +763,13 @@ func cloudflareAPITokenFindBenchmarks() []benchmarkCase {
 			spans: 0,
 		},
 		{
-			// The two characters the scan searches for written over and over,
-			// so a candidate stands at every other byte and every one of them
-			// is turned away before a body is looked at. That is the cheapest
-			// this scan declines a candidate for.
+			// The underscore every fifth byte with the two characters a prefix
+			// opens with in front of it and a middle that names no prefix, so
+			// every candidate is read back whole and turned away by the table
+			// before a body is looked at. That is the cheapest this scan
+			// declines a candidate for.
 			name:  "candidates that are not values",
-			src:   strings.Repeat("cf", 512),
+			src:   strings.Repeat("cfxt_", 512),
 			spans: 0,
 		},
 		{

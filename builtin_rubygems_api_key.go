@@ -210,19 +210,34 @@ var rubyGemsAPIKey = NewPattern("rubygems-api-key", func(src string) []Span {
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], rubyGemsAPIKeyPrefix)
+		i := strings.IndexByte(src[offset:], rubyGemsAPIKeyAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a key or not.
 		// No key can be written inside another, which the rationale above
 		// argues, so what this is for is the candidate that failed:
 		// rubygems_rubygems_ and a body carries a whole key at its second
 		// prefix, and resuming past the length this candidate hoped for would
-		// step over it.
-		offset = start + 1
+		// step over it. Stepping one byte past the anchor is
+		// what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < rubyGemsAPIKeyAnchorIndex {
+			continue
+		}
+		start := anchor - rubyGemsAPIKeyAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != rubyGemsAPIKeyPrefix[0] || !strings.HasPrefix(src[start:], rubyGemsAPIKeyPrefix) {
+			continue
+		}
 
 		body := start + len(rubyGemsAPIKeyPrefix)
 		if end := start + rubyGemsAPIKeyChars; end <= len(src) && isRubyGemsAPIKeyBody(src[body:end]) {
@@ -233,8 +248,8 @@ var rubyGemsAPIKey = NewPattern("rubygems-api-key", func(src string) []Span {
 })
 
 const (
-	// rubyGemsAPIKeyPrefix is what every key opens with, and what the scan
-	// searches the input for. It is the string the generator writes in front of
+	// rubyGemsAPIKeyPrefix is what every key opens with, and what the scan reads
+	// back from its anchor. It is the string the generator writes in front of
 	// what SecureRandom.hex returns, the underscore included.
 	//
 	// Two characters of it are load-bearing, and both are ones no body is
@@ -249,6 +264,20 @@ const (
 	// fall back on, which is why it is stated and held to rather than left to
 	// be worked out then. Test_rubyGemsAPIKeyPrefix holds the prefix to both.
 	rubyGemsAPIKeyPrefix = "rubygems_"
+
+	// rubyGemsAPIKeyAnchor is the byte the scan searches the input for and
+	// rubyGemsAPIKeyAnchorIndex is where it stands in the prefix, so a
+	// candidate begins that many bytes in front of what a search reported.
+	// builtin_scan.go says why a scan searches for one byte of its prefix
+	// rather than for the prefix itself; what makes it this byte is that
+	// rubygems is spelled in eight of the commonest letters there are — over
+	// the log line these benchmarks are written on the r stands three times and
+	// the e, the g and the s five each — where the underscore closing the
+	// prefix stands not once. What that costs is a candidate opened at every
+	// underscore of a snake_case name, and eight characters of a word no name
+	// is spelled with turn each of them away.
+	rubyGemsAPIKeyAnchor      = '_'
+	rubyGemsAPIKeyAnchorIndex = 8
 
 	// rubyGemsAPIKeyBodyChars is what SecureRandom.hex(24) comes to: Ruby
 	// documents the result as twice the byte count, so twenty-four bytes are

@@ -453,6 +453,16 @@ func Test_pypiAPITokenAnchor(t *testing.T) {
 	if !strings.HasPrefix(pypiAPITokenAnchor, pypiAPITokenPrefix) {
 		t.Errorf("the anchor %q does not open with the prefix %q", pypiAPITokenAnchor, pypiAPITokenPrefix)
 	}
+
+	// And the byte the search stops at stands at the index a candidate is read
+	// back from. builtin_scan.go says why that is held here rather than left to
+	// the targets.
+	if pypiAPITokenAnchorIndex >= len(pypiAPITokenAnchor) {
+		t.Fatalf("the search stops at %d, the anchor is %d characters", pypiAPITokenAnchorIndex, len(pypiAPITokenAnchor))
+	}
+	if c := pypiAPITokenAnchor[pypiAPITokenAnchorIndex]; c != pypiAPITokenAnchorByte {
+		t.Errorf("the anchor carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(pypiAPITokenAnchorByte))
+	}
 }
 
 func Test_pypiAPITokenHeader(t *testing.T) {

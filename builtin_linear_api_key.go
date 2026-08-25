@@ -176,19 +176,44 @@ var linearAPIKey = NewPattern("linear-api-key", func(src string) []Span {
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], linearAPIKeyPrefix)
+		i := strings.IndexByte(src[offset:], linearAPIKeyAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a key or not,
-		// for the reason the rationale above gives: a body may close with the
-		// three letters the prefix opens with, so a key can begin three
-		// characters before the end of the one before it.
-		offset = start + 1
+		// The scan resumes here whether this candidate became a key or not, for the
+		// reason the rationale above gives: a body may close with the three letters
+		// the prefix opens with, so a key can begin three characters before the end
+		// of the one before it. Stepping one byte past the anchor is what leaves the
+		// next candidate one byte past this one, which builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < linearAPIKeyAnchorIndex {
+			continue
+		}
+		start := anchor - linearAPIKeyAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != linearAPIKeyPrefix[0] || !strings.HasPrefix(src[start:], linearAPIKeyPrefix) {
+			continue
+		}
 
 		body := start + len(linearAPIKeyPrefix)
+
+		// A candidate that carries the prefix resumes at the first position a
+		// key could begin at instead, which is the body: the prefix carries the
+		// l it opens with nowhere else, so no key begins inside one that has
+		// matched. Without this the second underscore of every prefix is an
+		// anchor of its own, and a line of prefixes is walked twice over.
+		//
+		// Test_linearAPIKeyAnchor holds the prefix to carrying that l once,
+		// which is the whole of the claim.
+		offset = body + linearAPIKeyAnchorIndex
+
 		if end := base62RunEnd(src, body); end-body >= linearAPIKeyBodyChars {
 			spans = append(spans, Span{Start: start, End: end})
 		}
@@ -197,14 +222,28 @@ var linearAPIKey = NewPattern("linear-api-key", func(src string) []Span {
 })
 
 const (
-	// linearAPIKeyPrefix is what every personal API key opens with, and what
-	// the scan searches the input for. Its first three characters belong to the
+	// linearAPIKeyPrefix is what every personal API key opens with, and what the
+	// scan reads back from its anchor. Its first three characters belong to the
 	// alphabet a body is written in, which is what lets one key begin inside
 	// another and is why the scan resumes a byte along; the underscore it closes
 	// with does not, which is what keeps two candidates from ever reading the
 	// same run. Test_linearAPIKeyPrefix holds it to the first and
 	// Test_linearAPIKeyPrefix_runsDoNotOverlap to the second.
 	linearAPIKeyPrefix = "lin_api_"
+
+	// linearAPIKeyAnchor is the byte the scan searches the input for and
+	// linearAPIKeyAnchorIndex is where it stands in the prefix, so a candidate
+	// begins that many bytes in front of what a search reported.
+	// builtin_scan.go says why a scan searches for one byte of its prefix
+	// rather than for the prefix itself; what makes it this byte is that every
+	// letter of lin_api_ is one an English log line is written in — over the
+	// line these benchmarks are written on the l stands five times, the i and
+	// the a six each — where neither underscore stands once. The first of the
+	// two is taken rather than the second so that a candidate is turned away by
+	// the l three characters in front of it, which is where the shorter walk
+	// back ends.
+	linearAPIKeyAnchor      = '_'
+	linearAPIKeyAnchorIndex = 3
 
 	// linearAPIKeyBodyChars is the count a body is held to, read as a floor
 	// rather than exactly. Forty is what both rulesets stating a shape state,

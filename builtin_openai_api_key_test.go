@@ -411,6 +411,18 @@ func Test_openAIAPIKeyPrefix(t *testing.T) {
 	}
 }
 
+// Test_openAIAPIKeyAnchor holds the prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_openAIAPIKeyAnchor(t *testing.T) {
+	if openAIAPIKeyAnchorIndex >= len(openAIAPIKeyPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", openAIAPIKeyAnchorIndex, len(openAIAPIKeyPrefix))
+	}
+	if c := openAIAPIKeyPrefix[openAIAPIKeyAnchorIndex]; c != openAIAPIKeyAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(openAIAPIKeyAnchor))
+	}
+}
+
 func Test_openAIAPIKeyMarker(t *testing.T) {
 	// The marker stands inside the run rather than dividing it, which is what
 	// lets the scan settle the whole grammar by asking where the marker ends
