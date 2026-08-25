@@ -259,7 +259,7 @@ var stripeSecretKey = NewPattern("stripe-secret-key", func(src string) []Span {
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], stripeSecretKeyAnchor)
+		i := strings.IndexByte(src[offset:], stripeSecretKeyAnchorByte)
 		if i < 0 {
 			break
 		}
@@ -328,7 +328,7 @@ var stripeSecretKeyPrefixes = [...]string{
 
 const (
 	// stripeSecretKeyAnchor is what every prefix carries at
-	// stripeSecretKeyAnchorIndex and what the scan searches the input for: the
+	// stripeSecretKeyAnchorIndex, and where a candidate is read back from: the
 	// letter closing the two character key type, and the underscore behind it.
 	// The two key types differ in their first letter and agree in these two, so
 	// this is what one search finds both of them by, where a search for the
@@ -336,6 +336,18 @@ const (
 	// text.
 	stripeSecretKeyAnchor      = "k_"
 	stripeSecretKeyAnchorIndex = 1
+
+	// stripeSecretKeyAnchorByte is the byte the scan searches the input for,
+	// the one the anchor opens with. A search for the whole anchor would skip
+	// along this same byte, so what separates the two is the walk and not
+	// where a candidate is found: builtin_scan.go says why the walk is the
+	// cheaper of them. The underscore behind it is left to the prefix table
+	// below rather than tested by the search.
+	//
+	// This pattern is the one the choice of byte costs nothing to make. A k
+	// closing a snake_case segment is what reaches the loop either way, and
+	// over the log line these benchmarks are written on it stands not once.
+	stripeSecretKeyAnchorByte = 'k'
 
 	// stripeSecretKeyBodyChars is the count a body is held to, read as a floor
 	// rather than exactly. Twenty-four is the shortest body Stripe has printed

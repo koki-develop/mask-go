@@ -498,6 +498,18 @@ func Test_sentryAuthTokenKinds(t *testing.T) {
 	}
 }
 
+// Test_sentryAuthTokenAnchor holds the opening to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_sentryAuthTokenAnchor(t *testing.T) {
+	if sentryAuthTokenAnchorIndex >= len(sentryAuthTokenOpening) {
+		t.Fatalf("the anchor stands at %d, the opening is %d characters", sentryAuthTokenAnchorIndex, len(sentryAuthTokenOpening))
+	}
+	if c := sentryAuthTokenOpening[sentryAuthTokenAnchorIndex]; c != sentryAuthTokenAnchor {
+		t.Errorf("the opening carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(sentryAuthTokenAnchor))
+	}
+}
+
 func Test_sentryAuthTokenHexTokenChars(t *testing.T) {
 	// Sentry stores these tokens in a column declared at seventy-one
 	// characters, which is the seven of a prefix and the sixty-four of a body.

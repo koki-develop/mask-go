@@ -507,6 +507,18 @@ func Test_grafanaServiceAccountTokenPrefix(t *testing.T) {
 	}
 }
 
+// Test_grafanaServiceAccountTokenAnchor holds the prefix to carrying the byte
+// the scan searches the input for at the index it reads a candidate back from.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_grafanaServiceAccountTokenAnchor(t *testing.T) {
+	if grafanaServiceAccountTokenAnchorIndex >= len(grafanaServiceAccountTokenPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", grafanaServiceAccountTokenAnchorIndex, len(grafanaServiceAccountTokenPrefix))
+	}
+	if c := grafanaServiceAccountTokenPrefix[grafanaServiceAccountTokenAnchorIndex]; c != grafanaServiceAccountTokenAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(grafanaServiceAccountTokenAnchor))
+	}
+}
+
 func Test_grafanaServiceAccountTokenChars(t *testing.T) {
 	// Forty-six is what the two counts come to with the prefix and the
 	// separator in front of them, and what the example in Grafana's own

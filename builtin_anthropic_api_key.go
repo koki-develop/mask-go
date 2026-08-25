@@ -111,11 +111,19 @@ func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 // since the span already reaches to the end of the run, is every key with
 // anything written against it.
 //
+// The byte the scan searches the input for is the k of sk-, for the reason
+// builtin_scan.go gives, and the prefix is read back from it. It is the one
+// character of sk-ant- an ordinary line does not carry: over the log line
+// these benchmarks are written on the s stands eight times — msg, https, this
+// vendor's own host name, the words of the message — and the k not once.
+//
 // The scan resumes one byte past the start of a candidate whether it became a
-// key or not. Every character of sk-ant- belongs to the alphabet a body is
-// written in, so the prefix can stand inside a body and a key can begin inside
-// the span of the one before it. Consuming a match would step over such a key;
-// the two spans then overlap, which a Masker resolves into one.
+// key or not, which it reaches by stepping one byte past the anchor;
+// builtin_scan.go sets out why those are the same step. Every character of
+// sk-ant- belongs to the alphabet a body is written in, so the prefix can
+// stand inside a body and a key can begin inside the span of the one before
+// it. Consuming a match would step over such a key; the two spans then
+// overlap, which a Masker resolves into one.
 //
 // Two things a candidate reads are searches over the rest of the input rather
 // than bounded tests, and one character of the prefix is what settles both: the
@@ -172,17 +180,32 @@ var anthropicAPIKey = NewPattern("anthropic-api-key", func(src string) []Span {
 	runEnd := -1
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], anthropicAPIKeyPrefix)
+		i := strings.IndexByte(src[offset:], anthropicAPIKeyAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a key or not, for
 		// the reason the rationale above gives: the prefix is written in the
 		// alphabet a body is, so a key can begin inside the body of the one
-		// before it.
-		offset = start + 1
+		// before it. Stepping one byte past the anchor is
+		// what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < anthropicAPIKeyAnchorIndex {
+			continue
+		}
+		start := anchor - anthropicAPIKeyAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != anthropicAPIKeyPrefix[0] || !strings.HasPrefix(src[start:], anthropicAPIKeyPrefix) {
+			continue
+		}
 
 		body := anthropicAPIKeyBodyAt(src, start)
 		if body < 0 {
@@ -210,6 +233,14 @@ const (
 	// be written inside another and is why the scan resumes a byte along;
 	// Test_anthropicAPIKeyPrefix holds it to that.
 	anthropicAPIKeyPrefix = "sk-ant-"
+
+	// anthropicAPIKeyAnchor is the byte the scan searches the input for and
+	// anthropicAPIKeyAnchorIndex is where it stands in the prefix, so that a
+	// candidate begins that many bytes in front of what a search reported. The
+	// rationale above says why this character and not the one the prefix opens
+	// with.
+	anthropicAPIKeyAnchor      = 'k'
+	anthropicAPIKeyAnchorIndex = 1
 
 	// anthropicAPIKeySeparator closes the kind and opens the body. It belongs
 	// to the body alphabet and not to the one a kind is written in, which is

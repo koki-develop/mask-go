@@ -229,13 +229,14 @@ func HashiCorpVaultToken() Pattern { return hashiCorpVaultToken }
 // the one thing that argument rests on, and
 // Test_HashiCorpVaultToken_scanIsLinear drives it.
 //
-// What the scan searches the input for is the two letters in front of the kind
-// rather than any one prefix. The three prefixes agree on those two and on the
-// separator and differ in one character, so one search over the text finds
-// candidates of all three kinds where three searches would read the text three
-// times, and the pair itself is rare: prose barely carries it, and inside an
-// encoding it stands about once in four thousand characters, each time costing
-// the two byte tests that follow it and no more.
+// What the scan searches the input for is the separator every prefix closes
+// with, rather than any one prefix. The three prefixes agree on the two letters
+// in front of the kind and on that separator and differ in one character, so
+// one search over the text finds candidates of all three kinds where three
+// searches would read the text three times. Which of the shared characters
+// carries the search is settled where the separator is declared, and it is the
+// separator by a narrow margin on an ordinary line and by a wide one on a line
+// of hv with no kind behind it.
 //
 // What this pattern over-matches on: twenty-four characters of base64url
 // behind hv, a letter and a dot inside something nobody issued. The dot is
@@ -311,22 +312,30 @@ var hashiCorpVaultToken = NewPattern("hashicorp-vault-token", func(src string) [
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], hashiCorpVaultTokenAnchor)
+		i := strings.IndexByte(src[offset:], hashiCorpVaultTokenSeparator)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		at := offset + i
 
-		// The scan resumes here whether this candidate became a token or not,
-		// for the reason the rationale above gives: a body may close with the
-		// three characters a prefix opens with, so a token can begin three
-		// characters before the end of the one before it.
-		offset = start + 1
+		// The scan resumes here whether this candidate became a token or not, for
+		// the reason the rationale above gives: a body may close with the three
+		// characters a prefix opens with, so a token can begin three characters
+		// before the end of the one before it. Stepping one byte past the separator
+		// is what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = at + 1
 
-		body := start + hashiCorpVaultTokenPrefixChars
-		if body > len(src) ||
-			!isHashiCorpVaultTokenKind(src[start+len(hashiCorpVaultTokenAnchor)]) ||
-			src[body-1] != hashiCorpVaultTokenSeparator {
+		body := at + 1
+		start := body - hashiCorpVaultTokenPrefixChars
+
+		// The byte a prefix opens with is tested before the rest of it is
+		// compared and before the kind is looked up. Every separator the search
+		// stops at reaches this line, and all but the few that open a candidate
+		// are turned away by one byte.
+		if start < 0 || src[start] != hashiCorpVaultTokenAnchor[0] ||
+			src[start:start+len(hashiCorpVaultTokenAnchor)] != hashiCorpVaultTokenAnchor ||
+			!isHashiCorpVaultTokenKind(src[start+len(hashiCorpVaultTokenAnchor)]) {
 			continue
 		}
 
@@ -338,8 +347,8 @@ var hashiCorpVaultToken = NewPattern("hashicorp-vault-token", func(src string) [
 })
 
 const (
-	// hashiCorpVaultTokenAnchor is what every prefix opens with and what the
-	// scan searches the input for. Both its characters belong to the alphabet a
+	// hashiCorpVaultTokenAnchor is what every prefix opens with and what a
+	// candidate is read back to. Both its characters belong to the alphabet a
 	// body is written in, which is what lets one token begin inside another and
 	// is why the scan resumes a byte along.
 	// Test_hashiCorpVaultTokenAnchor holds it to that.
@@ -352,10 +361,19 @@ const (
 	// BatchTokenPrefix and RecoveryTokenPrefix.
 	hashiCorpVaultTokenKinds = "sbr"
 
-	// hashiCorpVaultTokenSeparator is what every prefix closes with. It belongs
-	// to no body, which is what keeps two candidates from ever reading the same
-	// run — the argument the scan's linearity rests on, held by
+	// hashiCorpVaultTokenSeparator is what every prefix closes with, and the
+	// byte the scan searches the input for. It belongs to no body, which is
+	// what keeps two candidates from ever reading the same run — the argument
+	// the scan's linearity rests on, held by
 	// Test_hashiCorpVaultTokenSeparator_runsDoNotOverlap.
+	//
+	// It is searched for rather than the two characters a prefix opens with,
+	// for the reason builtin_scan.go gives. The margin on an ordinary line is
+	// narrow — over the one these benchmarks are written on the h stands three
+	// times and the separator twice — and what makes the choice is the line
+	// this pattern's own worst case is written from: hv with nothing behind it,
+	// repeated, is an h every other byte and not one separator, so a search
+	// that stops at the separator never reaches the loop at all.
 	hashiCorpVaultTokenSeparator = '.'
 
 	// hashiCorpVaultTokenPrefixChars is the whole of a prefix: the anchor, plus

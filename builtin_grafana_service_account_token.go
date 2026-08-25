@@ -219,18 +219,33 @@ var grafanaServiceAccountToken = NewPattern("grafana-service-account-token", fun
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], grafanaServiceAccountTokenPrefix)
+		i := strings.IndexByte(src[offset:], grafanaServiceAccountTokenAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a token or not,
 		// for the reason the rationale above gives: the prefix is four
 		// characters a secret is written with and the separator a token already
 		// carries, so a token can begin four characters before the end of the
-		// secret of the one before it.
-		offset = start + 1
+		// secret of the one before it. Stepping one byte past the anchor is
+		// what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < grafanaServiceAccountTokenAnchorIndex {
+			continue
+		}
+		start := anchor - grafanaServiceAccountTokenAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != grafanaServiceAccountTokenPrefix[0] || !strings.HasPrefix(src[start:], grafanaServiceAccountTokenPrefix) {
+			continue
+		}
 
 		body := start + len(grafanaServiceAccountTokenPrefix)
 		if end := start + grafanaServiceAccountTokenChars; end <= len(src) && isGrafanaServiceAccountTokenBody(src[body:end]) {
@@ -242,7 +257,7 @@ var grafanaServiceAccountToken = NewPattern("grafana-service-account-token", fun
 
 const (
 	// grafanaServiceAccountTokenPrefix is what every service account token
-	// opens with, and what the scan searches the input for. It is the two
+	// opens with, and what the scan reads back from its anchor. It is the two
 	// letters every Grafana prefixed key opens with, the service identifier
 	// Grafana declares as a constant for a service account, and the underscore
 	// the generator writes behind one — which is the same character the secret
@@ -251,6 +266,21 @@ const (
 	// Test_grafanaServiceAccountTokenPrefix holds it to closing with that
 	// character and to carrying nothing but secret characters in front of it.
 	grafanaServiceAccountTokenPrefix = "glsa_"
+
+	// grafanaServiceAccountTokenAnchor is the byte the scan searches the input
+	// for and grafanaServiceAccountTokenAnchorIndex is where it stands in the
+	// prefix, so a candidate begins that many bytes in front of what a search
+	// reported. builtin_scan.go says why a scan searches for one byte of its
+	// prefix rather than for the prefix itself; what makes it this byte is that
+	// the four in front of it are letters a log line is full of — over the line
+	// these benchmarks are written on the g stands four times and the l six —
+	// where the underscore closing the prefix stands not once. What that costs
+	// is a candidate opened at every underscore of a snake_case name, and it is
+	// paid here rather than in the token scans that decline it because the four
+	// characters read back are a word no name is spelled with, so such a
+	// candidate is turned away by the first byte tested.
+	grafanaServiceAccountTokenAnchor      = '_'
+	grafanaServiceAccountTokenAnchorIndex = 4
 
 	// grafanaServiceAccountTokenSeparator divides the secret from the checksum.
 	// It belongs to no secret, which is what ends a secret where it stands,

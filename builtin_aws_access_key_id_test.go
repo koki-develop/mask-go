@@ -328,11 +328,13 @@ func Test_AWSAccessKeyID_leavesWhatFollowsAlone(t *testing.T) {
 }
 
 func Test_awsAccessKeyIDPrefixes(t *testing.T) {
-	// The scan finds candidate positions with one IndexByte and reads a fixed
-	// number of characters from each, so a prefix not opening with that byte
-	// is one the scan never reaches, and a prefix of another length is one it
-	// reads the wrong number of characters behind. Neither shows as a failing
-	// case: the pattern would quietly stop locating that kind of key.
+	// The scan reads a fixed number of characters from every candidate and
+	// tests the byte a prefix opens with before it reads any of them, so a
+	// prefix of another length is one the scan reads the wrong number of
+	// characters behind and a prefix opening with another byte is one it turns
+	// away unread. Neither shows as a failing case: the pattern would quietly
+	// stop locating that kind of key. Which byte the scan searches the input
+	// for is Test_awsAccessKeyIDAnchor's to hold.
 	if len(awsAccessKeyIDPrefixes) == 0 {
 		t.Fatal("no prefix is documented, so the pattern locates nothing")
 	}
@@ -342,7 +344,26 @@ func Test_awsAccessKeyIDPrefixes(t *testing.T) {
 				t.Errorf("the prefix is %d characters, the scan reads %d", len(prefix), awsAccessKeyIDPrefixChars)
 			}
 			if prefix == "" || prefix[0] != awsAccessKeyIDFirstByte {
-				t.Errorf("the prefix does not open with %q, which is what the scan searches for", awsAccessKeyIDFirstByte)
+				t.Errorf("the prefix does not open with %q, which is what a candidate is read back to", awsAccessKeyIDFirstByte)
+			}
+		})
+	}
+}
+
+// Test_awsAccessKeyIDAnchor holds every prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from. One
+// search serves both prefixes only while both spell that byte there, and a
+// prefix that did not would be one no candidate is ever found at.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_awsAccessKeyIDAnchor(t *testing.T) {
+	for _, prefix := range awsAccessKeyIDPrefixes {
+		t.Run(prefix, func(t *testing.T) {
+			if awsAccessKeyIDAnchorIndex >= len(prefix) {
+				t.Fatalf("the anchor stands at %d, the prefix is %d characters", awsAccessKeyIDAnchorIndex, len(prefix))
+			}
+			if c := prefix[awsAccessKeyIDAnchorIndex]; c != awsAccessKeyIDAnchor {
+				t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it",
+					c, byte(awsAccessKeyIDAnchor))
 			}
 		})
 	}
@@ -454,10 +475,11 @@ func FuzzAWSAccessKeyID_matchesReference(f *testing.F) {
 // a plain go test as well, which is what a benchmark nobody has run yet cannot
 // be.
 func awsAccessKeyIDFindBenchmarks() []benchmarkCase {
-	// The A a prefix opens with is what the scan searches for, so the line it
-	// is driven with carries the ones a log line has anyway: the name of the
-	// call and the region. A line holding none would time strings.IndexByte
-	// alone and nothing that follows it.
+	// The line carries the capitals a log line has anyway — the name of the
+	// call and the region — because they are what a scan searching for the
+	// letter a prefix opens with would have stopped at. The I the scan does
+	// search for stands in none of them, so what the line times is the walk
+	// alone, and the difference between the two is what the anchor bought.
 	line := `time=2026-08-17T00:00:00Z level=info msg="AssumeRole" region=AP-NORTHEAST-1 `
 	key := "AKIA0123456789ABCDEF"
 

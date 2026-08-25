@@ -211,22 +211,48 @@ var supabaseAccessToken = NewPattern("supabase-access-token", func(src string) [
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], supabaseAccessTokenPrefix)
+		i := strings.IndexByte(src[offset:], supabaseAccessTokenAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not.
-		// No token is written inside another, so for one that did the byte buys
-		// nothing; for one that did not it is what keeps sbp_sbp_ from stepping
-		// over the prefix standing four characters in.
-		offset = start + 1
+		// The scan resumes here whether this candidate became a token or not. No
+		// token is written inside another, so for one that did the byte buys
+		// nothing; for one that did not it is what keeps sbp_sbp_ from stepping over
+		// the prefix standing four characters in. Stepping one byte past the anchor
+		// is what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < supabaseAccessTokenAnchorIndex {
+			continue
+		}
+		start := anchor - supabaseAccessTokenAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != supabaseAccessTokenPrefix[0] || !strings.HasPrefix(src[start:], supabaseAccessTokenPrefix) {
+			continue
+		}
 
 		secret := start + len(supabaseAccessTokenPrefix)
 		if strings.HasPrefix(src[secret:], supabaseAccessTokenOAuthMarker) {
 			secret += len(supabaseAccessTokenOAuthMarker)
 		}
+
+		// A candidate that carries the prefix resumes at the first position a
+		// token could begin at instead, which is wherever the secret does. No
+		// token begins inside a prefix, nor inside a prefix and the marker
+		// behind it: the s a token opens with stands nowhere else in sbp_,
+		// which Test_supabaseAccessTokenAnchor holds, and nowhere at all in
+		// oauth_, which Test_supabaseAccessTokenPrefix holds the marker to.
+		// Without this the marker's own underscore is an anchor of its own and
+		// a line of such tokens is walked twice over.
+		offset = secret + supabaseAccessTokenAnchorIndex
+
 		if end := secret + supabaseAccessTokenSecretChars; end <= len(src) && isSupabaseAccessTokenSecret(src[secret:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
@@ -235,14 +261,32 @@ var supabaseAccessToken = NewPattern("supabase-access-token", func(src string) [
 })
 
 const (
-	// supabaseAccessTokenPrefix is what every token opens with, and what
-	// the scan searches the input for. Both forms carry it, so one search finds
+	// supabaseAccessTokenPrefix is what every token opens with, and what the scan
+	// reads back from its anchor. Both forms carry it, so one search finds
 	// either. Its first character is the one no body and no marker is written
 	// with, which is what keeps a token from being written inside another, and
 	// its last is an underscore, which is what keeps a body from beginning
-	// anywhere but where a prefix ends.
-	// Test_supabaseAccessTokenPrefix holds it to both.
+	// anywhere but where a prefix ends. Test_supabaseAccessTokenPrefix holds it
+	// to both.
 	supabaseAccessTokenPrefix = "sbp_"
+
+	// supabaseAccessTokenAnchor is the byte the scan searches the input for and
+	// supabaseAccessTokenAnchorIndex is where it stands in the prefix, so a
+	// candidate begins that many bytes in front of what a search reported.
+	// builtin_scan.go says why a scan searches for one byte of its prefix
+	// rather than for the prefix itself; what makes it this byte is that the
+	// three letters in front of it are ordinary ones — over the log line these
+	// benchmarks are written on the s and the p stand five times each — where
+	// the underscore stands not once.
+	//
+	// The b is the rarest letter of the prefix in prose and is worse here all
+	// the same: it is also a hexadecimal digit, so a body written in
+	// hexadecimal carries one about every sixteen characters and a line of
+	// candidates opens three where the underscore opens one. The
+	// underscore's own cost — a token carrying the OAuth marker carries a
+	// second one — is what the resume below is for.
+	supabaseAccessTokenAnchor      = '_'
+	supabaseAccessTokenAnchorIndex = 3
 
 	// supabaseAccessTokenOAuthMarker stands between the prefix and the
 	// body of a token an OAuth application was issued in a user's name, and is

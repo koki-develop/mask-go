@@ -43,11 +43,11 @@ func StripePublishableKey() Pattern { return stripePublishableKey }
 // keep true. What is written here is what this half decides on its own.
 //
 // The anchor is the key type and the underscore behind it rather than the two
-// bytes the secret key scan searches for. That scan reads two key types, sk_
+// bytes the secret key scan reads back to. That scan reads two key types, sk_
 // and rk_, which agree only in the letter closing them and the underscore
-// behind it, so k_ is what one search finds both by. Here there is one key
-// type, so the search can carry the p as well. Three bytes rather than two is a
-// search that turns more text away before a candidate is opened at all, and an
+// behind it, so k_ is all one lookup can ask for. Here there is one key
+// type, so the anchor can carry the p as well. Three bytes rather than two is a
+// test that turns more text away before a candidate is opened at all, and an
 // anchor standing at the start of a candidate rather than one byte into it is a
 // position the scan can use as it is. It is the same grammar read by a more
 // selective search, not a different grammar.
@@ -100,9 +100,11 @@ func StripePublishableKey() Pattern { return stripePublishableKey }
 //
 // The scan resumes one byte past the start of a candidate, which is the
 // default and needs no argument beyond the one any scan has: a candidate that
-// did not become a key says nothing about the next one. Since the anchor
-// stands at the start of a candidate rather than one byte into it, that is
-// also one byte past the anchor, so there is no step over anything to justify.
+// did not become a key says nothing about the next one. The anchor stands at
+// the start of a candidate rather than one byte into it, so a key begins where
+// the anchor does and there is no step over anything to justify — where the
+// secret key scan, whose anchor stands inside the key type, has to argue for
+// the same step.
 //
 // The scan keeps no cursor and needs none, for the reason the secret key scan
 // gives: every prefix closes with an underscore and no body is written with
@@ -128,18 +130,30 @@ var stripePublishableKey = NewPattern("stripe-publishable-key", func(src string)
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], stripePublishableKeyAnchor)
+		i := strings.IndexByte(src[offset:], stripePublishableKeyAnchorByte)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		at := offset + i
 
 		// The scan resumes one byte past the start of the candidate whether it
-		// became a key or not. The anchor opens a candidate rather than
-		// standing inside one, so this steps over nothing.
-		offset = start + 1
+		// became a key or not, which is one byte past where the anchor byte
+		// stood. The anchor opens a candidate rather than standing inside one,
+		// so this steps over nothing.
+		offset = at + 1
+
+		if at < stripePublishableKeyAnchorIndex {
+			continue
+		}
+		start := at - stripePublishableKeyAnchorIndex
 
 		if start > 0 && isStripeKeyWordByte(src[start-1]) {
+			continue
+		}
+		// The byte every prefix opens with is tested before the table is
+		// walked, for the reason the byte in front of the candidate is: it is
+		// one comparison where that is up to two of eight characters each.
+		if src[start] != stripePublishableKeyAnchor[0] {
 			continue
 		}
 		prefix := stripePublishableKeyPrefixAt(src, start)
@@ -173,11 +187,27 @@ var stripePublishableKeyPrefixes = [...]string{
 }
 
 const (
-	// stripePublishableKeyAnchor is what every prefix opens with and what the
-	// scan searches the input for: the whole of the key type and the underscore
-	// behind it. It stands at the start of a candidate, so the position a search
-	// reports is the position a key would begin at.
+	// stripePublishableKeyAnchor is what every prefix opens with: the whole of
+	// the key type and the underscore behind it. It stands at the start of a
+	// candidate, so where it stands is where a key would begin.
 	stripePublishableKeyAnchor = "pk_"
+
+	// stripePublishableKeyAnchorByte is the byte the scan searches the input
+	// for and stripePublishableKeyAnchorIndex is where it stands in the anchor,
+	// so a candidate begins that many bytes in front of what a search reported.
+	// builtin_scan.go says why a scan searches for one byte of what opens a
+	// candidate rather than for the whole of it; what makes it this byte is
+	// that the p opens page, project, price and half the paths a Stripe log
+	// carries — three times over the line these benchmarks are written on —
+	// where the k stands once. It is the same byte the secret keys are found
+	// by, for the same reason and stated on their own side of the format.
+	//
+	// The underscore behind it is rarer still on that line — it stands not
+	// once — and is passed over all the same: the mode a prefix names closes
+	// with one too, so anchoring there would open a second candidate inside
+	// every key.
+	stripePublishableKeyAnchorByte  = 'k'
+	stripePublishableKeyAnchorIndex = 1
 
 	// stripePublishableKeyBodyChars is the count a body is held to, read as a
 	// floor rather than exactly. It reads the secret keys' floor rather than

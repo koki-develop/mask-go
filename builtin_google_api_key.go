@@ -66,20 +66,15 @@ func GoogleAPIKey() Pattern { return googleAPIKey }
 // the underscore, so it would swallow a hyphenated identifier written after a
 // key whole.
 //
-// The scan searches for the whole prefix rather than for its first byte. The
-// AWS and GitLab scans search for one byte and test what follows because each
-// has a table of prefixes to try and cannot search for all of them at once;
-// here there is one prefix and no table, so the four bytes go to strings.Index
-// together.
-//
-// Which of the two is quicker depends on how much of the input is that first
-// byte, and both were measured through Mask. On the benchmark line holding no
-// value a search for A and a comparison behind it comes out a few percent
-// ahead, sixty-eight nanoseconds against seventy. On a line of capitals, where
-// every A is a comparison, it comes out half again slower, two microseconds
-// against one and three tenths. A couple of nanoseconds on ordinary text
-// against several hundred on text that is nothing but candidates is why the
-// four bytes are searched for together.
+// The byte the scan searches the input for is the z of AIza, for the reason
+// builtin_scan.go gives, and the prefix is read back from it. Searching for
+// the four bytes together is the same walk with the A as its anchor, since
+// that is the byte strings.Index skips along, and the A is the wrong one of
+// the four to stop at: it is the character every capitalised word and every
+// acronym in a log line opens with, where the z is one nothing else here is
+// written with. Neither costs the other anything on a line that is nothing but
+// candidates — AIza carries one of each — so what the choice moves is the
+// ordinary line alone.
 //
 // The scan resumes one byte past the start of a candidate whether it became a
 // key or not. The alphabet holds every character the prefix is written in, so
@@ -125,17 +120,32 @@ var googleAPIKey = NewPattern("google-api-key", func(src string) []Span {
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], googleAPIKeyPrefix)
+		i := strings.IndexByte(src[offset:], googleAPIKeyAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a key or not, for
 		// the reason the rationale above gives: the prefix is written in the
 		// alphabet a body is, so a key can begin inside the body of the one
-		// before it.
-		offset = start + 1
+		// before it. Stepping one byte past the anchor is
+		// what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < googleAPIKeyAnchorIndex {
+			continue
+		}
+		start := anchor - googleAPIKeyAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != googleAPIKeyPrefix[0] || !strings.HasPrefix(src[start:], googleAPIKeyPrefix) {
+			continue
+		}
 
 		body := start + len(googleAPIKeyPrefix)
 		if end := start + googleAPIKeyChars; end <= len(src) && isGoogleAPIKeyBody(src[body:end]) {
@@ -147,11 +157,19 @@ var googleAPIKey = NewPattern("google-api-key", func(src string) []Span {
 
 const (
 	// googleAPIKeyPrefix is what every key Google has shown opens with, and
-	// what the scan searches the input for. Every character of it belongs to
-	// the alphabet a body is written in, which is what lets one key be written
-	// inside another and is why the scan resumes a byte along;
+	// what the scan reads back from the anchor. Every character of it belongs
+	// to the alphabet a body is written in, which is what lets one key be
+	// written inside another and is why the scan resumes a byte along;
 	// Test_googleAPIKeyPrefix holds it to that.
 	googleAPIKeyPrefix = "AIza"
+
+	// googleAPIKeyAnchor is the byte the scan searches the input for and
+	// googleAPIKeyAnchorIndex is where it stands in the prefix, so that a
+	// candidate begins that many bytes in front of what a search reported. The
+	// rationale above says why this character and not the one the prefix opens
+	// with.
+	googleAPIKeyAnchor      = 'z'
+	googleAPIKeyAnchorIndex = 2
 
 	// The counts a key is written to. Every key Google shows is thirty-nine
 	// characters and Google states no length of its own, so these are exact

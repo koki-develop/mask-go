@@ -174,17 +174,32 @@ var sentryAuthToken = NewPattern("sentry-auth-token", func(src string) []Span {
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], sentryAuthTokenOpening)
+		i := strings.IndexByte(src[offset:], sentryAuthTokenAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not,
-		// for the reason the rationale above gives: the alphabet an
-		// organization token's segments are written in holds the letters of
-		// the anchor, so a token can begin inside the one before it.
-		offset = start + 1
+		// The scan resumes here whether this candidate became a token or not, for
+		// the reason the rationale above gives: the alphabet an organization token's
+		// segments are written in holds the letters of the opening, so a token can
+		// begin inside the one before it. Stepping one byte past the anchor is what
+		// leaves the next candidate one byte past this one, which builtin_scan.go
+		// sets out.
+		offset = anchor + 1
+
+		if anchor < sentryAuthTokenAnchorIndex {
+			continue
+		}
+		start := anchor - sentryAuthTokenAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != sentryAuthTokenOpening[0] || !strings.HasPrefix(src[start:], sentryAuthTokenOpening) {
+			continue
+		}
 
 		body := start + sentryAuthTokenPrefixChars
 		if body > len(src) || src[body-1] != sentryAuthTokenSeparator {
@@ -209,10 +224,26 @@ var sentryAuthToken = NewPattern("sentry-auth-token", func(src string) []Span {
 
 const (
 	// sentryAuthTokenOpening is what every prefix opens with, and what the scan
-	// searches the input for. The character naming the kind and the separator
-	// stand behind it, so a prefix is sentryAuthTokenPrefixChars long whichever
-	// kind it names.
+	// reads back from its anchor. The character naming the kind and the
+	// separator stand behind it, so a prefix is sentryAuthTokenPrefixChars long
+	// whichever kind it names.
 	sentryAuthTokenOpening = "sntry"
+
+	// sentryAuthTokenAnchor is the byte the scan searches the input for and
+	// sentryAuthTokenAnchorIndex is where it stands in the opening, so a
+	// candidate begins that many bytes in front of what a search reported.
+	// builtin_scan.go says why a scan searches for one byte of what opens a
+	// candidate rather than for the whole of it; what makes it this byte is
+	// that sntry is a word with its vowel taken out and the four consonants
+	// left are among the commonest there are — over the log line these
+	// benchmarks are written on the s stands eight times and the n, the t and
+	// the r five each — where the y stands once. The separator closing a
+	// prefix is rarer still on that line and is passed over: it stands two
+	// characters behind the y, so anchoring there would read a candidate back
+	// past the character naming its kind and open one at every underscore of a
+	// snake_case name.
+	sentryAuthTokenAnchor      = 'y'
+	sentryAuthTokenAnchorIndex = len(sentryAuthTokenOpening) - 1
 
 	// sentryAuthTokenSeparator closes every prefix, and divides the payload of
 	// an organization token from the secret behind it. It belongs to neither

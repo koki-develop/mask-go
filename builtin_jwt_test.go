@@ -176,7 +176,7 @@ func Test_JWT(t *testing.T) {
 		{
 			// The whitespace JSON allows there beside the space is not the
 			// scan's to admit or decline: {\t"alg":"HS256"} opens with ew, so
-			// the prefix the scan searches for is not in the text and no
+			// the prefix a candidate is read back to is not in the text and no
 			// candidate begins here at all.
 			name: "tab between the brace and the member name",
 			src:  "ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
@@ -616,6 +616,23 @@ func Test_opensJOSEHeaderAt(t *testing.T) {
 				t.Errorf("opensJOSEHeaderAt(%q, %d) = %v, want %v", tt.src, tt.i, got, tt.want)
 			}
 		})
+	}
+}
+
+// Test_jwtHeaderAnchor holds the prefix a header opens with to carrying the
+// byte the scan searches the input for at the index it reads a candidate back
+// from. builtin_scan.go says why that is held here rather than left to the
+// targets.
+//
+// The GitHub scan reads jwtHeaderPrefix and not the anchor, so nothing here
+// answers for how that scan finds its own candidates; builtin_github_token.go
+// holds those.
+func Test_jwtHeaderAnchor(t *testing.T) {
+	if jwtHeaderAnchorIndex >= len(jwtHeaderPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", jwtHeaderAnchorIndex, len(jwtHeaderPrefix))
+	}
+	if c := jwtHeaderPrefix[jwtHeaderAnchorIndex]; c != jwtHeaderAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(jwtHeaderAnchor))
 	}
 }
 

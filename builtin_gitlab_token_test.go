@@ -511,13 +511,13 @@ func Test_GitLabToken_tokenBeginningInsideTheOneBeforeIt(t *testing.T) {
 }
 
 func Test_gitLabTokenKinds(t *testing.T) {
-	// The scan finds candidate positions with one IndexByte and one byte test,
-	// and reads a body from the character behind the prefix, so a prefix not
-	// opening with those two bytes is one the scan never reaches, and one not
-	// closing with a hyphen would have its last characters read as the opening
-	// of a body. Neither shows as a failing case: the pattern would quietly
-	// stop locating that kind of token, or start locating it a few characters
-	// short.
+	// The scan reads a body from the character behind the prefix and reads a
+	// candidate back to the two bytes every prefix opens with, so a prefix not
+	// opening with them is one the scan turns away unread. That does not show
+	// as a failing case: the pattern would quietly stop locating that kind of
+	// token. What the scan searches the input for, and what a prefix must close
+	// on for a candidate to be read back from it at all, is
+	// Test_gitLabTokenAnchor's to hold.
 	if len(gitLabTokenKinds) == 0 {
 		t.Fatal("no kind is documented, so the pattern locates nothing")
 	}
@@ -526,14 +526,8 @@ func Test_gitLabTokenKinds(t *testing.T) {
 			if len(k.prefix) < 3 {
 				t.Fatalf("the prefix %q is too short to be one", k.prefix)
 			}
-			if k.prefix[0] != gitLabTokenFirstByte {
-				t.Errorf("the prefix does not open with %q, which is what the scan searches for", gitLabTokenFirstByte)
-			}
-			if k.prefix[1] != gitLabTokenSecondByte {
-				t.Errorf("the prefix does not carry %q second, which is what the scan tests before the table", gitLabTokenSecondByte)
-			}
-			if k.prefix[len(k.prefix)-1] != '-' {
-				t.Error("the prefix does not close with a hyphen, so a body would begin inside it")
+			if !strings.HasPrefix(k.prefix, gitLabTokenOpening) {
+				t.Errorf("the prefix does not open with %q, which is what a candidate is read back to", gitLabTokenOpening)
 			}
 			if len(k.bodyChars) == 0 {
 				t.Error("the kind names no body at all, so it can never be located")
@@ -554,13 +548,58 @@ func Test_gitLabTokenKinds(t *testing.T) {
 		})
 	}
 
-	// And no two of them match at the same position. gitLabTokenKindAt takes
-	// the first that does, so a table where one prefix opened another would
-	// have its order decide which, silently and only for that pair.
+	// And no two of them match at the same position, so the order the table is
+	// written in decides nothing. A table where one prefix opened another would
+	// have that order decide which is read, silently and only for that pair.
+	// The relation the backward lookup needs instead is
+	// Test_gitLabTokenAnchor's to hold.
 	for i, k := range gitLabTokenKinds {
 		for j, other := range gitLabTokenKinds {
 			if i != j && strings.HasPrefix(other.prefix, k.prefix) {
 				t.Errorf("the prefix %q opens %q, so which of them is read depends on the order of the table", k.prefix, other.prefix)
+			}
+		}
+	}
+}
+
+// Test_gitLabTokenAnchor holds the table to what reading a candidate backwards
+// asks of it, which is not what Test_gitLabTokenKinds above holds.
+//
+// That test rules out one prefix opening another, which is what a lookup
+// reading forwards from the letter a prefix begins with needs. Reading
+// backwards from the character a prefix ends on needs the other relation: no
+// prefix may be the suffix of another, or two entries close at the same
+// position and which of them is found is decided by the order
+// gitLabTokenPrefixChars happens to hold the lengths in — silently, and only
+// for that pair. Every prefix must also close on the anchor and carry it
+// nowhere else, or a candidate is read back from a position no prefix ends at.
+// builtin_scan.go says why these are held here rather than left to the targets.
+func Test_gitLabTokenAnchor(t *testing.T) {
+	if len(gitLabTokenKinds) == 0 {
+		t.Fatal("the table names no kind, so the pattern locates nothing")
+	}
+	for _, k := range gitLabTokenKinds {
+		t.Run(k.prefix, func(t *testing.T) {
+			if k.prefix == "" {
+				t.Fatal("the kind carries no prefix, so there is no candidate to reason about")
+			}
+			if c := k.prefix[len(k.prefix)-1]; c != gitLabTokenAnchor {
+				t.Errorf("the prefix closes with %q, want the anchor %q the scan searches for", c, byte(gitLabTokenAnchor))
+			}
+			for i := range len(k.prefix) - 1 {
+				if k.prefix[i] == gitLabTokenAnchor {
+					t.Errorf("the prefix carries %q at %d as well as at its end, so a candidate is read back from a position no prefix ends at",
+						byte(gitLabTokenAnchor), i)
+				}
+			}
+		})
+	}
+
+	for i, k := range gitLabTokenKinds {
+		for j, other := range gitLabTokenKinds {
+			if i != j && strings.HasSuffix(other.prefix, k.prefix) {
+				t.Errorf("the prefix %q closes %q, so which of them is read depends on the order the lengths are walked in",
+					k.prefix, other.prefix)
 			}
 		}
 	}
@@ -759,9 +798,10 @@ func FuzzGitLabToken_matchesReference(f *testing.F) {
 // a plain go test as well, which is what a benchmark nobody has run yet cannot
 // be.
 func gitLabTokenFindBenchmarks() []benchmarkCase {
-	// Every g in the line reaches the second byte test, and every gl reaches
-	// the table of twelve prefixes behind it, so the line carries the words
-	// that do both.
+	// Every hyphen in the line is read back to the lengths the table holds and
+	// turned away by the byte standing there, and every word opening gl is what
+	// a line would have cost a scan searching for that pair instead. The line
+	// carries both.
 	line := `time=2026-08-17T00:00:00Z level=info msg="the global glossary" url=https://gitlab.com/api/v4/projects `
 	classic := "glpat-0123456789abcdefghij"
 	routable := "glpat-0123456789abcdefghijklmnopq.01.012345678"
@@ -773,11 +813,13 @@ func gitLabTokenFindBenchmarks() []benchmarkCase {
 			spans: 0,
 		},
 		{
-			// The two bytes a prefix opens with and nothing else: every
-			// candidate passes the byte test and is turned away by the table,
-			// which is where the twelve HasPrefix calls are paid.
+			// A hyphen every third byte, each of them read back to the two
+			// bytes a prefix opens with and turned away by the table: the
+			// entries whose length reaches back that far are compared against
+			// the text and none of them matches. This is where the walk over
+			// the table is paid.
 			name:  "candidates that name no kind",
-			src:   strings.Repeat("gl", 256),
+			src:   strings.Repeat("gl-", 256),
 			spans: 0,
 		},
 		{

@@ -644,13 +644,21 @@ func Test_HashiCorpVaultToken_aDottedName(t *testing.T) {
 }
 
 func Test_hashiCorpVaultTokenAnchor(t *testing.T) {
-	// The scan searches for the anchor and reads the kind and the separator
-	// behind it, so a prefix is the anchor and two bytes. What lets one token
-	// be written inside another is that every character in front of the
+	// The scan searches for the separator and reads the anchor and the kind
+	// back from it, so a prefix is the anchor and two bytes. What lets one
+	// token be written inside another is that every character in front of the
 	// separator belongs to the alphabet a body is written in: a body closing
 	// with them hands the separator of the next token to a candidate beginning
 	// inside this one. Nothing else here reports the loss of that — the nesting
 	// cases above would simply stop nesting.
+	//
+	// The two loops below hold the backward read as well, and by the same
+	// characters. Reading a prefix back from a separator is sound only while a
+	// prefix carries the separator at its last character and nowhere else, and
+	// nothing in front of it can be one while everything in front of it belongs
+	// to an alphabet the separator is kept out of.
+	// Test_hashiCorpVaultTokenSeparator_runsDoNotOverlap holds it out of that
+	// alphabet. builtin_scan.go says why the backward read is held at all.
 	if hashiCorpVaultTokenAnchor == "" {
 		t.Fatal("the pattern carries no anchor, so there is no candidate to reason about")
 	}
@@ -749,12 +757,14 @@ func Test_HashiCorpVaultToken_scanIsLinear(t *testing.T) {
 		// One candidate whose body is the whole line, which is the walk over a
 		// run reading the length of the input and finding a token.
 		"a body that runs the length of the line": "hvs." + strings.Repeat("a", 1800000),
-		// The anchor at every other byte with nothing behind it that names a
-		// kind, which is the cheapest way a candidate position is declined.
-		"the anchor with no kind behind it": strings.Repeat("hv", 900000),
-		// And a kind behind every anchor with no separator behind that, which
-		// is the next cheapest.
-		"a kind with no separator behind it": strings.Repeat("hvs", 600000),
+		// A separator every fourth byte with the two letters in front of the
+		// kind behind it and a character that names none, which is the
+		// cheapest way a candidate position is declined once the prefix has
+		// been read back whole.
+		"a separator whose kind names none": strings.Repeat("hvx.", 500000),
+		// And a separator with nothing in front of it that opens a prefix,
+		// which is the cheapest of all: one byte read and the candidate gone.
+		"a separator that opens no prefix": strings.Repeat("ab.", 700000),
 	}
 
 	m := New(WithPatterns(HashiCorpVaultToken()))
@@ -876,9 +886,10 @@ func FuzzHashiCorpVaultToken_matchesReference(f *testing.F) {
 // plain go test as well, which is what a benchmark nobody has run yet cannot
 // be.
 func hashiCorpVaultTokenFindBenchmarks() []benchmarkCase {
-	// Nothing in an ordinary line carries the anchor, so what the line times is
-	// the search for it — which is most of what this pattern costs a caller
-	// whose text holds no token.
+	// The separator the scan searches for stands twice in the line, in the host
+	// name, and each of those is read back three bytes and turned away by the
+	// byte standing there. That and the walk itself are most of what this
+	// pattern costs a caller whose text holds no token.
 	line := `time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://vault.example.com:8200/v1/sys/health `
 	token := "hvs.0123456789abcdef01234567"
 
@@ -889,12 +900,13 @@ func hashiCorpVaultTokenFindBenchmarks() []benchmarkCase {
 			spans: 0,
 		},
 		{
-			// The anchor at every other byte with nothing behind it that names
-			// a kind. This is the cheapest way a candidate position is
-			// declined, and what a line of base64 reaches once in every four
-			// thousand characters.
+			// The separator every fourth byte with the two letters in front of
+			// the kind behind it and a character that names none. This is the
+			// cheapest way a candidate position is declined once the prefix has
+			// been read back whole: the kind turns it away before a body is
+			// looked at.
 			name:  "anchors that open no candidate",
-			src:   strings.Repeat("hv", 1024),
+			src:   strings.Repeat("hvx.", 512),
 			spans: 0,
 		},
 		{

@@ -141,8 +141,9 @@ func PyPIAPIToken() Pattern { return pypiAPIToken }
 // is sound because a body stands a fixed five characters past the start of its
 // candidate and candidates only move forward, so a body never begins in front
 // of the body of the candidate before it. Nothing else about a candidate is a
-// search over the rest of the input: the anchor is one string, found once per
-// candidate by strings.Index, and the floor is read off the cursor.
+// search over the rest of the input: one byte of the anchor is searched for and
+// the rest of it compared where that byte is found, and the floor is read off
+// the cursor.
 // Test_PyPIAPIToken_scanIsLinear drives it.
 //
 // What this pattern over-matches on: a run of base64url characters carrying
@@ -177,17 +178,32 @@ var pypiAPIToken = NewPattern("pypi-api-token", func(src string) []Span {
 	runEnd := -1
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], pypiAPITokenAnchor)
+		i := strings.IndexByte(src[offset:], pypiAPITokenAnchorByte)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		at := offset + i
 
-		// The scan resumes here whether this candidate became a token or not,
-		// for the reason the rationale above gives: every character of the
-		// anchor belongs to the alphabet a body is written in, so a token can
-		// begin inside the body of the one before it.
-		offset = start + 1
+		// The scan resumes here whether this candidate became a token or not, for
+		// the reason the rationale above gives: every character of the anchor
+		// belongs to the alphabet a body is written in, so a token can begin inside
+		// the body of the one before it. Stepping one byte past where the anchor
+		// byte stood is what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = at + 1
+
+		if at < pypiAPITokenAnchorIndex {
+			continue
+		}
+		start := at - pypiAPITokenAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the
+		// few that open a candidate are turned away by one byte where a
+		// comparison of the whole prefix is a length and a read.
+		if src[start] != pypiAPITokenAnchor[0] || !strings.HasPrefix(src[start:], pypiAPITokenAnchor) {
+			continue
+		}
 
 		// The body opens at the header, which the anchor has already read, so
 		// the run it stands in is the run the header stands in. A body is a
@@ -222,12 +238,26 @@ const (
 	// Test_pypiAPITokenHeader encodes the bytes and holds the claim to them.
 	pypiAPITokenHeader = "AgE"
 
-	// pypiAPITokenAnchor is what the scan searches for, the two above together.
-	// Searching for both at once rather than for the prefix and then testing
-	// the header is what keeps an ordinary line — which carries pypi- in every
-	// hyphenated name that mentions the index — from reaching the body of the
-	// loop at all.
+	// pypiAPITokenAnchor is what a candidate is read back as, the two above
+	// together. Testing both at once rather than the prefix and then the header
+	// is what keeps an ordinary line — which carries pypi- in every hyphenated
+	// name that mentions the index — from reaching the body of the loop at all.
 	pypiAPITokenAnchor = pypiAPITokenPrefix + pypiAPITokenHeader
+
+	// pypiAPITokenAnchorByte is the byte the scan searches the input for and
+	// pypiAPITokenAnchorIndex is where it stands in the anchor, so a candidate
+	// begins that many bytes in front of what a search reported.
+	// builtin_scan.go says why a scan searches for one byte of what it is
+	// looking for rather than for the whole of it; what makes it this byte is
+	// that pypi- is spelled in three ordinary letters and a hyphen — over the
+	// log line these benchmarks are written on the p stands five times, the i
+	// five and the hyphen twice — where neither capital of the header stands
+	// once. Either capital would do on that line; the E is taken over the A
+	// because base64url writes a zero byte as an A, so a run of them is what a
+	// padded or sparse encoding is full of, and the header's own A stands
+	// beside its E in every token either way.
+	pypiAPITokenAnchorByte  = 'E'
+	pypiAPITokenAnchorIndex = len(pypiAPITokenPrefix) + 2
 
 	// pypiAPITokenBodyChars is the count a body is held to, read as a floor
 	// rather than exactly and counted from the header rather than from behind

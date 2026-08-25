@@ -60,11 +60,11 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 	patRunEnd := -1
 
 	for offset := 0; offset < len(src); {
-		i := strings.IndexByte(src[offset:], 'g')
+		i := strings.IndexByte(src[offset:], githubTokenAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
 		// The scan resumes here whether this candidate becomes a token or
 		// not: only the starting point is settled by what follows, never the
@@ -74,25 +74,47 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		// the body is read as far as its alphabet runs and swallows the
 		// prefix of a token written straight after it, ghp_ and gho_ with
 		// nothing between them among them. The two spans then overlap, which
-		// a Masker resolves into one.
-		offset = start + 1
+		// a Masker resolves into one. Stepping one byte past the anchor is
+		// what leaves the next candidate of either form one byte past this
+		// one, which builtin_scan.go sets out.
+		offset = anchor + 1
 
-		if strings.HasPrefix(src[start:], githubPATPrefix) {
-			body := start + len(githubPATPrefix)
+		// The fine grained form first, whose prefix carries the anchor at
+		// githubPATAnchorIndex. It is tried at a start of its own rather than
+		// at the one below, because the two prefixes carry the h at different
+		// depths; neither can match where the other does, since this one
+		// spells an i where that one spells the h.
+		if pat := anchor - githubPATAnchorIndex; pat >= 0 && src[pat] == githubPATPrefix[0] &&
+			strings.HasPrefix(src[pat:], githubPATPrefix) {
+			body := pat + len(githubPATPrefix)
 			if body >= patRunEnd {
 				patRunEnd = body
 				for patRunEnd < len(src) && isGitHubPATByte(src[patRunEnd]) {
 					patRunEnd++
 				}
 			}
-			if patRunEnd-body < githubPATChars {
-				continue
+			if patRunEnd-body >= githubPATChars {
+				spans = append(spans, Span{Start: pat, End: patRunEnd})
 			}
-			spans = append(spans, Span{Start: start, End: patRunEnd})
+		}
+
+		start := anchor - githubTokenAnchorIndex
+		if start < 0 {
 			continue
 		}
 
-		if start+4 > len(src) || src[start+1] != 'h' || !isGitHubTokenKind(src[start+2]) || src[start+3] != '_' {
+		// The bound comes next and on its own, so that the byte tests behind
+		// it may be read and reordered as byte tests rather than as an
+		// argument about which of them runs first.
+		body := start + githubTokenPrefixChars
+		if body > len(src) {
+			continue
+		}
+
+		kind := start + len(githubTokenOpening)
+		if src[start] != githubTokenOpening[0] ||
+			!isGitHubTokenKind(src[kind]) ||
+			src[kind+1] != githubTokenSeparator {
 			continue
 		}
 
@@ -103,7 +125,6 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		// byte that ends this run, and the run that candidate reads therefore
 		// begins past this one. Successive candidates read runs that do not
 		// overlap, and reading all of them comes to the length of the input.
-		body := start + 4
 		end := base62RunEnd(src, body)
 
 		// The stateless form comes first, as it does in the reference: an
@@ -143,7 +164,7 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		// keying on the prefix and a run of characters, as GitHub's own advice
 		// does, and admitting the dot into that run draws in the file name
 		// written after a classic token, which the anchor holds back.
-		if isGitHubStatelessKind(src[start+2]) && end > body && end < len(src) &&
+		if isGitHubStatelessKind(src[kind]) && end > body && end < len(src) &&
 			src[end] == '_' && opensJOSEHeaderAt(src, end+1) {
 			header := end + 1 + len(jwtHeaderPrefix)
 			if header >= runEnd {
@@ -184,6 +205,47 @@ const (
 	githubPATPrefix    = "github_pat_"
 	githubPATChars     = 82
 	githubClassicChars = 36
+)
+
+const (
+	// githubTokenOpening is what every prefix but the fine grained one opens
+	// with. The character naming the kind and the separator stand behind it, so
+	// such a prefix is githubTokenPrefixChars long whichever kind it names, and
+	// the scan reads it by arithmetic rather than by comparing a string.
+	githubTokenOpening = "gh"
+
+	// githubTokenSeparator closes those prefixes and opens the body behind
+	// them. It belongs to no classic body, which is what keeps two candidates
+	// from ever reading the same run, and it belongs to a fine grained one,
+	// which is why that form keeps a cursor of its own.
+	githubTokenSeparator = '_'
+
+	// githubTokenPrefixChars is the whole of such a prefix: the opening, the
+	// one character naming the kind and the separator.
+	githubTokenPrefixChars = len(githubTokenOpening) + 2
+)
+
+// githubTokenAnchor is the byte the scan searches the input for.
+// githubTokenAnchorIndex is where it stands in the prefix of the classic and
+// stateless forms, gh, a kind and an underscore; githubPATAnchorIndex is where
+// it stands in githubPATPrefix. One search serves both forms because the h is
+// the one byte they share at a fixed depth apiece, and a candidate of either
+// begins its own number of bytes in front of what the search reported.
+//
+// builtin_scan.go says why a scan searches for one byte of its prefix rather
+// than for the prefix itself. What makes it this byte is that the g every
+// GitHub prefix opens with is also the g of log, message and login: over the
+// line these benchmarks are written on it stands six times against the h's
+// three. Neither of the lines crowded with candidates carries a second h to
+// either prefix, so the rarer byte costs nothing there.
+//
+// The underscore each prefix closes with is rarer still on an ordinary line
+// and is passed over: githubPATPrefix carries two of them, so a line of fine
+// grained prefixes would open two candidates where the h opens one.
+const (
+	githubTokenAnchor      = 'h'
+	githubTokenAnchorIndex = 1
+	githubPATAnchorIndex   = 3
 )
 
 // isGitHubTokenKind reports whether c, the character after gh, names one of the

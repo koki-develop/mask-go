@@ -519,6 +519,33 @@ func Test_supabaseAccessTokenPrefix(t *testing.T) {
 	}
 }
 
+// Test_supabaseAccessTokenAnchor holds the prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from, and to
+// the one thing the scan's resume rests on that is the prefix's own.
+// builtin_scan.go says why the first is held here rather than left to the
+// targets.
+//
+// The resume is the second. A candidate that carries the prefix resumes where
+// its secret begins rather than a byte along, which steps over the positions
+// inside the prefix and inside the marker behind it, and that is sound only
+// while no token can begin at one of them. The prefix carries the character it
+// opens with nowhere else, and Test_supabaseAccessTokenPrefix above holds the
+// marker to carrying it nowhere at all.
+func Test_supabaseAccessTokenAnchor(t *testing.T) {
+	if supabaseAccessTokenAnchorIndex >= len(supabaseAccessTokenPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters",
+			supabaseAccessTokenAnchorIndex, len(supabaseAccessTokenPrefix))
+	}
+	if c := supabaseAccessTokenPrefix[supabaseAccessTokenAnchorIndex]; c != supabaseAccessTokenAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it",
+			c, byte(supabaseAccessTokenAnchor))
+	}
+	if i := strings.IndexByte(supabaseAccessTokenPrefix[1:], supabaseAccessTokenPrefix[0]); i >= 0 {
+		t.Errorf("the prefix carries %q again at %d, so a token can begin inside one and the resume at the secret steps over it",
+			supabaseAccessTokenPrefix[0], i+1)
+	}
+}
+
 func Test_supabaseAccessTokenOAuthMarker(t *testing.T) {
 	// The marker is read greedily: a candidate carrying it is read as the longer
 	// form and never as the shorter one afterwards. That is only sound while the

@@ -418,6 +418,18 @@ func Test_sendGridAPIKeyPrefix(t *testing.T) {
 	}
 }
 
+// Test_sendGridAPIKeyAnchor holds the prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_sendGridAPIKeyAnchor(t *testing.T) {
+	if sendGridAPIKeyAnchorIndex >= len(sendGridAPIKeyPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", sendGridAPIKeyAnchorIndex, len(sendGridAPIKeyPrefix))
+	}
+	if c := sendGridAPIKeyPrefix[sendGridAPIKeyAnchorIndex]; c != sendGridAPIKeyAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(sendGridAPIKeyAnchor))
+	}
+}
+
 func Test_sendGridAPIKeyChars(t *testing.T) {
 	// Sixty-nine is the one part of this grammar SendGrid states outright: a
 	// support article on whether a shorter key can be issued says a key is

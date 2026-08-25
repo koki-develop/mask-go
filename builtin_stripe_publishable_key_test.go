@@ -509,7 +509,7 @@ func Test_stripePublishableKeyPrefixes(t *testing.T) {
 	// Four things hold the table together, and none of them shows anywhere
 	// else.
 	//
-	// The anchor is what the scan searches the input for, and it stands at the
+	// The anchor is what a candidate is read back to, and it stands at the
 	// start of a candidate: an entry not opening with it is an entry the scan
 	// never reaches. The character an entry closes with may not be one a body is
 	// written in, which is what makes every body begin where a run begins — the
@@ -556,10 +556,10 @@ func Test_stripePublishableKeyAnchor(t *testing.T) {
 	// Two things the scan rests on, and neither shows anywhere else.
 	//
 	// The anchor stands at the start of a candidate rather than inside one, so
-	// the position a search reports is the position a key would begin at and
-	// resuming one byte past it is resuming one byte past the candidate — the
-	// default a scan may take without an argument, where the secret key scan
-	// has to argue for resuming past an anchor found one byte in.
+	// a key begins where the anchor does and the arithmetic reading a candidate
+	// back from the byte the search stops at is counted from the anchor's own
+	// start — where the secret key scan counts from a byte standing inside the
+	// key type.
 	//
 	// And it closes with a character no body is written with, which is what
 	// keeps a run from holding two candidates and so what holds the scan
@@ -572,6 +572,16 @@ func Test_stripePublishableKeyAnchor(t *testing.T) {
 	}
 	if c := stripePublishableKeyAnchor[len(stripePublishableKeyAnchor)-1]; isBase62Byte(c) {
 		t.Errorf("the anchor closes with %q, which a body may be written with, so a run could hold two candidates", c)
+	}
+
+	// And the byte the search stops at stands at the index a candidate is read
+	// back from. builtin_scan.go says why that is held here rather than left to
+	// the targets.
+	if stripePublishableKeyAnchorIndex >= len(stripePublishableKeyAnchor) {
+		t.Fatalf("the search stops at %d, the anchor is %d characters", stripePublishableKeyAnchorIndex, len(stripePublishableKeyAnchor))
+	}
+	if c := stripePublishableKeyAnchor[stripePublishableKeyAnchorIndex]; c != stripePublishableKeyAnchorByte {
+		t.Errorf("the anchor carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(stripePublishableKeyAnchorByte))
 	}
 }
 
@@ -636,8 +646,8 @@ func Test_StripePublishableKey_scanIsLinear(t *testing.T) {
 		// The same crowding with a whole key at each candidate, so every one of
 		// them reads its own run to the end and reports a span.
 		"a key every thirty-two characters": strings.Repeat("pk_live_0123456789abcdef01234567", 60000),
-		// Nothing but the three bytes the scan searches for, so every position
-		// reaches the prefix table and none goes further.
+		// Nothing but the three bytes a candidate is read back to, so every
+		// position reaches the prefix table and none goes further.
 		"an anchor every three characters": strings.Repeat("pk_", 700000),
 		// One candidate whose body is the whole line, which is the walk over a
 		// run reading the line and finding a key.
@@ -757,7 +767,7 @@ func FuzzStripePublishableKey_matchesReference(f *testing.F) {
 	f.Add("sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567")
 	f.Add("sk_live_0123456789abcdef01234567_pk_test_0123456789abcdef01234567")
 	// Candidate positions crowded as close as they can be, with a body behind
-	// none of them, and the bytes the scan searches for on their own.
+	// none of them, and the bytes a candidate is read back to on their own.
 	f.Add(strings.Repeat("pk_live_", 8))
 	f.Add(strings.Repeat("pk_", 24))
 	// The prefix written inside a run of the alphabet, which the byte in front
@@ -775,9 +785,10 @@ func FuzzStripePublishableKey_matchesReference(f *testing.F) {
 // plain go test as well, which is what a benchmark nobody has run yet cannot
 // be.
 func stripePublishableKeyFindBenchmarks() []benchmarkCase {
-	// Nothing in an ordinary line carries the three bytes the scan searches
-	// for, so what the line times is that search — which is most of what this
-	// pattern costs a caller whose text holds no key.
+	// An ordinary line carries the byte the scan searches for about once, so
+	// what the line times is that search and the one position it stops at —
+	// which is most of what this pattern costs a caller whose text holds no
+	// key.
 	line := `time=2026-08-17T00:00:00Z level=info msg="rendering the checkout" url=https://api.stripe.com/v1/charges `
 	key := "pk_live_0123456789abcdef01234567"
 

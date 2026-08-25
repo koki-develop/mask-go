@@ -1,6 +1,9 @@
 package mask
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 // SlackToken locates Slack credentials that carry a token prefix: bot tokens
 // (xoxb-), user tokens (xoxp-), app-level tokens (xapp-), workflow tokens
@@ -218,11 +221,11 @@ var slackToken = NewPattern("slack-token", func(src string) []Span {
 	lastSecret := -1
 
 	for offset := 0; offset < len(src); {
-		i := strings.IndexByte(src[offset:], slackTokenFirstByte)
+		i := strings.IndexByte(src[offset:], slackTokenSeparator)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a token or not.
 		// A body is read as far as its alphabet runs and that alphabet holds
@@ -230,39 +233,55 @@ var slackToken = NewPattern("slack-token", func(src string) []Span {
 		// straight after it — xoxb-xoxb-... is a token beginning inside the
 		// span of the one before it — and consuming a match would step over
 		// that token and leave it in the output whole. The two spans then
-		// overlap, which a Masker resolves into one.
-		offset = start + 1
+		// overlap, which a Masker resolves into one. Stepping one byte past the
+		// separator is what leaves the next candidate of every length one byte
+		// past this one, which builtin_scan.go sets out.
+		offset = anchor + 1
 
-		// The byte test comes before the prefix table because it is one
-		// comparison where that is up to seven, and every x in a word reaches
-		// this line.
-		if start > 0 && isSlackTokenWordByte(src[start-1]) {
-			continue
-		}
-		prefix := slackTokenPrefixAt(src, start)
-		if prefix == 0 {
-			continue
-		}
+		// Every prefix closing at this separator opens a candidate of its own,
+		// and two of them can: xoxe.xoxb- closes on the same separator xoxb-
+		// does, five characters further along. Both are candidates a walk over
+		// the x each opens with would have found, so both are tried, and the
+		// longer first — a longer prefix begins earlier, and spans are reported
+		// in the order they begin.
+		//
+		// A body is where the separator ends, whichever of them matched, so the
+		// cursor below is read once for the pair rather than once apiece.
+		body := anchor + 1
+		for _, n := range slackTokenPrefixChars {
+			start := body - n
 
-		// The body of a candidate never begins in front of the body of the
-		// one before it, which is what lets a single cursor serve them all.
-		// The prefixes are ten characters or five, and the ten character ones
-		// hold no candidate start of their own before their fifth character:
-		// the only x inside xoxe. is the one at index 2, and no prefix has e
-		// as its second character. So a candidate five characters into one of
-		// those starts a body exactly where its own would have.
-		// Test_slackTokenPrefixes_bodyNeverMovesBack holds the table to that.
-		body := start + prefix
-		if body >= runEnd {
-			runEnd, lastSecret = slackTokenRun(src, body)
-		}
-		// Strictly past the body, not at it: a segment beginning where the
-		// body does is the first one, and a secret there is a secret written
-		// against the prefix with no part in front of it. lastSecret is the
-		// rightmost, so nothing qualifies behind it and there is no earlier
-		// segment this could be hiding.
-		if lastSecret > body {
-			spans = append(spans, Span{Start: start, End: runEnd})
+			// The byte a prefix opens with is tested before the table is
+			// walked, for the reason the byte in front of the candidate is
+			// tested before that: it is one comparison where the table is up to
+			// seven, and every separator in a hyphenated word reaches this line.
+			if start < 0 || src[start] != slackTokenFirstByte {
+				continue
+			}
+			if start > 0 && isSlackTokenWordByte(src[start-1]) {
+				continue
+			}
+			if slackTokenPrefixAt(src, start) != n {
+				continue
+			}
+
+			// The body of a candidate never begins in front of the body of the
+			// one before it, which is what lets a single cursor serve them all.
+			// Bodies here are separator positions and separators are walked in
+			// order, so a body never moves back at all;
+			// Test_slackTokenPrefixes_bodyNeverMovesBack holds the table to the
+			// same thing read forwards from a prefix.
+			if body >= runEnd {
+				runEnd, lastSecret = slackTokenRun(src, body)
+			}
+			// Strictly past the body, not at it: a segment beginning where the
+			// body does is the first one, and a secret there is a secret written
+			// against the prefix with no part in front of it. lastSecret is the
+			// rightmost, so nothing qualifies behind it and there is no earlier
+			// segment this could be hiding.
+			if lastSecret > body {
+				spans = append(spans, Span{Start: start, End: runEnd})
+			}
 		}
 	}
 	return spans
@@ -276,8 +295,8 @@ var slackToken = NewPattern("slack-token", func(src string) []Span {
 // position, because the character that tells a kind apart — the fourth of
 // xoxb-, xoxp- and xoxe-, the second of xapp- and xwfp-, the ninth of the two
 // behind xoxe. — is inside every one of them. Test_slackTokenPrefixes holds
-// them to that, and to opening with the byte the scan searches for and closing
-// with the separator a body is written with.
+// them to that, and to opening with the byte a candidate is read back to and
+// closing with the separator the scan searches for.
 //
 // A rotatable access token is located twice over, once at xoxe.xoxb- and once
 // at the xoxb- five characters along, and the two spans end together. Both are
@@ -294,12 +313,20 @@ var slackTokenPrefixes = [...]string{
 }
 
 const (
-	// slackTokenFirstByte is the byte every prefix opens with, and the one
-	// candidate positions are found by.
+	// slackTokenFirstByte is the byte every prefix opens with, and the one a
+	// candidate is read back to.
 	slackTokenFirstByte = 'x'
 
 	// slackTokenSeparator is what a token's parts are joined with, and so
-	// what divides a body into segments.
+	// what divides a body into segments. It is also what every prefix closes
+	// with, and the byte the scan searches the input for.
+	//
+	// It is searched for rather than the x every prefix opens with, for the
+	// reason builtin_scan.go gives. Over the log line these benchmarks are
+	// written on the x stands five times and the separator twice, and on the
+	// line of prefixes written one against the next that this pattern's own
+	// worst case is built from the difference is larger still: xoxb- carries
+	// two x and one separator, so half as many positions are stopped at.
 	slackTokenSeparator = '-'
 
 	// slackTokenSecretChars is how long a segment must be, letter included, to
@@ -310,6 +337,33 @@ const (
 	// a token shorter than this would cost.
 	slackTokenSecretChars = 18
 )
+
+// slackTokenPrefixChars are the lengths the table holds, each of them once and
+// longest first. The scan reads it rather than the table itself: the table has
+// seven entries and two lengths, so a separator would otherwise be asked the
+// same question about the same byte five times over.
+//
+// Longest first is what the scan needs of it and not a courtesy, unlike the
+// order of the table itself: a longer prefix closing at a separator begins
+// earlier than a shorter one closing at the same separator, and spans are
+// reported in the order they begin. It is sorted here rather than read off the
+// table so that the table's own order stays free to change.
+//
+// It is worked out from the table rather than written beside it, so that it
+// cannot come to disagree with what the table holds — a length written down
+// here and left behind by a prefix added would be a prefix no candidate is ever
+// found at, and nothing would say so.
+var slackTokenPrefixChars = func() []int {
+	var chars []int
+	for _, prefix := range slackTokenPrefixes {
+		if !slices.Contains(chars, len(prefix)) {
+			chars = append(chars, len(prefix))
+		}
+	}
+	slices.Sort(chars)
+	slices.Reverse(chars)
+	return chars
+}()
 
 // slackTokenPrefixAt returns the length of the prefix beginning at i in src, or
 // zero where none does.

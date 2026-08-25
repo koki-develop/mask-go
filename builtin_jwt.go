@@ -29,6 +29,24 @@ func JWT() Pattern { return jsonWebToken }
 // it is and changes only that character.
 const jwtHeaderPrefix = "ey"
 
+// jwtHeaderAnchor is the byte the scan searches the input for and
+// jwtHeaderAnchorIndex is where it stands in jwtHeaderPrefix, so a candidate
+// begins that many bytes in front of what a search reported. builtin_scan.go
+// says why a scan searches for one byte of its prefix rather than for the
+// prefix itself; what makes it this byte is that the e is the commonest letter
+// in English and the y among the rarest. Over the log line these benchmarks
+// are written on the e stands eight times and the y three, and a run of
+// base64url characters carries the two about equally often, so nothing is
+// given up on the input a token is crowded into.
+//
+// The GitHub scan reads jwtHeaderPrefix from here but not this: it finds its
+// candidates by what opens a token of its own, and reaches a header only once
+// a prefix and a body already stand in front of it.
+const (
+	jwtHeaderAnchor      = 'y'
+	jwtHeaderAnchorIndex = 1
+)
+
 // opensJOSEHeader reports whether c, the character following jwtHeaderPrefix,
 // can be the third of an encoded brace and the opening of a member name.
 //
@@ -91,11 +109,11 @@ var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 	var header headerDecoder
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], jwtHeaderPrefix)
+		i := strings.IndexByte(src[offset:], jwtHeaderAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
 		// The scan resumes here whether this candidate becomes a token or
 		// not: only the starting point is settled by what follows, never the
@@ -105,9 +123,15 @@ var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 		// token is a run of base64url characters, so a second token written
 		// straight after the first has its header swallowed by that run and
 		// begins inside the match. The two spans then overlap, which a Masker
-		// resolves into one.
-		offset = start + 1
+		// resolves into one. Stepping one byte past the anchor is
+		// what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = anchor + 1
 
+		if anchor < jwtHeaderAnchorIndex {
+			continue
+		}
+		start := anchor - jwtHeaderAnchorIndex
 		if !opensJOSEHeaderAt(src, start) {
 			continue
 		}

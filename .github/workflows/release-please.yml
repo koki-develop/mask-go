@@ -1,0 +1,67 @@
+name: Release Please
+
+defaults:
+  run:
+    shell: bash
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  release-please:
+    name: Release Please
+    permissions:
+      contents: write # for pushing the tag and creating the release
+      pull-requests: write # for opening the release pull request
+      issues: write # for creating the labels that pull request is marked with
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      should-release: ${{ steps.release-please.outputs.release_created }}
+      tag-name: ${{ steps.release-please.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release-please
+        with:
+          release-type: go
+
+  # Tagging a Go module does not announce it: proxy.golang.org learns a version
+  # exists only when something asks for it, and pkg.go.dev shows nothing the
+  # proxy has not got. Asking for it once here is the step go.dev's publishing
+  # guide names.
+  release:
+    name: Release
+    needs: [release-please]
+    if: ${{ needs.release-please.outputs.should-release == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Restore only: nothing here is compiled.
+      - uses: ./.github/actions/setup
+        with:
+          cache: restore
+      - name: Notify the module index
+        # The tag reaches the command through the environment rather than being
+        # written into it: what the job above reported is then data the shell
+        # expands, not text it parses.
+        env:
+          GOPROXY: proxy.golang.org
+          TAG: ${{ needs.release-please.outputs.tag-name }}
+        # The module path comes out of go.mod: at v2 it gains a /v2 suffix the
+        # tag does not carry, and the proxy rejects a pairing that mismatched.
+        run: |
+          module=$(go list -m)
+          go list -m "${module}@${TAG}"

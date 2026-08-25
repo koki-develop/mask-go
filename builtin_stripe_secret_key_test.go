@@ -540,7 +540,7 @@ func Test_StripeSecretKey_noKeyBeginsInsideAnother(t *testing.T) {
 func Test_stripeSecretKeyPrefixes(t *testing.T) {
 	// Four things hold the table together, and none of them shows anywhere else.
 	//
-	// The anchor is what the scan searches the input for, and a candidate opens
+	// The anchor is what a candidate is read back to, and a candidate opens
 	// stripeSecretKeyAnchorIndex bytes in front of it: an entry not carrying it
 	// there is an entry the scan never reaches. The character an entry closes
 	// with may not be one a body is written in, which is what makes every body
@@ -597,6 +597,14 @@ func Test_stripeSecretKeyAnchor(t *testing.T) {
 	}
 	if stripeSecretKeyAnchor[0] == stripeSecretKeyAnchor[1] {
 		t.Errorf("the anchor %q opens with the character behind it, so a candidate one byte along would be stepped over", stripeSecretKeyAnchor)
+	}
+
+	// And the byte the search stops at is the one the anchor opens with, which
+	// is where the arithmetic reading a candidate back is counted from.
+	// builtin_scan.go says why that is held here rather than left to the
+	// targets.
+	if c := stripeSecretKeyAnchor[0]; c != stripeSecretKeyAnchorByte {
+		t.Errorf("the anchor opens with %q where the scan searches for %q, so no candidate is ever found at it", c, byte(stripeSecretKeyAnchorByte))
 	}
 }
 
@@ -692,8 +700,9 @@ func Test_StripeSecretKey_scanIsLinear(t *testing.T) {
 		// The same crowding with a whole key at each candidate, so every one of
 		// them reads its own run to the end and reports a span.
 		"a key every thirty-two characters": strings.Repeat("sk_live_0123456789abcdef01234567", 60000),
-		// Nothing but the two bytes the scan searches for, so every position
-		// reaches the test in front of the prefix table and none goes further.
+		// Nothing but the two bytes a candidate is read back to, so every
+		// position reaches the test in front of the prefix table and none goes
+		// further.
 		"an anchor every two characters": strings.Repeat("k_", 1000000),
 		// A word closing on the key type at every candidate, which is the byte
 		// in front turning each of them away.
@@ -832,7 +841,7 @@ func FuzzStripeSecretKey_matchesReference(f *testing.F) {
 	// resuming past a match steps over.
 	f.Add("sk_live_0123456789abcdef01234567rk_test_0123456789abcdef01234567")
 	// Candidate positions crowded as close as they can be, with a body behind
-	// none of them, and the two bytes the scan searches for on their own.
+	// none of them, and the two bytes a candidate is read back to on their own.
 	f.Add(strings.Repeat("sk_live_", 8))
 	f.Add(strings.Repeat("k_", 24))
 	f.Add(strings.Repeat("sk_org_", 8) + "0123456789abcdef01234567")
@@ -851,8 +860,8 @@ func FuzzStripeSecretKey_matchesReference(f *testing.F) {
 // plain go test as well, which is what a benchmark nobody has run yet cannot
 // be.
 func stripeSecretKeyFindBenchmarks() []benchmarkCase {
-	// Nothing in an ordinary line carries the two bytes the scan searches for,
-	// so what the line times is that search — which is most of what this pattern
+	// Nothing in an ordinary line carries the byte the scan searches for, so
+	// what the line times is that search — which is most of what this pattern
 	// costs a caller whose text holds no key.
 	line := `time=2026-08-17T00:00:00Z level=info msg="creating a charge" url=https://api.stripe.com/v1/charges `
 	key := "sk_live_0123456789abcdef01234567"

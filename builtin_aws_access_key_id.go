@@ -110,19 +110,33 @@ var awsAccessKeyID = NewPattern("aws-access-key-id", func(src string) []Span {
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.IndexByte(src[offset:], awsAccessKeyIDFirstByte)
+		i := strings.IndexByte(src[offset:], awsAccessKeyIDAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a key or not.
-		// The two prefixes overlap one another: ASIAKIA0123456789ABCDEF holds
-		// an AKIA three characters into an ASIA candidate, so a key can begin
-		// inside the span of the key before it, and consuming a match would
-		// step over that key and leave it in the output whole. The two spans
-		// then overlap, which a Masker resolves into one.
-		offset = start + 1
+		// The scan resumes here whether this candidate became a key or not. The two
+		// prefixes overlap one another: ASIAKIA0123456789ABCDEF holds an AKIA three
+		// characters into an ASIA candidate, so a key can begin inside the span of
+		// the key before it, and consuming a match would step over that key and
+		// leave it in the output whole. The two spans then overlap, which a Masker
+		// resolves into one. Stepping one byte past the anchor is what leaves the
+		// next candidate one byte past this one, which builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < awsAccessKeyIDAnchorIndex {
+			continue
+		}
+		start := anchor - awsAccessKeyIDAnchorIndex
+
+		// The byte both prefixes open with is tested before the candidate is
+		// read. Every anchor the search stops at reaches this line, and all but
+		// the few that open a candidate are turned away by one byte where
+		// reading the candidate is a length, two prefix comparisons and a walk.
+		if src[start] != awsAccessKeyIDFirstByte {
+			continue
+		}
 
 		if end := start + awsAccessKeyIDChars; end <= len(src) && isAWSAccessKeyID(src[start:end]) {
 			spans = append(spans, Span{Start: start, End: end})
@@ -135,16 +149,35 @@ var awsAccessKeyID = NewPattern("aws-access-key-id", func(src string) []Span {
 // ID: AKIA for a long-term key and ASIA for temporary credentials from AWS STS.
 //
 // Both are awsAccessKeyIDPrefixChars characters and both open with
-// awsAccessKeyIDFirstByte, which is what the scan searches the input for. A
-// prefix added here that did neither would be a prefix the scan never reaches
-// or never finishes reading, so Test_awsAccessKeyIDPrefixes holds every entry
-// to both.
+// awsAccessKeyIDFirstByte, which Test_awsAccessKeyIDPrefixes holds every entry
+// to: a prefix of another length is one the scan never finishes reading.
+//
+// What decides whether the scan reaches a prefix at all is the anchor below,
+// which stands at a fixed index of both and is Test_awsAccessKeyIDAnchor's to
+// hold.
 var awsAccessKeyIDPrefixes = [...]string{"AKIA", "ASIA"}
 
 const (
-	// awsAccessKeyIDFirstByte is the byte every prefix opens with, and the
-	// one candidate positions are found by.
+	// awsAccessKeyIDFirstByte is the byte every prefix opens with.
 	awsAccessKeyIDFirstByte = 'A'
+
+	// awsAccessKeyIDAnchor is the byte the scan searches the input for and
+	// awsAccessKeyIDAnchorIndex is where it stands in both prefixes, so a
+	// candidate begins that many bytes in front of what a search reported.
+	// builtin_scan.go says why a scan searches for one byte of its prefix
+	// rather than for the prefix itself; what makes it this byte is that a
+	// capital A opens the acronyms and the capitalised words a log line is
+	// full of, where the I two characters in stands almost nowhere. Over the
+	// line these benchmarks are written on the A stands three times and the I
+	// not once, and on a line of nothing but candidates the two prefixes carry
+	// two A apiece against one I, so the rarer byte is rarer there as well.
+	//
+	// It is the one index the two prefixes agree on besides the A, which is
+	// what lets one search serve both. A prefix added that spelled its third
+	// character differently would be a prefix no candidate is ever found at,
+	// which Test_awsAccessKeyIDAnchor reports.
+	awsAccessKeyIDAnchor      = 'I'
+	awsAccessKeyIDAnchorIndex = 2
 
 	// The counts an access key ID is written to. Every one AWS shows is
 	// twenty characters, and AWS states no length of its own, so unlike the
