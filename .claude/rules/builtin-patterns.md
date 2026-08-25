@@ -151,9 +151,10 @@ the syntax tree and fails for exactly that reason.
 shares: its name and the convention `Pattern.Name` asks for, one value per
 accessor, usable spans, no false positive on prose, agreement with its
 reference, masking that leaves nothing to find out of reach of what it redacted,
-concurrent use, benchmark cases holding the values they state, and a
-linear-time scan. The two are held to naming the same patterns in the same order
-by `Test_builtins_matchAllBuiltinPatterns`, so neither can be forgotten.
+concurrent use, benchmark cases holding the values they state, what the scan
+settles, and a linear-time scan. The two are held to naming the same patterns in
+the same order by `Test_builtins_matchAllBuiltinPatterns`, so neither can be
+forgotten.
 
 An entry is held to being whole by `Test_builtins_entriesAreFilledIn`, which
 runs first in its file for that reason: a field left out leaves most of the
@@ -289,6 +290,47 @@ in its own file:
 The cost of advancing rather than consuming is that a value nested in another —
 a JWT payload that is itself a header — is located too; the spans overlap and
 `Masker.locate` resolves them.
+
+## What a scan settles
+
+`Pattern.Find` returns the offset from which the input is not settled, and every
+scan answers it the same two ways: a piece of a prefix standing at the end of
+the input, and a candidate the end of the input cut short. `builtin_scan.go` states
+both and holds the first of them as `prefixTail`; the second is the scan's own,
+and what it reports there is the candidate's start.
+
+- **Report the candidate, do not read what is written of it.** A scan that
+  worked out that a truncated candidate could never have become a value would
+  release a few more bytes at the end of a write, and it would cost a second
+  grammar — the grammar of the halves — kept beside the first and free to
+  disagree with it. Settling too little costs a stream the text it holds on to;
+  settling too much releases a credential before it was found.
+- **A helper that says no owes the reason where the reason is the input.** A
+  walk that stopped because the text said so is settled; a walk that stopped
+  because the input ran out is not, and only the walk can tell them apart. The
+  helpers that report both — `opensJOSEHeaderAt`, `segmentsEnd`,
+  `privateKeyBlockEnd`, `sentryAuthTokenOrgEnd` and the rest — return the
+  question's answer and then whether the end of the input was what answered it.
+- **Prefixes for a tail are derived, never listed again.** A pattern whose
+  prefixes are built from parts — a kind, an opening, a separator — builds its
+  `prefixTail` from those same parts, as `githubTokenPrefixes` and
+  `sentryAuthTokenPrefixes` do. A table written out beside them is one that can
+  come to disagree about which kinds there are, and what a stream does with the
+  kind it was not told about is release the characters a token opens with.
+- **The answer is not monotone, and nothing needs it to be.** An anchor arriving
+  puts a candidate in text a scan had already walked past: `ANTHROPIC_AP` holds
+  no candidate for an AWS access key ID and `ANTHROPIC_API` holds one two
+  characters in front of its end. Both answers are true — what a scan settles it
+  settles for every text carrying on from there — and `stream.go` keeps the
+  further of the two.
+
+`Test_builtins_retainSettles` holds every built-in to the whole of this on its
+samples cut at every offset, `FuzzBuiltins_retain` on generated text, and the
+cut properties in `conformance` end to end against `Mask`.
+
+The other half is `LookBehind`, which `pattern.go` states. Every built-in reads
+one byte in front of a value — the character a prefix may not stand behind — and
+`Test_patterns_readNoFurtherBackThanLookBehind` holds each of them to it.
 
 ## Linearity
 

@@ -83,7 +83,7 @@ func Test_StripeWebhookSigningSecret(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := StripeWebhookSigningSecret().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := StripeWebhookSigningSecret().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -196,7 +196,7 @@ func Test_StripeWebhookSigningSecret_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := StripeWebhookSigningSecret().Find(tt.src); len(got) != 0 {
+			if got, _ := StripeWebhookSigningSecret().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})

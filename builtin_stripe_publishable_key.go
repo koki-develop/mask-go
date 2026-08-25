@@ -126,8 +126,13 @@ func StripePublishableKey() Pattern { return stripePublishableKey }
 // states the same grammar the plain way, spelling the prefixes, the floor and
 // the two character classes again so that the two are changed together, and the
 // fuzz target beside it holds this scan to that statement.
-var stripePublishableKey = NewPattern("stripe-publishable-key", func(src string) []Span {
+var stripePublishableKey = NewPattern("stripe-publishable-key", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := stripePublishableKeyTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], stripePublishableKeyAnchorByte)
@@ -163,12 +168,18 @@ var stripePublishableKey = NewPattern("stripe-publishable-key", func(src string)
 
 		body := start + prefix
 		end := base62RunEnd(src, body)
+		if end == len(src) {
+			// The run reaches the end of the input, so neither where the body
+			// ends nor whether it is long enough to be one is settled here:
+			// what comes next either carries the run on or closes it.
+			retain = min(retain, start)
+		}
 		if end-body < stripePublishableKeyBodyChars {
 			continue
 		}
 		spans = append(spans, Span{Start: start, End: end})
 	}
-	return spans
+	return spans, retain
 })
 
 // stripePublishableKeyPrefixes are the prefixes this pattern reads: the key
@@ -229,3 +240,7 @@ func stripePublishableKeyPrefixAt(src string, i int) int {
 	}
 	return 0
 }
+
+// stripePublishableKeyTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var stripePublishableKeyTail = newPrefixTail(stripePublishableKeyPrefixes[:]...)

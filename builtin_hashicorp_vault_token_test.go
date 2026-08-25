@@ -110,7 +110,7 @@ func Test_HashiCorpVaultToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := HashiCorpVaultToken().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := HashiCorpVaultToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -207,7 +207,7 @@ func Test_HashiCorpVaultToken_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := HashiCorpVaultToken().Find(tt.src); len(got) != 0 {
+			if got, _ := HashiCorpVaultToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})

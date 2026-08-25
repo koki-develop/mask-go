@@ -168,8 +168,13 @@ func PyPIAPIToken() Pattern { return pypiAPIToken }
 // grammar with no cursor in it, spelling the prefix, the header, the floor and
 // the alphabet again so that the two are changed together, and the fuzz target
 // beside it holds this scan to that statement.
-var pypiAPIToken = NewPattern("pypi-api-token", func(src string) []Span {
+var pypiAPIToken = NewPattern("pypi-api-token", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := pypiAPITokenTail.start(src)
 
 	// The run a token is read as is worked out once and remembered, for the
 	// reason the rationale above gives. The cursor holds the end of the run the
@@ -214,12 +219,18 @@ var pypiAPIToken = NewPattern("pypi-api-token", func(src string) []Span {
 		if body >= runEnd {
 			runEnd = base64URLRunEnd(src, body)
 		}
+		if runEnd == len(src) {
+			// The run reaches the end of the input, so neither where the
+			// macaroon ends nor whether enough of it is here is settled: what
+			// comes next either carries the run on or closes it.
+			retain = min(retain, start)
+		}
 		if runEnd-body < pypiAPITokenBodyChars {
 			continue
 		}
 		spans = append(spans, Span{Start: start, End: runEnd})
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -268,3 +279,7 @@ const (
 	// sides of it.
 	pypiAPITokenBodyChars = 50
 )
+
+// pypiAPITokenTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var pypiAPITokenTail = newPrefixTail(pypiAPITokenAnchor)

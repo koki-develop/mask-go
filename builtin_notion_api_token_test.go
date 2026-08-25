@@ -91,7 +91,7 @@ func Test_NotionAPIToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NotionAPIToken().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := NotionAPIToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -191,7 +191,7 @@ func Test_NotionAPIToken_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NotionAPIToken().Find(tt.src); len(got) != 0 {
+			if got, _ := NotionAPIToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
@@ -459,7 +459,7 @@ func Test_NotionAPIToken_spansAreAscending(t *testing.T) {
 	}
 
 	for _, src := range srcs {
-		spans := NotionAPIToken().Find(src)
+		spans, _ := NotionAPIToken().Find(src)
 		for i := 1; i < len(spans); i++ {
 			if spans[i].Start < spans[i-1].Start {
 				t.Errorf("Find(%q) reported %v after %v", src, spans[i], spans[i-1])

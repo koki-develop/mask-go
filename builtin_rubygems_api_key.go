@@ -206,8 +206,13 @@ func RubyGemsAPIKey() Pattern { return rubyGemsAPIKey }
 // as a regular expression, spelling the prefix, the count and the character
 // class again so that the two are changed together, and the fuzz target beside
 // it holds this scan to that expression.
-var rubyGemsAPIKey = NewPattern("rubygems-api-key", func(src string) []Span {
+var rubyGemsAPIKey = NewPattern("rubygems-api-key", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := rubyGemsAPIKeyTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], rubyGemsAPIKeyAnchor)
@@ -240,11 +245,19 @@ var rubyGemsAPIKey = NewPattern("rubygems-api-key", func(src string) []Span {
 		}
 
 		body := start + len(rubyGemsAPIKeyPrefix)
-		if end := start + rubyGemsAPIKeyChars; end <= len(src) && isRubyGemsAPIKeyBody(src[body:end]) {
+		end := start + rubyGemsAPIKeyChars
+		if end > len(src) {
+			// The input ends inside this candidate, so the count that is the
+			// whole of what tells it from anything else written behind the
+			// prefix cannot be taken here.
+			retain = min(retain, start)
+			continue
+		}
+		if isRubyGemsAPIKeyBody(src[body:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -321,3 +334,7 @@ func isRubyGemsAPIKeyBody(s string) bool {
 func isRubyGemsAPIKeyBodyByte(c byte) bool {
 	return '0' <= c && c <= '9' || 'a' <= c && c <= 'f'
 }
+
+// rubyGemsAPIKeyTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var rubyGemsAPIKeyTail = newPrefixTail(rubyGemsAPIKeyPrefix)

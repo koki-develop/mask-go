@@ -193,8 +193,13 @@ func StripeWebhookSigningSecret() Pattern { return stripeWebhookSigningSecret }
 // expression, spelling the prefix, the floor and the alphabet again so that the
 // two are changed together, and the fuzz target beside it holds this scan to
 // that expression.
-var stripeWebhookSigningSecret = NewPattern("stripe-webhook-signing-secret", func(src string) []Span {
+var stripeWebhookSigningSecret = NewPattern("stripe-webhook-signing-secret", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := stripeWebhookSigningSecretTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], stripeWebhookSigningSecretAnchor)
@@ -225,11 +230,18 @@ var stripeWebhookSigningSecret = NewPattern("stripe-webhook-signing-secret", fun
 		}
 
 		body := start + len(stripeWebhookSigningSecretPrefix)
-		if end := base62RunEnd(src, body); end-body >= stripeWebhookSigningSecretBodyChars {
+		end := base62RunEnd(src, body)
+		if end == len(src) {
+			// The run reaches the end of the input, so neither where the body
+			// ends nor whether it is long enough to be one is settled here:
+			// what comes next either carries the run on or closes it.
+			retain = min(retain, start)
+		}
+		if end-body >= stripeWebhookSigningSecretBodyChars {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -269,3 +281,7 @@ const (
 	// a rule, and either could be corrected without the other.
 	stripeWebhookSigningSecretBodyChars = 32
 )
+
+// stripeWebhookSigningSecretTail is what the scan settles the tail of its input
+// by. prefixTail (builtin_scan.go) says what that is and why it is built once.
+var stripeWebhookSigningSecretTail = newPrefixTail(stripeWebhookSigningSecretPrefix)

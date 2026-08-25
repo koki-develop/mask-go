@@ -127,7 +127,7 @@ func Test_GitLabToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GitLabToken().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := GitLabToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -186,7 +186,7 @@ func Test_GitLabToken_routable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GitLabToken().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := GitLabToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -389,7 +389,7 @@ func Test_GitLabToken_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GitLabToken().Find(tt.src); len(got) != 0 {
+			if got, _ := GitLabToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
@@ -500,7 +500,7 @@ func Test_GitLabToken_tokenBeginningInsideTheOneBeforeIt(t *testing.T) {
 	// which a Masker resolves into one.
 	src := "glpat-0123456789abcdefglpat-0123456789abcdefghij"
 	want := []Span{{0, 26}, {22, 48}}
-	if got := GitLabToken().Find(src); !slices.Equal(got, want) {
+	if got, _ := GitLabToken().Find(src); !slices.Equal(got, want) {
 		t.Errorf("Find(%q) = %v, want %v", src, got, want)
 	}
 

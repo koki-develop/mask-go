@@ -133,7 +133,7 @@ func Test_StripeSecretKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := StripeSecretKey().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := StripeSecretKey().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -260,7 +260,7 @@ func Test_StripeSecretKey_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := StripeSecretKey().Find(tt.src); len(got) != 0 {
+			if got, _ := StripeSecretKey().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
@@ -525,7 +525,7 @@ func Test_StripeSecretKey_noKeyBeginsInsideAnother(t *testing.T) {
 				outer + body[:len(body)-1] + inner + body,
 				outer + body + "_" + inner + body,
 			} {
-				spans := p.Find(src)
+				spans, _ := p.Find(src)
 				for i, got := range spans {
 					if i > 0 && got.Start < spans[i-1].End {
 						t.Errorf("Find(%q) = %v, which holds two values overlapping", src, spans)

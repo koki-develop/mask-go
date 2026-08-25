@@ -132,8 +132,13 @@ func OpenAIAPIKey() Pattern { return openAIAPIKey }
 // a regular expression, spelling the prefix, the marker and the alphabet again
 // so that the two are changed together, and the fuzz target beside it holds
 // this scan to that expression.
-var openAIAPIKey = NewPattern("openai-api-key", func(src string) []Span {
+var openAIAPIKey = NewPattern("openai-api-key", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of the prefix standing at
+	// the end of it, or a candidate the end of it cut short. builtin_scan.go
+	// says why those are the two.
+	retain := openAIAPIKeyTail.start(src)
 
 	// The run a key is read as is worked out once and remembered, as the GitLab
 	// scan does: every character of the prefix belongs to the run alphabet, so
@@ -165,7 +170,12 @@ var openAIAPIKey = NewPattern("openai-api-key", func(src string) []Span {
 	// one of those reaches the body of the loop.
 	marker := strings.Index(src, openAIAPIKeyMarker)
 	if marker < 0 {
-		return nil
+		// No marker in the input is no key in it, and what is left to answer
+		// is where the input stops being settled. With no marker anywhere,
+		// the tail alone decides that: a key is one run carrying the prefix
+		// and the marker both, so a run the input has closed can gain
+		// neither, and only a run still open at the end of it can become one.
+		return nil, min(retain, openAIAPIKeyOpenStart(src))
 	}
 
 	for offset := 0; offset < len(src); {
@@ -214,13 +224,43 @@ var openAIAPIKey = NewPattern("openai-api-key", func(src string) []Span {
 		// it too. Ending inside the run is therefore the same thing as standing
 		// in this candidate's run at all, and a marker past the run is past the
 		// run for every candidate behind this one as well.
+		if runEnd == len(src) {
+			// The run reaches the end of the input, so neither where the key
+			// ends nor whether the marker stands in it is settled here: what
+			// comes next either carries the run on or closes it.
+			retain = min(retain, start)
+		}
 		if marker+len(openAIAPIKeyMarker) > runEnd {
 			continue
 		}
 		spans = append(spans, Span{Start: start, End: runEnd})
 	}
-	return spans
+	return spans, retain
 })
+
+// openAIAPIKeyOpenStart returns where the earliest candidate standing in the
+// run that reaches the end of src begins, and len(src) where no run reaches the
+// end of src or the one that does opens no candidate.
+//
+// It is what the scan answers with when one search has already told it there is
+// no key here at all. The walk above is the one that finds candidates and this
+// is not a second one: it reads the same prefix, over the one run a key could
+// still be written into, and it reads it whole rather than by the anchor
+// because there is no line of candidates to step along — there is one run, and
+// what is wanted of it is the first prefix in it and nothing else.
+func openAIAPIKeyOpenStart(src string) int {
+	i := len(src)
+	for i > 0 && isBase64URLByte(src[i-1]) {
+		i--
+	}
+	if i == len(src) {
+		return len(src)
+	}
+	if j := strings.Index(src[i:], openAIAPIKeyPrefix); j >= 0 {
+		return i + j
+	}
+	return len(src)
+}
 
 const (
 	// openAIAPIKeyPrefix is what every kind of key opens with, whichever kind
@@ -258,3 +298,7 @@ const (
 	// divide one.
 	openAIAPIKeyMarker = "T3BlbkFJ"
 )
+
+// openAIAPIKeyTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var openAIAPIKeyTail = newPrefixTail(openAIAPIKeyPrefix)

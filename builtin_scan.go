@@ -43,6 +43,25 @@ package mask
 // a byte past the start of the candidate — and a scan wanting a longer one
 // still owes the argument for it.
 //
+// What a scan settles is stated here as well, and for the same reason: every
+// scan answers it, and the answer has the same two parts each time.
+//
+// Pattern.Find asks a scan how far along its input the values it reported can
+// no longer change, which is what lets a stream release text rather than keep
+// the whole of it. A scan reads a candidate forward from a prefix and decides
+// it on what stands behind, so there are exactly two places the end of the
+// input can leave a scan without an answer. A prefix the end cut in half opens
+// no candidate at all and the scan walks past it having found nothing: that is
+// fragmentStart below, which every scan calls with its own prefixes. A
+// candidate whose body the end cut short is the scan's own to report, at the
+// candidate, and what it reports there is the candidate's start.
+//
+// A scan gives up on such a candidate rather than reading what is written of
+// it. Working out that a truncated candidate could never have become a value
+// releases a few more bytes at the end of a write, and it costs a second
+// grammar — the grammar of the halves — kept beside the first and free to
+// disagree with it. The bytes are not worth that.
+//
 // Every pattern holds its own anchor to standing at its own index in every
 // prefix that pattern can match, in a test of its own beside the scan. What
 // that test is for is the prefix added later, not the index moved: a pattern
@@ -132,4 +151,87 @@ func base62RunEnd(src string, i int) int {
 		i++
 	}
 	return i
+}
+
+// prefixTail is how a scan settles the tail of its input, and every scan
+// reports what it says alongside the candidates it left open. A candidate is
+// read forward from a prefix, so a prefix the end of the input cuts in half
+// opens no candidate at all and the scan walks past it having found nothing: a
+// stream carrying ghp_ in two pieces would be released with the first piece
+// written out and the token behind it redacted nowhere. What this returns is
+// where such a piece begins, so that the text from there on is held back until
+// the rest of the prefix arrives, or until something that is no prefix does.
+//
+// A whole prefix is looked for as well as a piece of one, though a whole prefix
+// opens a candidate the scan reports for itself. It costs a comparison and it
+// puts the tail of the input in one place rather than in the hands of whichever
+// scan is being changed, which is worth the byte it may hold back twice.
+//
+// The byte a piece would close on is compared before the piece is: two pieces
+// of one prefix cannot close on the same byte unless the prefix repeats it, so
+// all but one of the lengths tried are turned away by a single comparison, and
+// a prefix that stands nowhere near the end of src costs one comparison per
+// length rather than one per byte of it. What turns an input away before any of
+// that is the set of bytes below.
+type prefixTail struct {
+	prefixes []string
+	// bytes is every byte the prefixes are written with, four words of one bit
+	// to a byte. A piece of a prefix standing at the end of the input closes on
+	// one of them, so an input closing on anything else is answered by a single
+	// lookup rather than by a walk over every prefix.
+	//
+	// It is what keeps this off the cost of a line holding nothing. Every scan
+	// asks this of every input, and a table of a few prefixes is a few dozen
+	// comparisons — more than the whole of what some scans pay to walk a log
+	// line and find nothing in it. The bytes a prefix is written with are a
+	// handful out of two hundred and fifty-six, and the last byte of a line of
+	// prose is almost never one of them.
+	bytes [4]uint64
+}
+
+// newPrefixTail returns a prefixTail over prefixes. A scan builds one once,
+// beside its prefixes, rather than at every call.
+func newPrefixTail(prefixes ...string) prefixTail {
+	t := prefixTail{prefixes: prefixes}
+	for _, p := range prefixes {
+		for i := 0; i < len(p); i++ {
+			t.bytes[p[i]>>6] |= 1 << (p[i] & 63)
+		}
+	}
+	return t
+}
+
+// start returns where the longest of the prefixes standing at the end of src
+// begins, whole or cut short by the end of the input, and len(src) where none
+// of them stands there.
+func (t *prefixTail) start(src string) int {
+	if len(src) == 0 {
+		return 0
+	}
+	last := src[len(src)-1]
+	if t.bytes[last>>6]&(1<<(last&63)) == 0 {
+		return len(src)
+	}
+	return t.walk(src, last)
+}
+
+// walk returns what start returns for a src closing on a byte the prefixes are
+// written with.
+//
+// It is a function of its own so that start is small enough to be inlined:
+// every scan calls start on every input, almost always to be told by the one
+// lookup above that there is nothing here, and a call frame for that answer is
+// most of what the answer costs.
+func (t *prefixTail) walk(src string, last byte) int {
+	start := len(src)
+	for _, p := range t.prefixes {
+		for k := min(len(p), len(src)); k > 0; k-- {
+			if p[k-1] != last || src[len(src)-k:] != p[:k] {
+				continue
+			}
+			start = min(start, len(src)-k)
+			break
+		}
+	}
+	return start
 }

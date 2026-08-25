@@ -106,8 +106,12 @@ func AWSAccessKeyID() Pattern { return awsAccessKeyID }
 // grammar as a regular expression, spelling the prefixes and the count again so
 // that the two are changed together, and the fuzz target beside it holds this
 // scan to that expression.
-var awsAccessKeyID = NewPattern("aws-access-key-id", func(src string) []Span {
+var awsAccessKeyID = NewPattern("aws-access-key-id", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops settling: a piece of a prefix standing at the end
+	// of it, or a candidate the end of it cut short, whichever comes first.
+	retain := awsAccessKeyIDTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], awsAccessKeyIDAnchor)
@@ -138,11 +142,23 @@ var awsAccessKeyID = NewPattern("aws-access-key-id", func(src string) []Span {
 			continue
 		}
 
-		if end := start + awsAccessKeyIDChars; end <= len(src) && isAWSAccessKeyID(src[start:end]) {
+		end := start + awsAccessKeyIDChars
+		if end > len(src) {
+			// The input ends inside this candidate, so what it is cannot be
+			// decided here: the characters behind the ones written are what
+			// tell a key from a capitalised word, and they are not here yet.
+			// What is behind the prefix is not looked at before giving up on
+			// it either — a candidate this near the end of the input is rare
+			// enough that reading it would buy back fewer bytes than the
+			// reading costs.
+			retain = min(retain, start)
+			continue
+		}
+		if isAWSAccessKeyID(src[start:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 // awsAccessKeyIDPrefixes are the two prefixes AWS documents for an access key
@@ -226,3 +242,7 @@ func opensAWSAccessKeyID(s string) bool {
 func isAWSAccessKeyIDByte(c byte) bool {
 	return '0' <= c && c <= '9' || 'A' <= c && c <= 'Z'
 }
+
+// awsAccessKeyIDTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var awsAccessKeyIDTail = newPrefixTail(awsAccessKeyIDPrefixes[:]...)

@@ -152,8 +152,13 @@ func NPMAccessToken() Pattern { return npmAccessToken }
 // as a regular expression, spelling the prefix, the floor and the alphabet
 // again so that the two are changed together, and the fuzz target beside it
 // holds this scan to that expression.
-var npmAccessToken = NewPattern("npm-access-token", func(src string) []Span {
+var npmAccessToken = NewPattern("npm-access-token", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := npmAccessTokenTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], npmAccessTokenAnchor)
@@ -184,11 +189,18 @@ var npmAccessToken = NewPattern("npm-access-token", func(src string) []Span {
 		}
 
 		body := start + len(npmAccessTokenPrefix)
-		if end := base62RunEnd(src, body); end-body >= npmAccessTokenBodyChars {
+		end := base62RunEnd(src, body)
+		if end == len(src) {
+			// The run reaches the end of the input, so neither where the body
+			// ends nor whether it is long enough to be one is settled here:
+			// what comes next either carries the run on or closes it.
+			retain = min(retain, start)
+		}
+		if end-body >= npmAccessTokenBodyChars {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -221,3 +233,7 @@ const (
 	// above weighs reading it as a floor.
 	npmAccessTokenBodyChars = 36
 )
+
+// npmAccessTokenTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var npmAccessTokenTail = newPrefixTail(npmAccessTokenPrefix)

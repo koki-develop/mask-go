@@ -97,7 +97,7 @@ func Test_AnthropicAPIKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := AnthropicAPIKey().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := AnthropicAPIKey().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -208,7 +208,7 @@ func Test_AnthropicAPIKey_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := AnthropicAPIKey().Find(tt.src); len(got) != 0 {
+			if got, _ := AnthropicAPIKey().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
@@ -552,7 +552,7 @@ func Test_anthropicAPIKeyBodyAt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := anthropicAPIKeyBodyAt(tt.src, 0); got != tt.want {
+			if got, _ := anthropicAPIKeyBodyAt(tt.src, 0); got != tt.want {
 				t.Errorf("anthropicAPIKeyBodyAt(%q, 0) = %d, want %d", tt.src, got, tt.want)
 			}
 		})

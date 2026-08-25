@@ -210,8 +210,13 @@ func CloudflareAPIToken() Pattern { return cloudflareAPIToken }
 // grammar as a regular expression, spelling both prefixes, both counts and both
 // character classes again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that expression.
-var cloudflareAPIToken = NewPattern("cloudflare-api-token", func(src string) []Span {
+var cloudflareAPIToken = NewPattern("cloudflare-api-token", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := cloudflareAPITokenTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], cloudflareAPITokenAnchor)
@@ -246,11 +251,18 @@ var cloudflareAPIToken = NewPattern("cloudflare-api-token", func(src string) []S
 		}
 
 		body := start + prefix
-		if end := body + cloudflareCredentialBodyChars; end <= len(src) && isCloudflareCredentialBody(src[body:end]) {
+		end := body + cloudflareCredentialBodyChars
+		if end > len(src) {
+			// The input ends inside the body, so the checksum that tells this
+			// candidate from a hexadecimal word is not here yet.
+			retain = min(retain, start)
+			continue
+		}
+		if isCloudflareCredentialBody(src[body:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 // cloudflareAPITokenPrefixes are the prefixes this pattern reads: the token a
@@ -383,3 +395,7 @@ func isCloudflareCredentialChecksumByte(c byte) bool {
 		'A' <= c && c <= 'F' ||
 		'a' <= c && c <= 'f'
 }
+
+// cloudflareAPITokenTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var cloudflareAPITokenTail = newPrefixTail(cloudflareAPITokenPrefixes[:]...)

@@ -201,8 +201,13 @@ func SlackToken() Pattern { return slackToken }
 // implementation of these rules, spelling the prefixes, the count and the
 // character classes again so that the two are changed together, and the fuzz
 // target beside it holds this scan to it.
-var slackToken = NewPattern("slack-token", func(src string) []Span {
+var slackToken = NewPattern("slack-token", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := slackTokenTail.start(src)
 
 	// The run a body is read as is worked out once and remembered. The
 	// alphabet holds the letter every prefix opens with, so a prefix can be
@@ -279,12 +284,19 @@ var slackToken = NewPattern("slack-token", func(src string) []Span {
 			// against the prefix with no part in front of it. lastSecret is the
 			// rightmost, so nothing qualifies behind it and there is no earlier
 			// segment this could be hiding.
+			if runEnd == len(src) {
+				// The run reaches the end of the input, so neither where the
+				// token ends nor whether a segment behind the first can be a
+				// secret is settled here: what comes next either carries the
+				// run on or closes it.
+				retain = min(retain, start)
+			}
 			if lastSecret > body {
 				spans = append(spans, Span{Start: start, End: runEnd})
 			}
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 // slackTokenPrefixes are the prefixes Slack documents, longest first so that a
@@ -429,3 +441,7 @@ func isSlackTokenWordByte(c byte) bool {
 func isSlackTokenByte(c byte) bool {
 	return isSlackTokenWordByte(c) || c == slackTokenSeparator
 }
+
+// slackTokenTail is what the scan settles the tail of its input by. prefixTail
+// (builtin_scan.go) says what that is and why it is built once.
+var slackTokenTail = newPrefixTail(slackTokenPrefixes[:]...)

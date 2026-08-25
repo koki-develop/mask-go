@@ -65,7 +65,7 @@ func New(opts ...Option) *Masker {
 // was never written. Either way masking again may redact more than masking
 // once did, and neither is a defect in a scan.
 func (m *Masker) Mask(src string) string {
-	found := m.locate(src)
+	found := m.locate(src, 0).found
 	if len(found) == 0 {
 		return src
 	}
@@ -89,20 +89,66 @@ type located struct {
 	order   int // index of pattern in Masker.patterns
 }
 
-// locate returns the values every pattern finds in src, ordered by position
-// and merged so that no two overlap.
-func (m *Masker) locate(src string) []located {
+// locations is what one pass of a Masker's patterns over a text found.
+type locations struct {
+	// found are the values, ordered by position and merged so that no two
+	// overlap.
+	found []located
+	// retain is the offset from which the text is not settled: the least any
+	// pattern reported, since the text is settled only as far as every
+	// pattern scanning it agrees that it is, and len(src) where there are no
+	// patterns at all.
+	retain int
+	// holder is the pattern that settled least, and nil where retain is the
+	// whole of the text. It is what a stream names when it gives up holding
+	// text back, so that the redaction says which grammar was still open.
+	holder Pattern
+}
+
+// locate returns what every pattern finds in src beginning at or after from,
+// and how far along src they leave settled.
+//
+// What a pattern reports is clamped into src rather than trusted: a Pattern is
+// written by a caller, and one answering past either end would otherwise
+// release text no pattern has read, or hold a stream that nothing will ever
+// settle.
+//
+// from is zero for a whole text and is what a stream masking a window of one
+// passes: the window opens LookBehind bytes in front of the text still to be
+// written out, so that a pattern reading back over a value has the text to
+// read, and a value beginning in that opening is one the window has already
+// carried past. What stands in front of such a value is outside the window, so
+// it is the one place a pattern cannot be right about.
+//
+// Such a value is dropped. Cutting it back to where the opening ends would
+// redact text the whole input leaves alone — a candidate turned away by the
+// character in front of it is turned away nowhere else, and the window is the
+// one place that character is missing.
+//
+// Dropping is safe only because a value is dropped alone. A pattern reporting
+// one span where two values overlap would have the second dropped with the
+// first and written out as it stands, so a pattern that joins what it reports
+// leaves out of the joining anything the text in front of it decides. That is
+// what LookBehind asks of a Find, and what MustRegexp does with an expression
+// carrying \b or an anchor.
+func (m *Masker) locate(src string, from int) locations {
 	var all []located
+	found := locations{retain: len(src)}
 	for i, p := range m.patterns {
-		for _, s := range p.Find(src) {
-			if s.Start < 0 || s.End > len(src) || s.Start >= s.End {
+		spans, r := p.Find(src)
+		if r = min(max(r, 0), len(src)); r < found.retain {
+			found.retain, found.holder = r, p
+		}
+		for _, s := range spans {
+			if s.Start < from || s.End > len(src) || s.Start >= s.End {
 				continue
 			}
 			all = append(all, located{Span: s, pattern: p, order: i})
 		}
 	}
 	if len(all) < 2 {
-		return all
+		found.found = all
+		return found
 	}
 
 	slices.SortFunc(all, func(a, b located) int {
@@ -127,5 +173,6 @@ func (m *Masker) locate(src string) []located {
 		}
 		merged = append(merged, next)
 	}
-	return merged
+	found.found = merged
+	return found
 }

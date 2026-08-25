@@ -207,8 +207,13 @@ func SupabaseAccessToken() Pattern { return supabaseAccessToken }
 // expression, spelling the prefix, the marker, the count and the character class
 // again so that the two are changed together, and the fuzz target beside it
 // holds this scan to that expression.
-var supabaseAccessToken = NewPattern("supabase-access-token", func(src string) []Span {
+var supabaseAccessToken = NewPattern("supabase-access-token", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := supabaseAccessTokenTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], supabaseAccessTokenAnchor)
@@ -253,11 +258,19 @@ var supabaseAccessToken = NewPattern("supabase-access-token", func(src string) [
 		// a line of such tokens is walked twice over.
 		offset = secret + supabaseAccessTokenAnchorIndex
 
-		if end := secret + supabaseAccessTokenSecretChars; end <= len(src) && isSupabaseAccessTokenSecret(src[secret:end]) {
+		end := secret + supabaseAccessTokenSecretChars
+		if end > len(src) {
+			// The input ends inside the secret, and the marker in front of it
+			// may be cut short as well: neither the count nor which kind of
+			// token this is can be taken here.
+			retain = min(retain, start)
+			continue
+		}
+		if isSupabaseAccessTokenSecret(src[secret:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -342,3 +355,7 @@ func isSupabaseAccessTokenSecret(s string) bool {
 func isSupabaseAccessTokenSecretByte(c byte) bool {
 	return '0' <= c && c <= '9' || 'a' <= c && c <= 'f'
 }
+
+// supabaseAccessTokenTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var supabaseAccessTokenTail = newPrefixTail(supabaseAccessTokenPrefix)

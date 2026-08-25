@@ -308,8 +308,13 @@ func HashiCorpVaultToken() Pattern { return hashiCorpVaultToken }
 // the grammar as a regular expression, spelling the prefixes, the floor and the
 // alphabet again so that the two are changed together, and the fuzz target
 // beside it holds this scan to that expression.
-var hashiCorpVaultToken = NewPattern("hashicorp-vault-token", func(src string) []Span {
+var hashiCorpVaultToken = NewPattern("hashicorp-vault-token", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := hashiCorpVaultTokenTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], hashiCorpVaultTokenSeparator)
@@ -339,12 +344,34 @@ var hashiCorpVaultToken = NewPattern("hashicorp-vault-token", func(src string) [
 			continue
 		}
 
-		if end := base64URLRunEnd(src, body); end-body >= hashiCorpVaultTokenBodyChars {
+		end := base64URLRunEnd(src, body)
+		if end == len(src) {
+			// The run reaches the end of the input, so neither where the body
+			// ends nor whether it is long enough to be one is settled here:
+			// what comes next either carries the run on or closes it.
+			retain = min(retain, start)
+		}
+		if end-body >= hashiCorpVaultTokenBodyChars {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
+
+// hashiCorpVaultTokenPrefixes is what a candidate opens with, one entry to a
+// kind. It is built from the parts the scan reads rather than written out
+// again, so that a kind added to hashiCorpVaultTokenKinds is a kind this knows
+// about: a table spelling the prefixes out is one that can come to disagree
+// with the scan about which kinds there are, and what a stream would then do
+// with the kind it had not been told about is release the front of it and
+// redact nothing.
+var hashiCorpVaultTokenPrefixes = func() []string {
+	prefixes := make([]string, 0, len(hashiCorpVaultTokenKinds))
+	for _, kind := range hashiCorpVaultTokenKinds {
+		prefixes = append(prefixes, hashiCorpVaultTokenAnchor+string(kind)+string(hashiCorpVaultTokenSeparator))
+	}
+	return prefixes
+}()
 
 const (
 	// hashiCorpVaultTokenAnchor is what every prefix opens with and what a
@@ -403,3 +430,7 @@ const (
 func isHashiCorpVaultTokenKind(c byte) bool {
 	return strings.IndexByte(hashiCorpVaultTokenKinds, c) >= 0
 }
+
+// hashiCorpVaultTokenTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var hashiCorpVaultTokenTail = newPrefixTail(hashiCorpVaultTokenPrefixes...)

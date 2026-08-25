@@ -80,7 +80,7 @@ func Test_GrafanaServiceAccountToken(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GrafanaServiceAccountToken().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := GrafanaServiceAccountToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -194,7 +194,7 @@ func Test_GrafanaServiceAccountToken_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GrafanaServiceAccountToken().Find(tt.src); len(got) != 0 {
+			if got, _ := GrafanaServiceAccountToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
@@ -399,7 +399,7 @@ func Test_GrafanaServiceAccountToken_aDigestBehindThePrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GrafanaServiceAccountToken().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := GrafanaServiceAccountToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -436,7 +436,7 @@ func Test_GrafanaServiceAccountToken_checksumIsNotVerified(t *testing.T) {
 	want := []Span{{0, 46}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GrafanaServiceAccountToken().Find(tt.src); !slices.Equal(got, want) {
+			if got, _ := GrafanaServiceAccountToken().Find(tt.src); !slices.Equal(got, want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, want)
 			}
 		})
@@ -469,7 +469,7 @@ func Test_GrafanaServiceAccountToken_theCloudPrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GrafanaServiceAccountToken().Find(tt.src); len(got) != 0 {
+			if got, _ := GrafanaServiceAccountToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})

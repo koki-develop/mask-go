@@ -2,6 +2,8 @@ package mask_test
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/koki-develop/mask-go"
@@ -131,11 +133,24 @@ func ExampleMustRegexp_maskGroup() {
 func ExampleNewPattern() {
 	secret := "s3cr3t-value"
 
-	p := mask.NewPattern("shared-secret", func(src string) []mask.Span {
-		if i := strings.Index(src, secret); i >= 0 {
-			return []mask.Span{{Start: i, End: i + len(secret)}}
+	p := mask.NewPattern("shared-secret", func(src string) ([]mask.Span, int) {
+		var spans []mask.Span
+		for i := 0; ; {
+			j := strings.Index(src[i:], secret)
+			if j < 0 {
+				break
+			}
+			spans = append(spans, mask.Span{Start: i + j, End: i + j + len(secret)})
+			// One byte past where this one began, not past where it ended: a
+			// value written inside another is a value, and a scan resuming
+			// past the match would step over it. LookBehind asks for the same
+			// thing from the other side — where a scan resumes must not depend
+			// on how much of the text in front of it it was shown.
+			i += j + 1
 		}
-		return nil
+		// The value is one fixed width, so text further than a width from
+		// the end of src holds nothing more of it to come.
+		return spans, max(0, len(src)-len(secret)+1)
 	})
 
 	m := mask.New(mask.WithPatterns(p))
@@ -174,4 +189,57 @@ func ExampleNewRedactor() {
 
 	fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
 	// Output: GITHUB_TOKEN=[GITHUB-TOKEN]
+}
+
+func ExampleNewWriter() {
+	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
+
+	w := mask.NewWriter(os.Stdout, m)
+
+	// A value split across two writes is in neither of them, so the first
+	// half is held back until the second arrives.
+	for _, piece := range []string{"GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstu", "vwxyz\n"} {
+		if _, err := io.WriteString(w, piece); err != nil {
+			panic(err)
+		}
+	}
+
+	// Close writes out whatever the Writer is still holding back. A Writer
+	// that is never closed leaves it unwritten.
+	if err := w.Close(); err != nil {
+		panic(err)
+	}
+	// Output: GITHUB_TOKEN=****************************************
+}
+
+func ExampleNewReader() {
+	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
+
+	src := strings.NewReader("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz")
+	masked, err := io.ReadAll(mask.NewReader(src, m))
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(masked))
+	// Output: GITHUB_TOKEN=****************************************
+}
+
+func ExampleWithMaxRetained() {
+	// A run of the characters a key is written in, arriving without end, is a
+	// key without end to the pattern reading it. The limit is where holding
+	// stops, and what it stops with is a redaction of everything held.
+	m := mask.New(
+		mask.WithPatterns(mask.StripeSecretKey()),
+		mask.WithRedactor(mask.Fixed("[REDACTED]")),
+	)
+
+	w := mask.NewWriter(os.Stdout, m, mask.WithMaxRetained(32))
+	if _, err := io.WriteString(w, "sk_live_"+strings.Repeat("0123456789abcdef", 8)); err != nil {
+		panic(err)
+	}
+	if err := w.Close(); err != nil {
+		panic(err)
+	}
+	// Output: [REDACTED]
 }

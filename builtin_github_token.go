@@ -34,8 +34,13 @@ func GitHubToken() Pattern { return githubToken }
 // scan locates may hold the start of the next one, so the grammar is tried at
 // every byte rather than resumed past a match, which would step over the token
 // inside it.
-var githubToken = NewPattern("github-token", func(src string) []Span {
+var githubToken = NewPattern("github-token", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := githubTokenTail.start(src)
 
 	// The JWT a token in the stateless form holds ends where its run of
 	// base64url characters and the segments after it end. Every candidate
@@ -49,6 +54,10 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 	// ghu_a_ey written over and over is the same input under another name.
 	runEnd := -1
 	var jwt segments
+	// Whether the JWT walk stopped because the input did. It belongs to the
+	// run the cursor above remembers rather than to a candidate, as the walk
+	// itself does.
+	var jwtOpen bool
 
 	// The body of a fine grained token is read the same way, and needs a
 	// cursor of its own because its alphabet holds the underscore: the prefix
@@ -92,6 +101,11 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 				for patRunEnd < len(src) && isGitHubPATByte(src[patRunEnd]) {
 					patRunEnd++
 				}
+			}
+			if patRunEnd == len(src) {
+				// The run reaches the end of the input, so neither where the
+				// token ends nor whether enough of it is here is settled.
+				retain = min(retain, pat)
 			}
 			if patRunEnd-body >= githubPATChars {
 				spans = append(spans, Span{Start: pat, End: patRunEnd})
@@ -164,23 +178,40 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 		// keying on the prefix and a run of characters, as GitHub's own advice
 		// does, and admitting the dot into that run draws in the file name
 		// written after a classic token, which the anchor holds back.
-		if isGitHubStatelessKind(src[kind]) && end > body && end < len(src) &&
-			src[end] == '_' && opensJOSEHeaderAt(src, end+1) {
-			header := end + 1 + len(jwtHeaderPrefix)
-			if header >= runEnd {
-				runEnd = base64URLRunEnd(src, header)
-				jwt = segments{}
-				// The run holds at least the character the anchor read, so
-				// where it ends is where the header ends; only a dot there
-				// begins the segments.
-				if runEnd < len(src) && src[runEnd] == '.' {
-					jwt = githubJWTEnd(src, runEnd)
+		//
+		// open, below, is whether the input stopped inside this candidate. The
+		// body running to the end of it is one way; the JWT is the other, and
+		// it has to be read before the question is settled, since a body
+		// followed by an underscore and a header reaches further than the body
+		// alone does.
+		open := end == len(src)
+		if isGitHubStatelessKind(src[kind]) && end > body && end < len(src) && src[end] == '_' {
+			opens, headerOpen := opensJOSEHeaderAt(src, end+1)
+			open = open || headerOpen
+			if opens {
+				header := end + 1 + len(jwtHeaderPrefix)
+				if header >= runEnd {
+					runEnd = base64URLRunEnd(src, header)
+					jwt, jwtOpen = segments{}, runEnd == len(src)
+					// The run holds at least the character the anchor read, so
+					// where it ends is where the header ends; only a dot there
+					// begins the segments.
+					if runEnd < len(src) && src[runEnd] == '.' {
+						jwt, jwtOpen = githubJWTEnd(src, runEnd)
+					}
+				}
+				open = open || jwtOpen
+				if jwt.ok {
+					if open {
+						retain = min(retain, start)
+					}
+					spans = append(spans, Span{Start: start, End: jwt.end})
+					continue
 				}
 			}
-			if jwt.ok {
-				spans = append(spans, Span{Start: start, End: jwt.end})
-				continue
-			}
+		}
+		if open {
+			retain = min(retain, start)
 		}
 
 		// Classic tokens, forty characters in all. The last six characters of
@@ -195,8 +226,27 @@ var githubToken = NewPattern("github-token", func(src string) []Span {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
+
+// githubTokenPrefixes is what a candidate opens with: the literal a fine
+// grained token opens with, and one entry per kind of the two-character
+// opening the rest are written from.
+//
+// The kinds are read out of isGitHubTokenKind rather than written out again, so
+// that a kind admitted there is a kind this knows about. A table of its own is
+// one that can come to disagree with the test about which kinds there are, and
+// what a stream would then do with the kind it had not been told about is
+// release the characters a token opens with and redact nothing.
+var githubTokenPrefixes = func() []string {
+	prefixes := []string{githubPATPrefix}
+	for c := range 256 {
+		if isGitHubTokenKind(byte(c)) {
+			prefixes = append(prefixes, githubTokenOpening+string(rune(c))+string(githubTokenSeparator))
+		}
+	}
+	return prefixes
+}()
 
 // The literal a fine grained personal access token opens with, and the counts
 // the two token bodies must reach. GitHub documents no length, so these are
@@ -306,18 +356,28 @@ func isGitHubPATByte(c byte) bool { return isBase62Byte(c) || c == '_' }
 // installation token carries a JWT, so what this scan knows of one is the JWT
 // pattern's to define; only where the two read it differently is written out
 // here.
-func githubJWTEnd(src string, dot int) segments {
+// It reports whether the walk ran to the end of the input as well, for the
+// reason segmentsEnd does: an empty segment is an empty segment where a byte
+// stands behind the dot, and the input running out where that byte belongs.
+func githubJWTEnd(src string, dot int) (segments, bool) {
 	i := dot
 	for range signedSegments {
-		if i == len(src) || src[i] != '.' {
-			return segments{}
+		if i == len(src) {
+			return segments{}, true
+		}
+		if src[i] != '.' {
+			return segments{}, false
 		}
 		i++
 		start := i
 		i = base64URLRunEnd(src, i)
 		if i == start {
-			return segments{}
+			return segments{}, i == len(src)
 		}
 	}
-	return segments{end: i, ok: true}
+	return segments{end: i, ok: true}, i == len(src)
 }
+
+// githubTokenTail is what the scan settles the tail of its input by. prefixTail
+// (builtin_scan.go) says what that is and why it is built once.
+var githubTokenTail = newPrefixTail(githubTokenPrefixes...)

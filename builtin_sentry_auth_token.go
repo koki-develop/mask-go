@@ -170,8 +170,13 @@ func SentryAuthToken() Pattern { return sentryAuthToken }
 // grammar again, spelled out at one position, with the prefixes, the counts,
 // the alphabets and the padding rule written afresh so that the two are changed
 // together, and the fuzz target beside it holds this scan to it.
-var sentryAuthToken = NewPattern("sentry-auth-token", func(src string) []Span {
+var sentryAuthToken = NewPattern("sentry-auth-token", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := sentryAuthTokenTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], sentryAuthTokenAnchor)
@@ -207,20 +212,43 @@ var sentryAuthToken = NewPattern("sentry-auth-token", func(src string) []Span {
 		}
 
 		var (
-			end int
-			ok  bool
+			end  int
+			ok   bool
+			open bool
 		)
 		if kind := src[body-2]; kind == sentryAuthTokenOrgKind {
-			end, ok = sentryAuthTokenOrgEnd(src, body)
+			end, ok, open = sentryAuthTokenOrgEnd(src, body)
 		} else if strings.IndexByte(sentryAuthTokenHexKinds, kind) >= 0 {
-			end, ok = sentryAuthTokenHexEnd(src, body)
+			end, ok, open = sentryAuthTokenHexEnd(src, body)
+		}
+		if open {
+			// The input ends inside the body, so the count that tells this
+			// candidate from a digest, or the separator that divides a payload
+			// from its secret, has not arrived.
+			retain = min(retain, start)
 		}
 		if ok {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
+
+// sentryAuthTokenPrefixes is what a candidate opens with, one entry to a kind.
+//
+// The kinds are read out of the two declarations the scan reads them from
+// rather than written out again, so that a kind added to either is a kind this
+// knows about: a table of its own is one that can come to disagree with them,
+// and what a stream would then do with the kind it had not been told about is
+// release the characters a token opens with and redact nothing.
+var sentryAuthTokenPrefixes = func() []string {
+	kinds := sentryAuthTokenHexKinds + string(sentryAuthTokenOrgKind)
+	prefixes := make([]string, 0, len(kinds))
+	for _, kind := range kinds {
+		prefixes = append(prefixes, sentryAuthTokenOpening+string(kind)+string(sentryAuthTokenSeparator))
+	}
+	return prefixes
+}()
 
 const (
 	// sentryAuthTokenOpening is what every prefix opens with, and what the scan
@@ -296,17 +324,21 @@ const (
 //
 // The count is exact, so the body is read to it and no further: a run longer
 // than sentryAuthTokenHexChars is a token and what is written after it.
-func sentryAuthTokenHexEnd(src string, body int) (int, bool) {
+// It reports whether saying no was the end of the input speaking rather than
+// the text: a body the input cut short is one more text may complete, where a
+// body carrying a character no body is written with is no body whatever
+// follows.
+func sentryAuthTokenHexEnd(src string, body int) (int, bool, bool) {
 	end := body + sentryAuthTokenHexChars
 	if end > len(src) {
-		return 0, false
+		return 0, false, true
 	}
 	for i := body; i < end; i++ {
 		if !isSentryAuthTokenHexByte(src[i]) {
-			return 0, false
+			return 0, false, false
 		}
 	}
-	return end, true
+	return end, true, false
 }
 
 // sentryAuthTokenOrgEnd returns where the organization token whose payload
@@ -318,7 +350,12 @@ func sentryAuthTokenHexEnd(src string, body int) (int, bool) {
 // it wants than stop short of it. What is asked of the length is base64's own
 // group, so a payload Sentry could not have written is turned away before the
 // separator is looked for at all.
-func sentryAuthTokenOrgEnd(src string, body int) (int, bool) {
+// It reports whether saying no was the end of the input speaking, as
+// sentryAuthTokenHexEnd does. A payload reaching the end of the input is asked
+// about before its length is, since a payload that goes on has no length yet:
+// what the group rules out is a payload Sentry could not have written, and one
+// the input cut short is not that.
+func sentryAuthTokenOrgEnd(src string, body int) (int, bool, bool) {
 	i := body
 	for i < len(src) && isSentryAuthTokenBase64Byte(src[i]) {
 		i++
@@ -326,24 +363,27 @@ func sentryAuthTokenOrgEnd(src string, body int) (int, bool) {
 	for pad := 0; pad < sentryAuthTokenPaddingMax && i < len(src) && src[i] == sentryAuthTokenPadding; pad++ {
 		i++
 	}
-	if n := i - body; n == 0 || n%sentryAuthTokenPayloadGroup != 0 {
-		return 0, false
+	if i == len(src) {
+		return 0, false, true
 	}
-	if i == len(src) || src[i] != sentryAuthTokenSeparator {
-		return 0, false
+	if n := i - body; n == 0 || n%sentryAuthTokenPayloadGroup != 0 {
+		return 0, false, false
+	}
+	if src[i] != sentryAuthTokenSeparator {
+		return 0, false, false
 	}
 
 	secret := i + 1
 	end := secret + sentryAuthTokenSecretChars
 	if end > len(src) {
-		return 0, false
+		return 0, false, true
 	}
 	for j := secret; j < end; j++ {
 		if !isSentryAuthTokenBase64Byte(src[j]) {
-			return 0, false
+			return 0, false, false
 		}
 	}
-	return end, true
+	return end, true, false
 }
 
 // isSentryAuthTokenHexByte reports whether c may appear in a hexadecimal body:
@@ -372,3 +412,7 @@ func isSentryAuthTokenBase64Byte(c byte) bool {
 		'a' <= c && c <= 'z' ||
 		c == '+' || c == '/'
 }
+
+// sentryAuthTokenTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var sentryAuthTokenTail = newPrefixTail(sentryAuthTokenPrefixes...)

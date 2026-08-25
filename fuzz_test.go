@@ -3,6 +3,7 @@ package mask
 import (
 	"encoding/binary"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -65,7 +66,7 @@ func FuzzMasker_locate(f *testing.F) {
 		reported := reportedSpans(raw)
 
 		m := New(WithPatterns(fixed("p", reported...)))
-		got := m.locate(src)
+		got := m.locate(src, 0).found
 
 		for i, l := range got {
 			if l.Start < 0 || l.End > len(src) || l.Start >= l.End {
@@ -129,13 +130,75 @@ func FuzzMasker_Mask(f *testing.F) {
 // every pattern being driven from one: the corpus under testdata/fuzz is keyed
 // on the name of the target, and a failure is minimized against the single
 // pattern that carries it. Only the body the targets share lives here.
-func fuzzAgainstReference(f *testing.F, find, ref func(string) []Span) {
+func fuzzAgainstReference(f *testing.F, find func(string) ([]Span, int), ref func(string) []Span) {
 	f.Fuzz(func(t *testing.T, src string) {
 		// slices.Equal holds nothing reported as an empty slice and nothing
 		// reported at all the same, which Find is free to choose between.
-		got, want := find(src), ref(src)
+		got, _ := find(src)
+		want := ref(src)
 		if !slices.Equal(got, want) {
 			t.Fatalf("Find(%q) = %v, reference gives %v", src, got, want)
+		}
+	})
+}
+
+// FuzzBuiltins_retain holds every built-in to what Pattern.Find promises of the
+// offset it reports, on a text and a place to cut it.
+//
+// One target for the whole registry rather than one to a pattern, which is what
+// the per-pattern targets beside each scan are for. The inputs that find this
+// wrong are not crafted against any one grammar — they are a value and a cut
+// landing inside it — so a corpus keyed on one pattern's name would hold cases
+// every other pattern wants, and the failure names the pattern it came from
+// either way.
+func FuzzBuiltins_retain(f *testing.F) {
+	f.Add("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz", 20)
+	f.Add("Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef", 40)
+	f.Add("-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBAK\n-----END RSA PRIVATE KEY-----\n", 31)
+	f.Add("xoxb-0123456789-0123456789012-0123456789abcdefghijklmn", 5)
+	f.Add("sk-0123T3BlbkFJ0123456789abcdef", 3)
+	f.Add("there is no credential in this sentence", 7)
+	f.Add("", 0)
+
+	patterns := AllBuiltinPatterns()
+	f.Fuzz(func(t *testing.T, src string, cut int) {
+		// A cut is a place in src, and a fuzzer reaching this with any int at
+		// all would otherwise spend its run on the panic rather than on the
+		// grammars.
+		if len(src) == 0 {
+			cut = 0
+		} else {
+			cut = ((cut % (len(src) + 1)) + len(src) + 1) % (len(src) + 1)
+		}
+		for _, p := range patterns {
+			checkRetain(t, p, src, cut)
+		}
+	})
+}
+
+// FuzzPatterns_lookBehind holds every pattern to LookBehind on a text and a
+// place to cut the front off it.
+//
+// One target for the built-ins and for what MustRegexp builds together, for the
+// reason FuzzBuiltins_retain gives: what finds this wrong is a value or a match
+// standing across the cut rather than anything crafted against one grammar.
+func FuzzPatterns_lookBehind(f *testing.F) {
+	f.Add(strings.Repeat("0123456789abcdef", 24), 65)
+	f.Add("sha="+strings.Repeat("abcdef0123", 30), 70)
+	f.Add(strings.Repeat("key-123 and INT-0123456789abcdef ", 8), 64)
+	f.Add(strings.Repeat("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz ", 4), 64)
+	f.Add(strings.Repeat("xoxb-0123456789-0123456789012-0123456789abcdefghijklmn ", 3), 100)
+	f.Add("", 0)
+
+	patterns := append(lookBehindPatterns(), AllBuiltinPatterns()...)
+	f.Fuzz(func(t *testing.T, src string, cut int) {
+		if len(src) == 0 {
+			cut = 0
+		} else {
+			cut = ((cut % (len(src) + 1)) + len(src) + 1) % (len(src) + 1)
+		}
+		for _, p := range patterns {
+			checkLookBehind(t, p, src, cut)
 		}
 	})
 }

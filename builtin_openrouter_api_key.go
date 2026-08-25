@@ -165,8 +165,13 @@ func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 // grammar as a regular expression, spelling the prefix, the count and the
 // character class again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that expression.
-var openRouterAPIKey = NewPattern("openrouter-api-key", func(src string) []Span {
+var openRouterAPIKey = NewPattern("openrouter-api-key", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := openRouterAPIKeyTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		// The byte at the resume point is tested before a search is started
@@ -213,11 +218,19 @@ var openRouterAPIKey = NewPattern("openrouter-api-key", func(src string) []Span 
 		// candidate beginning at the body, which is the first one left.
 		offset = body + openRouterAPIKeyAnchorIndex
 
-		if end := start + openRouterAPIKeyChars; end <= len(src) && isOpenRouterAPIKeyBody(src[body:end]) {
+		end := start + openRouterAPIKeyChars
+		if end > len(src) {
+			// The input ends inside this candidate, so the count that is the
+			// whole of what tells it from anything else written behind the
+			// prefix cannot be taken here.
+			retain = min(retain, start)
+			continue
+		}
+		if isOpenRouterAPIKeyBody(src[body:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -291,3 +304,7 @@ func isOpenRouterAPIKeyBodyByte(c byte) bool {
 		'A' <= c && c <= 'F' ||
 		'a' <= c && c <= 'f'
 }
+
+// openRouterAPIKeyTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var openRouterAPIKeyTail = newPrefixTail(openRouterAPIKeyPrefix)

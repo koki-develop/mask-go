@@ -86,15 +86,23 @@ func opensJOSEHeader(c byte) bool { return 'A' <= c && c <= 'D' || 'I' <= c && c
 // character: ey alone says only that a run begins with two letters, which any
 // word beginning ey satisfies, so a scan asking for that draws a file name
 // written after an app id into a token wherever the name opens with them.
-func opensJOSEHeaderAt(src string, i int) bool {
+// It reports the second thing both scans need of it: whether saying no was the
+// end of the input speaking rather than the text. Three bytes decide a header
+// and an input holding fewer than three of them decides nothing, so a scan
+// settling such a candidate would release the ey of a token whose third
+// character had not arrived.
+func opensJOSEHeaderAt(src string, i int) (opens, open bool) {
 	if !strings.HasPrefix(src[i:], jwtHeaderPrefix) {
-		return false
+		return false, strings.HasPrefix(jwtHeaderPrefix, src[i:])
 	}
 	third := i + len(jwtHeaderPrefix)
-	return third < len(src) && opensJOSEHeader(src[third])
+	if third == len(src) {
+		return false, true
+	}
+	return opensJOSEHeader(src[third]), false
 }
 
-var jsonWebToken = NewPattern("jwt", func(src string) []Span {
+var jsonWebToken = NewPattern("jwt", func(src string) ([]Span, int) {
 	var spans []Span
 
 	// A header is a run of base64url characters, and every candidate crowded
@@ -104,6 +112,15 @@ var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 	// the cursor only ever moves forward.
 	runEnd := -1
 	var signed, encrypted segments
+	// Whether either walk stopped because the input did, which is what the
+	// candidates crowded into this run report as unsettled. It belongs to the
+	// run rather than to a candidate, as the walks themselves do.
+	var open bool
+
+	// Where the input stops being settled: a piece of the header prefix
+	// standing at the end of it, or a candidate the end of it cut short.
+	// builtin_scan.go says why those are the two.
+	retain := jwtHeaderTail.start(src)
 
 	// header does the same for the decode, which is the expensive part.
 	var header headerDecoder
@@ -132,17 +149,30 @@ var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 			continue
 		}
 		start := anchor - jwtHeaderAnchorIndex
-		if !opensJOSEHeaderAt(src, start) {
+		opens, headerOpen := opensJOSEHeaderAt(src, start)
+		if !opens {
+			if headerOpen {
+				retain = min(retain, start)
+			}
 			continue
 		}
 
 		if start >= runEnd {
 			runEnd = base64URLRunEnd(src, start)
 			signed, encrypted = segments{}, segments{}
+			open = runEnd == len(src)
 			if runEnd < len(src) && src[runEnd] == '.' {
-				signed = segmentsEnd(src, runEnd, signedSegments)
-				encrypted = segmentsEnd(src, runEnd, encryptedSegments)
+				var signedOpen, encryptedOpen bool
+				signed, signedOpen = segmentsEnd(src, runEnd, signedSegments)
+				encrypted, encryptedOpen = segmentsEnd(src, runEnd, encryptedSegments)
+				open = signedOpen || encryptedOpen
 			}
+		}
+		if open {
+			// The header runs to the end of the input, or the segments behind
+			// it do: what token this is, and how far it reaches, are both
+			// still the next text's to decide.
+			retain = min(retain, start)
 		}
 		if !signed.ok {
 			continue // a header is followed by the dot that ends it, and by segments
@@ -164,7 +194,7 @@ var jsonWebToken = NewPattern("jwt", func(src string) []Span {
 
 		spans = append(spans, Span{Start: start, End: end})
 	}
-	return spans
+	return spans, retain
 })
 
 // Segments following the header: two for a signed token, four for an encrypted
@@ -177,15 +207,23 @@ const (
 // segmentsEnd returns where the want segments beginning at dot end, and whether
 // there are that many. Anything past them is left alone, so that the sentence a
 // token sits in keeps its full stop.
-func segmentsEnd(src string, dot, want int) segments {
+// It reports whether the walk ran to the end of the input as well, which is
+// two answers the caller cannot tell apart from the segments alone: a run of
+// segments the input cut short is one more text may complete, and a run that
+// completed with its last segment against the end of the input is one more
+// text may carry further.
+func segmentsEnd(src string, dot, want int) (segments, bool) {
 	i := dot
 	for range want {
-		if i == len(src) || src[i] != '.' {
-			return segments{}
+		if i == len(src) {
+			return segments{}, true
+		}
+		if src[i] != '.' {
+			return segments{}, false
 		}
 		i = base64URLRunEnd(src, i+1)
 	}
-	return segments{end: i, ok: true}
+	return segments{end: i, ok: true}, i == len(src)
 }
 
 // joseHeader reports whether src[start:dot] is the header of a token, and
@@ -291,3 +329,7 @@ func closesObject(b []byte) bool {
 	}
 	return false
 }
+
+// jwtHeaderTail is what the scan settles the tail of its input by. prefixTail
+// (builtin_scan.go) says what that is and why it is built once.
+var jwtHeaderTail = newPrefixTail(jwtHeaderPrefix)

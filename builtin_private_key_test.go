@@ -189,7 +189,7 @@ func Test_PrivateKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := PrivateKey().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := PrivateKey().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -227,7 +227,7 @@ func Test_PrivateKey_indented(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := PrivateKey().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := PrivateKey().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -401,7 +401,7 @@ func Test_PrivateKey_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := PrivateKey().Find(tt.src); len(got) != 0 {
+			if got, _ := PrivateKey().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
@@ -466,7 +466,7 @@ func Test_PrivateKey_theLabelsTheDocumentsDefine(t *testing.T) {
 		t.Run(label, func(t *testing.T) {
 			src := "-----BEGIN " + label + "-----\n0123456789abcdef\n-----END " + label + "-----"
 			want := []Span{{0, len(src)}}
-			if got := p.Find(src); !slices.Equal(got, want) {
+			if got, _ := p.Find(src); !slices.Equal(got, want) {
 				t.Errorf("Find(%q) = %v, want %v", src, got, want)
 			}
 		})
@@ -495,7 +495,7 @@ func Test_PrivateKey_labelsTheEnvelopeCarriesThatAreNotKeys(t *testing.T) {
 	for _, label := range labels {
 		t.Run(label, func(t *testing.T) {
 			src := "-----BEGIN " + label + "-----\n0123456789abcdef\n-----END " + label + "-----"
-			if got := p.Find(src); len(got) != 0 {
+			if got, _ := p.Find(src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", src, got)
 			}
 		})
@@ -519,7 +519,7 @@ func Test_PrivateKey_everyLineBreakSpelling(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			src := "-----BEGIN PRIVATE KEY-----" + br + "0123456789abcdef" + br + "-----END PRIVATE KEY-----"
 			want := []Span{{0, len(src)}}
-			if got := p.Find(src); !slices.Equal(got, want) {
+			if got, _ := p.Find(src); !slices.Equal(got, want) {
 				t.Errorf("Find(%q) = %v, want %v", src, got, want)
 			}
 		})
@@ -660,7 +660,7 @@ func Test_privateKeyLabelSuffixes(t *testing.T) {
 	}
 	for _, suffix := range privateKeyLabelSuffixes {
 		t.Run(suffix, func(t *testing.T) {
-			if got := privateKeyLabelEnd(suffix, 0); got != len(suffix) {
+			if got, _ := privateKeyLabelEnd(suffix, 0); got != len(suffix) {
 				t.Errorf("privateKeyLabelEnd(%q) = %d, want %d; the words are not a label the scan can read", suffix, got, len(suffix))
 			}
 			if !privateKeyLabelNamesAKey(suffix) {

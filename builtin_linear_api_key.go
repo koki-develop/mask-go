@@ -172,8 +172,13 @@ func LinearAPIKey() Pattern { return linearAPIKey }
 // a regular expression, spelling the prefix, the floor and the alphabet again
 // so that the two are changed together, and the fuzz target beside it holds
 // this scan to that expression.
-var linearAPIKey = NewPattern("linear-api-key", func(src string) []Span {
+var linearAPIKey = NewPattern("linear-api-key", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := linearAPIKeyTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], linearAPIKeyAnchor)
@@ -214,11 +219,18 @@ var linearAPIKey = NewPattern("linear-api-key", func(src string) []Span {
 		// which is the whole of the claim.
 		offset = body + linearAPIKeyAnchorIndex
 
-		if end := base62RunEnd(src, body); end-body >= linearAPIKeyBodyChars {
+		end := base62RunEnd(src, body)
+		if end == len(src) {
+			// The run reaches the end of the input, so neither where the body
+			// ends nor whether it is long enough to be one is settled here:
+			// what comes next either carries the run on or closes it.
+			retain = min(retain, start)
+		}
+		if end-body >= linearAPIKeyBodyChars {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -252,3 +264,7 @@ const (
 	// lin away from the prefix, which the npm scan needs no count for.
 	linearAPIKeyBodyChars = 40
 )
+
+// linearAPIKeyTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var linearAPIKeyTail = newPrefixTail(linearAPIKeyPrefix)

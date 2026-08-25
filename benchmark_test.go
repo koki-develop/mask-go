@@ -1,6 +1,7 @@
 package mask
 
 import (
+	"io"
 	"strings"
 	"testing"
 )
@@ -89,6 +90,104 @@ func BenchmarkBuiltins(b *testing.B) {
 	}
 }
 
+// BenchmarkWriter times a Writer over the cases BenchmarkMasker_Mask drives,
+// written a line at a time into a writer that keeps none of it.
+//
+// A line and not a case: what a Writer costs over a case depends on where the
+// line ends, since text ending in nothing any prefix opens with is released as
+// it is written and text ending in a piece of one is held back. Both are what a
+// caller sees, and the line break is what makes the first of them the case
+// being timed here rather than an accident of what the case happens to close
+// on.
+//
+// The Writer is made once and written to for every iteration, which is how a
+// caller behind a log has one. What that leaves out is the cost of making one,
+// which a caller pays once a stream and nothing here would say anything useful
+// about.
+func BenchmarkWriter(b *testing.B) {
+	m := New(WithPatterns(AllBuiltinPatterns()...))
+	for _, bm := range maskerMaskBenchmarks() {
+		b.Run(bm.name, func(b *testing.B) {
+			found := m.locate(bm.src, 0).found
+			if got := len(found); got != bm.spans {
+				b.Fatalf("the line holds %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
+			}
+
+			line := []byte(bm.src + "\n")
+			w := NewWriter(io.Discard, m)
+			defer func() {
+				if err := w.Close(); err != nil {
+					b.Fatalf("Close() = %v", err)
+				}
+			}()
+
+			b.SetBytes(int64(len(line)))
+			b.ReportAllocs()
+			for b.Loop() {
+				if _, err := w.Write(line); err != nil {
+					b.Fatalf("Write() = %v", err)
+				}
+			}
+		})
+	}
+}
+
+// mustRegexpBenchmarks are what BenchmarkMustRegexp times: an expression over
+// a line holding no match, one holding a match, and one whose matches stand
+// against each other, which is where locating the ones that begin inside
+// another costs anything at all.
+func mustRegexpBenchmarks() []struct {
+	name  string
+	expr  string
+	src   string
+	spans int
+} {
+	line := "time=2026-08-17T00:00:00Z level=info msg=\"calling api\" "
+	return []struct {
+		name  string
+		expr  string
+		src   string
+		spans int
+	}{
+		{name: "no match", expr: `INT-[0-9a-f]{32}`, src: line, spans: 0},
+		{name: "one match", expr: `INT-[0-9a-f]{32}`, src: line + "token=INT-0123456789abcdef0123456789abcdef", spans: 1},
+		{name: "a mask group", expr: `token=(?P<mask>[0-9a-f]{32})`, src: line + "token=0123456789abcdef0123456789abcdef", spans: 1},
+		{name: "matches against one another", expr: `[0-9a-f]{32}`, src: line + strings.Repeat("0123456789abcdef", 16), spans: 1},
+		{name: "a match reaching the end", expr: `[g-z]*x[0-9a-f]+`, src: line + "x" + strings.Repeat("0123456789abcdef", 16), spans: 1},
+	}
+}
+
+// BenchmarkMustRegexp times a pattern built from an expression, which is what a
+// caller pays for one of their own.
+func BenchmarkMustRegexp(b *testing.B) {
+	for _, bm := range mustRegexpBenchmarks() {
+		b.Run(bm.name, func(b *testing.B) {
+			m := New(WithPatterns(MustRegexp("p", bm.expr)))
+			if got := len(m.locate(bm.src, 0).found); got != bm.spans {
+				b.Fatalf("the line holds %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
+			}
+			b.SetBytes(int64(len(bm.src)))
+			b.ReportAllocs()
+			for b.Loop() {
+				_ = m.Mask(bm.src)
+			}
+		})
+	}
+}
+
+func Test_mustRegexpBenchmarks(t *testing.T) {
+	// What holds the cases above honest, for the reason
+	// Test_maskerMaskBenchmarks gives of the ones beside them.
+	for _, bm := range mustRegexpBenchmarks() {
+		t.Run(bm.name, func(t *testing.T) {
+			m := New(WithPatterns(MustRegexp("p", bm.expr)))
+			if got := len(m.locate(bm.src, 0).found); got != bm.spans {
+				t.Errorf("the line holds %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
+			}
+		})
+	}
+}
+
 func Test_maskerMaskBenchmarks(t *testing.T) {
 	// What holds the cases above honest, for the reason
 	// Test_builtins_benchmarkCasesHoldTheirValues gives of the per-pattern
@@ -97,7 +196,8 @@ func Test_maskerMaskBenchmarks(t *testing.T) {
 	m := New(WithPatterns(AllBuiltinPatterns()...))
 	for _, c := range maskerMaskBenchmarks() {
 		t.Run(c.name, func(t *testing.T) {
-			if got := len(m.locate(c.src)); got != c.spans {
+			found := m.locate(c.src, 0).found
+			if got := len(found); got != c.spans {
 				t.Errorf("Mask redacted %d value(s) in %d bytes, the case says %d", got, len(c.src), c.spans)
 			}
 		})
@@ -129,16 +229,17 @@ type benchmarkCase struct {
 // what a change to a scan is compared against is the scan: sorting the spans,
 // merging what overlaps and building the output are the same work whichever
 // pattern reported them, and BenchmarkMasker_Mask above measures that.
-func benchmarkFind(b *testing.B, find func(string) []Span, cases []benchmarkCase) {
+func benchmarkFind(b *testing.B, find func(string) ([]Span, int), cases []benchmarkCase) {
 	for _, bm := range cases {
 		b.Run(bm.name, func(b *testing.B) {
-			if got := len(find(bm.src)); got != bm.spans {
+			spans, _ := find(bm.src)
+			if got := len(spans); got != bm.spans {
 				b.Fatalf("Find located %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
 			}
 			b.SetBytes(int64(len(bm.src)))
 			b.ReportAllocs()
 			for b.Loop() {
-				_ = find(bm.src)
+				_, _ = find(bm.src)
 			}
 		})
 	}
@@ -151,7 +252,8 @@ func benchmarkFind(b *testing.B, find func(string) []Span, cases []benchmarkCase
 func benchmarkMask(b *testing.B, m *Masker, cases []benchmarkCase) {
 	for _, bm := range cases {
 		b.Run(bm.name, func(b *testing.B) {
-			if got := len(m.locate(bm.src)); got != bm.spans {
+			found := m.locate(bm.src, 0).found
+			if got := len(found); got != bm.spans {
 				b.Fatalf("Mask redacted %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
 			}
 			b.SetBytes(int64(len(bm.src)))

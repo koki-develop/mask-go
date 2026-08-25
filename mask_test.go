@@ -40,7 +40,8 @@ func checkSecondPass(t testing.TB, m *Masker, src string) {
 	type run struct{ start, end int }
 	var runs []run
 	at, taken := 0, 0
-	for _, f := range m.locate(src) {
+	located := m.locate(src, 0).found
+	for _, f := range located {
 		at += f.Start - taken
 		end := at + utf8.RuneCountInString(src[f.Start:f.End])
 		runs = append(runs, run{start: at, end: end})
@@ -48,7 +49,8 @@ func checkSecondPass(t testing.TB, m *Masker, src string) {
 	}
 
 	masked := m.Mask(src)
-	for _, s := range m.locate(masked) {
+	again := m.locate(masked, 0).found
+	for _, s := range again {
 		// s.Start <= r.end and r.start <= s.End is overlapping or touching: a
 		// value ending where a run begins, or beginning where one ends, has a
 		// redaction for a neighbour.
@@ -63,7 +65,7 @@ func checkSecondPass(t testing.TB, m *Masker, src string) {
 // the input. It lets the resolution rules be tested without a regular
 // expression in the way.
 func fixed(name string, spans ...Span) Pattern {
-	return NewPattern(name, func(string) []Span { return spans })
+	return NewPattern(name, func(src string) ([]Span, int) { return spans, len(src) })
 }
 
 // naming redacts a value to the name of the pattern that located it, in angle
@@ -369,15 +371,15 @@ func TestMasker_Mask_concurrentUse(t *testing.T) {
 	// pattern and a redactor written by a caller are driven here as well, so
 	// that the paths through the Masker are not only the built-in ones.
 	const secret = "s3cr3t-value"
-	shared := NewPattern("shared-secret", func(src string) []Span {
+	shared := NewPattern("shared-secret", func(src string) ([]Span, int) {
 		var spans []Span
 		for i := 0; ; {
 			j := strings.Index(src[i:], secret)
 			if j < 0 {
-				return spans
+				return spans, max(0, len(src)-len(secret)+1)
 			}
 			spans = append(spans, Span{Start: i + j, End: i + j + len(secret)})
-			i += j + len(secret)
+			i += j + 1
 		}
 	})
 

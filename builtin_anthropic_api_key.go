@@ -170,8 +170,13 @@ func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 // same grammar with no cursor in it, spelling the prefix, the kind, the
 // separator, the floor and the alphabet again so that the two are changed
 // together, and the fuzz target beside it holds this scan to that statement.
-var anthropicAPIKey = NewPattern("anthropic-api-key", func(src string) []Span {
+var anthropicAPIKey = NewPattern("anthropic-api-key", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := anthropicAPIKeyTail.start(src)
 
 	// The run a key is read as is worked out once and remembered, for the
 	// reason the rationale above gives. The cursor holds the end of the run the
@@ -207,8 +212,15 @@ var anthropicAPIKey = NewPattern("anthropic-api-key", func(src string) []Span {
 			continue
 		}
 
-		body := anthropicAPIKeyBodyAt(src, start)
+		body, kindEnd := anthropicAPIKeyBodyAt(src, start)
 		if body < 0 {
+			// A name running to the end of the input is a name the separator
+			// behind it has not arrived for, so whether a body begins here at
+			// all is what the next text decides. A name closed by anything
+			// else is closed for good.
+			if kindEnd == len(src) {
+				retain = min(retain, start)
+			}
 			continue
 		}
 
@@ -218,12 +230,18 @@ var anthropicAPIKey = NewPattern("anthropic-api-key", func(src string) []Span {
 		if body >= runEnd {
 			runEnd = base64URLRunEnd(src, body)
 		}
+		if runEnd == len(src) {
+			// The run reaches the end of the input, so neither where the body
+			// ends nor whether it is long enough to be one is settled here:
+			// what comes next either carries the run on or closes it.
+			retain = min(retain, start)
+		}
 		if runEnd-body < anthropicAPIKeyBodyChars {
 			continue
 		}
 		spans = append(spans, Span{Start: start, End: runEnd})
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -266,7 +284,7 @@ const (
 // digits, which is how every kind Anthropic has written spells itself, and no
 // list of the names themselves. How long the body then is, is the caller's to
 // measure against the run it stands in.
-func anthropicAPIKeyBodyAt(src string, start int) int {
+func anthropicAPIKeyBodyAt(src string, start int) (body, kindEnd int) {
 	kind := start + len(anthropicAPIKeyPrefix)
 
 	i := kind
@@ -274,9 +292,9 @@ func anthropicAPIKeyBodyAt(src string, start int) int {
 		i++
 	}
 	if i == kind || i == len(src) || src[i] != anthropicAPIKeySeparator {
-		return -1
+		return -1, i
 	}
-	return i + 1
+	return i + 1, i
 }
 
 // isAnthropicAPIKeyKindByte reports whether c may appear in the name a kind of
@@ -289,3 +307,7 @@ func anthropicAPIKeyBodyAt(src string, start int) int {
 func isAnthropicAPIKeyKindByte(c byte) bool {
 	return '0' <= c && c <= '9' || 'a' <= c && c <= 'z'
 }
+
+// anthropicAPIKeyTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var anthropicAPIKeyTail = newPrefixTail(anthropicAPIKeyPrefix)

@@ -241,8 +241,20 @@ func PrivateKey() Pattern { return privateKey }
 // rather than built on a regular expression, and not by preference: the closing
 // boundary has to name the label the opening one named, which is a back
 // reference, and RE2 has none. Its own comment says so.
-var privateKey = NewPattern("private-key", func(src string) []Span {
+var privateKey = NewPattern("private-key", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of the opening boundary
+	// standing at the end of it, or a block the end of it cut short.
+	// builtin_scan.go says why those are the two.
+	retain := privateKeyTail.start(src)
+
+	// Where the last line of src ends, which is what tells a walk that stopped
+	// on a line the input holds whole from one that stopped because the input
+	// ran out. It is worked out once and only where a candidate asks for it: a
+	// line carrying no boundary never reaches a walk at all, and two searches
+	// over the input would otherwise be paid by every line that holds nothing.
+	lastBreak := noLineBreakWorkedOut
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], privateKeyAnchor)
@@ -262,18 +274,35 @@ var privateKey = NewPattern("private-key", func(src string) []Span {
 		}
 		start := anchor - privateKeyAnchorIndex
 
-		label, body := privateKeyLabelAt(src, start)
+		label, body, open := privateKeyLabelAt(src, start)
 		if body == 0 {
+			if open {
+				// The boundary line runs to the end of the input, so the label
+				// naming what this block holds is not all here.
+				retain = min(retain, start)
+			}
 			continue
 		}
-		end := privateKeyBlockEnd(src, body, label)
+
+		if lastBreak == noLineBreakWorkedOut {
+			lastBreak = privateKeyLastLineBreak(src)
+		}
+		end, open := privateKeyBlockEnd(src, body, label, lastBreak)
+		if open {
+			// The walk over the lines ran to the end of the input, so the
+			// block reaches at least this far and may reach further. A block
+			// is settled where its walk stopped on a line the input holds
+			// whole — its closing boundary, or anything that is no line of a
+			// block at all.
+			retain = min(retain, start)
+		}
 		if end == 0 {
 			continue
 		}
 
 		spans = append(spans, Span{Start: start, End: end})
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -318,24 +347,34 @@ var privateKeyLabelSuffixes = [...]string{"PRIVATE KEY", "PRIVATE KEY BLOCK"}
 // against the closing boundary and nothing more: a candidate that is not a
 // block may not allocate, which TestMasker_Mask_withoutMatchDoesNotAllocate
 // measures.
-func privateKeyLabelAt(src string, i int) (label string, body int) {
+// It reports whether saying no was the end of the input speaking rather than
+// the text. Everything the boundary line is read for can be cut in half by it:
+// the words in front of the label, the label itself, and the dashes that close
+// the line. PRIVATE reads as no key and PRIVATE KEY reads as one, so a scan
+// settling a label the input cut short would release the opening of a block
+// whose next word was the one that named it.
+func privateKeyLabelAt(src string, i int) (label string, body int, open bool) {
 	if !strings.HasPrefix(src[i:], privateKeyPrefix) {
-		return "", 0
+		return "", 0, strings.HasPrefix(privateKeyPrefix, src[i:])
 	}
 
 	at := i + len(privateKeyPrefix)
-	end := privateKeyLabelEnd(src, at)
+	end, open := privateKeyLabelEnd(src, at)
 	if end == at {
-		return "", 0
+		return "", 0, open
 	}
 	label = src[at:end]
 	if !privateKeyLabelNamesAKey(label) {
-		return "", 0
+		return "", 0, open
 	}
 	if !strings.HasPrefix(src[end:], privateKeyBoundary) {
-		return "", 0
+		// The dashes may be cut in half, and so may the label in front of
+		// them: PGP PRIVATE KEY followed by a space is a label a stream may
+		// yet be handed the word BLOCK for, and what stands where the dashes
+		// belong is that space rather than a piece of them.
+		return "", 0, open || strings.HasPrefix(privateKeyBoundary, src[end:])
 	}
-	return label, end + len(privateKeyBoundary)
+	return label, end + len(privateKeyBoundary), false
 }
 
 // privateKeyLabelEnd returns where the label beginning at i in src ends, which
@@ -347,7 +386,11 @@ func privateKeyLabelAt(src string, i int) (label string, body int) {
 // opens nor closes with one and no two stand together — which is what RFC 7468
 // asks for as well, since its own ABNF puts a separator only between two
 // labelchars.
-func privateKeyLabelEnd(src string, i int) int {
+// It reports whether the walk stopped because the input did, which is two
+// places rather than one: the label running to the end of the input, and a
+// space standing at the end of it, where the word this label may still grow by
+// has not arrived.
+func privateKeyLabelEnd(src string, i int) (int, bool) {
 	end := i
 	for end < len(src) {
 		if isPrivateKeyLabelByte(src[end]) {
@@ -358,9 +401,9 @@ func privateKeyLabelEnd(src string, i int) int {
 			end += 2
 			continue
 		}
-		break
+		return end, src[end] == ' ' && end > i && end+1 == len(src)
 	}
-	return end
+	return end, true
 }
 
 // isPrivateKeyLabelByte reports whether c may stand in a label: an uppercase
@@ -399,10 +442,23 @@ func privateKeyLabelNamesAKey(label string) bool {
 // base64 is optional, which is what locates a block a log cut short, and the
 // base64 itself is not: a boundary with nothing behind it is a boundary
 // somebody wrote about rather than a key.
-func privateKeyBlockEnd(src string, body int, label string) int {
+// It reports whether the walk ran to the end of the input as well, which is
+// what says the block may reach further than what is written here. Every place
+// the walk stops is one of two things: a line the input holds whole, which
+// closes the question whatever follows it, or the input running out, which
+// leaves it open — the closing boundary is a line like any other, so a line cut
+// short is a line that may yet turn out to be one.
+func privateKeyBlockEnd(src string, body int, label string, lastBreak int) (int, bool) {
 	i, ok := privateKeyNextLine(src, body)
 	if !ok {
-		return 0 // the boundary line is not closed, so nothing stands under it
+		// The boundary line is not closed, so nothing stands under it. What
+		// stands behind the dashes says whether that is the end of the input
+		// speaking: a line closing on anything but spaces, or on a piece of the
+		// break that would have closed it, is no boundary line whatever
+		// follows. A piece is what a break of two characters leaves — the
+		// carriage return of a CRLF, or the backslash of an escaped one.
+		at := privateKeySpaceEnd(src, body)
+		return 0, at == len(src) || privateKeyBreakTail.start(src) == at
 	}
 
 	for {
@@ -412,7 +468,10 @@ func privateKeyBlockEnd(src string, body int, label string) int {
 		}
 		next, ok := privateKeyNextLine(src, n)
 		if !ok {
-			return 0 // a header is the last line, so there is no base64 at all
+			// A header is the last line, so there is no base64 at all. A header
+			// line ends at a break or at the end of the input, and a break here
+			// would have closed it, so this is the input running out.
+			return 0, true
 		}
 		i = next
 	}
@@ -429,26 +488,56 @@ func privateKeyBlockEnd(src string, body int, label string) int {
 		end = n
 		next, ok := privateKeyNextLine(src, n)
 		if !ok {
-			return end // the base64 reaches the end of the input
+			return end, true // the base64 reaches the end of the input
 		}
 		i = next
 	}
 	if end == 0 {
-		return 0
+		return 0, i > lastBreak
 	}
 
 	if n := privateKeyCRCLineEnd(src, privateKeySpaceEnd(src, i)); n > 0 {
 		end = n
 		next, ok := privateKeyNextLine(src, n)
 		if !ok {
-			return end
+			return end, true
 		}
 		i = next
 	}
 	if n := privateKeyEndBoundaryEnd(src, privateKeySpaceEnd(src, i), label); n > 0 {
-		return n
+		return n, false
 	}
-	return end
+	// The line the walk stopped on is no line of a block. A line the input
+	// holds whole says so for good; a line the input cut short says only that
+	// the rest of it has not arrived, and the closing boundary is written on
+	// such a line. What tells the two apart is whether a break stands anywhere
+	// behind this line's beginning, not whether one stands at it — the line the
+	// walk stopped on is a line, and it is closed by the break that ends it
+	// rather than by one where it starts.
+	return end, i > lastBreak
+}
+
+// privateKeyBreakTail is how a line the input cut short is told from a line
+// that closes on something no break of this pattern's is written with: a break
+// standing at the end of the input in pieces is a break the rest of which has
+// not arrived. prefixTail (builtin_scan.go) says what a tail is.
+var privateKeyBreakTail = newPrefixTail(privateKeyLineBreaks[:]...)
+
+// noLineBreakWorkedOut stands for a last line break the scan has not looked for
+// yet, apart from the -1 that says it looked and found none.
+const noLineBreakWorkedOut = -2
+
+// privateKeyLastLineBreak returns where the last line break in src begins, and
+// -1 where src carries none.
+//
+// Every break this pattern reads carries a newline, or the two characters
+// standing for one where the breaks are escaped, at its own offset or behind
+// it: \r\n carries the newline one along, and the escaped \r\n carries the
+// escaped newline two along. So the later of the two searches is at or past
+// every break there is, and is itself the beginning of one — which makes "a
+// break stands at or after i" exactly "i is at or before this".
+func privateKeyLastLineBreak(src string) int {
+	return max(strings.LastIndexByte(src, '\n'), strings.LastIndex(src, `\n`))
 }
 
 // privateKeyHeaderNames are the armor headers a block may carry: the two RFC
@@ -709,3 +798,7 @@ func privateKeyLineBreak(src string, i int) int {
 	}
 	return 0
 }
+
+// privateKeyTail is what the scan settles the tail of its input by. prefixTail
+// (builtin_scan.go) says what that is and why it is built once.
+var privateKeyTail = newPrefixTail(privateKeyPrefix)

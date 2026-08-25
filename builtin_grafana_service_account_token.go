@@ -215,8 +215,13 @@ func GrafanaServiceAccountToken() Pattern { return grafanaServiceAccountToken }
 // expression, spelling the prefix, both counts, the separator and both
 // character classes again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that expression.
-var grafanaServiceAccountToken = NewPattern("grafana-service-account-token", func(src string) []Span {
+var grafanaServiceAccountToken = NewPattern("grafana-service-account-token", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := grafanaServiceAccountTokenTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], grafanaServiceAccountTokenAnchor)
@@ -248,11 +253,19 @@ var grafanaServiceAccountToken = NewPattern("grafana-service-account-token", fun
 		}
 
 		body := start + len(grafanaServiceAccountTokenPrefix)
-		if end := start + grafanaServiceAccountTokenChars; end <= len(src) && isGrafanaServiceAccountTokenBody(src[body:end]) {
+		end := start + grafanaServiceAccountTokenChars
+		if end > len(src) {
+			// The input ends inside this candidate, so the count that is the
+			// whole of what tells it from anything else written behind the
+			// prefix cannot be taken here.
+			retain = min(retain, start)
+			continue
+		}
+		if isGrafanaServiceAccountTokenBody(src[body:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -354,3 +367,7 @@ func isGrafanaServiceAccountTokenChecksumByte(c byte) bool {
 		'A' <= c && c <= 'F' ||
 		'a' <= c && c <= 'f'
 }
+
+// grafanaServiceAccountTokenTail is what the scan settles the tail of its input
+// by. prefixTail (builtin_scan.go) says what that is and why it is built once.
+var grafanaServiceAccountTokenTail = newPrefixTail(grafanaServiceAccountTokenPrefix)

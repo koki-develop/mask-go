@@ -235,8 +235,13 @@ func NotionAPIToken() Pattern { return notionAPIToken }
 // beside it holds this scan to that statement. It is written out rather than
 // built on a regular expression, and its own comment says what an alternation
 // of two literals costs an engine and what that cost did to the fuzzing.
-var notionAPIToken = NewPattern("notion-api-token", func(src string) []Span {
+var notionAPIToken = NewPattern("notion-api-token", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := notionAPITokenTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], notionAPITokenAnchor)
@@ -258,11 +263,19 @@ var notionAPIToken = NewPattern("notion-api-token", func(src string) []Span {
 		}
 		start := anchor + 1 - prefix
 
-		if end := start + notionAPITokenChars; end <= len(src) && isNotionAPITokenBody(src[anchor+1:end]) {
+		end := start + notionAPITokenChars
+		if end > len(src) {
+			// The input ends inside this candidate, so the count that is the
+			// whole of what tells it from anything else written behind the
+			// prefix cannot be taken here.
+			retain = min(retain, start)
+			continue
+		}
+		if isNotionAPITokenBody(src[anchor+1 : end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 // notionAPITokenPrefixes are the prefixes this pattern reads: the one Notion
@@ -329,3 +342,7 @@ func isNotionAPITokenBody(s string) bool {
 	}
 	return true
 }
+
+// notionAPITokenTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var notionAPITokenTail = newPrefixTail(notionAPITokenPrefixes[:]...)

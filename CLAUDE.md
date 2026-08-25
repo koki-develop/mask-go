@@ -2,8 +2,9 @@
 
 A Go library that redacts credentials (API keys, access tokens) from text.
 Public surface: `Masker` (`mask.go`), `Pattern` (`pattern.go`), `Redactor`
-(`redactor.go`), `Option` (`option.go`), built-in patterns (`builtins.go` and
-the `builtin_*.go` beside it) and the vendor accessors (`vendors.go`).
+(`redactor.go`), `Option` (`option.go`), `Reader` and `Writer` (`stream.go`),
+built-in patterns (`builtins.go` and the `builtin_*.go` beside it) and the
+vendor accessors (`vendors.go`).
 
 What every built-in pattern is held to is in `.claude/rules/builtin-patterns.md`.
 It loads on opening any of the files it governs — the `builtin_*.go`, the tables
@@ -18,15 +19,17 @@ One built-in pattern to a file: `builtin_<name>.go` with a
 only that scan reads, its behaviour tables, its reference, its fuzz target and
 the cases it is benchmarked on. `builtins.go` is the registry alone,
 `builtin_scan.go` holds what more than one scan reads (`segments`,
-`isBase64URLByte`, `base64URLRunEnd`, `isBase62Byte`, `base62RunEnd`),
-`builtins_test.go` holds what every built-in is held to, `fuzz_test.go` holds
-the `Masker` targets and the body the per-pattern targets share,
-`benchmark_test.go` holds every benchmark there is, and `source_test.go` holds
-the rules about how this package is written rather than about what it computes,
-read out of the syntax tree. Adding a pattern should touch the registry, the
-vendor accessor, the property table, two new files and the conformance corpus —
-nothing else. Keep it that way rather than letting a shared `builtin.go` grow
-back.
+`isBase64URLByte`, `base64URLRunEnd`, `isBase62Byte`, `base62RunEnd`,
+`prefixTail`), `builtins_test.go` holds what every built-in is held to,
+`fuzz_test.go` holds the `Masker` targets and the body the per-pattern targets
+share, `benchmark_test.go` holds every benchmark there is, and
+`source_test.go` holds the rules about how this package is written rather than
+about what it computes, read out of the syntax tree. `stream.go` and
+`stream_test.go` are the masking of text arriving a piece at a time, which is a
+`Reader` and a `Writer` over a `Masker` and belongs to none of the patterns.
+Adding a pattern should touch the registry, the vendor accessor, the property
+table, two new files and the conformance corpus — nothing else. Keep it that way
+rather than letting a shared `builtin.go` grow back.
 
 `vendors.go` is the vendor accessors alone, one `<Vendor>Patterns` apiece, with
 `vendors_test.go` holding them and the registry to naming the same patterns.
@@ -61,16 +64,19 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
 - `go test ./conformance -update` — regenerate the conformance corpus and check
   it in the same run (`conformance/CLAUDE.md`).
 - `go test -fuzz FuzzJWT_matchesReference .` — fuzzing. The root package has
-  `FuzzMasker_locate`, `FuzzMasker_Mask` and one target a built-in, named
-  `Fuzz<Pattern>_matchesReference`; `conformance` has `FuzzMask`,
-  `FuzzMask_customPatterns` and `FuzzText`. `go test -list 'Fuzz.*' ./...`
-  reports them all. CI gives each of them 30 seconds.
-- `go test -bench . -benchmem` — benchmarks. `BenchmarkMasker_Mask` drives
-  every pattern at once through the public API, which is what a caller pays;
-  `BenchmarkBuiltins` drives each scan alone under the name its pattern
-  reports, and that is what a change to a scan is compared against, since a
-  regression in one is divided in the first by however many patterns the
-  registry holds. `go test -bench Builtins/jwt -benchmem .` runs one of them.
+  `FuzzMasker_locate`, `FuzzMasker_Mask`, `FuzzBuiltins_retain`,
+  `FuzzPatterns_lookBehind`, `FuzzWriter_matchesMask` and one target a built-in,
+  named `Fuzz<Pattern>_matchesReference`; `conformance` has `FuzzMask`,
+  `FuzzMask_customPatterns`, `FuzzStream` and `FuzzText`.
+  `go test -list 'Fuzz.*' ./...` reports them all. CI gives each of them 30
+  seconds.
+- `go test -bench . -benchmem` — benchmarks. `BenchmarkMasker_Mask` drives every
+  pattern at once through the public API, which is what a caller pays, and
+  `BenchmarkWriter` drives the same cases a line at a time through a `Writer`;
+  `BenchmarkBuiltins` drives each scan alone under the name its pattern reports,
+  and that is what a change to a scan is compared against, since a regression in
+  one is divided in the first by however many patterns the registry holds.
+  `go test -bench Builtins/jwt -benchmem .` runs one of them.
 - `golangci-lint run` — lint (no config file; defaults).
 - `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
   analyzer-driven fixer that supersedes the standalone `modernize`, so it
@@ -96,6 +102,21 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `TestMasker_Mask_withoutMatchDoesNotAllocate` reads its input out of
   `builtinPatterns` for that reason, and `TestCorpus_everyKindCaseHoldsEveryBuiltin`
   counts what a corpus case name claims.
+- `LookBehind` — how far in front of a value a `Pattern` may read — is held by
+  `Test_patterns_readNoFurtherBackThanLookBehind` and `FuzzPatterns_lookBehind`,
+  over the built-ins and over what `MustRegexp` builds. A `Find` whose answer at
+  one place depends on the whole of the text in front of it breaks it silently:
+  the values move under the window as the window moves. Such a `Find` must
+  settle nothing, which is what keeps a window from ever opening on it, and
+  `Test_MustRegexp_settlesNothingWithoutABoundOrALiteral` holds the two
+  together.
+- What a scan settles — the second result of `Pattern.Find` — is held by
+  `Test_builtins_retainSettles` and `FuzzBuiltins_retain`, and end to end by the
+  cut properties in `conformance`. Those hold a scan to settling no more than it
+  may; `Test_builtins_settleWhatIsNoValue` holds it to settling as much as it
+  must. A scan pinned by text that will never become a value holds a stream open
+  until the limit, and what a stream holds at the limit is redacted — so
+  settling too little turns a log into asterisks.
 - Adding a built-in pattern is `.claude/rules/builtin-patterns.md` and
   `conformance/CLAUDE.md`.
 

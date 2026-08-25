@@ -156,8 +156,13 @@ func SendGridAPIKey() Pattern { return sendGridAPIKey }
 // as a regular expression, spelling the prefix, the two counts, the separator
 // and the alphabet again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that expression.
-var sendGridAPIKey = NewPattern("sendgrid-api-key", func(src string) []Span {
+var sendGridAPIKey = NewPattern("sendgrid-api-key", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := sendGridAPIKeyTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], sendGridAPIKeyAnchor)
@@ -183,11 +188,19 @@ var sendGridAPIKey = NewPattern("sendgrid-api-key", func(src string) []Span {
 		}
 
 		body := start + len(sendGridAPIKeyPrefix)
-		if end := start + sendGridAPIKeyChars; end <= len(src) && isSendGridAPIKeyBody(src[body:end]) {
+		end := start + sendGridAPIKeyChars
+		if end > len(src) {
+			// The input ends inside this candidate, so the count that is the
+			// whole of what tells it from anything else written behind the
+			// prefix cannot be taken here.
+			retain = min(retain, start)
+			continue
+		}
+		if isSendGridAPIKeyBody(src[body:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -267,3 +280,7 @@ func isSendGridAPIKeyBody(s string) bool {
 	}
 	return true
 }
+
+// sendGridAPIKeyTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var sendGridAPIKeyTail = newPrefixTail(sendGridAPIKeyPrefix)

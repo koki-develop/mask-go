@@ -512,7 +512,7 @@ func Test_builtins_anchorsAreNotValues(t *testing.T) {
 		t.Run(b.name, func(t *testing.T) {
 			for _, a := range b.anchors {
 				for _, p := range patterns {
-					if spans := p.Find(a); len(spans) != 0 {
+					if spans, _ := p.Find(a); len(spans) != 0 {
 						t.Errorf("%s locates %v in the anchor %q; an anchor stands for a candidate a scan drops", p.Name(), spans, a)
 					}
 				}
@@ -594,7 +594,7 @@ func Test_builtins_locateTheirSamples(t *testing.T) {
 				t.Fatal("the entry carries no samples, so nothing below holds anything")
 			}
 			for _, src := range b.samples {
-				if got := b.pattern().Find(src); len(got) == 0 {
+				if got, _ := b.pattern().Find(src); len(got) == 0 {
 					t.Errorf("Find(%q) located nothing, want a value", src)
 				}
 			}
@@ -610,7 +610,7 @@ func Test_builtins_findNothingWithoutAValue(t *testing.T) {
 	for _, b := range builtinPatterns {
 		t.Run(b.name, func(t *testing.T) {
 			for _, src := range noValueInputs {
-				if got := b.pattern().Find(src); len(got) != 0 {
+				if got, _ := b.pattern().Find(src); len(got) != 0 {
 					t.Errorf("Find(%q) = %v, want no span", src, got)
 				}
 			}
@@ -627,7 +627,8 @@ func Test_builtins_reportUsableSpans(t *testing.T) {
 		t.Run(b.name, func(t *testing.T) {
 			p := b.pattern()
 			for _, src := range builtinInputs(b.samples) {
-				for _, s := range p.Find(src) {
+				spans, _ := p.Find(src)
+				for _, s := range spans {
 					if s.Start < 0 || s.End > len(src) || s.Start >= s.End {
 						t.Errorf("Find(%q) reported %v, unusable in %d bytes", src, s, len(src))
 					}
@@ -652,7 +653,8 @@ func Test_builtins_matchTheirReference(t *testing.T) {
 			}
 			p := b.pattern()
 			for _, src := range builtinInputs(b.samples) {
-				got, want := p.Find(src), b.ref(src)
+				got, _ := p.Find(src)
+				want := b.ref(src)
 				if !slices.Equal(got, want) {
 					t.Errorf("Find(%q) = %v, reference gives %v", src, got, want)
 				}
@@ -699,7 +701,7 @@ func Test_builtins_concurrentUse(t *testing.T) {
 			inputs := builtinInputs(b.samples)
 			want := make([][]Span, len(inputs))
 			for i, src := range inputs {
-				want[i] = p.Find(src)
+				want[i], _ = p.Find(src)
 			}
 
 			var wg sync.WaitGroup
@@ -707,7 +709,7 @@ func Test_builtins_concurrentUse(t *testing.T) {
 				wg.Go(func() {
 					for range 4 {
 						for i, src := range inputs {
-							if got := p.Find(src); !slices.Equal(got, want[i]) {
+							if got, _ := p.Find(src); !slices.Equal(got, want[i]) {
 								t.Errorf("Find(%q) = %v, want %v", src, got, want[i])
 								return
 							}
@@ -743,7 +745,8 @@ func Test_builtins_benchmarkCasesHoldTheirValues(t *testing.T) {
 			}
 			p := b.pattern()
 			for _, c := range cases {
-				if got := len(p.Find(c.src)); got != c.spans {
+				spans, _ := p.Find(c.src)
+				if got := len(spans); got != c.spans {
 					t.Errorf("%s: Find located %d value(s) in %d bytes, the case says %d", c.name, got, len(c.src), c.spans)
 				}
 			}
@@ -789,6 +792,75 @@ func Test_builtins_scanIsLinear(t *testing.T) {
 					_ = m.Mask(src)
 					if d := time.Since(start); d > limit {
 						t.Errorf("Mask() of %d bytes of %q took %v", len(src), unit, d)
+					}
+				}
+			}
+		})
+	}
+}
+
+func Test_builtins_retainSettles(t *testing.T) {
+	// What every built-in owes Pattern.Find about the offset it reports: the
+	// values in front of it are the values the whole text holds there. A scan
+	// settling too much is a value released before it was found, which is the
+	// failure this is here for; a scan settling too little costs a stream
+	// nothing but the text it holds on to.
+	//
+	// Every sample is cut at every offset, which is where a scan that forgot
+	// the candidate it left open at the end of its input shows itself: the
+	// prefix it was handed reaches into a value, and the whole sample is what
+	// says where that value really was.
+	for _, b := range builtinPatterns {
+		t.Run(b.name, func(t *testing.T) {
+			p := b.pattern()
+			for _, src := range builtinInputs(b.samples) {
+				for cut := range len(src) + 1 {
+					checkRetain(t, p, src, cut)
+				}
+			}
+		})
+	}
+}
+
+func Test_builtins_retainIsNotBeyondTheInput(t *testing.T) {
+	// checkRetain reports this too, but only for a pattern whose samples reach
+	// the offset it got wrong. Every input the registry knows about is driven
+	// here instead, so that a scan answering past the end of what it was handed
+	// is caught by the entry rather than by the sample.
+	for _, b := range builtinPatterns {
+		t.Run(b.name, func(t *testing.T) {
+			p := b.pattern()
+			for _, src := range append(builtinInputs(b.samples), b.anchors...) {
+				if _, retain := p.Find(src); retain < 0 || retain > len(src) {
+					t.Errorf("Find(%q) settled %d, outside the %d bytes it was given", src, retain, len(src))
+				}
+			}
+		})
+	}
+}
+
+func Test_builtins_settleWhatIsNoValue(t *testing.T) {
+	// The other direction from Test_builtins_retainSettles, and the one that
+	// test cannot report: a scan settling too much releases a value, and a
+	// scan settling too little holds a stream open. Held text is not merely
+	// late — once a stream is holding more than a caller allows, what it holds
+	// goes out redacted — so a scan pinned by text that will never become a
+	// value turns a log into asterisks.
+	//
+	// Every prefix of every sample is followed here by ordinary lines. Whatever
+	// a scan made of the prefix, a line break closes every run and a line of
+	// prose is no line of any value, so nothing in the prefix reaches through
+	// them and the whole of the input is settled.
+	tail := "\n" + strings.Repeat("a line of prose, and nothing else at all\n", 40)
+	for _, b := range builtinPatterns {
+		t.Run(b.name, func(t *testing.T) {
+			p := b.pattern()
+			for _, sample := range b.samples {
+				for i := range len(sample) + 1 {
+					src := sample[:i] + tail
+					if _, retain := p.Find(src); retain != len(src) {
+						t.Errorf("Find(%q + %d lines of prose) settled %d of %d",
+							sample[:i], 40, retain, len(src))
 					}
 				}
 			}

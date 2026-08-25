@@ -464,7 +464,8 @@ func TestCorpus_attributionIsExercised(t *testing.T) {
 			if !builtin[p] {
 				continue
 			}
-			for _, s := range p.Find(c.in) {
+			spans, _ := p.Find(c.in)
+			for _, s := range spans {
 				// The names, not the spans: a scan reporting one span twice, or
 				// a set naming one pattern twice, is one pattern still and
 				// reaches no tie-break. Counting the report rather than the

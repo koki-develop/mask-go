@@ -235,7 +235,7 @@ func Test_JWT(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := JWT().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := JWT().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -264,7 +264,7 @@ func Test_JWT_afterRejectedCandidate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := JWT().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := JWT().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -327,7 +327,7 @@ func Test_JWT_longHeader(t *testing.T) {
 		header := jwtHeaderOf(bytes)
 		src := header + ".payload.signature"
 		want := []Span{{0, len(src)}}
-		if got := JWT().Find(src); !slices.Equal(got, want) {
+		if got, _ := JWT().Find(src); !slices.Equal(got, want) {
 			t.Errorf("Find(header of %d bytes of JSON + %q) = %v, want %v", bytes, ".payload.signature", got, want)
 		}
 	}
@@ -612,7 +612,7 @@ func Test_opensJOSEHeaderAt(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := opensJOSEHeaderAt(tt.src, tt.i); got != tt.want {
+			if got, _ := opensJOSEHeaderAt(tt.src, tt.i); got != tt.want {
 				t.Errorf("opensJOSEHeaderAt(%q, %d) = %v, want %v", tt.src, tt.i, got, tt.want)
 			}
 		})

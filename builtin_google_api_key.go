@@ -116,8 +116,13 @@ func GoogleAPIKey() Pattern { return googleAPIKey }
 // a regular expression, spelling the prefix, the count and the alphabet again
 // so that the two are changed together, and the fuzz target beside it holds
 // this scan to that expression.
-var googleAPIKey = NewPattern("google-api-key", func(src string) []Span {
+var googleAPIKey = NewPattern("google-api-key", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := googleAPIKeyTail.start(src)
 
 	for offset := 0; offset < len(src); {
 		i := strings.IndexByte(src[offset:], googleAPIKeyAnchor)
@@ -148,11 +153,18 @@ var googleAPIKey = NewPattern("google-api-key", func(src string) []Span {
 		}
 
 		body := start + len(googleAPIKeyPrefix)
-		if end := start + googleAPIKeyChars; end <= len(src) && isGoogleAPIKeyBody(src[body:end]) {
+		end := start + googleAPIKeyChars
+		if end > len(src) {
+			// The input ends inside the body, and the count is the whole of
+			// what tells a key from any other run written behind the prefix.
+			retain = min(retain, start)
+			continue
+		}
+		if isGoogleAPIKeyBody(src[body:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 const (
@@ -197,3 +209,7 @@ func isGoogleAPIKeyBody(s string) bool {
 	}
 	return true
 }
+
+// googleAPIKeyTail is what the scan settles the tail of its input by.
+// prefixTail (builtin_scan.go) says what that is and why it is built once.
+var googleAPIKeyTail = newPrefixTail(googleAPIKeyPrefix)

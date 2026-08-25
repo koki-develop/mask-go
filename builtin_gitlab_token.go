@@ -189,8 +189,13 @@ func GitLabToken() Pattern { return gitLabToken }
 // regular expression, spelling the prefixes, the counts, the alphabets and the
 // two routable forms again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that expression.
-var gitLabToken = NewPattern("gitlab-token", func(src string) []Span {
+var gitLabToken = NewPattern("gitlab-token", func(src string) ([]Span, int) {
 	var spans []Span
+
+	// Where the input stops being settled: a piece of a prefix standing at the
+	// end of it, or a candidate the end of it cut short. builtin_scan.go says
+	// why those are the two.
+	retain := gitLabTokenTail.start(src)
 
 	// The run a body is read as is worked out once and remembered. The alphabet
 	// holds every letter a prefix is written in, so a prefix can be written
@@ -238,7 +243,15 @@ var gitLabToken = NewPattern("gitlab-token", func(src string) []Span {
 		// reading would take the first characters of a payload for a whole
 		// token and leave the rest of one in the output. A candidate that is
 		// not routable falls through rather than failing here.
-		if end, ok := gitLabTokenRoutableEnd(src, body, runEnd); ok {
+		end, ok, open := gitLabTokenRoutableEnd(src, body, runEnd)
+		if open || runEnd == len(src) {
+			// Either the payload run reaches the end of the input, so where
+			// the body ends is still open, or the tail behind it is cut short
+			// and what the routable form needs of it has not arrived. Which
+			// form this is decides the whole span, so neither is settled.
+			retain = min(retain, start)
+		}
+		if ok {
 			spans = append(spans, Span{Start: start, End: end})
 			continue
 		}
@@ -246,7 +259,7 @@ var gitLabToken = NewPattern("gitlab-token", func(src string) []Span {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
-	return spans
+	return spans, retain
 })
 
 // gitLabTokenKind is one kind of token: the prefix GitLab writes it with, the
@@ -263,6 +276,18 @@ type gitLabTokenKind struct {
 	bodyChars []int
 	partition bool
 }
+
+// gitLabTokenTail is what the scan settles the tail of its input by. The
+// prefixes are read out of gitLabTokenKinds rather than gathered into a table
+// of their own, so that a kind added there is a kind this knows about, and
+// prefixTail (builtin_scan.go) says what a tail is and why it is built once.
+var gitLabTokenTail = func() prefixTail {
+	prefixes := make([]string, 0, len(gitLabTokenKinds))
+	for i := range gitLabTokenKinds {
+		prefixes = append(prefixes, gitLabTokenKinds[i].prefix)
+	}
+	return newPrefixTail(prefixes...)
+}()
 
 // gitLabTokenKinds are the kinds this pattern reads, in the order the scan
 // tries them.
@@ -426,17 +451,21 @@ var gitLabTokenPrefixChars = func() []int {
 // three characters behind the payload, which is a position the version form has
 // and the other cannot: the characters of a length are base36 and a separator
 // is not, so neither form can be read as the other.
-func gitLabTokenRoutableEnd(src string, body, runEnd int) (int, bool) {
+// It reports whether saying no was the end of the input speaking rather than
+// the text: a tail the input cut short is one more text may complete, where a
+// tail carrying a character no tail is written with is no tail whatever
+// follows.
+func gitLabTokenRoutableEnd(src string, body, runEnd int) (int, bool, bool) {
 	if runEnd-body < gitLabTokenPayloadChars ||
 		runEnd == len(src) || src[runEnd] != gitLabTokenTailSeparator {
-		return 0, false
+		return 0, false, false
 	}
 
 	tail := runEnd + 1
 	if tail+gitLabTokenVersionChars < len(src) && src[tail+gitLabTokenVersionChars] == gitLabTokenTailSeparator {
 		for i := tail; i < tail+gitLabTokenVersionChars; i++ {
 			if !isGitLabTokenTailByte(src[i]) {
-				return 0, false
+				return 0, false, false
 			}
 		}
 		tail += gitLabTokenVersionChars + 1
@@ -444,14 +473,14 @@ func gitLabTokenRoutableEnd(src string, body, runEnd int) (int, bool) {
 
 	end := tail + gitLabTokenTailChars
 	if end > len(src) {
-		return 0, false
+		return 0, false, true
 	}
 	for i := tail; i < end; i++ {
 		if !isGitLabTokenTailByte(src[i]) {
-			return 0, false
+			return 0, false, false
 		}
 	}
-	return end, true
+	return end, true, false
 }
 
 // gitLabTokenClassicEnd returns where the classic token of kind k whose body

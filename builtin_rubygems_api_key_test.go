@@ -66,7 +66,7 @@ func Test_RubyGemsAPIKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := RubyGemsAPIKey().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := RubyGemsAPIKey().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -162,7 +162,7 @@ func Test_RubyGemsAPIKey_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := RubyGemsAPIKey().Find(tt.src); len(got) != 0 {
+			if got, _ := RubyGemsAPIKey().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
@@ -341,7 +341,7 @@ func Test_RubyGemsAPIKey_noKeyBeginsInsideAnother(t *testing.T) {
 	for i := range len(key) + 1 {
 		for _, tail := range []string{"", body, key} {
 			src := key[:i] + key + key[i:] + tail
-			spans := p.Find(src)
+			spans, _ := p.Find(src)
 			for j, got := range spans {
 				if j > 0 && got.Start < spans[j-1].End {
 					t.Errorf("Find(%q) = %v, which holds two values overlapping", src, spans)
@@ -406,7 +406,7 @@ func Test_RubyGemsAPIKey_aDigestBehindThePrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := RubyGemsAPIKey().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := RubyGemsAPIKey().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
@@ -443,7 +443,7 @@ func Test_RubyGemsAPIKey_theKeyFormatItReplaced(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := RubyGemsAPIKey().Find(tt.src); len(got) != 0 {
+			if got, _ := RubyGemsAPIKey().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
@@ -485,7 +485,7 @@ func Test_RubyGemsAPIKey_theShortExampleTheGuidePrints(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := RubyGemsAPIKey().Find(tt.src); len(got) != 0 {
+			if got, _ := RubyGemsAPIKey().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})

@@ -28,18 +28,27 @@ import (
 // and this helper is wired into a fuzz target, where a hang is thirty seconds
 // of nothing rather than a failure to read.
 func substringPattern(name, want string) mask.Pattern {
-	return mask.NewPattern(name, func(src string) []mask.Span {
+	return mask.NewPattern(name, func(src string) ([]mask.Span, int) {
 		if want == "" {
-			return nil
+			return nil, len(src)
 		}
+		// What is located is one fixed width, so an occurrence beginning
+		// more than a width in front of the end of src is written out in
+		// full here whatever follows src.
+		retain := max(0, len(src)-len(want)+1)
 		var spans []mask.Span
 		for i := 0; ; {
 			j := strings.Index(src[i:], want)
 			if j < 0 {
-				return spans
+				return spans, retain
 			}
 			spans = append(spans, mask.Span{Start: i + j, End: i + j + len(want)})
-			i += j + len(want)
+			// One byte past where this occurrence began, not past where it
+			// ended: an occurrence standing inside another is an occurrence,
+			// and a scan resuming past the match would step over it and would
+			// answer differently for having been shown more of the text in
+			// front of it.
+			i += j + 1
 		}
 	})
 }
@@ -48,7 +57,7 @@ func substringPattern(name, want string) mask.Pattern {
 // is handed. A case using one is written against a fixed input, named in the
 // case beside it.
 func spansPattern(name string, spans ...mask.Span) mask.Pattern {
-	return mask.NewPattern(name, func(string) []mask.Span { return spans })
+	return mask.NewPattern(name, func(src string) ([]mask.Span, int) { return spans, len(src) })
 }
 
 // patternSets is what the patterns field of a case names.
@@ -200,7 +209,7 @@ func Test_patternSets_nameNoBuiltinTwice(t *testing.T) {
 }
 
 func Test_substringPattern_emptyWant(t *testing.T) {
-	if spans := substringPattern("empty", "").Find("abcdef"); len(spans) != 0 {
+	if spans, _ := substringPattern("empty", "").Find("abcdef"); len(spans) != 0 {
 		t.Errorf("Find() = %v, want nothing at all", spans)
 	}
 }

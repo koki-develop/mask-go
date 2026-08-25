@@ -72,16 +72,25 @@ fmt.Println(m.Mask("token: INT-0123456789abcdef0123456789abcdef"))
 // token: ************************************
 ```
 
+Every match is located, including one that begins inside another: forty
+characters of hexadecimal written against forty more are redacted whole.
+
 `NewPattern` builds one from a function. Here, a value known only at run time:
 
 ```go
 secret := "s3cr3t-value"
 
-p := mask.NewPattern("shared-secret", func(src string) []mask.Span {
-	if i := strings.Index(src, secret); i >= 0 {
-		return []mask.Span{{Start: i, End: i + len(secret)}}
+p := mask.NewPattern("shared-secret", func(src string) ([]mask.Span, int) {
+	var spans []mask.Span
+	for i := 0; ; {
+		j := strings.Index(src[i:], secret)
+		if j < 0 {
+			break
+		}
+		spans = append(spans, mask.Span{Start: i + j, End: i + j + len(secret)})
+		i += j + 1
 	}
-	return nil
+	return spans, max(0, len(src)-len(secret)+1)
 })
 
 m := mask.New(mask.WithPatterns(p))
@@ -90,7 +99,33 @@ fmt.Println(m.Mask("password=s3cr3t-value"))
 // password=************
 ```
 
+The second result says how far along `src` the answer can no longer change if
+more text follows. `Mask` ignores it and [Streaming](#streaming) is what it is
+for; returning `0` is always correct.
+
 The `Pattern` interface can also be implemented directly.
+
+## Streaming
+
+A value written across two writes is in neither of them, so masking each piece
+as it arrives redacts nothing. `NewWriter` and `NewReader` hold text back until
+the patterns agree nothing more of the stream can change what they found:
+
+```go
+w := mask.NewWriter(os.Stderr, m)
+defer w.Close()
+
+log.SetOutput(w)
+```
+
+Only a tail that could still be the beginning of a value is held, so an ordinary
+line goes straight through. `Close` releases whatever is left.
+
+`NewReader` masks in the other direction:
+
+```go
+body, err := io.ReadAll(mask.NewReader(resp.Body, m))
+```
 
 ## Redactors
 

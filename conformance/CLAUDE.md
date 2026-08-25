@@ -101,6 +101,12 @@ any other way is read and its cases run — nothing about the suite would fail.
   `checkMasking` marks redactions with a separator the text does not hold and
   puts the values back, which must give the input again. Use it for anything
   generated, where no expectation can be written down.
+- `stream_test.go` drives the corpus through `NewWriter` and `NewReader`, cut at
+  every offset and a byte at a time, and holds what comes out to what `Mask`
+  returns for the case uncut. `Mask` is what the corpus states and what the
+  properties beside it hold to everything masking must be, so holding a stream
+  to `Mask` holds it to all of that at once — there is nothing for a stream
+  property to state on its own.
 - Adding a built-in pattern means adding cases here:
   `TestCorpus_coversEveryBuiltinPattern` asks for at least three cases locating
   it, and three where it locates nothing **masked with a set holding that
