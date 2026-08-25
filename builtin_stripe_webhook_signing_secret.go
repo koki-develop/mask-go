@@ -197,17 +197,32 @@ var stripeWebhookSigningSecret = NewPattern("stripe-webhook-signing-secret", fun
 	var spans []Span
 
 	for offset := 0; offset < len(src); {
-		i := strings.Index(src[offset:], stripeWebhookSigningSecretPrefix)
+		i := strings.IndexByte(src[offset:], stripeWebhookSigningSecretAnchor)
 		if i < 0 {
 			break
 		}
-		start := offset + i
+		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a secret or not,
-		// for the reason the rationale above gives: a body may close with the
-		// five letters the prefix opens with, so a secret can begin five
-		// characters before the end of the one before it.
-		offset = start + 1
+		// for the reason the rationale above gives: a body may close with the five
+		// letters the prefix opens with, so a secret can begin five characters
+		// before the end of the one before it. Stepping one byte past the anchor is
+		// what leaves the next candidate one byte past this one, which
+		// builtin_scan.go sets out.
+		offset = anchor + 1
+
+		if anchor < stripeWebhookSigningSecretAnchorIndex {
+			continue
+		}
+		start := anchor - stripeWebhookSigningSecretAnchorIndex
+
+		// The byte a prefix opens with is tested before the prefix is compared.
+		// Every anchor the search stops at reaches this line, and all but the few
+		// that open a candidate are turned away by one byte where a comparison of
+		// the whole prefix is a length and a read.
+		if src[start] != stripeWebhookSigningSecretPrefix[0] || !strings.HasPrefix(src[start:], stripeWebhookSigningSecretPrefix) {
+			continue
+		}
 
 		body := start + len(stripeWebhookSigningSecretPrefix)
 		if end := base62RunEnd(src, body); end-body >= stripeWebhookSigningSecretBodyChars {
@@ -219,14 +234,27 @@ var stripeWebhookSigningSecret = NewPattern("stripe-webhook-signing-secret", fun
 
 const (
 	// stripeWebhookSigningSecretPrefix is what every secret of this kind opens
-	// with, and what the scan searches the input for. Its first five characters
-	// belong to the alphabet a body is written in, which is what lets one secret
-	// begin inside another and is why the scan resumes a byte along; the
-	// underscore closing it does not, which is what keeps two candidates from
+	// with, and what the scan reads back from its anchor. Its first five
+	// characters belong to the alphabet a body is written in, which is what lets
+	// one secret begin inside another and is why the scan resumes a byte along;
+	// the underscore closing it does not, which is what keeps two candidates from
 	// ever reading the same run. Test_stripeWebhookSigningSecretPrefix holds it
 	// to the first and Test_stripeWebhookSigningSecretPrefix_runsDoNotOverlap to
 	// the second.
 	stripeWebhookSigningSecretPrefix = "whsec_"
+
+	// stripeWebhookSigningSecretAnchor is the byte the scan searches the input
+	// for and stripeWebhookSigningSecretAnchorIndex is where it stands in the
+	// prefix, so a candidate begins that many bytes in front of what a search
+	// reported. builtin_scan.go says why a scan searches for one byte of its
+	// prefix rather than for the prefix itself; what makes it this byte is that
+	// the five letters in front of it are ordinary ones — over the log line these
+	// benchmarks are written on the e stands eight times, the h three and the s
+	// twice, where the underscore stands not once. It is the same character the
+	// run guarantee rests on, so a candidate found by it is a candidate whose
+	// body is the run beginning one byte along.
+	stripeWebhookSigningSecretAnchor      = '_'
+	stripeWebhookSigningSecretAnchorIndex = 5
 
 	// stripeWebhookSigningSecretBodyChars is the count a body is held to, read
 	// as a floor rather than exactly. Thirty-two is the length of both secrets

@@ -496,6 +496,18 @@ func Test_stripeWebhookSigningSecretPrefix(t *testing.T) {
 	}
 }
 
+// Test_stripeWebhookSigningSecretAnchor holds the prefix to carrying the byte
+// the scan searches the input for at the index it reads a candidate back from.
+// builtin_scan.go says why that is held here rather than left to the targets.
+func Test_stripeWebhookSigningSecretAnchor(t *testing.T) {
+	if stripeWebhookSigningSecretAnchorIndex >= len(stripeWebhookSigningSecretPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", stripeWebhookSigningSecretAnchorIndex, len(stripeWebhookSigningSecretPrefix))
+	}
+	if c := stripeWebhookSigningSecretPrefix[stripeWebhookSigningSecretAnchorIndex]; c != stripeWebhookSigningSecretAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(stripeWebhookSigningSecretAnchor))
+	}
+}
+
 func Test_stripeWebhookSigningSecretPrefix_runsDoNotOverlap(t *testing.T) {
 	// The scan walks the run behind every candidate and keeps no cursor over it,
 	// where a scan whose prefix closes on a character its own body admits has to
@@ -538,10 +550,13 @@ func Test_StripeWebhookSigningSecret_scanIsLinear(t *testing.T) {
 		// One candidate whose body is the whole line, which is the walk over a
 		// run reading the length of the input and finding a secret.
 		"a body that runs the length of the line": "whsec_" + strings.Repeat("a", 1800000),
-		// The prefix's own letters written over and over with no underscore
-		// among them, which is the search for the prefix reading a whole line
-		// and finding no candidate at all.
-		"the letters of the prefix with no underscore": strings.Repeat("whsec", 360000),
+		// An anchor every other byte with nothing in front of it that opens a
+		// prefix, which is the cheapest way a position is declined: one byte
+		// read and the candidate gone.
+		"an anchor that opens no candidate": strings.Repeat("a_", 900000),
+		// And the prefix's own letters with no anchor among them, which is the
+		// walk reading a whole line and stopping nowhere in it.
+		"the letters of the prefix with no anchor": strings.Repeat("whsec", 360000),
 	}
 
 	m := New(WithPatterns(StripeWebhookSigningSecret()))
@@ -650,9 +665,9 @@ func FuzzStripeWebhookSigningSecret_matchesReference(f *testing.F) {
 // plain go test as well, which is what a benchmark nobody has run yet cannot
 // be.
 func stripeWebhookSigningSecretFindBenchmarks() []benchmarkCase {
-	// Nothing in an ordinary line opens the prefix, so what the line times is
-	// the search for it — which is most of what this pattern costs a caller
-	// whose text holds no secret.
+	// Nothing in an ordinary line carries the anchor, so what the line times is
+	// the walk looking for it — which is most of what this pattern costs a
+	// caller whose text holds no secret.
 	line := `time=2026-08-17T00:00:00Z level=info msg="handling an event" url=https://example.com/webhook `
 	secret := "whsec_0123456789abcdef0123456789abcdef"
 
