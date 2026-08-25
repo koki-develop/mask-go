@@ -58,7 +58,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `SendGridPatterns()` | Twilio SendGrid API keys, whatever access level they carry — full access, custom access and billing access alike |
 | `SentryPatterns()` | Sentry user auth tokens, organization auth tokens, user application tokens and internal integration tokens |
 | `SlackPatterns()` | Slack bot tokens, user tokens, app-level tokens and workflow tokens, and the pair token rotation issues: refresh tokens and the rotatable bot and user access tokens written behind them |
-| `StripePatterns()` | Stripe publishable API keys, restricted API keys, secret API keys and organization API keys |
+| `StripePatterns()` | Stripe publishable API keys, restricted API keys, secret API keys and organization API keys, and the signing secret a webhook endpoint verifies the `Stripe-Signature` header with |
 | `SupabasePatterns()` | Supabase Management API access tokens: the personal access token a user creates for themselves, and the token an OAuth application is issued in that user's name |
 
 `MustRegexp` builds a pattern from a regular expression:

@@ -131,7 +131,9 @@ func SlackPatterns() []Pattern { return []Pattern{slackToken} }
 // Stripe issues.
 //
 // The returned slice is freshly allocated and may be modified by the caller.
-func StripePatterns() []Pattern { return []Pattern{stripePublishableKey, stripeSecretKey} }
+func StripePatterns() []Pattern {
+	return []Pattern{stripePublishableKey, stripeSecretKey, stripeWebhookSigningSecret}
+}
 
 // SupabasePatterns returns every built-in pattern that locates a credential
 // Supabase issues.

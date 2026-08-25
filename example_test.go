@@ -29,8 +29,8 @@ func ExampleStripePatterns() {
 	// whole by it.
 	m := mask.New(mask.WithPatterns(mask.StripePatterns()...))
 
-	fmt.Println(m.Mask("secret=sk_live_0123456789abcdef01234567 publishable=pk_live_0123456789abcdef01234567"))
-	// Output: secret=******************************** publishable=********************************
+	fmt.Println(m.Mask("secret=sk_live_0123456789abcdef01234567 publishable=pk_live_0123456789abcdef01234567 webhook=whsec_0123456789abcdef0123456789abcdef"))
+	// Output: secret=******************************** publishable=******************************** webhook=**************************************
 }
 
 func ExampleAWSAccessKeyID() {
@@ -77,13 +77,25 @@ func ExampleSlackToken() {
 
 func ExampleStripeSecretKey() {
 	// Stripe marks the publishable key safe to expose and the restricted,
-	// secret and organization keys not, so the two are patterns of their own.
-	// Reaching for this one alone redacts the keys that matter and leaves the
-	// publishable key, which belongs in the page it initializes.
+	// secret and organization keys not, so a pattern of its own reads each side
+	// of that column. Reaching for this one alone redacts the keys that matter
+	// and leaves the publishable key, which belongs in the page it initializes.
 	m := mask.New(mask.WithPatterns(mask.StripeSecretKey()))
 
 	fmt.Println(m.Mask("secret=sk_live_0123456789abcdef01234567 publishable=pk_live_0123456789abcdef01234567"))
 	// Output: secret=******************************** publishable=pk_live_0123456789abcdef01234567
+}
+
+func ExampleStripeWebhookSigningSecret() {
+	// The signing secret is no row of Stripe's table of key types: it is
+	// issued per endpoint rather than per account, and what it authenticates
+	// is Stripe to the reader's server rather than the other way about.
+	// Reaching for it alone redacts what verifies Stripe's own signature and
+	// leaves the API keys, which the patterns beside it read.
+	m := mask.New(mask.WithPatterns(mask.StripeWebhookSigningSecret()))
+
+	fmt.Println(m.Mask("secret=whsec_0123456789abcdef0123456789abcdef key=sk_live_0123456789abcdef01234567"))
+	// Output: secret=************************************** key=sk_live_0123456789abcdef01234567
 }
 
 func ExampleWithPatterns() {

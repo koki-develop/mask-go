@@ -172,8 +172,10 @@ out:  there is no credential in this sentence
 # And a Google credential this pattern has nothing to say about. A service
 # account key is a JSON document holding an RSA private key, and the secret in
 # it is the PEM block rather than any string with a prefix — there is no run of
-# characters shaped like a key to find, so the document comes through whole and
-# is a credential still to whoever reads it.
+# characters shaped like a key to find, so the case below, masked with this
+# pattern alone, comes through whole. What reads that block is the private key
+# pattern, and builtin_private_key.txt carries the same document as a case of
+# its own.
 
 case: a service account key file
 in:   {"type":"service_account","project_id":"example","private_key":"-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\n"}
