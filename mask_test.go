@@ -330,8 +330,13 @@ func TestMasker_Mask_withoutMatchDoesNotAllocate(t *testing.T) {
 	for _, b := range builtinPatterns {
 		for _, a := range b.anchors {
 			anchors.WriteString(a)
-			// No built-in locates a value carrying a space, so a value cannot
-			// be built across a boundary out of two anchors that are none.
+			// A separator, so that a value is not built across a boundary out
+			// of two anchors that are none. Which character serves is not a
+			// survey of what the built-ins locate — one added tomorrow can
+			// locate a value carrying any character, and the private key armor
+			// carries spaces — and it does not have to be: the case
+			// below fails outright if the joined text redacts anything, which
+			// is what a separator that built a value would make it do.
 			anchors.WriteByte(' ')
 		}
 	}

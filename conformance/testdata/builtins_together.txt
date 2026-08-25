@@ -30,13 +30,17 @@ case: a jwt before a personal access token
 in:   jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef token=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 out:  jwt=«jwt» token=«github-token»
 
+case: a private key and a personal access token on separate lines
+in:   -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\ntoken=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:  «private-key»\ntoken=«github-token»
+
 case: a stateless installation token beside a jwt of its own
 in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4eXoifQ.0123456789abcdef
 out:  «github-token» and «jwt»
 
 case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd hvs.0123456789abcdef01234567 glsa_0123456789abcdef0123456789abcdef_01234567 sbp_0123456789abcdef0123456789abcdef01234567 rubygems_0123456789abcdef0123456789abcdef0123456789abcdef cfut_0123456789abcdef0123456789abcdef0123456789abcdef cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «openrouter-api-key» «anthropic-api-key» «stripe-secret-key» «stripe-publishable-key» «pypi-api-token» «npm-access-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token» «hashicorp-vault-token» «grafana-service-account-token» «supabase-access-token» «rubygems-api-key» «cloudflare-api-token» «cloudflare-api-key»
+in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pk_live_0123456789abcdef01234567 pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd hvs.0123456789abcdef01234567 glsa_0123456789abcdef0123456789abcdef_01234567 sbp_0123456789abcdef0123456789abcdef01234567 rubygems_0123456789abcdef0123456789abcdef0123456789abcdef cfut_0123456789abcdef0123456789abcdef0123456789abcdef cfk_0123456789abcdef0123456789abcdef0123456789abcdef -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----
+out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «openrouter-api-key» «anthropic-api-key» «stripe-secret-key» «stripe-publishable-key» «pypi-api-token» «npm-access-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token» «hashicorp-vault-token» «grafana-service-account-token» «supabase-access-token» «rubygems-api-key» «cloudflare-api-token» «cloudflare-api-key» «private-key»
 
 case: a fine grained token holding a run that opens like a header
 in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
@@ -73,6 +77,17 @@ out:  «jwt»
 case: a jwt whose header segment carries a token prefix before it
 in:   ghp_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:  ghp_«jwt»
+
+case: an access key id written where the base64 of a key stands
+in:   -----BEGIN PRIVATE KEY-----\nAKIA0123456789ABCDEF\n-----END PRIVATE KEY-----
+out:  «private-key»
+
+# A dot is not base64, so what is written between two boundaries is not always
+# a body, and the pattern that does read it is the one that locates it.
+
+case: a jwt written where the base64 of a key would stand
+in:   -----BEGIN PRIVATE KEY-----\neyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\n-----END PRIVATE KEY-----
+out:  -----BEGIN PRIVATE KEY-----\n«jwt»\n-----END PRIVATE KEY-----
 
 case: a fine grained token whose second run opens like a header
 in:   github_pat_0123456789abcdefABCDEF_eyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLM

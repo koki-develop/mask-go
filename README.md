@@ -52,6 +52,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `NPMPatterns()` | npm access tokens: the granular access tokens npmjs.com issues today, and the classic read-only, automation and publish tokens issued until npm disabled them |
 | `OpenAIPatterns()` | OpenAI API keys: project keys, service account keys, Admin API keys, and the user keys issued before projects existed |
 | `OpenRouterPatterns()` | OpenRouter API keys |
+| `PrivateKey()` | Private keys in the armor RFC 7468 lays out: PKCS#8 keys and encrypted PKCS#8 keys, the PKCS#1, EC and DSA keys OpenSSL writes, OpenSSH keys, OpenPGP private key blocks, and any other label whose last words are PRIVATE KEY — the whole block, boundary lines included, whether the line breaks are written as line breaks or escaped into a JSON string, and whether the block stands on its own or indented under a name in YAML |
 | `PyPIPatterns()` | PyPI API tokens: the upload tokens pypi.org issues, the ones test.pypi.org issues beside them, and the short-lived ones minted for a Trusted Publisher |
 | `RubyGemsPatterns()` | RubyGems.org API keys |
 | `SendGridPatterns()` | Twilio SendGrid API keys, whatever access level they carry — full access, custom access and billing access alike |

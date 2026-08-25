@@ -57,7 +57,7 @@ var vendorAccessors = map[string]func() []Pattern{
 // tell a pattern deliberately left out of the accessors from one forgotten.
 // Adding to it is how a pattern says it has no vendor, which is a line a
 // reviewer reads; leaving a pattern out of both is what fails.
-var patternsWithNoVendor = []Pattern{jsonWebToken}
+var patternsWithNoVendor = []Pattern{jsonWebToken, privateKey}
 
 func Test_vendorAccessors_nameEveryAccessorDeclared(t *testing.T) {
 	_, files := sourceFiles(t)
