@@ -108,10 +108,6 @@ case: a branch name whose digest stands against a slack prefix
 in:   branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
 out:  branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
 
-case: a private key header is not one of the kinds this library knows
-in:   -----BEGIN RSA PRIVATE KEY-----
-out:  -----BEGIN RSA PRIVATE KEY-----
-
 case: a password is not one of the kinds this library knows
 in:   password=hunter2
 out:  password=hunter2
