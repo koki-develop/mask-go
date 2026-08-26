@@ -16,5 +16,4 @@ pre-commit:
 pre-push:
   commands:
     gitleaks:
-      glob: "**/*"
       run: betterleaks git
