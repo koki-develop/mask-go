@@ -2,6 +2,7 @@ package mask
 
 import (
 	"cmp"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -338,6 +339,14 @@ func Test_MustRegexp_retainSettles(t *testing.T) {
 		`a+`,
 		`[a-b]+`,
 		`(?P<mask>a+)-(?P<mask>b+)`,
+		// Two mask groups with nothing between them, which is what makes find
+		// report a span behind one that begins later: a probe run inside a
+		// match yields the first group where the match already reported the
+		// second. regexpPattern.Find walks the spans from the end and so sees
+		// these out of order, and what is held here is that the offset it
+		// settles on is still one the whole text agrees with.
+		`(?P<mask>[a-z]{1,3})[0-9]{1,3}(?P<mask>[a-z]{1,3})`,
+		`(?P<mask>.{1,2})(?P<mask>[a-z]{1,3})`,
 		`INT-[0-9a-f]{4}`,
 		`INT-[0-9a-f]{2,6}`,
 		`(?:ab|abcdef)`,
@@ -363,6 +372,9 @@ func Test_MustRegexp_retainSettles(t *testing.T) {
 		"INT-deadbeef",
 		"key-1",
 		"ab abcdef abc",
+		// Text the two expressions above report spans out of order on.
+		"b0ybyaya0bayy11",
+		"2x _x0_bya3a33baa12b_",
 	}
 	for _, expr := range exprs {
 		t.Run(expr, func(t *testing.T) {
@@ -371,6 +383,139 @@ func Test_MustRegexp_retainSettles(t *testing.T) {
 				for cut := range len(src) + 1 {
 					checkRetain(t, p, src, cut)
 				}
+			}
+		})
+	}
+}
+
+func Test_MustRegexp_retainIsAFixedPointOfTheRule(t *testing.T) {
+	// Find settles an offset by one rule, applied to every span it reports: a
+	// span reaching the end of the input, or reaching past the offset, leaves
+	// the offset at most where that span begins. What Find returns is that rule
+	// applied until it moves nothing, and this is what holds it there — asked
+	// once more of what came back, the rule must move it nowhere.
+	//
+	// A pass over the spans in the order they are reported does not reach that
+	// on its own, since find does not report them in the order they begin: a
+	// span visited while the offset was still high, and left alone because it
+	// did not reach past it, is not asked again once a span visited later
+	// brings the offset below its end. Test_MustRegexp_retainSettles holds the
+	// offset to being settled; this holds it to being the whole of what the
+	// rule gives, which is the difference between the two.
+	exprs := []string{
+		`(?P<mask>[a-z]{1,3})[0-9]{1,3}(?P<mask>[a-z]{1,3})`,
+		`(?P<mask>.{1,2})(?P<mask>[a-z]{1,3})`,
+		`(?P<mask>.{1,2})(?P<mask>[a-z0-9]{2,5})\b`,
+		`(?P<mask>[a-z]{1,3})(?P<mask>[a-z0-9]{2,5})`,
+		`(?P<mask>a+)-(?P<mask>b+)`,
+		`INT-[0-9a-f]{2,6}`,
+	}
+	srcs := []string{
+		"",
+		"b0ybyaya0bayy11",
+		"bbxbb02cbx1x_1",
+		"2x _x0_bya3a33baa12b_",
+		"ya02b3y0b-_20aa0x__",
+		"by yaayz0x--2-0xy",
+		"-x11-2_13zbxb223x_ayz",
+		"a token: INT-dead and INT-beef",
+		"\u212a\u212aa\u212a",
+	}
+	for _, expr := range exprs {
+		t.Run(expr, func(t *testing.T) {
+			p := MustRegexp("p", expr)
+			for _, src := range srcs {
+				for cut := range len(src) + 1 {
+					head := src[:cut]
+					spans, retain := p.Find(head)
+					for _, s := range spans {
+						if s.End != len(head) && s.End <= retain {
+							continue
+						}
+						if s.Start < retain {
+							t.Errorf("Find(%q) = %v, settling %d, which %v reaches past while beginning in front of",
+								head, spans, retain, s)
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func Test_MustRegexp_findIsLinear(t *testing.T) {
+	// What Find does after matching is settle an offset by walking the spans,
+	// and there are two ways for that walk to cost more than the text. Walked
+	// the wrong way round, a chain of spans each reaching past where the next
+	// begins drains a link a pass. Walked over a list that is not in the order
+	// the spans begin, an inversion drains a pass. Either is a pass a span, and
+	// there is a span a byte on the texts below.
+	//
+	// What is asserted is the ratio and not a deadline. Doubling the text
+	// doubles the work of a walk that costs the text and quadruples the work of
+	// one that costs the spans, so the ratio is what tells the two apart — and
+	// it says the same thing on a slow machine, under the race detector and on
+	// a runner shared with somebody else, where a deadline says whatever the
+	// machine was doing at the time.
+	const (
+		small = 1 << 15
+		large = small * 2
+		// Four is the quadratic answer and two the linear one. Three parts them
+		// with room for the constant factors either side, which is what a walk
+		// costing the text spends on the sort in front of it.
+		limit = 3.0
+	)
+
+	for _, tt := range []struct{ name, expr, unit string }{
+		{
+			// Two mask groups with nothing between them, which is what makes a
+			// probe report a span in front of one already reported: the list
+			// the walk is handed is out of order at every match.
+			name: "a span out of order at every match",
+			expr: `(?P<mask>[a-z]{1,3})(?P<mask>[a-z0-9]{2,5})`,
+			unit: "abc12",
+		},
+		{
+			// The same, bounded behind, so the spans are reported side by side
+			// rather than merged and the chain is as long as the text.
+			name: "a chain the length of the text",
+			expr: `(?P<mask>.{1,2})(?P<mask>[a-z0-9]{2,5})\b`,
+			unit: "ab012 ",
+		},
+		{
+			// No mask group and no merging: a span at every position of a run,
+			// each reaching ten characters past where the next begins.
+			name: "a span at every position",
+			expr: `\B[a-z]{1,10}`,
+			unit: "a",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			p := MustRegexp("p", tt.expr)
+
+			// The fastest of several runs, not one run and not their mean: a
+			// run is slowed by a collection or by whoever else the machine is
+			// running, and never sped up by either, so the least of them is the
+			// one carrying least of the machine. The first run of each is
+			// thrown away with them, which is what leaves the ratio comparing
+			// two warm reads rather than a cold one against a warm one.
+			took := func(n int) time.Duration {
+				src := strings.Repeat(tt.unit, n/len(tt.unit))
+				best := time.Duration(math.MaxInt64)
+				for range 5 {
+					start := time.Now()
+					p.Find(src)
+					best = min(best, time.Since(start))
+				}
+				return best
+			}
+			a, b := took(small), took(large)
+			if a <= 0 {
+				a = time.Nanosecond
+			}
+			if got := float64(b) / float64(a); got > limit {
+				t.Errorf("Find() of %d bytes took %v and of %d bytes took %v, %.1fx for twice the text",
+					small, a, large, b, got)
 			}
 		})
 	}

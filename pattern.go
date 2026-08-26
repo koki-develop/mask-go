@@ -294,9 +294,33 @@ func (p *regexpPattern) Find(src string) ([]Span, int) {
 	// covers it. Either way the span that moves is the earlier of the two, and
 	// what is settled is at most where it begins.
 	//
-	// Walked from the end, because pulling the offset back brings the spans in
-	// front of it into the same question, and the spans are reported in the
-	// order they begin.
+	// Walked from the end over the spans in the order they begin, which is what
+	// makes one pass the whole of the rule rather than one application of it.
+	// Pulling the offset back brings the spans in front of it into the same
+	// question and none of the spans behind it, so a walk that has already
+	// passed everything beginning later is a walk with nothing left to revisit:
+	// a chain of spans each reaching past where the next begins drains here in
+	// one pass, where a forward walk drains a link of it a pass and a repeated
+	// pass over an unordered list drains an inversion a pass. Either of those
+	// is a pass a span, which is a pass a byte on the texts below.
+	//
+	// find does not report them in that order. A probe run inside a match can
+	// yield a mask group opening in front of one the enclosing match already
+	// reported, so (?P<mask>[a-z]{1,3})[0-9]{1,3}(?P<mask>[a-z]{1,3}) over
+	// b0ybyaya0bayy11 reports {6,8} behind {9,12}. The sort is what the walk
+	// rests on and is skipped where the list is already in that order, which is
+	// every expression that runs no probe and most texts of the ones that do.
+	//
+	// Leaving the offset where an unordered walk happened to leave it would
+	// leave it above where the rule puts it, and above is the side that
+	// releases text rather than the side that holds it.
+	// Test_MustRegexp_retainIsAFixedPointOfTheRule holds this to the rule and
+	// Test_MustRegexp_findIsLinear holds it to the text.
+	byStart := func(a, b Span) int { return a.Start - b.Start }
+	if !slices.IsSortedFunc(spans, byStart) {
+		slices.SortFunc(spans, byStart)
+	}
+
 	retain := p.retain(src)
 	for i := len(spans) - 1; i >= 0; i-- {
 		if s := spans[i]; s.End == len(src) || s.End > retain {
