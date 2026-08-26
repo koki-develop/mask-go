@@ -694,7 +694,7 @@ out:      LINEAR_API_KEY=«linear-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-
 
 case:     a stripe key written against the end of a linear key
 in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123sk_live_0123456789abcdef01234567
-out:      «linear-api-key»_live_0123456789abcdef01234567
+out:      «linear-api-key»
 
 case:     a linear key written against the end of a stripe key
 in:       sk_live_0123456789abcdef01234567lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
@@ -790,7 +790,7 @@ out:      «aws-access-key-id»sk_live_0123456789abcdef01234567
 
 case:     a stripe key written against the end of an npm access token
 in:       npm_0123456789abcdefghijklmnopqrstuvwxyzsk_live_0123456789abcdef01234567
-out:      «npm-access-token»_live_0123456789abcdef01234567
+out:      «npm-access-token»
 
 case:     an npm access token written against the end of a stripe key
 in:       sk_live_0123456789abcdef01234567npm_0123456789abcdefghijklmnopqrstuvwxyz
@@ -863,7 +863,7 @@ out:      NOTION_TOKEN=«notion-api-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-
 
 case:     a stripe prefix written against the end of a notion token
 in:       ntn_0123456789abcdef0123456789abcdef0123456789abcdsk_live_0123456789abcdef01234567
-out:      «notion-api-token»sk_live_0123456789abcdef01234567
+out:      «notion-api-token»«stripe-secret-key»
 
 # A Vault token beside the values it can be written inside of, and inside. The
 # two cases the Vault file states as its own over-matching open the block: the
@@ -1046,7 +1046,7 @@ out:      SUPABASE_ACCESS_TOKEN=«supabase-access-token»\nSUPABASE_ANON_KEY=«j
 
 case:     a stripe prefix written against the end of a supabase token
 in:       sbp_0123456789abcdef0123456789abcdef01234567sk_live_0123456789abcdef01234567
-out:      «supabase-access-token»sk_live_0123456789abcdef01234567
+out:      «supabase-access-token»«stripe-secret-key»
 
 case:     a stripe key a space away from a supabase token
 in:       sbp_0123456789abcdef0123456789abcdef01234567 sk_live_0123456789abcdef01234567
@@ -1127,7 +1127,7 @@ out:      RUBYGEMS_API_«rubygems-api-key»=«rubygems-api-key»\nAWS_ACCESS_«r
 
 case:     a stripe prefix written against the end of a rubygems key
 in:       rubygems_0123456789abcdef0123456789abcdef0123456789abcdefsk_live_0123456789abcdef01234567
-out:      «rubygems-api-key»sk_live_0123456789abcdef01234567
+out:      «rubygems-api-key»«stripe-secret-key»
 
 case:     a stripe key a space away from a rubygems key
 in:       rubygems_0123456789abcdef0123456789abcdef0123456789abcdef sk_live_0123456789abcdef01234567
@@ -1212,7 +1212,7 @@ out:      OPENROUTER_API_KEY=«openrouter-api-key»\nAWS_ACCESS_KEY_ID=«aws-acc
 
 case:     a stripe prefix written against the end of an openrouter key
 in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsk_live_0123456789abcdef01234567
-out:      «openrouter-api-key»sk_live_0123456789abcdef01234567
+out:      «openrouter-api-key»«stripe-secret-key»
 
 case:     a stripe key a space away from an openrouter key
 in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk_live_0123456789abcdef01234567
@@ -1249,7 +1249,7 @@ out:      «stripe-secret-key»
 
 case:     a secret key written straight onto the end of a signing secret
 in:       whsec_0123456789abcdef0123456789abcdefsk_live_0123456789abcdef01234567
-out:      «stripe-webhook-signing-secret»_live_0123456789abcdef01234567
+out:      «stripe-webhook-signing-secret»
 
 # The two Cloudflare patterns, which read the two halves of one format: the same
 # forty characters of secret and eight of checksum behind a prefix that says

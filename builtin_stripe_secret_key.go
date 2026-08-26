@@ -1,6 +1,9 @@
 package mask
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 // StripeSecretKey locates the Stripe API keys that must not be exposed: the
 // restricted keys Stripe now asks a server to use (rk_live_, rk_test_), the
@@ -203,15 +206,31 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // cannot begin one byte apart — the second would want its key type's second
 // letter where the first carries the underscore behind its own.
 //
-// What the spans never overlapping costs is the second of two keys of this
-// pattern written with nothing at all between them. The first is redacted to
-// the end of its run, which reaches two characters into the prefix of the
-// second, and the rest of that prefix and its whole body are left in the text.
-// Nothing has been seen written that way — a list of keys carries a comma, a
-// newline, a quote or an underscore between them, and every one of those is a
-// byte a key may be written after. It is the same shape the byte in front costs
-// in the other direction, and the same shape the Slack scan gives up for the
-// same demand.
+// A key written against a key is a key, which is what the byte in front is read
+// with isStripeKeyBodyRunBefore beside it for. The rule turns away a candidate
+// written inside a word, and a body is written in the characters a word is made
+// of, so without that every key after the first of a run written with nothing
+// between them would be turned away by the body in front of it: the first is
+// redacted to the end of its run, which reaches two characters into the
+// second's prefix and stops at the underscore behind it, and from the third on
+// nothing would reach them at all. What a redaction library may not do is leave
+// a key whole, and three written together is all it took.
+//
+// What tells the two apart is read in front of the candidate and not carried
+// along the scan. A cursor remembering where the last key ended would answer
+// this at a position from text a window may not hold — the keys Stripe issues
+// today are ninety-nine characters behind the prefix, where LookBehind is
+// sixty-four — so a stream would release a key the same pattern locates when
+// handed the text entire. Test_stripeKeys_locateAMixedRunThroughAWindow is what
+// holds the two readings together.
+//
+// What it costs is that the spans of a run overlap one another, by the two
+// characters the run in front reaches into the prefix behind it. A Masker
+// merges what overlaps, so a run comes out as one redaction, which is what the
+// Stripe webhook signing secret scan beside this one has always done.
+// Test_StripeSecretKey_locatesEveryKeyOfARun and
+// Test_stripeKeys_locateEveryKeyOfAMixedRun hold every pair of prefixes of both
+// halves to leaving no key of a run in the text.
 //
 // The scan keeps no cursor and needs none, and gets that from the format
 // rather than from a bounded count. A scan keeps a run cursor where a prefix
@@ -286,7 +305,11 @@ var stripeSecretKey = NewPattern("stripe-secret-key", func(src string) ([]Span, 
 		// The byte in front comes before the prefix table because it is one
 		// comparison where that is up to seven, and every snake_case name whose
 		// segment ends in k reaches this line.
-		if start > 0 && isStripeKeyWordByte(src[start-1]) {
+		//
+		// What it asks is whether this candidate is written inside a word, and
+		// a body written against it is no word. isStripeKeyBodyRunBefore is
+		// what tells the two apart.
+		if start > 0 && isStripeKeyWordByte(src[start-1]) && !isStripeKeyBodyRunBefore(src, start) {
 			continue
 		}
 		prefix := stripeSecretKeyPrefixAt(src, start)
@@ -402,6 +425,61 @@ func stripeSecretKeyPrefixAt(src string, i int) int {
 func isStripeKeyWordByte(c byte) bool {
 	return '0' <= c && c <= '9' || 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z'
 }
+
+// isStripeKeyBodyRunBefore reports whether the characters a body is written to
+// stand in front of i, unbroken and as many of them as the shortest body has.
+//
+// It is what the byte in front is read with, and what makes a key written
+// against a key a key. The rule on that byte turns away a candidate written
+// inside a word, and a body is written in the characters a word is made of, so
+// without this a run of keys written with nothing between them would lose every
+// key after the first: the first is redacted to the end of its run, which
+// reaches two characters into the second's prefix and stops at the underscore
+// behind it, and from the third on nothing would reach them at all.
+//
+// What it reads apart is a body from a segment of a name, and the underscore is
+// the whole of how. Every prefix of this format closes with one and no body is
+// written with one, so a name reaches a key type through an underscore and
+// leaves a run of nothing like this length in front of it, where a body leaves
+// exactly this. task_test_, topk_live_ and benchmark_rk_ are all turned away
+// here as they were before, their runs being broken by the underscore a segment
+// ends on.
+//
+// It reads back stripeKeyRunBeforeChars bytes and no more, which is what keeps
+// it inside LookBehind: an answer resting on a whole key in front of it would
+// be an answer a window could not reproduce, and a stream would release a key
+// the pattern locates only when handed the text entire.
+func isStripeKeyBodyRunBefore(src string, i int) bool {
+	if i < stripeKeyRunBeforeChars {
+		return false
+	}
+	for j := i - stripeKeyRunBeforeChars; j < i; j++ {
+		if !isBase62Byte(src[j]) {
+			return false
+		}
+	}
+	return true
+}
+
+// stripeKeyRunBeforeChars is how long that run has to be.
+//
+// A key leaves its body behind it, and a body is stripeSecretKeyBodyChars at
+// the shortest. Less what the candidate took of it: a candidate may open inside
+// the run of the key in front of it, since the characters its own prefix opens
+// with before the underscore belong to the alphabet that run is read in, and
+// those characters are then the run's rather than in front of it. Every prefix
+// of this format opens with two of them, and both halves are read here because
+// neither may come to ask for a different length than the other.
+//
+// It is read from the tables rather than written down, so a prefix added with a
+// longer head shortens this rather than being missed by it.
+var stripeKeyRunBeforeChars = func() int {
+	head := 0
+	for _, prefix := range slices.Concat(stripeSecretKeyPrefixes[:], stripePublishableKeyPrefixes[:]) {
+		head = max(head, strings.IndexByte(prefix, '_'))
+	}
+	return stripeSecretKeyBodyChars - head
+}()
 
 // stripeSecretKeyTail is what the scan settles the tail of its input by.
 // prefixTail (builtin_scan.go) says what that is and why it is built once.

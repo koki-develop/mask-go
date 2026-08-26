@@ -1,6 +1,7 @@
 package mask
 
 import (
+	"cmp"
 	"slices"
 	"strings"
 	"testing"
@@ -501,19 +502,18 @@ func Test_StripeSecretKey_insideASnakeCaseName(t *testing.T) {
 	}
 }
 
-func Test_StripeSecretKey_noKeyBeginsInsideAnother(t *testing.T) {
-	// The claim builtin_stripe_secret_key.go makes: the spans of this pattern
-	// never overlap one another, because a key begins
-	// only where no letter and no digit stands in front of it and everything a
-	// span covers is one or the other but for the underscores of the prefix —
-	// none of which opens a prefix of its own.
+func Test_StripeSecretKey_locatesEveryKeyOfARun(t *testing.T) {
+	// The claim builtin_stripe_secret_key.go makes: a key written against a key
+	// is a key. The byte in front turns away a candidate written inside a word,
+	// and a body is written in the characters a word is made of, so without the
+	// exemption for a candidate opening in front of what the scan has already
+	// reached, every key after the first of a run would be turned away by the
+	// body in front of it and left in the text whole.
 	//
-	// It is what the scan resuming past a match would rest on, were it to
-	// resume there, and it is what the paragraph on the second of two keys
-	// written together is about. Neither is a claim one input can state, so
-	// every pair of prefixes is written into one another here: against the end
-	// of a body, where a body begins, and one character short of a body so that
-	// the outer candidate is rejected and the inner is all there is.
+	// It is not a claim one input can state, so every pair of prefixes is
+	// written into one another here: against the end of a body, where a body
+	// begins, and one character short of a body so that the outer candidate is
+	// rejected and the inner is all there is.
 	body := "0123456789abcdef01234567"
 	p := StripeSecretKey()
 
@@ -525,16 +525,34 @@ func Test_StripeSecretKey_noKeyBeginsInsideAnother(t *testing.T) {
 				outer + body[:len(body)-1] + inner + body,
 				outer + body + "_" + inner + body,
 			} {
+				// The last key written is where a scan turning away a
+				// candidate written against a key leaves one whole, whichever
+				// of the shapes above put it there.
+				tail := len(src) - (len(inner) + len(body))
 				spans, _ := p.Find(src)
-				for i, got := range spans {
-					if i > 0 && got.Start < spans[i-1].End {
-						t.Errorf("Find(%q) = %v, which holds two values overlapping", src, spans)
-						break
-					}
+				if !coversFrom(src, spans, tail) {
+					t.Errorf("Find(%q) = %v, which leaves the key at %d in the text", src, spans, tail)
 				}
 			}
 		}
 	}
+}
+
+// coversFrom reports whether the spans, merged, cover every byte of src from
+// from to its end. A Masker merges what overlaps, so spans that overlap and
+// spans that meet are one redaction to a caller, and what a key written against
+// another owes is that nothing of it is left.
+func coversFrom(src string, spans []Span, from int) bool {
+	ordered := slices.Clone(spans)
+	slices.SortFunc(ordered, func(a, b Span) int { return cmp.Compare(a.Start, b.Start) })
+	at := from
+	for _, s := range ordered {
+		if s.Start > at {
+			break
+		}
+		at = max(at, s.End)
+	}
+	return at >= len(src)
 }
 
 func Test_stripeSecretKeyPrefixes(t *testing.T) {
@@ -768,9 +786,26 @@ func referenceStripeSecretKeyFind(src string) []Span {
 		return '0' <= c && c <= '9' || 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z'
 	}
 
+	// A body written against a candidate is no word, which is what lets a key
+	// written against a key be a key. It reads back exactly the shortest body
+	// and no further, so the answer at a position rests on nothing a window
+	// could not be handed.
+	runBefore := bodyChars - 2 // every prefix opens with two characters and an underscore
+	bodyRunBefore := func(i int) bool {
+		if i < runBefore {
+			return false
+		}
+		for j := i - runBefore; j < i; j++ {
+			if !body(src[j]) {
+				return false
+			}
+		}
+		return true
+	}
+
 	var spans []Span
 	for start := range len(src) {
-		if start > 0 && word(src[start-1]) {
+		if start > 0 && word(src[start-1]) && !bodyRunBefore(start) {
 			continue
 		}
 		from := -1

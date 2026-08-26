@@ -160,13 +160,14 @@ case:     an organization key
 in:       sk_org_0123456789abcdef01234567
 out:      sk_org_0123456789abcdef01234567
 
-# Two keys written together. No publishable key can begin inside the span of
-# another, and none inside a secret key's span either: a key opens only where no
-# letter and no digit stands in front of it, and everything a span covers is one
-# or the other but for the underscores of the prefix. So the second of two keys
-# written with nothing at all between them opens nothing. That is the far side
-# of the byte in front, and it is why a caller running both halves of the format
-# gets no span reaching into another's and none nested inside one.
+# Two keys written together. A key opens only where no letter and no digit
+# stands in front of it, and everything a span covers is one or the other but
+# for the underscores of the prefix — so the second would open nothing, were the
+# byte in front the whole of the rule. It is not: a candidate opening in front
+# has a whole body of the characters a body is written in behind it, which is a
+# key and not a word. A secret key leaves one behind it as much as these do, so
+# a publishable key written against one is read as well.
+# builtin_stripe_secret_key.go argues it.
 
 case:     two keys separated by a space
 in:       pk_live_0123456789abcdef01234567 pk_test_0123456789abcdef01234567
@@ -174,11 +175,11 @@ out:      «stripe-publishable-key» «stripe-publishable-key»
 
 case:     a key written straight onto the end of another
 in:       pk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
-out:      «stripe-publishable-key»_test_0123456789abcdef01234567
+out:      «stripe-publishable-key»
 
 case:     a key written straight onto the end of a secret key
 in:       sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
-out:      sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
+out:      sk_live_0123456789abcdef01234567«stripe-publishable-key»
 
 case:     an underscore between a secret key and one of these
 in:       sk_live_0123456789abcdef01234567_pk_test_0123456789abcdef01234567

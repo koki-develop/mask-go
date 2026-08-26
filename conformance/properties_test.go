@@ -122,6 +122,26 @@ func checkMasking(t testing.TB, patterns []mask.Pattern, src string) {
 	// all. The property that reaches a scan which located one of two identical
 	// values is checkSecondPass, run just above, which reads where the second
 	// pass redacts rather than what the first pass left.
+	//
+	// It reaches that scan where something stands between the two. Where
+	// nothing does, the second value begins exactly where the redaction of the
+	// first ends, and checkSecondPass reads a value standing against a
+	// redaction as one the redaction may have opened — which conformance's
+	// CLAUDE.md gives the reason for, and which is the same reading whether the
+	// scan lost the value or never could have located it.
+	//
+	// So values written with nothing at all between them are held by neither
+	// property here. What that leaves unreported is a scan which locates the
+	// first of a run of them and none of the rest, which is a defect a scan can
+	// have: the Stripe keys had it, their bodies being written in the
+	// characters a key may not be written after, until the scans were given
+	// what tells a key written against a key from one written inside a word.
+	//
+	// What holds a run of them now is a case rather than a property.
+	// builtin_stripe_secret_key.txt states two written together and three, and
+	// what those out lines are for is that a scan losing the tail of a run
+	// again shows up there.
+
 	for _, value := range values {
 		if strings.Count(src, value) == 1 && strings.Contains(masked, value) {
 			t.Fatalf("masking %q gave %q, which still holds the redacted %q", src, masked, value)

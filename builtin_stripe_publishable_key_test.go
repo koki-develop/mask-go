@@ -1,7 +1,7 @@
 package mask
 
 import (
-	"cmp"
+	"io"
 	"slices"
 	"strings"
 	"testing"
@@ -83,12 +83,14 @@ func Test_StripePublishableKey(t *testing.T) {
 		},
 		{
 			// A publishable key written straight onto the end of a secret one.
-			// The byte in front is a digit, so this pattern opens nothing, and
-			// the secret key's own run reaches two characters into this prefix
-			// and stops. That is the case both halves of the format give up.
+			// The byte in front is a digit, and a whole body of them stands
+			// behind it, which is a key and not a word. So this key is located
+			// where one written against a word would not be, and a caller
+			// running this pattern alone gets it — the secret key in front of
+			// it being no business of this half.
 			name: "a key written straight onto the end of a secret key",
 			src:  "sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567",
-			want: nil,
+			want: []Span{{32, 64}},
 		},
 		{
 			// The same two with an underscore between them, which is a byte a
@@ -435,7 +437,7 @@ func Test_StripePublishableKey_insideASnakeCaseName(t *testing.T) {
 	}
 }
 
-func Test_StripePublishableKey_noKeyBeginsInsideAnother(t *testing.T) {
+func Test_StripePublishableKey_locatesEveryKeyOfARun(t *testing.T) {
 	// The claim builtin_stripe_publishable_key.go makes: the spans of this
 	// pattern never overlap one another, because a key begins only where no
 	// letter and no digit stands in front of it and everything a span covers is
@@ -453,19 +455,17 @@ func Test_StripePublishableKey_noKeyBeginsInsideAnother(t *testing.T) {
 				outer + body[:len(body)-1] + inner + body,
 				outer + body + "_" + inner + body,
 			} {
+				tail := len(src) - (len(inner) + len(body))
 				spans, _ := p.Find(src)
-				for i, got := range spans {
-					if i > 0 && got.Start < spans[i-1].End {
-						t.Errorf("Find(%q) = %v, which holds two values overlapping", src, spans)
-						break
-					}
+				if !coversFrom(src, spans, tail) {
+					t.Errorf("Find(%q) = %v, which leaves the key at %d in the text", src, spans, tail)
 				}
 			}
 		}
 	}
 }
 
-func Test_stripeKeys_neitherKindBeginsInsideTheOther(t *testing.T) {
+func Test_stripeKeys_locateEveryKeyOfAMixedRun(t *testing.T) {
 	// The claim both halves of Stripe's format make about each other: a key of
 	// either kind written inside the span of the other is turned away by the
 	// byte in front, so a caller running both patterns gets no span reaching
@@ -490,19 +490,65 @@ func Test_stripeKeys_neitherKindBeginsInsideTheOther(t *testing.T) {
 						outer + body[:len(body)-1] + inner + body,
 						outer + body + "_" + inner + body,
 					} {
+						tail := len(src) - (len(inner) + len(body))
 						pub, _ := publishable.Find(src)
 						sec, _ := secret.Find(src)
 						spans := append(pub, sec...)
-						slices.SortFunc(spans, func(a, b Span) int { return cmp.Compare(a.Start, b.Start) })
-						for i, got := range spans {
-							if i > 0 && got.Start < spans[i-1].End {
-								t.Errorf("the two patterns report %v on %q, which holds two values overlapping", spans, src)
-								break
-							}
+						if !coversFrom(src, spans, tail) {
+							t.Errorf("the two patterns report %v on %q, which leaves the key at %d in the text", spans, src, tail)
 						}
 					}
 				}
 			}
+		}
+	}
+}
+
+func Test_stripeKeys_locateAMixedRunThroughAWindow(t *testing.T) {
+	// The same run, read the way a stream reads it. Test_stripeKeys_locateEveryKeyOfAMixedRun
+	// hands the whole text to Find at once, where a Writer hands it a window:
+	// LookBehind bytes in front of what it has still to write out, and no more.
+	//
+	// A rule reading further back than that is a rule a window cannot
+	// reproduce. It would locate the key when handed the text entire and leave
+	// it when handed the window, so Mask would redact what a Writer released —
+	// and the keys Stripe issues today are ninety-nine characters behind the
+	// prefix, which is further back than LookBehind reaches. The bodies here
+	// are that length for that reason: at the shortest they fit inside the
+	// window and the difference cannot show.
+	long := strings.Repeat("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", 2)[:99]
+	for _, tt := range []struct{ name, src string }{
+		{"a secret key against a publishable one", "log: pk_live_" + long + "sk_live_" + long + " end\n"},
+		{"a publishable key against a secret one", "log: sk_live_" + long + "pk_live_" + long + " end\n"},
+		{"a run of secret keys", "log: sk_live_" + long + "sk_live_" + long + "sk_live_" + long + " end\n"},
+	} {
+		for _, set := range []struct {
+			name     string
+			patterns []Pattern
+		}{
+			{"secret alone", []Pattern{StripeSecretKey()}},
+			{"publishable alone", []Pattern{StripePublishableKey()}},
+			{"both", StripePatterns()},
+		} {
+			t.Run(tt.name+"/"+set.name, func(t *testing.T) {
+				m := New(WithPatterns(set.patterns...))
+				want := m.Mask(tt.src)
+				for _, piece := range []int{1, 8, 64, 200} {
+					var out strings.Builder
+					w := NewWriter(&out, m)
+					for i := 0; i < len(tt.src); i += piece {
+						if _, err := io.WriteString(w, tt.src[i:min(i+piece, len(tt.src))]); err != nil {
+							t.Fatalf("Write: %v", err)
+						}
+					}
+					if err := w.Close(); err != nil {
+						t.Fatalf("Close: %v", err)
+					}
+					if out.String() != want {
+						t.Errorf("written %d byte(s) at a time gave %q, Mask gives %q", piece, out.String(), want)
+					}
+				}
+			})
 		}
 	}
 }
@@ -703,9 +749,26 @@ func referenceStripePublishableKeyFind(src string) []Span {
 		return '0' <= c && c <= '9' || 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z'
 	}
 
+	// A body written against a candidate is no word, which is what lets a key
+	// written against a key be a key. It reads back exactly the shortest body
+	// and no further, so the answer at a position rests on nothing a window
+	// could not be handed.
+	runBefore := bodyChars - 2 // every prefix opens with two characters and an underscore
+	bodyRunBefore := func(i int) bool {
+		if i < runBefore {
+			return false
+		}
+		for j := i - runBefore; j < i; j++ {
+			if !body(src[j]) {
+				return false
+			}
+		}
+		return true
+	}
+
 	var spans []Span
 	for start := range len(src) {
-		if start > 0 && word(src[start-1]) {
+		if start > 0 && word(src[start-1]) && !bodyRunBefore(start) {
 			continue
 		}
 		from := -1

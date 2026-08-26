@@ -78,25 +78,21 @@ func StripePublishableKey() Pattern { return stripePublishableKey }
 // a boundary there would drop rather than trim every key with a letter or a
 // digit written against it.
 //
-// No key of this pattern can be written inside another. Every span begins at a
-// p that no letter and no digit stands in front of, and everything the span
-// covers past the prefix is a letter or a digit, so no position inside one
-// opens a candidate that survives the byte in front. The two underscores of the
-// prefix open nothing either: what stands at them is the rest of the prefix,
-// never a p. Test_StripePublishableKey_noKeyBeginsInsideAnother drives the
-// shapes that would find that wrong.
+// A key written against a key is located all the same, which is the exemption
+// the byte in front carries here as it does in the scan beside this one, and
+// builtin_stripe_secret_key.go argues it: a run of keys written with nothing
+// between them would otherwise lose every key after the first, each being
+// turned away by the body in front of it.
 //
-// No key of the other half can begin inside one of these either, and none of
-// these inside one of those. The byte in front is the whole of the reason.
-// Everything a span covers past its prefix is a letter or a digit, so a
-// candidate opening there is turned away whichever prefix it carries; a body
-// cannot hold pk_ or the anchor of the other scan at all, since an underscore
-// ends the run a body is read as; and the positions the two underscores of a
-// prefix open carry the rest of that prefix. So a key of either kind written
-// straight against another is the case both patterns give up, and a caller
-// running both gets no span reaching into another's.
-// Test_stripeKeys_neitherKindBeginsInsideTheOther drives every pair of
-// prefixes.
+// It asks it of the text in front of the candidate rather than of what the scan
+// has seen, which is what keeps the answer one a window can reproduce, and it
+// asks it through isStripeKeyBodyRunBefore so that the two halves cannot come
+// to ask for different lengths. What it costs is that the spans of a run
+// overlap by the two characters a run reaches into the prefix behind it, which
+// a Masker merges.
+// Test_StripePublishableKey_locatesEveryKeyOfARun and
+// Test_stripeKeys_locateEveryKeyOfAMixedRun drive every pair of prefixes of
+// both halves.
 //
 // The scan resumes one byte past the start of a candidate, which is the
 // default and needs no argument beyond the one any scan has: a candidate that
@@ -152,7 +148,10 @@ var stripePublishableKey = NewPattern("stripe-publishable-key", func(src string)
 		}
 		start := at - stripePublishableKeyAnchorIndex
 
-		if start > 0 && isStripeKeyWordByte(src[start-1]) {
+		// A body written against this candidate is no word, which is what
+		// isStripeKeyBodyRunBefore reads and what builtin_stripe_secret_key.go
+		// argues, as it carries the declarations the rule is written with.
+		if start > 0 && isStripeKeyWordByte(src[start-1]) && !isStripeKeyBodyRunBefore(src, start) {
 			continue
 		}
 		// The byte every prefix opens with is tested before the table is
