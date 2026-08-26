@@ -172,12 +172,8 @@ in:       // TODO: stop hard coding ghp_0123456789abcdefghijklmnopqrstuvwxyz her
 out:      // TODO: stop hard coding «github-token» here
 
 case:     a line of a ci job log
-in:       $ aws sts assume-role --role-arn arn:aws:iam::012345678901:role/deploy\n{"AccessKeyId":"ASIA0123456789ABCDEF"}
-out:      $ aws sts assume-role --role-arn arn:aws:iam::012345678901:role/deploy\n{"AccessKeyId":"«aws-access-key-id»"}
-
-case:     an aws secret access key is not one of the kinds this library knows
-in:       AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567
-out:      AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567
+in:       $ aws sts assume-role --role-arn arn:aws:iam::012345678901:role/deploy\n{"AccessKeyId":"ASIA0123456789ABCDEF","SecretAccessKey":"0123456789abcdef0123456789abcdef01234567"}
+out:      $ aws sts assume-role --role-arn arn:aws:iam::012345678901:role/deploy\n{"AccessKeyId":"«aws-access-key-id»","SecretAccessKey":"«aws-secret-access-key»"}
 
 case:     a key opening sk- with none of the marker an openai key carries
 in:       OPENAI_API_KEY=sk-0123456789abcdef0123456789abcdef0123456789abcdef

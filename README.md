@@ -39,7 +39,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | Accessor | Locates |
 | --- | --- |
 | `AnthropicPatterns() []Pattern` | Anthropic API keys — the keys the Claude Console issues and the Admin API keys — and the OAuth tokens and session keys Anthropic writes the same way |
-| `AWSPatterns() []Pattern` | AWS access key IDs: the long-term key of an IAM user or of the account root user, and the temporary credentials AWS STS issues |
+| `AWSPatterns() []Pattern` | AWS access key IDs: the long-term key of an IAM user or of the account root user, and the temporary credentials AWS STS issues; and the secret access key beside one, wherever the name it is assigned to is written in front of it |
 | `CloudflarePatterns() []Pattern` | Cloudflare API tokens, the ones a user owns and the ones an account owns, and the Cloudflare API key a user account holds, which carries everything that user can do — in the prefixed format Cloudflare issues today |
 | `GitHubPatterns() []Pattern` | GitHub personal access tokens, classic and fine-grained; OAuth app access tokens; GitHub App user access tokens; GitHub App installation access tokens; and GitHub App refresh tokens |
 | `GitLabPatterns() []Pattern` | GitLab personal, project, group and impersonation access tokens; OAuth application secrets; deploy tokens; runner authentication tokens; CI/CD job tokens; pipeline trigger tokens; feed tokens; incoming mail tokens; GitLab agent for Kubernetes tokens; SCIM OAuth tokens; and feature flags client tokens — in the classic form and the routable one |

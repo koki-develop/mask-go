@@ -30,6 +30,7 @@ func AllBuiltinPatterns() []Pattern {
 var builtins = []Pattern{
 	anthropicAPIKey,
 	awsAccessKeyID,
+	awsSecretAccessKey,
 	cloudflareAPIKey,
 	cloudflareAPIToken,
 	githubToken,

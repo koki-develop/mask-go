@@ -7,8 +7,12 @@ package mask
 //
 // How a scan looks for its candidates is stated here as well, because every
 // one of them does it and the reason is the same each time. A scan searches
-// the input for one byte of its prefix and reads the prefix back from where
-// that byte was found, rather than searching for the prefix itself.
+// the input for one byte of what a candidate opens with and reads that opening
+// back from where the byte was found, rather than searching for the opening
+// itself. Usually the opening is the prefix a vendor writes a value with, and
+// the words below say prefix for that reason; where a value carries no prefix
+// of its own it is the name the value is assigned to, and every sentence here
+// holds of that just the same.
 //
 // The two are the same search. strings.Index over a needle short enough to
 // matter here searches the text for the needle's first byte and tests what
@@ -48,13 +52,17 @@ package mask
 //
 // Pattern.Find asks a scan how far along its input the values it reported can
 // no longer change, which is what lets a stream release text rather than keep
-// the whole of it. A scan reads a candidate forward from a prefix and decides
-// it on what stands behind, so there are exactly two places the end of the
-// input can leave a scan without an answer. A prefix the end cut in half opens
-// no candidate at all and the scan walks past it having found nothing: that is
-// prefixTail.start below, which every scan calls with its own prefixes. A
-// candidate whose body the end cut short is the scan's own to report, at the
-// candidate, and what it reports there is the candidate's start.
+// the whole of it. A scan reads a candidate forward from its opening and
+// decides it on what stands behind, so there are exactly two places the end of
+// the input can leave a scan without an answer. An opening the end cut in half
+// opens no candidate at all and the scan walks past it having found nothing:
+// that is prefixTail.start below, which a scan whose openings are literals
+// calls with its own. A scan opening on something else — a name read without
+// regard to case, say — owes the same answer and asks the walk that already
+// reads that opening for it, rather than a second grammar free to disagree
+// about what an opening is. A candidate whose body the end cut short is the
+// scan's own to report, at the candidate, and what it reports there is the
+// candidate's start.
 //
 // A scan gives up on such a candidate rather than reading what is written of
 // it. Working out that a truncated candidate could never have become a value
@@ -72,7 +80,7 @@ package mask
 // candidate at all.
 //
 // Every pattern holds its own anchor to standing at its own index in every
-// prefix that pattern can match, in a test of its own beside the scan. What
+// opening that pattern can match, in a test of its own beside the scan. What
 // that test is for is the prefix added later, not the index moved: a pattern
 // whose one prefix and index have come apart locates none of the values its
 // own cases spell out, and those cases fail by the dozen without any help
@@ -162,14 +170,15 @@ func base62RunEnd(src string, i int) int {
 	return i
 }
 
-// prefixTail is how a scan settles the tail of its input, and every scan
-// reports what it says alongside the candidates it left open. A candidate is
-// read forward from a prefix, so a prefix the end of the input cuts in half
-// opens no candidate at all and the scan walks past it having found nothing: a
-// stream carrying ghp_ in two pieces would be released with the first piece
-// written out and the token behind it redacted nowhere. What this returns is
-// where such a piece begins, so that the text from there on is held back until
-// the rest of the prefix arrives, or until something that is no prefix does.
+// prefixTail is how a scan whose openings are literals settles the tail of its
+// input, and such a scan reports what it says alongside the candidates it left
+// open. A candidate is read forward from a prefix, so a prefix the end of the
+// input cuts in half opens no candidate at all and the scan walks past it
+// having found nothing: a stream carrying ghp_ in two pieces would be released
+// with the first piece written out and the token behind it redacted nowhere.
+// What this returns is where such a piece begins, so that the text from there
+// on is held back until the rest of the prefix arrives, or until something that
+// is no prefix does.
 //
 // A whole prefix is looked for as well as a piece of one, though a whole prefix
 // opens a candidate the scan reports for itself. It costs a comparison and it

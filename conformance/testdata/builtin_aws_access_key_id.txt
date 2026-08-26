@@ -167,13 +167,14 @@ case:     prose in capitals
 in:       THERE IS NO CREDENTIAL IN THIS SENTENCE
 out:      THERE IS NO CREDENTIAL IN THIS SENTENCE
 
-# And the half of an AWS access key this library cannot reach. The secret
-# access key is forty characters of base64 with no prefix and no length that
-# tells it from any other forty, so nothing in the value says what it is and
-# only the name written in front of it does, which no pattern here reads. It
-# comes through whole on its own, and it comes through whole beside the key ID
-# it belongs to — the case below is the pair as a credentials file holds it,
-# and what is left in the text after masking is the secret and the name.
+# And the other half of an AWS access key, which this pattern does not reach.
+# The secret access key is forty characters of base64 with no prefix and no
+# length that tells it from any other forty, so nothing in the value says what
+# it is and only the name written in front of it does — which this scan does
+# not read, because the prefix is the whole of what it looks for. It is
+# aws-secret-access-key that reads the name, and the cases below are masked
+# with this pattern alone, so what they show is where the boundary between the
+# two falls rather than what a caller holding both would see.
 
 case:     a secret access key on its own
 in:       aws_secret_access_key = 0123456789abcdef0123456789abcdef01234567

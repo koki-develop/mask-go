@@ -42,6 +42,17 @@ func ExampleAWSAccessKeyID() {
 	// Output: AWS_ACCESS_KEY_ID=********************
 }
 
+func ExampleAWSSecretAccessKey() {
+	// The value carries nothing to be recognised by — forty characters of
+	// base64 are as much a git object as a key — so this pattern reads the name
+	// the value is assigned to, and redacts the value alone. The name is what
+	// stays behind to say which credential leaked.
+	m := mask.New(mask.WithPatterns(mask.AWSSecretAccessKey()))
+
+	fmt.Println(m.Mask("AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567"))
+	// Output: AWS_SECRET_ACCESS_KEY=****************************************
+}
+
 func ExampleGitHubToken() {
 	m := mask.New(mask.WithPatterns(mask.GitHubToken()))
 

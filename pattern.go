@@ -35,13 +35,16 @@ type Span struct {
 // window begins would decide where the values fall, and a value would move
 // under the window as the window moved.
 //
-// Every built-in pattern reads at most one byte in front of a value — the
-// character a prefix may not stand behind — and a pattern built by MustRegexp
-// reads one rune, which is what \b, \B and ^ are decided by. The limit is far
-// above both so that a Pattern written by hand has room to read a keyword or an
-// assignment in front of what it locates. A Find that cannot be held to it,
-// where a value is decided by more text in front of it than this, must settle
-// nothing: what settles nothing is never handed a window.
+// A built-in pattern reads no further in front of a value than what decides
+// whether a value stands there at all. Where that is the one character a prefix
+// may not stand behind there is no count to state; a scan reading further than
+// that character states in its own file how far, and holds it to this limit. A
+// pattern built by MustRegexp reads one rune, which is what \b, \B and ^ are
+// decided by. The limit is far above either so that a Pattern written by hand
+// has room to read a keyword or an assignment in front of what it locates. A
+// Find that cannot be held to it, where a value is decided by more text in
+// front of it than this, must settle nothing: what settles nothing is never
+// handed a window.
 const LookBehind = 64
 
 // Pattern locates sensitive values in text.

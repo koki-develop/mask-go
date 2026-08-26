@@ -64,11 +64,15 @@ fire.
 What that rules out is the loose grammar, not the unlucky one. The question to
 ask of an over-match is whether the pattern could have been tighter: a bare
 forty hex characters, or `SK` and thirty-two, casts a net over values that carry
-meaning when a tighter net was available and was not taken. Where instead the
-grammar is already as tight as the vendor's own format and text still lands
-inside it, that text is indistinguishable from a credential — there is nothing
-left to read it by — and redacting is right, because declining it would mean
-declining every real credential of the same shape. A pattern relying on this
+meaning when a tighter net was available and was not taken. Where a value
+carries nothing at all to be recognised by, the name it is assigned to is one of
+the nets available, and the gate is asked of the grammar with that name in it
+rather than of the value alone — how far in front of a value a pattern may read
+is `LookBehind`'s to bound and is below. Where instead the grammar is already as
+tight as the vendor's own format and text still lands inside it, that text is
+indistinguishable from a credential — there is nothing left to read it by — and
+redacting is right, because declining it would mean declining every real
+credential of the same shape. A pattern relying on this
 states the collision in its own file and pins it with cases, so that it is a
 decision on the record rather than something the next reader discovers.
 
@@ -285,7 +289,7 @@ in its own file:
   and the file makes the claim, names the test that drives it, and says why the
   default would not do. A pattern whose values provably cannot nest is held to
   that by a test of its own naming the claim, as
-  `Test_StripeSecretKey_noKeyBeginsInsideAnother` does.
+  `Test_RubyGemsAPIKey_noKeyBeginsInsideAnother` does.
 
 The cost of advancing rather than consuming is that a value nested in another —
 a JWT payload that is itself a header — is located too; the spans overlap and
@@ -294,10 +298,13 @@ a JWT payload that is itself a header — is located too; the spans overlap and
 ## What a scan settles
 
 `Pattern.Find` returns the offset from which the input is not settled, and every
-scan answers it the same two ways: a piece of a prefix standing at the end of
-the input, and a candidate the end of the input cut short. `builtin_scan.go` states
-both and holds the first of them as `prefixTail`; the second is the scan's own,
-and what it reports there is the candidate's start.
+scan answers it the same two ways: a piece of what a candidate opens with
+standing at the end of the input, and a candidate the end of the input cut
+short. `builtin_scan.go` states both and holds the first of them as `prefixTail`
+for a scan whose openings are literals, where a scan opening on something else
+asks the walk that already reads that opening rather than a second grammar free
+to disagree with it. The other is the scan's own either way, and what it reports
+there is the candidate's start.
 
 - **Report the candidate, do not read what is written of it.** A scan that
   worked out that a truncated candidate could never have become a value would
@@ -305,6 +312,14 @@ and what it reports there is the candidate's start.
   grammar — the grammar of the halves — kept beside the first and free to
   disagree with it. Settling too little costs a stream the text it holds on to;
   settling too much releases a credential before it was found.
+
+  The second grammar is what this rules out, and a scan may read a truncated
+  candidate where the reading is the first grammar and nothing else: the same
+  walk, over the same alphabet, against the same count, ruling the candidate out
+  for every text carrying on from it rather than for the one in hand. A run
+  already wider than a value is the shape that qualifies. Wanting the bytes back
+  is not reason enough on its own — a scan reading a candidate here says in its
+  own file what it would otherwise hold on to, and how much.
 - **A helper that says no owes the reason where the reason is the input.** A
   walk that stopped because the text said so is settled; a walk that stopped
   because the input ran out is not, and only the walk can tell them apart. The
@@ -329,14 +344,26 @@ samples cut at every offset, `FuzzBuiltins_retain` on generated text, and the
 cut properties in `conformance` end to end against `Mask`.
 
 The other half is `LookBehind`, which `pattern.go` states: how far in front of a
-value a `Pattern` may read. A built-in reads at most one byte in front of one —
-the character a prefix may not stand behind — and a prefix long enough to stand
-on its own says where a value begins without reading anything in front of it at
-all. Which of the two a scan does is that scan's decision and is argued in its
-own file, beside the scans that decline the byte and say why.
-`Test_patterns_readNoFurtherBackThanLookBehind` and `FuzzPatterns_lookBehind`
-hold every built-in to reading no further back than `LookBehind` whichever it
-decided.
+value a `Pattern` may read. A built-in reads no further in front of one than
+what decides whether a value stands there at all, and a prefix long enough to
+stand on its own decides that without reading anything in front of a value.
+What a scan reads there, and why reading nothing would not have done, is that
+scan's decision and is argued in its own file.
+
+A scan reading further than the character in front of a value owes a test of its
+own besides, building the widest such reading out of the declarations the scan
+reads it with and holding it to the limit. One character needs none: it cannot
+grow, and the limit is not a number anything could carry it past. What the test
+catches is a widening somewhere else: a count raised, a word added, a floor
+lengthened, none of which is written near `LookBehind` and any of which can
+carry the reading past it. Nothing else reports that: `Mask` is handed the whole
+text and never notices, so what fails instead is a stream releasing a value the
+same pattern locates when handed everything — and only where a case happens to
+be written wide enough to reach the limit.
+`Test_patterns_readNoFurtherBackThanLookBehind` and
+`FuzzPatterns_lookBehind` hold every built-in to reading no further back than
+`LookBehind` on the text they are driven with, which is the same rule over the
+inputs that exist rather than over the ones a change makes possible.
 
 ## Linearity
 
