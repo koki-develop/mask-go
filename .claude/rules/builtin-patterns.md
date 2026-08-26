@@ -328,9 +328,15 @@ and what it reports there is the candidate's start.
 samples cut at every offset, `FuzzBuiltins_retain` on generated text, and the
 cut properties in `conformance` end to end against `Mask`.
 
-The other half is `LookBehind`, which `pattern.go` states. Every built-in reads
-one byte in front of a value — the character a prefix may not stand behind — and
-`Test_patterns_readNoFurtherBackThanLookBehind` holds each of them to it.
+The other half is `LookBehind`, which `pattern.go` states: how far in front of a
+value a `Pattern` may read. A built-in reads at most one byte in front of one —
+the character a prefix may not stand behind — and a prefix long enough to stand
+on its own says where a value begins without reading anything in front of it at
+all. Which of the two a scan does is that scan's decision and is argued in its
+own file, beside the scans that decline the byte and say why.
+`Test_patterns_readNoFurtherBackThanLookBehind` and `FuzzPatterns_lookBehind`
+hold every built-in to reading no further back than `LookBehind` whichever it
+decided.
 
 ## Linearity
 

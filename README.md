@@ -38,28 +38,28 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 | Accessor | Locates |
 | --- | --- |
-| `AnthropicPatterns()` | Anthropic API keys — the keys the Claude Console issues and the Admin API keys — and the OAuth tokens and session keys Anthropic writes the same way |
-| `AWSPatterns()` | AWS access key IDs: the long-term key of an IAM user or of the account root user, and the temporary credentials AWS STS issues |
-| `CloudflarePatterns()` | Cloudflare API tokens, the ones a user owns and the ones an account owns, and the Cloudflare API key a user account holds, which carries everything that user can do — in the prefixed format Cloudflare issues today |
-| `GitHubPatterns()` | GitHub personal access tokens, classic and fine-grained; OAuth app access tokens; GitHub App user access tokens; GitHub App installation access tokens; and GitHub App refresh tokens |
-| `GitLabPatterns()` | GitLab personal, project, group and impersonation access tokens; OAuth application secrets; deploy tokens; runner authentication tokens; CI/CD job tokens; pipeline trigger tokens; feed tokens; incoming mail tokens; GitLab agent for Kubernetes tokens; SCIM OAuth tokens; and feature flags client tokens — in the classic form and the routable one |
-| `GooglePatterns()` | Google API keys, the one string every Google API that takes a key rather than a credentialled principal accepts — Maps, YouTube Data, Firebase, the Gemini API and the Cloud APIs reaching no private user data among them |
-| `GrafanaPatterns()` | Grafana service account tokens |
-| `HashiCorpPatterns()` | HashiCorp Vault service tokens, batch tokens and recovery tokens |
-| `JWT()` | JSON Web Tokens in the compact serialization, signed and encrypted alike |
-| `LinearPatterns()` | Linear personal API keys |
-| `NotionPatterns()` | Notion API tokens: the static token of an internal connection, the OAuth access token of a public one, and a personal access token alike, under both prefixes Notion has issued |
-| `NPMPatterns()` | npm access tokens: the granular access tokens npmjs.com issues today, and the classic read-only, automation and publish tokens issued until npm disabled them |
-| `OpenAIPatterns()` | OpenAI API keys: project keys, service account keys, Admin API keys, and the user keys issued before projects existed |
-| `OpenRouterPatterns()` | OpenRouter API keys |
-| `PrivateKey()` | Private keys in the armor RFC 7468 lays out: PKCS#8 keys and encrypted PKCS#8 keys, the PKCS#1, EC and DSA keys OpenSSL writes, OpenSSH keys, OpenPGP private key blocks, and any other label whose last words are PRIVATE KEY — the whole block, boundary lines included, whether the line breaks are written as line breaks or escaped into a JSON string, and whether the block stands on its own or indented under a name in YAML |
-| `PyPIPatterns()` | PyPI API tokens: the upload tokens pypi.org issues, the ones test.pypi.org issues beside them, and the short-lived ones minted for a Trusted Publisher |
-| `RubyGemsPatterns()` | RubyGems.org API keys |
-| `SendGridPatterns()` | Twilio SendGrid API keys, whatever access level they carry — full access, custom access and billing access alike |
-| `SentryPatterns()` | Sentry user auth tokens, organization auth tokens, user application tokens and internal integration tokens |
-| `SlackPatterns()` | Slack bot tokens, user tokens, app-level tokens and workflow tokens, and the pair token rotation issues: refresh tokens and the rotatable bot and user access tokens written behind them |
-| `StripePatterns()` | Stripe publishable API keys, restricted API keys, secret API keys and organization API keys, and the signing secret a webhook endpoint verifies the `Stripe-Signature` header with |
-| `SupabasePatterns()` | Supabase Management API access tokens: the personal access token a user creates for themselves, and the token an OAuth application is issued in that user's name |
+| `AnthropicPatterns() []Pattern` | Anthropic API keys — the keys the Claude Console issues and the Admin API keys — and the OAuth tokens and session keys Anthropic writes the same way |
+| `AWSPatterns() []Pattern` | AWS access key IDs: the long-term key of an IAM user or of the account root user, and the temporary credentials AWS STS issues |
+| `CloudflarePatterns() []Pattern` | Cloudflare API tokens, the ones a user owns and the ones an account owns, and the Cloudflare API key a user account holds, which carries everything that user can do — in the prefixed format Cloudflare issues today |
+| `GitHubPatterns() []Pattern` | GitHub personal access tokens, classic and fine-grained; OAuth app access tokens; GitHub App user access tokens; GitHub App installation access tokens; and GitHub App refresh tokens |
+| `GitLabPatterns() []Pattern` | GitLab personal, project, group and impersonation access tokens; OAuth application secrets; deploy tokens; runner authentication tokens; CI/CD job tokens; pipeline trigger tokens; feed tokens; incoming mail tokens; GitLab agent for Kubernetes tokens; SCIM OAuth tokens; and feature flags client tokens — in the classic form and the routable one |
+| `GooglePatterns() []Pattern` | Google API keys, the one string every Google API that takes a key rather than a credentialled principal accepts — Maps, YouTube Data, Firebase, the Gemini API and the Cloud APIs reaching no private user data among them |
+| `GrafanaPatterns() []Pattern` | Grafana service account tokens |
+| `HashiCorpPatterns() []Pattern` | HashiCorp Vault service tokens, batch tokens and recovery tokens |
+| `JWT() Pattern` | JSON Web Tokens in the compact serialization, signed and encrypted alike |
+| `LinearPatterns() []Pattern` | Linear personal API keys |
+| `NotionPatterns() []Pattern` | Notion API tokens: the static token of an internal connection, the OAuth access token of a public one, and a personal access token alike, under both prefixes Notion has issued |
+| `NPMPatterns() []Pattern` | npm access tokens: the granular access tokens npmjs.com issues today, and the classic read-only, automation and publish tokens issued until npm disabled them |
+| `OpenAIPatterns() []Pattern` | OpenAI API keys: project keys, service account keys, Admin API keys, and the user keys issued before projects existed |
+| `OpenRouterPatterns() []Pattern` | OpenRouter API keys |
+| `PrivateKey() Pattern` | Private keys in the armor RFC 7468 lays out: PKCS#8 keys and encrypted PKCS#8 keys, the PKCS#1, EC and DSA keys OpenSSL writes, OpenSSH keys, OpenPGP private key blocks, and any other label whose last words are PRIVATE KEY — the whole block, boundary lines included, whether the line breaks are written as line breaks or escaped into a JSON string, and whether the block stands on its own or indented under a name in YAML |
+| `PyPIPatterns() []Pattern` | PyPI API tokens: the upload tokens pypi.org issues, the ones test.pypi.org issues beside them, and the short-lived ones minted for a Trusted Publisher |
+| `RubyGemsPatterns() []Pattern` | RubyGems.org API keys |
+| `SendGridPatterns() []Pattern` | Twilio SendGrid API keys, whatever access level they carry — full access, custom access and billing access alike |
+| `SentryPatterns() []Pattern` | Sentry user auth tokens, organization auth tokens, user application tokens and internal integration tokens |
+| `SlackPatterns() []Pattern` | Slack bot tokens, user tokens, app-level tokens and workflow tokens, and the pair token rotation issues: refresh tokens and the rotatable bot and user access tokens written behind them |
+| `StripePatterns() []Pattern` | Stripe publishable API keys, restricted API keys, secret API keys and organization API keys, and the signing secret a webhook endpoint verifies the `Stripe-Signature` header with |
+| `SupabasePatterns() []Pattern` | Supabase Management API access tokens: the personal access token a user creates for themselves, and the token an OAuth application is issued in that user's name |
 
 `MustRegexp` builds a pattern from a regular expression:
 

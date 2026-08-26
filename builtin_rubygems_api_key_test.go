@@ -145,8 +145,11 @@ func Test_RubyGemsAPIKey_noMatch(t *testing.T) {
 		},
 		{
 			// The key of the credentials file a key is stored in, which is the
-			// one snake_case name anybody writes with this prefix. Its second
-			// character is a p, which no body may hold.
+			// one snake_case name anybody writes with this prefix. What turns
+			// it away is the length: the prefix is there, but the input ends
+			// long before a body could, so the scan takes the branch a
+			// candidate the end cut short takes and never reads the alphabet
+			// at all.
 			name: "the credentials file key that names one",
 			src:  ":rubygems_api_key: something",
 		},

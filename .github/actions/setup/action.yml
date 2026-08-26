@@ -21,11 +21,14 @@ runs:
     # restore-only action as the way to say no. Every job restores; a job says
     # cache: restore when what it would write back is worth less than the
     # contention of writing it. The key is one string for the whole workflow,
-    # so every saver races for it on the first run after go.sum changes, and
-    # the loser of that race logs a failure. Fuzzing is where that matters:
-    # a target to a job means fourteen of them, and go test -fuzz leaves its
+    # so every saver races for it on the first run after the dependencies
+    # change, and the loser of that race logs a failure. Fuzzing is where that
+    # matters: the fuzz job is one job a target, so it is as wide as the list
+    # of targets the job in front of it reports, and go test -fuzz leaves its
     # generated corpus in GOCACHE/fuzz, so the winner would decide what the
-    # jobs after it restore as a build cache.
+    # jobs after it restore as a build cache. The width is read from that list
+    # rather than written down here, where a count would be wrong the next time
+    # a pattern is added.
     - if: inputs.cache == 'save'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:

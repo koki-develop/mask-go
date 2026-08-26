@@ -451,10 +451,14 @@ var gitLabTokenPrefixChars = func() []int {
 // three characters behind the payload, which is a position the version form has
 // and the other cannot: the characters of a length are base36 and a separator
 // is not, so neither form can be read as the other.
+//
 // It reports whether saying no was the end of the input speaking rather than
 // the text: a tail the input cut short is one more text may complete, where a
 // tail carrying a character no tail is written with is no tail whatever
-// follows.
+// follows. A tail that is both — cut short, and already carrying such a
+// character — is read as cut short. The scan does not read what is written of
+// a candidate the end of the input took the rest of, and builtin_scan.go
+// argues that trade rather than each scan arguing it again.
 func gitLabTokenRoutableEnd(src string, body, runEnd int) (int, bool, bool) {
 	if runEnd-body < gitLabTokenPayloadChars ||
 		runEnd == len(src) || src[runEnd] != gitLabTokenTailSeparator {
