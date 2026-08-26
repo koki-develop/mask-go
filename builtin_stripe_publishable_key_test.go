@@ -438,12 +438,16 @@ func Test_StripePublishableKey_insideASnakeCaseName(t *testing.T) {
 }
 
 func Test_StripePublishableKey_locatesEveryKeyOfARun(t *testing.T) {
-	// The claim builtin_stripe_publishable_key.go makes: the spans of this
-	// pattern never overlap one another, because a key begins only where no
-	// letter and no digit stands in front of it and everything a span covers is
-	// one or the other but for the underscores of the prefix — neither of which
-	// opens a prefix of its own, since what stands at them is the rest of the
-	// prefix and never a p.
+	// The claim builtin_stripe_publishable_key.go makes: a key written against
+	// a key is a key. The byte in front turns away a candidate written inside a
+	// word, and a body is written in the characters a word is made of, so
+	// without the exemption for a candidate opening in front of what the scan
+	// has already reached, every key after the first of a run would be turned
+	// away by the body in front of it and left in the text whole.
+	//
+	// What is asked below is therefore coverage and not separation: the spans
+	// of such a run overlap by the two characters a run reaches into the prefix
+	// behind it, and what may not happen is a key left out of them.
 	body := "0123456789abcdef01234567"
 	p := StripePublishableKey()
 
@@ -467,9 +471,11 @@ func Test_StripePublishableKey_locatesEveryKeyOfARun(t *testing.T) {
 
 func Test_stripeKeys_locateEveryKeyOfAMixedRun(t *testing.T) {
 	// The claim both halves of Stripe's format make about each other: a key of
-	// either kind written inside the span of the other is turned away by the
-	// byte in front, so a caller running both patterns gets no span reaching
-	// into another's and none nested inside one.
+	// either kind written against a key of either kind is a key. The two read
+	// one body between them through isStripeKeyBodyRunBefore, so the exemption
+	// each of them carries has to hold across the pair as well — and what the
+	// two report together overlaps, by the two characters a run reaches into
+	// the prefix behind it, which a Masker merges.
 	//
 	// It cannot be stated from either file alone and is not a claim one input
 	// can carry, so every prefix of each kind is written into every prefix of

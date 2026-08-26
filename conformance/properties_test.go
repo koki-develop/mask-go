@@ -141,7 +141,6 @@ func checkMasking(t testing.TB, patterns []mask.Pattern, src string) {
 	// builtin_stripe_secret_key.txt states two written together and three, and
 	// what those out lines are for is that a scan losing the tail of a run
 	// again shows up there.
-
 	for _, value := range values {
 		if strings.Count(src, value) == 1 && strings.Contains(masked, value) {
 			t.Fatalf("masking %q gave %q, which still holds the redacted %q", src, masked, value)

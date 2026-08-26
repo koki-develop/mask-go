@@ -178,26 +178,13 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // reaches the end of the run, that is every key with a letter or a digit
 // written against it.
 //
-// No key of this pattern can be written inside another, which is more than a
-// scan resuming a byte past a match can say: it resumes there because a value
-// can begin inside the span of the one in front of it. Here none can. A key
-// begins only where no letter and no digit stands in front of it, and
-// everything a span covers is one or the other except the underscores of the
-// prefix — and none of the positions those underscores open opens a prefix of
-// its own, since what stands at each of them is the rest of a mode or of the
-// organization scope. The body cannot open one either: a prefix wants an
-// underscore at its third character, and the third character of a body is a
-// letter or a digit like the rest of it. So the spans of this pattern never
-// overlap one another. Test_StripeSecretKey_noKeyBeginsInsideAnother drives
-// every shape that would find that wrong.
-//
-// No publishable key can begin inside one of these either, by the same
-// argument: a body holds no underscore, so it cannot carry that prefix, and
-// every other position a span covers is a letter or a digit or the rest of a
-// prefix. So a caller running both patterns gets neither a span the other
-// reached into nor one nested inside it, and
-// Test_stripeKeys_neitherKindBeginsInsideTheOther drives every pair of prefixes
-// that would find otherwise.
+// A key can begin inside the span of the one in front of it, and in a run
+// written with nothing between two keys every key after the first does: a body
+// is read to the end of its run, so the span in front carries the two
+// characters of the next prefix that stand before its underscore. That holds of
+// a publishable key written into such a run as well, since the two patterns
+// read one body between them. What it costs and what holds it is set out below,
+// where the byte in front of a candidate is read.
 //
 // The scan resumes one byte past the anchor all the same, and has to: a
 // candidate that did not become a key says nothing about the next one, and
@@ -266,9 +253,17 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 //
 // What reaches a span is never prose, a git SHA or an MD5. A digest carries no
 // underscore, so it holds no prefix to be found at however long it runs, and no
-// word of prose is spelled sk_live_. A snake_case identifier can carry a whole
-// prefix, as task_test_ does, and what turns that away is the letter in front
-// of it.
+// word of prose is spelled sk_live_.
+//
+// A snake_case identifier can carry a whole prefix, as task_test_ does, and the
+// letter in front of it is what turns that away — until stripeKeyRunBeforeChars
+// letters and digits stand there unbroken, which is the exemption a run of keys
+// is located by and which the byte in front cannot tell from one. So
+// task_test_ behind a word of twenty-two characters is redacted where
+// task_test_ behind one letter is not. That is the widening the exemption was
+// bought with, and it is the same trade the count above is: the alternative is
+// a run of keys losing every key after the first, and what a redaction library
+// may not do is leave a key whole.
 //
 // referenceStripeSecretKeyFind in builtin_stripe_secret_key_test.go states the
 // same grammar the plain way, spelling the prefixes, the floor and the two
@@ -302,13 +297,21 @@ var stripeSecretKey = NewPattern("stripe-secret-key", func(src string) ([]Span, 
 		}
 		start := anchor - stripeSecretKeyAnchorIndex
 
-		// The byte in front comes before the prefix table because it is one
-		// comparison where that is up to seven, and every snake_case name whose
-		// segment ends in k reaches this line.
+		// The byte in front comes before the prefix table, and every
+		// snake_case name whose segment ends in k reaches this line.
 		//
 		// What it asks is whether this candidate is written inside a word, and
 		// a body written against it is no word. isStripeKeyBodyRunBefore is
 		// what tells the two apart.
+		//
+		// What it costs is one comparison, and on a candidate written against
+		// a word a walk of up to stripeKeyRunBeforeChars bytes behind it. The
+		// walk stops at the byte nearest the candidate rather than at the far
+		// end of that window, which is what keeps the shapes it is reached by —
+		// a word closing on a key type, a key written against a key — reading a
+		// byte or two rather than the whole of it. What a line holding no key
+		// pays is the call standing in the loop, which is a few nanoseconds
+		// whether or not the walk is ever entered.
 		if start > 0 && isStripeKeyWordByte(src[start-1]) && !isStripeKeyBodyRunBefore(src, start) {
 			continue
 		}
@@ -449,11 +452,19 @@ func isStripeKeyWordByte(c byte) bool {
 // it inside LookBehind: an answer resting on a whole key in front of it would
 // be an answer a window could not reproduce, and a stream would release a key
 // the pattern locates only when handed the text entire.
+// The run is walked from the candidate backwards rather than from its far end
+// forwards, which is the same answer read in the cheaper order. Every byte has
+// to be a body byte, so the walk stops at the first that is not, and what turns
+// this call away is almost always the text abutting the candidate: a word
+// closing on a key type carries a separator or a space a byte or two behind it,
+// where the far end of the window is whatever stood twenty-two characters ago
+// and is as often a body as not. Walking the other way reads the whole window
+// before reaching the byte that decides it.
 func isStripeKeyBodyRunBefore(src string, i int) bool {
 	if i < stripeKeyRunBeforeChars {
 		return false
 	}
-	for j := i - stripeKeyRunBeforeChars; j < i; j++ {
+	for j := i - 1; j >= i-stripeKeyRunBeforeChars; j-- {
 		if !isBase62Byte(src[j]) {
 			return false
 		}
@@ -468,8 +479,15 @@ func isStripeKeyBodyRunBefore(src string, i int) bool {
 // the run of the key in front of it, since the characters its own prefix opens
 // with before the underscore belong to the alphabet that run is read in, and
 // those characters are then the run's rather than in front of it. Every prefix
-// of this format opens with two of them, and both halves are read here because
-// neither may come to ask for a different length than the other.
+// of this format opens with two of them, and both halves are read for the head
+// because neither may come to ask for a different length than the other.
+//
+// The floor is read from one half and there is only one to read: the
+// publishable keys' floor is that declaration rather than a number of its own,
+// which builtin_stripe_publishable_key.go argues, so the two cannot part and a
+// minimum over them would be a minimum of one value with itself. What gates
+// both scans is this, and what keeps it right for both is that the floor
+// underneath it is one declaration and not two.
 //
 // It is read from the tables rather than written down, so a prefix added with a
 // longer head shortens this rather than being missed by it.

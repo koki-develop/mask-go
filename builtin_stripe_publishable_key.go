@@ -108,15 +108,23 @@ func StripePublishableKey() Pattern { return stripePublishableKey }
 // can hold two bodies. Test_StripePublishableKey_scanIsLinear drives the inputs
 // that would find this wrong.
 //
-// What this pattern over-matches on is a snake_case name whose first segment
-// ends in pk, whose second is live or test, and whose third is twenty-four
-// unbroken letters and digits. That is the format exactly, so there is nothing
-// left to read the two apart by; the tightening on offer is the count, which
-// costs a whole credential when it is wrong. The prefix is eight characters
-// carrying two underscores, so no digest, certificate or base64 payload holds
-// one at however long it runs. The cases in
-// builtin_stripe_publishable_key_test.go pin the over-match so that it stays a
-// decision on the record.
+// What this pattern over-matches on is a name whose first segment ends in pk,
+// whose second is live or test, and whose third is twenty-four unbroken letters
+// and digits. That is the format exactly, so there is nothing left to read the
+// two apart by; the tightening on offer is the count, which costs a whole
+// credential when it is wrong. The prefix is eight characters carrying two
+// underscores, so no digest, certificate or base64 payload holds one at however
+// long it runs.
+//
+// The name need not be written in snake_case for that. The byte in front turns
+// away a prefix standing inside a word, but the exemption a run of keys is
+// located by admits any candidate with stripeKeyRunBeforeChars letters and
+// digits unbroken in front of it — which a long identifier has, however it is
+// cased. So pk_live_ behind twenty-six characters of camelCase is redacted
+// where pk_live_ behind one letter is not. builtin_stripe_secret_key.go states
+// what the exemption is worth and why it is not on offer to decline it. The
+// cases in builtin_stripe_publishable_key_test.go pin the over-match so that it
+// stays a decision on the record.
 //
 // referenceStripePublishableKeyFind in builtin_stripe_publishable_key_test.go
 // states the same grammar the plain way, spelling the prefixes, the floor and
@@ -148,16 +156,20 @@ var stripePublishableKey = NewPattern("stripe-publishable-key", func(src string)
 		}
 		start := at - stripePublishableKeyAnchorIndex
 
-		// A body written against this candidate is no word, which is what
-		// isStripeKeyBodyRunBefore reads and what builtin_stripe_secret_key.go
-		// argues, as it carries the declarations the rule is written with.
-		if start > 0 && isStripeKeyWordByte(src[start-1]) && !isStripeKeyBodyRunBefore(src, start) {
+		// The byte every prefix opens with is tested first, because it is one
+		// comparison and it turns away everything the two tests behind it would
+		// otherwise be run for. The two are independent of one another — both
+		// have to hold and neither reads what the other decided — so the order
+		// is the scan's to choose and this is the cheap end of it.
+		if src[start] != stripePublishableKeyAnchor[0] {
 			continue
 		}
-		// The byte every prefix opens with is tested before the table is
-		// walked, for the reason the byte in front of the candidate is: it is
-		// one comparison where that is up to two of eight characters each.
-		if src[start] != stripePublishableKeyAnchor[0] {
+		// A body written against this candidate is no word, which is what
+		// isStripeKeyBodyRunBefore reads and what builtin_stripe_secret_key.go
+		// argues, as it carries the declarations the rule is written with. It
+		// reads up to stripeKeyRunBeforeChars bytes, so it is the expensive
+		// test of the three and stands behind the cheap one for that reason.
+		if start > 0 && isStripeKeyWordByte(src[start-1]) && !isStripeKeyBodyRunBefore(src, start) {
 			continue
 		}
 		prefix := stripePublishableKeyPrefixAt(src, start)

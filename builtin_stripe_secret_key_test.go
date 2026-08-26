@@ -626,6 +626,35 @@ func Test_stripeSecretKeyAnchor(t *testing.T) {
 	}
 }
 
+func Test_stripeKeyRunBeforeChars_readNoFurtherBackThanLookBehind(t *testing.T) {
+	// isStripeKeyBodyRunBefore reads the text in front of a candidate, so how
+	// far back it reads is held to LookBehind here rather than left to a case
+	// that happens to be written wide enough to notice.
+	//
+	// The count is derived — a body's floor less the head of the widest prefix —
+	// so nothing near LookBehind moves when either of those does. Raise the
+	// floor past what this leaves and the read runs outside any window: Mask is
+	// handed the whole text and goes on locating every key of a run, while a
+	// Writer releases the second key of one. The only case that would fail is
+	// Test_stripeKeys_locateAMixedRunThroughAWindow, and that only because the
+	// bodies it writes are as long as the keys Stripe issues today.
+	if stripeKeyRunBeforeChars > LookBehind {
+		t.Errorf("the scan reads %d bytes in front of a candidate, LookBehind is %d",
+			stripeKeyRunBeforeChars, LookBehind)
+	}
+	// The other end of the same derivation. A prefix whose head reached the
+	// floor would leave nothing to read, and a walk over nothing is a walk that
+	// finds no byte to turn it away: isStripeKeyBodyRunBefore would report true
+	// at every candidate, and the byte in front would stop turning any of them
+	// away. That is the rule the over-match rationale rests on going silently
+	// absent, which no case would report — every key still comes out redacted,
+	// and only the text that should not have been joins them.
+	if stripeKeyRunBeforeChars <= 0 {
+		t.Errorf("the scan reads %d bytes in front of a candidate, so every candidate written inside a word is admitted",
+			stripeKeyRunBeforeChars)
+	}
+}
+
 func Test_isStripeKeyWordByte(t *testing.T) {
 	// What may not stand in front of a Stripe prefix, stated over every byte
 	// rather than by example. It holds the same characters as the base62
