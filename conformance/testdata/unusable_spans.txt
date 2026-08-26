@@ -10,60 +10,60 @@
 # nothing moves for these patterns when the text around a value grows, because
 # they never look at it.
 
-spans: reported
+spans:    reported
 
 patterns: span-empty
 
-case: an empty span is ignored
-in:   abcdef
-out:  abcdef
+case:     an empty span is ignored
+in:       abcdef
+out:      abcdef
 
 patterns: span-reversed
 
-case: a span whose start is past its end is ignored
-in:   abcdef
-out:  abcdef
+case:     a span whose start is past its end is ignored
+in:       abcdef
+out:      abcdef
 
 patterns: span-negative
 
-case: a span starting before the text is ignored
-in:   abcdef
-out:  abcdef
+case:     a span starting before the text is ignored
+in:       abcdef
+out:      abcdef
 
 patterns: span-past-the-end
 
-case: a span reaching past the text is ignored
-in:   abcdef
-out:  abcdef
+case:     a span reaching past the text is ignored
+in:       abcdef
+out:      abcdef
 
-case: the same span in a text long enough to hold it is used
-in:   abcdefgh
-out:  abcd«past-the-end»h
+case:     the same span in a text long enough to hold it is used
+in:       abcdefgh
+out:      abcd«past-the-end»h
 
 patterns: span-unusable-beside-a-value
 
-case: an unusable span leaves the usable ones alone
-in:   abcdef
-out:  «mixed»cdef
+case:     an unusable span leaves the usable ones alone
+in:       abcdef
+out:      «mixed»cdef
 
 patterns: span-unordered
 
-case: spans reported out of order are sorted
-in:   abcdef
-out:  «unordered»cd«unordered»
+case:     spans reported out of order are sorted
+in:       abcdef
+out:      «unordered»cd«unordered»
 
 patterns: span-duplicated
 
-case: the same span reported twice is redacted once
-in:   abcdef
-out:  «duplicated»cdef
+case:     the same span reported twice is redacted once
+in:       abcdef
+out:      «duplicated»cdef
 
 patterns: span-whole-input
 
-case: a span over the whole text
-in:   abcdef
-out:  «whole»
+case:     a span over the whole text
+in:       abcdef
+out:      «whole»
 
-case: a span over the whole text of an empty text is ignored
+case:     a span over the whole text of an empty text is ignored
 in:
 out:

@@ -22,25 +22,25 @@ patterns: notion-api-token
 # newer because Notion did not revoke the tokens carrying it: the changelog
 # announcing the change says they continue to work unchanged.
 
-case: a token in an environment assignment
-in:   NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abcd
-out:  NOTION_TOKEN=«notion-api-token»
+case:     a token in an environment assignment
+in:       NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:      NOTION_TOKEN=«notion-api-token»
 
-case: a token in the bearer header a request carries
-in:   Authorization: Bearer ntn_0123456789abcdef0123456789abcdef0123456789abcd
-out:  Authorization: Bearer «notion-api-token»
+case:     a token in the bearer header a request carries
+in:       Authorization: Bearer ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:      Authorization: Bearer «notion-api-token»
 
-case: a token in the response an oauth exchange returns
-in:   {"access_token":"ntn_0123456789abcdef0123456789abcdef0123456789abcd","token_type":"bearer","workspace_id":"0123456789ab"}
-out:  {"access_token":"«notion-api-token»","token_type":"bearer","workspace_id":"0123456789ab"}
+case:     a token in the response an oauth exchange returns
+in:       {"access_token":"ntn_0123456789abcdef0123456789abcdef0123456789abcd","token_type":"bearer","workspace_id":"0123456789ab"}
+out:      {"access_token":"«notion-api-token»","token_type":"bearer","workspace_id":"0123456789ab"}
 
-case: a token of the format issued until september 2024
-in:   NOTION_TOKEN=secret_0123456789abcdef0123456789abcdef0123456789a
-out:  NOTION_TOKEN=«notion-api-token»
+case:     a token of the format issued until september 2024
+in:       NOTION_TOKEN=secret_0123456789abcdef0123456789abcdef0123456789a
+out:      NOTION_TOKEN=«notion-api-token»
 
-case: a token at the end of a sentence
-in:   the token is ntn_0123456789abcdef0123456789abcdef0123456789abcd.
-out:  the token is «notion-api-token».
+case:     a token at the end of a sentence
+in:       the token is ntn_0123456789abcdef0123456789abcdef0123456789abcd.
+out:      the token is «notion-api-token».
 
 # The alphabet a body is written in: base62, the letters of both cases and the
 # digits, which is what every ruleset reading either prefix admits behind it.
@@ -48,17 +48,17 @@ out:  the token is «notion-api-token».
 # stands, and so does a second underscore — which is the character a candidate
 # is found by, and which no body carries.
 
-case: a body written in capitals
-in:   ntn_0123456789ABCDEF0123456789ABCDEF0123456789ABCD
-out:  «notion-api-token»
+case:     a body written in capitals
+in:       ntn_0123456789ABCDEF0123456789ABCDEF0123456789ABCD
+out:      «notion-api-token»
 
-case: a hyphen inside the body
-in:   ntn_0123456789abcdef0123-456789abcdef0123456789abc
-out:  ntn_0123456789abcdef0123-456789abcdef0123456789abc
+case:     a hyphen inside the body
+in:       ntn_0123456789abcdef0123-456789abcdef0123456789abc
+out:      ntn_0123456789abcdef0123-456789abcdef0123456789abc
 
-case: a further underscore inside the body
-in:   ntn_0123456789abcdef0123_456789abcdef0123456789abc
-out:  ntn_0123456789abcdef0123_456789abcdef0123456789abc
+case:     a further underscore inside the body
+in:       ntn_0123456789abcdef0123_456789abcdef0123456789abc
+out:      ntn_0123456789abcdef0123_456789abcdef0123456789abc
 
 # How long a token is. Fifty characters, prefix included, read exactly rather
 # than as a floor — which is where this pattern stands with the AWS, Google and
@@ -74,21 +74,21 @@ out:  ntn_0123456789abcdef0123_456789abcdef0123456789abc
 # the cut comes through in the clear. The cases below are both, and the second
 # is here to be looked up rather than arrived at.
 
-case: an alphabet run longer than the body
-in:   ntn_0123456789abcdef0123456789abcdef0123456789abcd0
-out:  «notion-api-token»0
+case:     an alphabet run longer than the body
+in:       ntn_0123456789abcdef0123456789abcdef0123456789abcd0
+out:      «notion-api-token»0
 
-case: a body one character short
-in:   NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abc
-out:  NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abc
+case:     a body one character short
+in:       NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abc
+out:      NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abc
 
-case: a body of the older format one character short
-in:   NOTION_TOKEN=secret_0123456789abcdef0123456789abcdef0123456789
-out:  NOTION_TOKEN=secret_0123456789abcdef0123456789abcdef0123456789
+case:     a body of the older format one character short
+in:       NOTION_TOKEN=secret_0123456789abcdef0123456789abcdef0123456789
+out:      NOTION_TOKEN=secret_0123456789abcdef0123456789abcdef0123456789
 
-case: a token cut off at its prefix
-in:   NOTION_TOKEN=ntn_
-out:  NOTION_TOKEN=ntn_
+case:     a token cut off at its prefix
+in:       NOTION_TOKEN=ntn_
+out:      NOTION_TOKEN=ntn_
 
 # What a token may be written against. There is no boundary on either side of a
 # match, as there is none in any built-in but the Slack and Stripe ones: a
@@ -98,25 +98,25 @@ out:  NOTION_TOKEN=ntn_
 # straight onto the end of a token is left where it stands, where the OpenAI,
 # Anthropic, PyPI and npm patterns would read it as more of the body.
 
-case: a token after an underscore
-in:   NOTION_TOKEN_ntn_0123456789abcdef0123456789abcdef0123456789abcd
-out:  NOTION_TOKEN_«notion-api-token»
+case:     a token after an underscore
+in:       NOTION_TOKEN_ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:      NOTION_TOKEN_«notion-api-token»
 
-case: a token after a letter
-in:   xntn_0123456789abcdef0123456789abcdef0123456789abcd
-out:  x«notion-api-token»
+case:     a token after a letter
+in:       xntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:      x«notion-api-token»
 
-case: a token inside quotes
-in:   export NOTION_TOKEN="ntn_0123456789abcdef0123456789abcdef0123456789abcd"
-out:  export NOTION_TOKEN="«notion-api-token»"
+case:     a token inside quotes
+in:       export NOTION_TOKEN="ntn_0123456789abcdef0123456789abcdef0123456789abcd"
+out:      export NOTION_TOKEN="«notion-api-token»"
 
-case: a word written against a token
-in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdsuffix
-out:  «notion-api-token»suffix
+case:     a word written against a token
+in:       ntn_0123456789abcdef0123456789abcdef0123456789abcdsuffix
+out:      «notion-api-token»suffix
 
-case: a hyphenated word written against a token
-in:   ntn_0123456789abcdef0123456789abcdef0123456789abcd-suffix
-out:  «notion-api-token»-suffix
+case:     a hyphenated word written against a token
+in:       ntn_0123456789abcdef0123456789abcdef0123456789abcd-suffix
+out:      «notion-api-token»-suffix
 
 # Two tokens written together. The characters in front of either prefix's
 # underscore belong to the alphabet a body is written in, so a body closing with
@@ -127,21 +127,21 @@ out:  «notion-api-token»-suffix
 # two spans overlap and are redacted as one. Written without that overlap the
 # two are separate values, and both go.
 
-case: two tokens separated by a space
-in:   ntn_0123456789abcdef0123456789abcdef0123456789abcd secret_0123456789abcdef0123456789abcdef0123456789a
-out:  «notion-api-token» «notion-api-token»
+case:     two tokens separated by a space
+in:       ntn_0123456789abcdef0123456789abcdef0123456789abcd secret_0123456789abcdef0123456789abcdef0123456789a
+out:      «notion-api-token» «notion-api-token»
 
-case: a token written straight onto the end of another
-in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdntn_0123456789abcdef0123456789abcdef0123456789abcd
-out:  «notion-api-token»«notion-api-token»
+case:     a token written straight onto the end of another
+in:       ntn_0123456789abcdef0123456789abcdef0123456789abcdntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:      «notion-api-token»«notion-api-token»
 
-case: a token beginning inside the token before it
-in:   ntn_0123456789abcdef0123456789abcdef0123456789antn_0123456789abcdef0123456789abcdef0123456789abcd
-out:  «notion-api-token»
+case:     a token beginning inside the token before it
+in:       ntn_0123456789abcdef0123456789abcdef0123456789antn_0123456789abcdef0123456789abcdef0123456789abcd
+out:      «notion-api-token»
 
-case: a token of the older format beginning inside the one before it
-in:   secret_0123456789abcdef0123456789abcdef01234secret_0123456789abcdef0123456789abcdef0123456789a
-out:  «notion-api-token»
+case:     a token of the older format beginning inside the one before it
+in:       secret_0123456789abcdef0123456789abcdef01234secret_0123456789abcdef0123456789abcdef0123456789a
+out:      «notion-api-token»
 
 # What this pattern redacts that nobody issued, and the one place the text taken
 # is text somebody wrote. secret_ closes an ordinary name — client_secret_,
@@ -157,13 +157,13 @@ out:  «notion-api-token»
 # not help — it admits the underscore, which is what every one of these names
 # carries in front of the prefix. The pattern's own file weighs both.
 
-case: a name closing on the older prefix with a value spliced onto it
-in:   client_secret_0123456789abcdef0123456789abcdef0123456789a
-out:  client_«notion-api-token»
+case:     a name closing on the older prefix with a value spliced onto it
+in:       client_secret_0123456789abcdef0123456789abcdef0123456789a
+out:      client_«notion-api-token»
 
-case: the same name with the value written where a file would write it
-in:   client_secret=0123456789abcdef0123456789abcdef0123456789a
-out:  client_secret=0123456789abcdef0123456789abcdef0123456789a
+case:     the same name with the value written where a file would write it
+in:       client_secret=0123456789abcdef0123456789abcdef0123456789a
+out:      client_secret=0123456789abcdef0123456789abcdef0123456789a
 
 # A digest written behind a prefix, which is the other shape reachable by
 # writing. Hexadecimal digits are base62 and a digest carries nothing that ends
@@ -172,21 +172,21 @@ out:  client_secret=0123456789abcdef0123456789abcdef0123456789a
 # what reading a count rather than a floor leaves behind. A SHA-1 is forty
 # characters and an MD5 thirty-two, and neither reaches either count.
 
-case: a sha256 behind the prefix
-in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «notion-api-token»ef0123456789abcdef
+case:     a sha256 behind the prefix
+in:       ntn_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «notion-api-token»ef0123456789abcdef
 
-case: a sha256 behind the older prefix
-in:   secret_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «notion-api-token»bcdef0123456789abcdef
+case:     a sha256 behind the older prefix
+in:       secret_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «notion-api-token»bcdef0123456789abcdef
 
-case: a sha1 behind the prefix, six characters short of a body
-in:   ntn_0123456789abcdef0123456789abcdef01234567
-out:  ntn_0123456789abcdef0123456789abcdef01234567
+case:     a sha1 behind the prefix, six characters short of a body
+in:       ntn_0123456789abcdef0123456789abcdef01234567
+out:      ntn_0123456789abcdef0123456789abcdef01234567
 
-case: an md5 behind the prefix
-in:   ntn_0123456789abcdef0123456789abcdef
-out:  ntn_0123456789abcdef0123456789abcdef
+case:     an md5 behind the prefix
+in:       ntn_0123456789abcdef0123456789abcdef
+out:      ntn_0123456789abcdef0123456789abcdef
 
 # And what this pattern leaves alone. The first three are the prefix, read in
 # the case Notion writes it and in the character it closes with. The two after
@@ -197,49 +197,49 @@ out:  ntn_0123456789abcdef0123456789abcdef
 # through is written in snake_case and does carry the anchor — what turns it
 # away is the word after each underscore, which is far short of a body.
 
-case: an uppercase prefix
-in:   NTN_0123456789abcdef0123456789abcdef0123456789abcd
-out:  NTN_0123456789abcdef0123456789abcdef0123456789abcd
+case:     an uppercase prefix
+in:       NTN_0123456789abcdef0123456789abcdef0123456789abcd
+out:      NTN_0123456789abcdef0123456789abcdef0123456789abcd
 
-case: a hyphen where the prefix carries its underscore
-in:   ntn-0123456789abcdef0123456789abcdef0123456789abcd
-out:  ntn-0123456789abcdef0123456789abcdef0123456789abcd
+case:     a hyphen where the prefix carries its underscore
+in:       ntn-0123456789abcdef0123456789abcdef0123456789abcd
+out:      ntn-0123456789abcdef0123456789abcdef0123456789abcd
 
-case: an uppercase older prefix
-in:   SECRET_0123456789abcdef0123456789abcdef0123456789a
-out:  SECRET_0123456789abcdef0123456789abcdef0123456789a
+case:     an uppercase older prefix
+in:       SECRET_0123456789abcdef0123456789abcdef0123456789a
+out:      SECRET_0123456789abcdef0123456789abcdef0123456789a
 
-case: a body broken by a space
-in:   ntn_0123456789abcdef0123 456789abcdef0123456789abc
-out:  ntn_0123456789abcdef0123 456789abcdef0123456789abc
+case:     a body broken by a space
+in:       ntn_0123456789abcdef0123 456789abcdef0123456789abc
+out:      ntn_0123456789abcdef0123 456789abcdef0123456789abc
 
-case: a run of the right length behind an underscore that opens no prefix
-in:   xyz_0123456789abcdef0123456789abcdef0123456789abcd
-out:  xyz_0123456789abcdef0123456789abcdef0123456789abcd
+case:     a run of the right length behind an underscore that opens no prefix
+in:       xyz_0123456789abcdef0123456789abcdef0123456789abcd
+out:      xyz_0123456789abcdef0123456789abcdef0123456789abcd
 
-case: a run of the right length with no prefix at all
-in:   0123456789abcdef0123456789abcdef0123456789abcd
-out:  0123456789abcdef0123456789abcdef0123456789abcd
+case:     a run of the right length with no prefix at all
+in:       0123456789abcdef0123456789abcdef0123456789abcd
+out:      0123456789abcdef0123456789abcdef0123456789abcd
 
-case: a hexadecimal digest
-in:   sha1=0123456789abcdef0123456789abcdef01234567
-out:  sha1=0123456789abcdef0123456789abcdef01234567
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
 
-case: prose
-in:   there is no credential in this sentence
-out:  there is no credential in this sentence
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
 
-case: a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: an environment file naming the token rather than carrying one
-in:   NOTION_API_KEY=\nNOTION_VERSION=2022-06-28
-out:  NOTION_API_KEY=\nNOTION_VERSION=2022-06-28
+case:     an environment file naming the token rather than carrying one
+in:       NOTION_API_KEY=\nNOTION_VERSION=2022-06-28
+out:      NOTION_API_KEY=\nNOTION_VERSION=2022-06-28
 
-case: a log line
-in:   time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.notion.com/v1/pages
-out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.notion.com/v1/pages
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.notion.com/v1/pages
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.notion.com/v1/pages
 
 # And a Notion credential this pattern has nothing to say about. A public
 # connection is given a refresh token beside its access token, and that one
@@ -250,6 +250,6 @@ out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.not
 # part of a token or none of it, so none is guessed at and the string below is
 # left whole.
 
-case: a refresh token, which no count here is read for
-in:   {"refresh_token":"nrt_0123456789abcdef0123456789abcdef0123456789abcd"}
-out:  {"refresh_token":"nrt_0123456789abcdef0123456789abcdef0123456789abcd"}
+case:     a refresh token, which no count here is read for
+in:       {"refresh_token":"nrt_0123456789abcdef0123456789abcdef0123456789abcd"}
+out:      {"refresh_token":"nrt_0123456789abcdef0123456789abcdef0123456789abcd"}

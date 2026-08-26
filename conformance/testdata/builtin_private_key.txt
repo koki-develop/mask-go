@@ -15,191 +15,191 @@ patterns: private-key
 
 # The labels the documents behind this pattern write.
 
-case: a pkcs8 key
-in:   -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----
-out:  «private-key»
+case:     a pkcs8 key
+in:       -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----
+out:      «private-key»
 
-case: an encrypted pkcs8 key
-in:   -----BEGIN ENCRYPTED PRIVATE KEY-----\n0123456789abcdef\n-----END ENCRYPTED PRIVATE KEY-----
-out:  «private-key»
+case:     an encrypted pkcs8 key
+in:       -----BEGIN ENCRYPTED PRIVATE KEY-----\n0123456789abcdef\n-----END ENCRYPTED PRIVATE KEY-----
+out:      «private-key»
 
-case: a pkcs1 rsa key
-in:   -----BEGIN RSA PRIVATE KEY-----\n0123456789abcdef\n-----END RSA PRIVATE KEY-----
-out:  «private-key»
+case:     a pkcs1 rsa key
+in:       -----BEGIN RSA PRIVATE KEY-----\n0123456789abcdef\n-----END RSA PRIVATE KEY-----
+out:      «private-key»
 
-case: an elliptic curve key
-in:   -----BEGIN EC PRIVATE KEY-----\n0123456789abcdef\n-----END EC PRIVATE KEY-----
-out:  «private-key»
+case:     an elliptic curve key
+in:       -----BEGIN EC PRIVATE KEY-----\n0123456789abcdef\n-----END EC PRIVATE KEY-----
+out:      «private-key»
 
-case: an openssh key
-in:   -----BEGIN OPENSSH PRIVATE KEY-----\n0123456789abcdef\n-----END OPENSSH PRIVATE KEY-----
-out:  «private-key»
+case:     an openssh key
+in:       -----BEGIN OPENSSH PRIVATE KEY-----\n0123456789abcdef\n-----END OPENSSH PRIVATE KEY-----
+out:      «private-key»
 
-case: a label ending on the words no document has written yet
-in:   -----BEGIN QUANTUM PRIVATE KEY-----\n0123456789abcdef\n-----END QUANTUM PRIVATE KEY-----
-out:  «private-key»
+case:     a label ending on the words no document has written yet
+in:       -----BEGIN QUANTUM PRIVATE KEY-----\n0123456789abcdef\n-----END QUANTUM PRIVATE KEY-----
+out:      «private-key»
 
 # The armor headers and the checksum line the data can stand between.
 
-case: a pgp private key block with an armor header and a checksum
-in:   -----BEGIN PGP PRIVATE KEY BLOCK-----\nVersion: GnuPG v2\n\n0123456789abcdef\n=0123\n-----END PGP PRIVATE KEY BLOCK-----
-out:  «private-key»
+case:     a pgp private key block with an armor header and a checksum
+in:       -----BEGIN PGP PRIVATE KEY BLOCK-----\nVersion: GnuPG v2\n\n0123456789abcdef\n=0123\n-----END PGP PRIVATE KEY BLOCK-----
+out:      «private-key»
 
-case: the headers of a key openssl encrypted
-in:   -----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-256-CBC,0123456789abcdef\n\n0123456789abcdef\n-----END RSA PRIVATE KEY-----
-out:  «private-key»
+case:     the headers of a key openssl encrypted
+in:       -----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-256-CBC,0123456789abcdef\n\n0123456789abcdef\n-----END RSA PRIVATE KEY-----
+out:      «private-key»
 
 # A key as it reaches a program: through JSON, through an environment
 # assignment, indented under a name in YAML, and across the lines of a file.
 
-case: a service account key in a json document
-in:   {"type":"service_account","private_key":"-----BEGIN PRIVATE KEY-----\\n0123456789abcdef\\n-----END PRIVATE KEY-----\\n"}
-out:  {"type":"service_account","private_key":"«private-key»\\n"}
+case:     a service account key in a json document
+in:       {"type":"service_account","private_key":"-----BEGIN PRIVATE KEY-----\\n0123456789abcdef\\n-----END PRIVATE KEY-----\\n"}
+out:      {"type":"service_account","private_key":"«private-key»\\n"}
 
-case: a service account key whose solidus is escaped
-in:   {"private_key":"-----BEGIN PRIVATE KEY-----\\n0123456789abcdef\\/0123456789abcdef\\n-----END PRIVATE KEY-----\\n"}
-out:  {"private_key":"«private-key»\\n"}
+case:     a service account key whose solidus is escaped
+in:       {"private_key":"-----BEGIN PRIVATE KEY-----\\n0123456789abcdef\\/0123456789abcdef\\n-----END PRIVATE KEY-----\\n"}
+out:      {"private_key":"«private-key»\\n"}
 
-case: a key in an environment assignment with escaped line breaks
-in:   PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n0123456789abcdef\\n-----END PRIVATE KEY-----
-out:  PRIVATE_KEY=«private-key»
+case:     a key in an environment assignment with escaped line breaks
+in:       PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\\n0123456789abcdef\\n-----END PRIVATE KEY-----
+out:      PRIVATE_KEY=«private-key»
 
-case: a key between lines that are not part of it
-in:   writing the key\n-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\nwritten
-out:  writing the key\n«private-key»\nwritten
+case:     a key between lines that are not part of it
+in:       writing the key\n-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\nwritten
+out:      writing the key\n«private-key»\nwritten
 
-case: a key indented under a name in yaml
-in:   privateKey: |\n  -----BEGIN PRIVATE KEY-----\n  0123456789abcdef\n  -----END PRIVATE KEY-----
-out:  privateKey: |\n  «private-key»
+case:     a key indented under a name in yaml
+in:       privateKey: |\n  -----BEGIN PRIVATE KEY-----\n  0123456789abcdef\n  -----END PRIVATE KEY-----
+out:      privateKey: |\n  «private-key»
 
-case: an indented key with an armor header and a checksum
-in:   -----BEGIN PGP PRIVATE KEY BLOCK-----\n\tComment: 0123456789abcdef\n\n\t0123456789abcdef\n\t=0123\n\t-----END PGP PRIVATE KEY BLOCK-----
-out:  «private-key»
+case:     an indented key with an armor header and a checksum
+in:       -----BEGIN PGP PRIVATE KEY BLOCK-----\n\tComment: 0123456789abcdef\n\n\t0123456789abcdef\n\t=0123\n\t-----END PGP PRIVATE KEY BLOCK-----
+out:      «private-key»
 
-case: a boundary line closing on a tab
-in:   -----BEGIN PRIVATE KEY-----\t\n0123456789abcdef\n-----END PRIVATE KEY-----
-out:  «private-key»
+case:     a boundary line closing on a tab
+in:       -----BEGIN PRIVATE KEY-----\t\n0123456789abcdef\n-----END PRIVATE KEY-----
+out:      «private-key»
 
-case: a body line closing on a space
-in:   -----BEGIN PRIVATE KEY-----\n0123456789abcdef \n0123456789abcdef\n-----END PRIVATE KEY-----
-out:  «private-key»
+case:     a body line closing on a space
+in:       -----BEGIN PRIVATE KEY-----\n0123456789abcdef \n0123456789abcdef\n-----END PRIVATE KEY-----
+out:      «private-key»
 
-case: a key written with carriage returns
-in:   -----BEGIN PRIVATE KEY-----\r\n0123456789abcdef\r\n-----END PRIVATE KEY-----
-out:  «private-key»
+case:     a key written with carriage returns
+in:       -----BEGIN PRIVATE KEY-----\r\n0123456789abcdef\r\n-----END PRIVATE KEY-----
+out:      «private-key»
 
-case: two keys one after the other
-in:   -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\n-----BEGIN EC PRIVATE KEY-----\n0123456789abcdef\n-----END EC PRIVATE KEY-----
-out:  «private-key»\n«private-key»
+case:     two keys one after the other
+in:       -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\n-----BEGIN EC PRIVATE KEY-----\n0123456789abcdef\n-----END EC PRIVATE KEY-----
+out:      «private-key»\n«private-key»
 
 # Where a block ends. The closing boundary is not required, which is what
 # reaches a key a log stopped writing partway through; where one names another
 # label it closes another block, and the text keeps it.
 
-case: a key with no closing boundary
-in:   -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n0123456789ab\n
-out:  «private-key»\n
+case:     a key with no closing boundary
+in:       -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n0123456789ab\n
+out:      «private-key»\n
 
-case: a key cut short inside a line keeps the line the cut landed in
-in:   msg="-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n0123456789ab" level=info
-out:  msg="«private-key»\n0123456789ab" level=info
+case:     a key cut short inside a line keeps the line the cut landed in
+in:       msg="-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n0123456789ab" level=info
+out:      msg="«private-key»\n0123456789ab" level=info
 
-case: a blank line inside the base64 ends the block
-in:   -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n\n0123456789abcdef\n-----END PRIVATE KEY-----
-out:  «private-key»\n\n0123456789abcdef\n-----END PRIVATE KEY-----
+case:     a blank line inside the base64 ends the block
+in:       -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n\n0123456789abcdef\n-----END PRIVATE KEY-----
+out:      «private-key»\n\n0123456789abcdef\n-----END PRIVATE KEY-----
 
-case: a closing boundary naming another label
-in:   -----BEGIN RSA PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----
-out:  «private-key»\n-----END PRIVATE KEY-----
+case:     a closing boundary naming another label
+in:       -----BEGIN RSA PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----
+out:      «private-key»\n-----END PRIVATE KEY-----
 
-case: what follows the closing boundary
-in:   -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\ndone
-out:  «private-key»\ndone
+case:     what follows the closing boundary
+in:       -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\ndone
+out:      «private-key»\ndone
 
 # What the envelope carries that is not a private key. The label is the only
 # thing in it that says which of the two a block is.
 
-case: a certificate
-in:   -----BEGIN CERTIFICATE-----\n0123456789abcdef\n-----END CERTIFICATE-----
-out:  -----BEGIN CERTIFICATE-----\n0123456789abcdef\n-----END CERTIFICATE-----
+case:     a certificate
+in:       -----BEGIN CERTIFICATE-----\n0123456789abcdef\n-----END CERTIFICATE-----
+out:      -----BEGIN CERTIFICATE-----\n0123456789abcdef\n-----END CERTIFICATE-----
 
-case: a public key
-in:   -----BEGIN PUBLIC KEY-----\n0123456789abcdef\n-----END PUBLIC KEY-----
-out:  -----BEGIN PUBLIC KEY-----\n0123456789abcdef\n-----END PUBLIC KEY-----
+case:     a public key
+in:       -----BEGIN PUBLIC KEY-----\n0123456789abcdef\n-----END PUBLIC KEY-----
+out:      -----BEGIN PUBLIC KEY-----\n0123456789abcdef\n-----END PUBLIC KEY-----
 
-case: a pgp public key block
-in:   -----BEGIN PGP PUBLIC KEY BLOCK-----\n0123456789abcdef\n-----END PGP PUBLIC KEY BLOCK-----
-out:  -----BEGIN PGP PUBLIC KEY BLOCK-----\n0123456789abcdef\n-----END PGP PUBLIC KEY BLOCK-----
+case:     a pgp public key block
+in:       -----BEGIN PGP PUBLIC KEY BLOCK-----\n0123456789abcdef\n-----END PGP PUBLIC KEY BLOCK-----
+out:      -----BEGIN PGP PUBLIC KEY BLOCK-----\n0123456789abcdef\n-----END PGP PUBLIC KEY BLOCK-----
 
 # What a boundary alone is not. The base64 behind it is what makes a block, so
 # the documentation that explains a key is not one — and the six armor headers
 # the two documents define are what stands between a boundary and that base64,
 # so a log record and a YAML mapping do not stand there.
 
-case: the sentence a boundary is mentioned in
-in:   the file starts with -----BEGIN RSA PRIVATE KEY----- and ends with -----END RSA PRIVATE KEY-----
-out:  the file starts with -----BEGIN RSA PRIVATE KEY----- and ends with -----END RSA PRIVATE KEY-----
+case:     the sentence a boundary is mentioned in
+in:       the file starts with -----BEGIN RSA PRIVATE KEY----- and ends with -----END RSA PRIVATE KEY-----
+out:      the file starts with -----BEGIN RSA PRIVATE KEY----- and ends with -----END RSA PRIVATE KEY-----
 
-case: a boundary with nothing behind it
-in:   -----BEGIN PRIVATE KEY-----
-out:  -----BEGIN PRIVATE KEY-----
+case:     a boundary with nothing behind it
+in:       -----BEGIN PRIVATE KEY-----
+out:      -----BEGIN PRIVATE KEY-----
 
-case: a boundary line closing on a space with a word behind it
-in:   -----BEGIN PRIVATE KEY----- and ends with -----END PRIVATE KEY-----
-out:  -----BEGIN PRIVATE KEY----- and ends with -----END PRIVATE KEY-----
+case:     a boundary line closing on a space with a word behind it
+in:       -----BEGIN PRIVATE KEY----- and ends with -----END PRIVATE KEY-----
+out:      -----BEGIN PRIVATE KEY----- and ends with -----END PRIVATE KEY-----
 
-case: a body separated by spaces rather than by line breaks
-in:   -----BEGIN PRIVATE KEY----- 0123456789abcdef -----END PRIVATE KEY-----
-out:  -----BEGIN PRIVATE KEY----- 0123456789abcdef -----END PRIVATE KEY-----
+case:     a body separated by spaces rather than by line breaks
+in:       -----BEGIN PRIVATE KEY----- 0123456789abcdef -----END PRIVATE KEY-----
+out:      -----BEGIN PRIVATE KEY----- 0123456789abcdef -----END PRIVATE KEY-----
 
-case: a template with the key left out of it
-in:   -----BEGIN RSA PRIVATE KEY-----\nYOUR KEY HERE\n-----END RSA PRIVATE KEY-----
-out:  -----BEGIN RSA PRIVATE KEY-----\nYOUR KEY HERE\n-----END RSA PRIVATE KEY-----
+case:     a template with the key left out of it
+in:       -----BEGIN RSA PRIVATE KEY-----\nYOUR KEY HERE\n-----END RSA PRIVATE KEY-----
+out:      -----BEGIN RSA PRIVATE KEY-----\nYOUR KEY HERE\n-----END RSA PRIVATE KEY-----
 
-case: the four dash boundary of the ssh.com format
-in:   ---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----\n0123456789abcdef\n---- END SSH2 ENCRYPTED PRIVATE KEY ----
-out:  ---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----\n0123456789abcdef\n---- END SSH2 ENCRYPTED PRIVATE KEY ----
+case:     the four dash boundary of the ssh.com format
+in:       ---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----\n0123456789abcdef\n---- END SSH2 ENCRYPTED PRIVATE KEY ----
+out:      ---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----\n0123456789abcdef\n---- END SSH2 ENCRYPTED PRIVATE KEY ----
 
-case: a putty key file, which is written in no envelope at all
-in:   PuTTY-User-Key-File-3: ssh-ed25519\nEncryption: none\nPrivate-Lines: 1\n0123456789abcdef
-out:  PuTTY-User-Key-File-3: ssh-ed25519\nEncryption: none\nPrivate-Lines: 1\n0123456789abcdef
+case:     a putty key file, which is written in no envelope at all
+in:       PuTTY-User-Key-File-3: ssh-ed25519\nEncryption: none\nPrivate-Lines: 1\n0123456789abcdef
+out:      PuTTY-User-Key-File-3: ssh-ed25519\nEncryption: none\nPrivate-Lines: 1\n0123456789abcdef
 
-case: the words run into what comes in front of them
-in:   -----BEGIN NOTAPRIVATE KEY-----\n0123456789abcdef\n-----END NOTAPRIVATE KEY-----
-out:  -----BEGIN NOTAPRIVATE KEY-----\n0123456789abcdef\n-----END NOTAPRIVATE KEY-----
+case:     the words run into what comes in front of them
+in:       -----BEGIN NOTAPRIVATE KEY-----\n0123456789abcdef\n-----END NOTAPRIVATE KEY-----
+out:      -----BEGIN NOTAPRIVATE KEY-----\n0123456789abcdef\n-----END NOTAPRIVATE KEY-----
 
-case: a lowercase label
-in:   -----BEGIN private key-----\n0123456789abcdef\n-----END private key-----
-out:  -----BEGIN private key-----\n0123456789abcdef\n-----END private key-----
+case:     a lowercase label
+in:       -----BEGIN private key-----\n0123456789abcdef\n-----END private key-----
+out:      -----BEGIN private key-----\n0123456789abcdef\n-----END private key-----
 
-case: a body line broken by a space
-in:   -----BEGIN PRIVATE KEY-----\n0123456789 abcdef\n-----END PRIVATE KEY-----
-out:  -----BEGIN PRIVATE KEY-----\n0123456789 abcdef\n-----END PRIVATE KEY-----
+case:     a body line broken by a space
+in:       -----BEGIN PRIVATE KEY-----\n0123456789 abcdef\n-----END PRIVATE KEY-----
+out:      -----BEGIN PRIVATE KEY-----\n0123456789 abcdef\n-----END PRIVATE KEY-----
 
-case: a line of the form word colon text is no armor header
-in:   key: -----BEGIN PRIVATE KEY-----\nerror: failed to load\npath: /etc/ssl/private/server.pem\n\n0123456789abcdef
-out:  key: -----BEGIN PRIVATE KEY-----\nerror: failed to load\npath: /etc/ssl/private/server.pem\n\n0123456789abcdef
+case:     a line of the form word colon text is no armor header
+in:       key: -----BEGIN PRIVATE KEY-----\nerror: failed to load\npath: /etc/ssl/private/server.pem\n\n0123456789abcdef
+out:      key: -----BEGIN PRIVATE KEY-----\nerror: failed to load\npath: /etc/ssl/private/server.pem\n\n0123456789abcdef
 
-case: a header name neither document defines
-in:   -----BEGIN PRIVATE KEY-----\nX-Written-By: 0123456789abcdef\n\n0123456789abcdef\n-----END PRIVATE KEY-----
-out:  -----BEGIN PRIVATE KEY-----\nX-Written-By: 0123456789abcdef\n\n0123456789abcdef\n-----END PRIVATE KEY-----
+case:     a header name neither document defines
+in:       -----BEGIN PRIVATE KEY-----\nX-Written-By: 0123456789abcdef\n\n0123456789abcdef\n-----END PRIVATE KEY-----
+out:      -----BEGIN PRIVATE KEY-----\nX-Written-By: 0123456789abcdef\n\n0123456789abcdef\n-----END PRIVATE KEY-----
 
-case: a header value carrying the dashes a boundary opens with
-in:   -----BEGIN PRIVATE KEY-----\nComment: ----- and nothing else\n\n0123456789abcdef
-out:  -----BEGIN PRIVATE KEY-----\nComment: ----- and nothing else\n\n0123456789abcdef
+case:     a header value carrying the dashes a boundary opens with
+in:       -----BEGIN PRIVATE KEY-----\nComment: ----- and nothing else\n\n0123456789abcdef
+out:      -----BEGIN PRIVATE KEY-----\nComment: ----- and nothing else\n\n0123456789abcdef
 
-case: a line break written half escaped
-in:   -----BEGIN PRIVATE KEY-----\r\\n0123456789abcdef
-out:  -----BEGIN PRIVATE KEY-----\r\\n0123456789abcdef
+case:     a line break written half escaped
+in:       -----BEGIN PRIVATE KEY-----\r\\n0123456789abcdef
+out:      -----BEGIN PRIVATE KEY-----\r\\n0123456789abcdef
 
-case: a text escaped twice over
-in:   -----BEGIN PRIVATE KEY-----\\\\n0123456789abcdef\\\\n-----END PRIVATE KEY-----
-out:  -----BEGIN PRIVATE KEY-----\\\\n0123456789abcdef\\\\n-----END PRIVATE KEY-----
+case:     a text escaped twice over
+in:       -----BEGIN PRIVATE KEY-----\\\\n0123456789abcdef\\\\n-----END PRIVATE KEY-----
+out:      -----BEGIN PRIVATE KEY-----\\\\n0123456789abcdef\\\\n-----END PRIVATE KEY-----
 
-case: a log line
-in:   time=2026-08-17T00:00:00Z level=info msg="loading the signing key" path=/etc/ssl/private/server.pem
-out:  time=2026-08-17T00:00:00Z level=info msg="loading the signing key" path=/etc/ssl/private/server.pem
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="loading the signing key" path=/etc/ssl/private/server.pem
+out:      time=2026-08-17T00:00:00Z level=info msg="loading the signing key" path=/etc/ssl/private/server.pem
 
-case: prose
-in:   there is no credential in this sentence
-out:  there is no credential in this sentence
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence

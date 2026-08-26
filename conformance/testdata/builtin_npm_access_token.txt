@@ -15,25 +15,25 @@ patterns: npm-access-token
 # written the same way, so nothing in the value says what it is allowed to do,
 # and the cases below are that one shape in the places a token is written.
 
-case: a token in an environment assignment
-in:   NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  NPM_TOKEN=«npm-access-token»
+case:     a token in an environment assignment
+in:       NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      NPM_TOKEN=«npm-access-token»
 
-case: a token in an npmrc
-in:   //registry.npmjs.org/:_authToken=npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  //registry.npmjs.org/:_authToken=«npm-access-token»
+case:     a token in an npmrc
+in:       //registry.npmjs.org/:_authToken=npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      //registry.npmjs.org/:_authToken=«npm-access-token»
 
-case: a token in the authorization header a request to the registry carries
-in:   Authorization: Bearer npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  Authorization: Bearer «npm-access-token»
+case:     a token in the authorization header a request to the registry carries
+in:       Authorization: Bearer npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      Authorization: Bearer «npm-access-token»
 
-case: a token on a command line
-in:   npm config set //registry.npmjs.org/:_authToken npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  npm config set //registry.npmjs.org/:_authToken «npm-access-token»
+case:     a token on a command line
+in:       npm config set //registry.npmjs.org/:_authToken npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      npm config set //registry.npmjs.org/:_authToken «npm-access-token»
 
-case: a token in a workflow environment block
-in:   env:\n  NODE_AUTH_TOKEN: npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  env:\n  NODE_AUTH_TOKEN: «npm-access-token»
+case:     a token in a workflow environment block
+in:       env:\n  NODE_AUTH_TOKEN: npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      env:\n  NODE_AUTH_TOKEN: «npm-access-token»
 
 # The alphabet the thirty-six characters are written in. It is base62 — the
 # letters of both cases and the digits — which is what both rulesets stating a
@@ -41,17 +41,17 @@ out:  env:\n  NODE_AUTH_TOKEN: «npm-access-token»
 # the checksum's encoding for. The two characters base64url adds, the hyphen and
 # the underscore, are not admitted, and either of them ends a body.
 
-case: a body written in capitals
-in:   npm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-out:  «npm-access-token»
+case:     a body written in capitals
+in:       npm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      «npm-access-token»
 
-case: a body carrying a hyphen
-in:   npm_0123456789abcdef-ghijklmnopqrstuvwxyz
-out:  npm_0123456789abcdef-ghijklmnopqrstuvwxyz
+case:     a body carrying a hyphen
+in:       npm_0123456789abcdef-ghijklmnopqrstuvwxyz
+out:      npm_0123456789abcdef-ghijklmnopqrstuvwxyz
 
-case: a body carrying an underscore
-in:   npm_0123456789abcdef_ghijklmnopqrstuvwxyz
-out:  npm_0123456789abcdef_ghijklmnopqrstuvwxyz
+case:     a body carrying an underscore
+in:       npm_0123456789abcdef_ghijklmnopqrstuvwxyz
+out:      npm_0123456789abcdef_ghijklmnopqrstuvwxyz
 
 # The lengths either side of thirty-six. npm states no length for a token; what
 # it states is that the random part carries a hundred and seventy-eight bits and
@@ -63,17 +63,17 @@ out:  npm_0123456789abcdef_ghijklmnopqrstuvwxyz
 # middle case below — a token cut short of thirty-six keeps every random
 # character written in front of the cut, and none of them is redacted.
 
-case: a body of thirty-six characters is a token
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «npm-access-token»
+case:     a body of thirty-six characters is a token
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «npm-access-token»
 
-case: a body of thirty-five characters is not
-in:   npm_0123456789abcdefghijklmnopqrstuvwxy
-out:  npm_0123456789abcdefghijklmnopqrstuvwxy
+case:     a body of thirty-five characters is not
+in:       npm_0123456789abcdefghijklmnopqrstuvwxy
+out:      npm_0123456789abcdefghijklmnopqrstuvwxy
 
-case: an alphabet run longer than the floor is a token to the end of it
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyz0
-out:  «npm-access-token»
+case:     an alphabet run longer than the floor is a token to the end of it
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyz0
+out:      «npm-access-token»
 
 # What a token may be written against. The prefix is the whole of the anchor and
 # there is no boundary on either side of it, so a token keeps its span whatever
@@ -83,29 +83,29 @@ out:  «npm-access-token»
 # the OpenAI and Anthropic ones: their bodies are base64url and would draw a
 # hyphenated word in.
 
-case: a token after an underscore
-in:   NPM_TOKEN_npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  NPM_TOKEN_«npm-access-token»
+case:     a token after an underscore
+in:       NPM_TOKEN_npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      NPM_TOKEN_«npm-access-token»
 
-case: a token after a letter
-in:   xnpm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  x«npm-access-token»
+case:     a token after a letter
+in:       xnpm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      x«npm-access-token»
 
-case: a word written against a token
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyzsuffix
-out:  «npm-access-token»
+case:     a word written against a token
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyzsuffix
+out:      «npm-access-token»
 
-case: a hyphenated word written against a token
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyz-suffix
-out:  «npm-access-token»-suffix
+case:     a hyphenated word written against a token
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyz-suffix
+out:      «npm-access-token»-suffix
 
-case: an underscored word written against a token
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyz_suffix
-out:  «npm-access-token»_suffix
+case:     an underscored word written against a token
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyz_suffix
+out:      «npm-access-token»_suffix
 
-case: a token at the end of a sentence
-in:   the token is npm_0123456789abcdefghijklmnopqrstuvwxyz.
-out:  the token is «npm-access-token».
+case:     a token at the end of a sentence
+in:       the token is npm_0123456789abcdefghijklmnopqrstuvwxyz.
+out:      the token is «npm-access-token».
 
 # Two tokens written together. The three letters the prefix opens with belong to
 # the alphabet a body is written in, so a body may close with npm and the
@@ -114,17 +114,17 @@ out:  the token is «npm-access-token».
 # redacted as one. Written without that overlap the two are separate values, and
 # both go.
 
-case: a token beginning inside the token before it
-in:   npm_0123456789abcdefghijklmnopqrstuvwnpm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «npm-access-token»
+case:     a token beginning inside the token before it
+in:       npm_0123456789abcdefghijklmnopqrstuvwnpm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «npm-access-token»
 
-case: two tokens with nothing between them
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyznpm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-out:  «npm-access-token»
+case:     two tokens with nothing between them
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyznpm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      «npm-access-token»
 
-case: two tokens separated by a space
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyz npm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-out:  «npm-access-token» «npm-access-token»
+case:     two tokens separated by a space
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyz npm_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      «npm-access-token» «npm-access-token»
 
 # What this pattern redacts that nobody issued. The prefix carries an
 # underscore, which standard base64 writes nowhere, so only a base64url encoding
@@ -137,13 +137,13 @@ out:  «npm-access-token» «npm-access-token»
 # the same way. What is taken is a stretch of a value that was already opaque to
 # a reader.
 
-case: the prefix inside a longer run of base64url
-in:   payload=zzzznpm_0123456789abcdefghijklmnopqrstuvwxyzzzzz
-out:  payload=zzzz«npm-access-token»
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzznpm_0123456789abcdefghijklmnopqrstuvwxyzzzzz
+out:      payload=zzzz«npm-access-token»
 
-case: the prefix where a signature stands
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzznpm_0123456789abcdefghijklmnopqrstuvwxyzzzzz
-out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«npm-access-token»
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzznpm_0123456789abcdefghijklmnopqrstuvwxyzzzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«npm-access-token»
 
 # A digest written behind the prefix, which is the one over-match here that
 # takes a value a reader had a use for. Hexadecimal digits are base62 and a
@@ -156,21 +156,21 @@ out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«npm-access-token»
 # the prefix: an MD5 is thirty-two characters, four short of a body, and a
 # hyphen is no character the prefix carries.
 
-case: a sha1 behind the prefix
-in:   npm_0123456789abcdef0123456789abcdef01234567
-out:  «npm-access-token»
+case:     a sha1 behind the prefix
+in:       npm_0123456789abcdef0123456789abcdef01234567
+out:      «npm-access-token»
 
-case: a sha256 in a cache key
-in:   key: npm_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  key: «npm-access-token»
+case:     a sha256 in a cache key
+in:       key: npm_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      key: «npm-access-token»
 
-case: an md5 behind the prefix, four characters short of a body
-in:   npm_0123456789abcdef0123456789abcdef
-out:  npm_0123456789abcdef0123456789abcdef
+case:     an md5 behind the prefix, four characters short of a body
+in:       npm_0123456789abcdef0123456789abcdef
+out:      npm_0123456789abcdef0123456789abcdef
 
-case: a sha1 behind a hyphen rather than the prefix
-in:   npm-0123456789abcdef0123456789abcdef01234567
-out:  npm-0123456789abcdef0123456789abcdef01234567
+case:     a sha1 behind a hyphen rather than the prefix
+in:       npm-0123456789abcdef0123456789abcdef01234567
+out:      npm-0123456789abcdef0123456789abcdef01234567
 
 # And what this pattern leaves alone. The first three are the prefix, read in
 # the case npm writes it and in all four of its characters. The two after them
@@ -182,37 +182,37 @@ out:  npm-0123456789abcdef0123456789abcdef01234567
 # what turns it away is the next underscore of the name, which ends the run long
 # before thirty-six characters of it have been read.
 
-case: an uppercase prefix
-in:   NPM_0123456789abcdefghijklmnopqrstuvwxyz
-out:  NPM_0123456789abcdefghijklmnopqrstuvwxyz
+case:     an uppercase prefix
+in:       NPM_0123456789abcdefghijklmnopqrstuvwxyz
+out:      NPM_0123456789abcdefghijklmnopqrstuvwxyz
 
-case: a hyphen where the prefix carries an underscore
-in:   npm-0123456789abcdefghijklmnopqrstuvwxyz
-out:  npm-0123456789abcdefghijklmnopqrstuvwxyz
+case:     a hyphen where the prefix carries an underscore
+in:       npm-0123456789abcdefghijklmnopqrstuvwxyz
+out:      npm-0123456789abcdefghijklmnopqrstuvwxyz
 
-case: two characters of the prefix
-in:   nxm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  nxm_0123456789abcdefghijklmnopqrstuvwxyz
+case:     two characters of the prefix
+in:       nxm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      nxm_0123456789abcdefghijklmnopqrstuvwxyz
 
-case: a body broken by a space
-in:   npm_0123456789abcdef ghijklmnopqrstuvwxyz
-out:  npm_0123456789abcdef ghijklmnopqrstuvwxyz
+case:     a body broken by a space
+in:       npm_0123456789abcdef ghijklmnopqrstuvwxyz
+out:      npm_0123456789abcdef ghijklmnopqrstuvwxyz
 
-case: a run of the right length opening with no prefix
-in:   0123456789abcdefghijklmnopqrstuvwxyz
-out:  0123456789abcdefghijklmnopqrstuvwxyz
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdefghijklmnopqrstuvwxyz
+out:      0123456789abcdefghijklmnopqrstuvwxyz
 
-case: a hexadecimal digest
-in:   sha1=0123456789abcdef0123456789abcdef01234567
-out:  sha1=0123456789abcdef0123456789abcdef01234567
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
 
-case: prose
-in:   there is no credential in this sentence
-out:  there is no credential in this sentence
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
 
-case: the environment npm exports to a lifecycle script
-in:   npm_package_version=1.0.0 npm_lifecycle_event=prepublishOnly
-out:  npm_package_version=1.0.0 npm_lifecycle_event=prepublishOnly
+case:     the environment npm exports to a lifecycle script
+in:       npm_package_version=1.0.0 npm_lifecycle_event=prepublishOnly
+out:      npm_package_version=1.0.0 npm_lifecycle_event=prepublishOnly
 
 # And an npm credential this pattern has nothing to say about. The format this
 # one replaced was a bare UUID: hyphens where a body carries none, and no prefix
@@ -220,6 +220,6 @@ out:  npm_package_version=1.0.0 npm_lifecycle_event=prepublishOnly
 # revoked the last of those, and one written into a file today is a string
 # nothing here reads.
 
-case: a token of the uuid format npm issued before this one
-in:   0123456789ab-cdef-0123-4567-89abcdef0123
-out:  0123456789ab-cdef-0123-4567-89abcdef0123
+case:     a token of the uuid format npm issued before this one
+in:       0123456789ab-cdef-0123-4567-89abcdef0123
+out:      0123456789ab-cdef-0123-4567-89abcdef0123

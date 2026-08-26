@@ -302,8 +302,21 @@ func fieldValue(c *corpusCase, key string) string {
 // a hook — would then leave a file the round trip cannot reproduce and -update
 // writes straight back.
 func fieldLine(key, value string) string {
-	return strings.TrimRight(fmt.Sprintf("%-5s %s", key+":", value), " ")
+	return strings.TrimRight(fmt.Sprintf("%-*s %s", fieldColumn, key+":", value), " ")
 }
+
+// fieldColumn is what a field name is padded to: the longest of the names
+// declared above with the colon behind it, which is fieldPatterns. It is read
+// from that declaration rather than written down as a number or gathered into a
+// list of every name — the number would have to be corrected by a rename it
+// stands nowhere near, and the list by every name added.
+//
+// A name longer than fieldPatterns lays itself out to a column of its own.
+// Nothing reports that: a corpus file carrying the new field is rendered and
+// read back the same way, so the round trip holds and only the eye sees it.
+// Reading the longest name rather than any name is what keeps that to a name
+// longer than the longest, rather than to every name added.
+var fieldColumn = len(fieldPatterns) + 1
 
 // render returns the file as it should be on disk: what was written by hand,
 // laid out to one column, with what was generated for each case beside it.
@@ -517,42 +530,42 @@ func Test_corpusFile_render(t *testing.T) {
 		{
 			name: "a file already generated is left byte for byte",
 			data: "# a file\n\ncase: a\nin:   abc\nout:  abc\n",
-			want: "# a file\n\ncase: a\nin:   abc\nout:  abc\n",
+			want: "# a file\n\ncase:     a\nin:       abc\nout:      abc\n",
 		},
 		{
 			name: "an out field is written after the last hand-written line",
 			data: "case: a\nin: abc\n",
-			want: "case: a\nin:   abc\nout:  abc\n",
+			want: "case:     a\nin:       abc\nout:      abc\n",
 		},
 		{
 			name: "an out field keeps the place it was written in",
 			data: "case: a\nout: abc\nin: abc\n",
-			want: "case: a\nout:  abc\nin:   abc\n",
+			want: "case:     a\nout:      abc\nin:       abc\n",
 		},
 		{
 			name: "a comment between the fields and the out field stays put",
 			data: "case: a\nin: abc\n# nothing here is a credential\nout: abc\n",
-			want: "case: a\nin:   abc\n# nothing here is a credential\nout:  abc\n",
+			want: "case:     a\nin:       abc\n# nothing here is a credential\nout:      abc\n",
 		},
 		{
 			name: "the fields are laid out to one column",
 			data: "case:      a\npatterns:  jwt\nin:        abc\n",
-			want: "case: a\npatterns: jwt\nin:   abc\nout:  abc\n",
+			want: "case:     a\npatterns: jwt\nin:       abc\nout:      abc\n",
 		},
 		{
 			name: "a field of empty text is written without the column",
 			data: "case: a\nin:\n",
-			want: "case: a\nin:\nout:\n",
+			want: "case:     a\nin:\nout:\n",
 		},
 		{
 			name: "a directive between cases is laid out too",
 			data: "patterns:    jwt\n\ncase: a\nin: abc\n",
-			want: "patterns: jwt\n\ncase: a\nin:   abc\nout:  abc\n",
+			want: "patterns: jwt\n\ncase:     a\nin:       abc\nout:      abc\n",
 		},
 		{
 			name: "comments and blank lines are kept",
 			data: "# leading\n\n# about the case\ncase: a\nin: abc\n\n# trailing\n",
-			want: "# leading\n\n# about the case\ncase: a\nin:   abc\nout:  abc\n\n# trailing\n",
+			want: "# leading\n\n# about the case\ncase:     a\nin:       abc\nout:      abc\n\n# trailing\n",
 		},
 	}
 

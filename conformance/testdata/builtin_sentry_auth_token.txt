@@ -24,54 +24,54 @@ patterns: sentry-auth-token
 # assignment sentry-cli reads it from, the bearer token header it is sent in,
 # and the command line a release step passes it on.
 
-case: a user token in an environment assignment
-in:   SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  SENTRY_AUTH_TOKEN=«sentry-auth-token»
+case:     a user token in an environment assignment
+in:       SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      SENTRY_AUTH_TOKEN=«sentry-auth-token»
 
-case: a user token in a bearer token header
-in:   Authorization: Bearer sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  Authorization: Bearer «sentry-auth-token»
+case:     a user token in a bearer token header
+in:       Authorization: Bearer sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      Authorization: Bearer «sentry-auth-token»
 
-case: a user application token
-in:   sntrya_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «sentry-auth-token»
+case:     a user application token
+in:       sntrya_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «sentry-auth-token»
 
-case: an internal integration token
-in:   sntryi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «sentry-auth-token»
+case:     an internal integration token
+in:       sntryi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «sentry-auth-token»
 
-case: an organization token on a command line
-in:   sentry-cli --auth-token sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a releases new 1.0.0
-out:  sentry-cli --auth-token «sentry-auth-token» releases new 1.0.0
+case:     an organization token on a command line
+in:       sentry-cli --auth-token sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a releases new 1.0.0
+out:      sentry-cli --auth-token «sentry-auth-token» releases new 1.0.0
 
-case: an organization token in the json that first reports it
-in:   {"token":"sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a","name":"CI"}
-out:  {"token":"«sentry-auth-token»","name":"CI"}
+case:     an organization token in the json that first reports it
+in:       {"token":"sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a","name":"CI"}
+out:      {"token":"«sentry-auth-token»","name":"CI"}
 
-case: a user token at the end of a sentence
-in:   the token is sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.
-out:  the token is «sentry-auth-token».
+case:     a user token at the end of a sentence
+in:       the token is sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.
+out:      the token is «sentry-auth-token».
 
 # The character naming the kind, which is the one place the four prefixes
 # differ. Four of them are read — u for a user token, a for a user application
 # token, i for an internal integration token, s for an organization token — and
 # a fifth character names no kind Sentry has.
 
-case: a kind the vendor's enumeration does not name
-in:   sntryt_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  sntryt_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a kind the vendor's enumeration does not name
+in:       sntryt_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      sntryt_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: the vendor's name written in full, which carries an e the anchor does not
-in:   sentry_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  sentry_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     the vendor's name written in full, which carries an e the anchor does not
+in:       sentry_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      sentry_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: an uppercase anchor
-in:   SNTRYU_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  SNTRYU_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     an uppercase anchor
+in:       SNTRYU_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      SNTRYU_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a hyphen where the prefix carries its separator
-in:   sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a hyphen where the prefix carries its separator
+in:       sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 # The hexadecimal body. It is thirty-two random bytes written two characters a
 # byte, which is sixty-four, and the count is read exactly: a run longer than it
@@ -80,21 +80,21 @@ out:  sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 # leaves — is no token at all and every random character before the cut comes
 # through in the clear. Uppercase is not admitted, since the vendor writes none.
 
-case: a hexadecimal run longer than a body
-in:   sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefa
-out:  «sentry-auth-token»a
+case:     a hexadecimal run longer than a body
+in:       sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefa
+out:      «sentry-auth-token»a
 
-case: a hexadecimal body one character short
-in:   SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
-out:  SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+case:     a hexadecimal body one character short
+in:       SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
 
-case: a hexadecimal body written in uppercase
-in:   sntryu_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
-out:  sntryu_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+case:     a hexadecimal body written in uppercase
+in:       sntryu_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      sntryu_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
 
-case: a token cut off at its prefix
-in:   SENTRY_AUTH_TOKEN=sntryu_
-out:  SENTRY_AUTH_TOKEN=sntryu_
+case:     a token cut off at its prefix
+in:       SENTRY_AUTH_TOKEN=sntryu_
+out:      SENTRY_AUTH_TOKEN=sntryu_
 
 # The organization token's two segments. The payload is base64 with its padding
 # kept, so its length is a multiple of four and at most two of those characters
@@ -103,45 +103,45 @@ out:  SENTRY_AUTH_TOKEN=sntryu_
 # underscore between them belongs to neither alphabet, which is what ends the
 # payload where it stands and what makes the count behind it readable at all.
 
-case: an organization payload closing with one padding character
-in:   sntrys_0123456789abcdef0123456789abcde=_0123456789abcdef0123456789abcdef0123456789a
-out:  «sentry-auth-token»
+case:     an organization payload closing with one padding character
+in:       sntrys_0123456789abcdef0123456789abcde=_0123456789abcdef0123456789abcdef0123456789a
+out:      «sentry-auth-token»
 
-case: an organization payload closing with two
-in:   sntrys_0123456789abcdef0123456789abcd==_0123456789abcdef0123456789abcdef0123456789a
-out:  «sentry-auth-token»
+case:     an organization payload closing with two
+in:       sntrys_0123456789abcdef0123456789abcd==_0123456789abcdef0123456789abcdef0123456789a
+out:      «sentry-auth-token»
 
-case: an organization payload closing with three, which base64 never calls for
-in:   sntrys_0123456789abcdef0123456789abc===_0123456789abcdef0123456789abcdef0123456789a
-out:  sntrys_0123456789abcdef0123456789abc===_0123456789abcdef0123456789abcdef0123456789a
+case:     an organization payload closing with three, which base64 never calls for
+in:       sntrys_0123456789abcdef0123456789abc===_0123456789abcdef0123456789abcdef0123456789a
+out:      sntrys_0123456789abcdef0123456789abc===_0123456789abcdef0123456789abcdef0123456789a
 
-case: an organization payload that is not a multiple of base64's group
-in:   sntrys_0123456789abcdef0123456789abcde_0123456789abcdef0123456789abcdef0123456789a
-out:  sntrys_0123456789abcdef0123456789abcde_0123456789abcdef0123456789abcdef0123456789a
+case:     an organization payload that is not a multiple of base64's group
+in:       sntrys_0123456789abcdef0123456789abcde_0123456789abcdef0123456789abcdef0123456789a
+out:      sntrys_0123456789abcdef0123456789abcde_0123456789abcdef0123456789abcdef0123456789a
 
-case: an organization token with no payload
-in:   sntrys__0123456789abcdef0123456789abcdef0123456789a
-out:  sntrys__0123456789abcdef0123456789abcdef0123456789a
+case:     an organization token with no payload
+in:       sntrys__0123456789abcdef0123456789abcdef0123456789a
+out:      sntrys__0123456789abcdef0123456789abcdef0123456789a
 
-case: an organization secret one character short
-in:   sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789
-out:  sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789
+case:     an organization secret one character short
+in:       sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789
+out:      sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789
 
-case: a base64 run longer than an organization secret
-in:   sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789ab
-out:  «sentry-auth-token»b
+case:     a base64 run longer than an organization secret
+in:       sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789ab
+out:      «sentry-auth-token»b
 
-case: padding where an organization secret ends
-in:   sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789=
-out:  sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789=
+case:     padding where an organization secret ends
+in:       sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789=
+out:      sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789=
 
-case: a third underscore inside an organization secret
-in:   sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcd_f0123456789a
-out:  sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcd_f0123456789a
+case:     a third underscore inside an organization secret
+in:       sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcd_f0123456789a
+out:      sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcd_f0123456789a
 
-case: no separator between the two segments
-in:   sntrys_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
-out:  sntrys_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+case:     no separator between the two segments
+in:       sntrys_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      sntrys_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
 
 # What a token may be written against. There is no boundary on either side of a
 # match, as there is none in any built-in but the Slack and Stripe ones: a
@@ -149,21 +149,21 @@ out:  sntrys_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
 # it, and one behind would drop a token with a character of its own alphabet
 # after it.
 
-case: a token after an underscore
-in:   SENTRY_AUTH_TOKEN_sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  SENTRY_AUTH_TOKEN_«sentry-auth-token»
+case:     a token after an underscore
+in:       SENTRY_AUTH_TOKEN_sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      SENTRY_AUTH_TOKEN_«sentry-auth-token»
 
-case: a token after a letter
-in:   xsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  x«sentry-auth-token»
+case:     a token after a letter
+in:       xsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      x«sentry-auth-token»
 
-case: a token inside quotes
-in:   export SENTRY_AUTH_TOKEN="sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
-out:  export SENTRY_AUTH_TOKEN="«sentry-auth-token»"
+case:     a token inside quotes
+in:       export SENTRY_AUTH_TOKEN="sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+out:      export SENTRY_AUTH_TOKEN="«sentry-auth-token»"
 
-case: a token before a hyphenated word
-in:   sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef-suffix
-out:  «sentry-auth-token»-suffix
+case:     a token before a hyphenated word
+in:       sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef-suffix
+out:      «sentry-auth-token»-suffix
 
 # Two tokens written together. The alphabet an organization token's segments are
 # written in holds every letter the anchor is written in and every character
@@ -173,21 +173,21 @@ out:  «sentry-auth-token»-suffix
 # does. The two spans overlap and are redacted as one, which is what a scan
 # resuming past a match would have stepped over.
 
-case: two tokens separated by a space
-in:   sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a
-out:  «sentry-auth-token» «sentry-auth-token»
+case:     two tokens separated by a space
+in:       sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a
+out:      «sentry-auth-token» «sentry-auth-token»
 
-case: a token written straight onto the end of another
-in:   sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «sentry-auth-token»«sentry-auth-token»
+case:     a token written straight onto the end of another
+in:       sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «sentry-auth-token»«sentry-auth-token»
 
-case: an organization token beginning inside the payload of another
-in:   sntrys_0123456789abcdef0123456789sntrys_0123456789abcdef0123456789abcdef0123456789ab_0123456789abcdef0123456789abcdef0123456789a
-out:  «sentry-auth-token»
+case:     an organization token beginning inside the payload of another
+in:       sntrys_0123456789abcdef0123456789sntrys_0123456789abcdef0123456789abcdef0123456789ab_0123456789abcdef0123456789abcdef0123456789a
+out:      «sentry-auth-token»
 
-case: a user token beginning inside the payload of an organization token
-in:   sntrys_0123456789abcdef0123456789sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «sentry-auth-token»
+case:     a user token beginning inside the payload of an organization token
+in:       sntrys_0123456789abcdef0123456789sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «sentry-auth-token»
 
 # What this pattern redacts that nobody issued. A hexadecimal body is thirty-two
 # random bytes written in hexadecimal, which is a SHA-256 digest's shape
@@ -199,17 +199,17 @@ out:  «sentry-auth-token»
 # characters in front, which no digest carries. A SHA-1 is twenty-four short of
 # the count and is left alone, and so is a digest written behind a hyphen.
 
-case: a sha-256 behind a prefix
-in:   sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «sentry-auth-token»
+case:     a sha-256 behind a prefix
+in:       sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «sentry-auth-token»
 
-case: a sha-1 behind a prefix, which is short of the count
-in:   sntryu_0123456789abcdef0123456789abcdef01234567
-out:  sntryu_0123456789abcdef0123456789abcdef01234567
+case:     a sha-1 behind a prefix, which is short of the count
+in:       sntryu_0123456789abcdef0123456789abcdef01234567
+out:      sntryu_0123456789abcdef0123456789abcdef01234567
 
-case: a sha-256 behind a hyphen
-in:   sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a sha-256 behind a hyphen
+in:       sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 # And what this pattern leaves alone. The format Sentry minted before it
 # prefixed its tokens is the same thirty-two random bytes with nothing in front
@@ -219,26 +219,26 @@ out:  sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 # is spelled sntry with an underscore two characters behind it; and a JWT's
 # segments are base64url where these are base64.
 
-case: a token of the format that carried no prefix
-in:   0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a token of the format that carried no prefix
+in:       0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a hexadecimal digest
-in:   sha1=0123456789abcdef0123456789abcdef01234567
-out:  sha1=0123456789abcdef0123456789abcdef01234567
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
 
-case: a base64 payload carrying the letters of the anchor
-in:   payload=sntryu0123456789abcdef0123456789sntrys0123456789abcdef0123456789abcdef
-out:  payload=sntryu0123456789abcdef0123456789sntrys0123456789abcdef0123456789abcdef
+case:     a base64 payload carrying the letters of the anchor
+in:       payload=sntryu0123456789abcdef0123456789sntrys0123456789abcdef0123456789abcdef
+out:      payload=sntryu0123456789abcdef0123456789sntrys0123456789abcdef0123456789abcdef
 
-case: prose
-in:   there is no credential in this sentence
-out:  there is no credential in this sentence
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
 
-case: a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: a log line
-in:   time=2026-08-17T00:00:00Z level=info msg="uploading source maps" url=https://sentry.io/api/0/organizations/acme/releases/
-out:  time=2026-08-17T00:00:00Z level=info msg="uploading source maps" url=https://sentry.io/api/0/organizations/acme/releases/
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="uploading source maps" url=https://sentry.io/api/0/organizations/acme/releases/
+out:      time=2026-08-17T00:00:00Z level=info msg="uploading source maps" url=https://sentry.io/api/0/organizations/acme/releases/

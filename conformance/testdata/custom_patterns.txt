@@ -5,35 +5,35 @@
 
 patterns: regexp
 
-case: a pattern built from a regular expression
-in:   token: INT-0123456789abcdef0123456789abcdef
-out:  token: «internal-token»
+case:     a pattern built from a regular expression
+in:       token: INT-0123456789abcdef0123456789abcdef
+out:      token: «internal-token»
 
-case: every match of a regular expression
-in:   first=INT-0123456789abcdef0123456789abcdef second=INT-0123456789abcdef0123456789abcdef
-out:  first=«internal-token» second=«internal-token»
+case:     every match of a regular expression
+in:       first=INT-0123456789abcdef0123456789abcdef second=INT-0123456789abcdef0123456789abcdef
+out:      first=«internal-token» second=«internal-token»
 
-case: a regular expression that matches nothing
-in:   token: INT-not-hexadecimal
-out:  token: INT-not-hexadecimal
+case:     a regular expression that matches nothing
+in:       token: INT-not-hexadecimal
+out:      token: INT-not-hexadecimal
 
-case: a github token is left alone by a pattern that does not know it
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  ghp_0123456789abcdefghijklmnopqrstuvwxyz
+case:     a github token is left alone by a pattern that does not know it
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      ghp_0123456789abcdefghijklmnopqrstuvwxyz
 
 patterns: regexp-mask-group
 
-case: a mask group redacts the value and leaves what named it
-in:   user_id=12345 name=alice
-out:  user_id=«user-id» name=alice
+case:     a mask group redacts the value and leaves what named it
+in:       user_id=12345 name=alice
+out:      user_id=«user-id» name=alice
 
-case: a mask group in every match
-in:   user_id=1 user_id=22 user_id=333
-out:  user_id=«user-id» user_id=«user-id» user_id=«user-id»
+case:     a mask group in every match
+in:       user_id=1 user_id=22 user_id=333
+out:      user_id=«user-id» user_id=«user-id» user_id=«user-id»
 
-case: a mask group that matches nothing to redact
-in:   user_id= name=alice
-out:  user_id= name=alice
+case:     a mask group that matches nothing to redact
+in:       user_id= name=alice
+out:      user_id= name=alice
 
 patterns: regexp-mask-group-branches
 
@@ -44,52 +44,52 @@ patterns: regexp-mask-group-branches
 # one leaves the second case with a group that took part in nothing, and the
 # key is written back out whole.
 
-case: a mask group in the leftmost branch of an alternation
-in:   key_live_0123456789abcdef
-out:  key_live_«key»
+case:     a mask group in the leftmost branch of an alternation
+in:       key_live_0123456789abcdef
+out:      key_live_«key»
 
-case: a mask group in a branch that is not the leftmost
-in:   key_test_0123456789abcdef
-out:  key_test_«key»
+case:     a mask group in a branch that is not the leftmost
+in:       key_test_0123456789abcdef
+out:      key_test_«key»
 
-case: both branches on one line
-in:   key_live_0123456789abcdef key_test_0123456789abcdef
-out:  key_live_«key» key_test_«key»
+case:     both branches on one line
+in:       key_live_0123456789abcdef key_test_0123456789abcdef
+out:      key_live_«key» key_test_«key»
 
 patterns: func
 
-case: a pattern built from a function
-in:   password=s3cr3t-value
-out:  password=«shared-secret»
+case:     a pattern built from a function
+in:       password=s3cr3t-value
+out:      password=«shared-secret»
 
-case: a value known only at run time, twice
-in:   first=s3cr3t-value second=s3cr3t-value
-out:  first=«shared-secret» second=«shared-secret»
+case:     a value known only at run time, twice
+in:       first=s3cr3t-value second=s3cr3t-value
+out:      first=«shared-secret» second=«shared-secret»
 
-case: a function that finds nothing
-in:   password=something-else
-out:  password=something-else
+case:     a function that finds nothing
+in:       password=something-else
+out:      password=something-else
 
 patterns: default-and-regexp
 
-case: a built-in pattern and one of the caller's on one line
-in:   github=ghp_0123456789abcdefghijklmnopqrstuvwxyz internal=INT-0123456789abcdef0123456789abcdef
-out:  github=«github-token» internal=«internal-token»
+case:     a built-in pattern and one of the caller's on one line
+in:       github=ghp_0123456789abcdefghijklmnopqrstuvwxyz internal=INT-0123456789abcdef0123456789abcdef
+out:      github=«github-token» internal=«internal-token»
 
-case: the caller's pattern first
-in:   internal=INT-0123456789abcdef0123456789abcdef jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  internal=«internal-token» jwt=«jwt»
+case:     the caller's pattern first
+in:       internal=INT-0123456789abcdef0123456789abcdef jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      internal=«internal-token» jwt=«jwt»
 
-case: nothing either kind of pattern knows
-in:   user=alice role=admin
-out:  user=alice role=admin
+case:     nothing either kind of pattern knows
+in:       user=alice role=admin
+out:      user=alice role=admin
 
 patterns: none
 
-case: a masker given no pattern redacts nothing
-in:   GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+case:     a masker given no pattern redacts nothing
+in:       GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 
-case: a masker given no pattern leaves a jwt alone
-in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a masker given no pattern leaves a jwt alone
+in:       eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef

@@ -10,120 +10,120 @@
 
 patterns: default
 
-case: a stateless installation token is one value, not a token and a jwt
-in:   token=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  token=«github-token»
+case:     a stateless installation token is one value, not a token and a jwt
+in:       token=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      token=«github-token»
 
-case: a stateless user access token is one value, not a token and a jwt
-in:   token=ghu_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  token=«github-token»
+case:     a stateless user access token is one value, not a token and a jwt
+in:       token=ghu_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      token=«github-token»
 
-case: a personal access token prefix in the stateless form leaves the prefix behind
-in:   token=ghp_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  token=ghp_123456_«jwt»
+case:     a personal access token prefix in the stateless form leaves the prefix behind
+in:       token=ghp_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      token=ghp_123456_«jwt»
 
-case: a personal access token and a jwt on one line
-in:   token=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  token=«github-token» jwt=«jwt»
+case:     a personal access token and a jwt on one line
+in:       token=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      token=«github-token» jwt=«jwt»
 
-case: a jwt before a personal access token
-in:   jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef token=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  jwt=«jwt» token=«github-token»
+case:     a jwt before a personal access token
+in:       jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef token=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      jwt=«jwt» token=«github-token»
 
-case: a private key and a personal access token on separate lines
-in:   -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\ntoken=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «private-key»\ntoken=«github-token»
+case:     a private key and a personal access token on separate lines
+in:       -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\ntoken=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «private-key»\ntoken=«github-token»
 
-case: a stateless installation token beside a jwt of its own
-in:   ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4eXoifQ.0123456789abcdef
-out:  «github-token» and «jwt»
+case:     a stateless installation token beside a jwt of its own
+in:       ghs_1_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef and eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4eXoifQ.0123456789abcdef
+out:      «github-token» and «jwt»
 
-case: every kind of credential this library knows
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pk_live_0123456789abcdef01234567 whsec_0123456789abcdef0123456789abcdef pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd hvs.0123456789abcdef01234567 glsa_0123456789abcdef0123456789abcdef_01234567 sbp_0123456789abcdef0123456789abcdef01234567 rubygems_0123456789abcdef0123456789abcdef0123456789abcdef cfut_0123456789abcdef0123456789abcdef0123456789abcdef cfk_0123456789abcdef0123456789abcdef0123456789abcdef -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----
-out:  «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «openrouter-api-key» «anthropic-api-key» «stripe-secret-key» «stripe-publishable-key» «stripe-webhook-signing-secret» «pypi-api-token» «npm-access-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token» «hashicorp-vault-token» «grafana-service-account-token» «supabase-access-token» «rubygems-api-key» «cloudflare-api-token» «cloudflare-api-key» «private-key»
+case:     every kind of credential this library knows
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pk_live_0123456789abcdef01234567 whsec_0123456789abcdef0123456789abcdef pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd hvs.0123456789abcdef01234567 glsa_0123456789abcdef0123456789abcdef_01234567 sbp_0123456789abcdef0123456789abcdef01234567 rubygems_0123456789abcdef0123456789abcdef0123456789abcdef cfut_0123456789abcdef0123456789abcdef0123456789abcdef cfk_0123456789abcdef0123456789abcdef0123456789abcdef -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----
+out:      «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «openrouter-api-key» «anthropic-api-key» «stripe-secret-key» «stripe-publishable-key» «stripe-webhook-signing-secret» «pypi-api-token» «npm-access-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token» «hashicorp-vault-token» «grafana-service-account-token» «supabase-access-token» «rubygems-api-key» «cloudflare-api-token» «cloudflare-api-key» «private-key»
 
-case: a fine grained token holding a run that opens like a header
-in:   github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
-out:  «github-token»
+case:     a fine grained token holding a run that opens like a header
+in:       github_pat_0123456789abcdefeyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyz0123456789abcdefghij
+out:      «github-token»
 
-case: no pattern finds anything in a log line
-in:   time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user
-out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user
+case:     no pattern finds anything in a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user
 
-case: no pattern finds anything in prose
-in:   there is no credential in this sentence
-out:  there is no credential in this sentence
+case:     no pattern finds anything in prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
 
 # Where one kind of credential is written inside another, and where one ends
 # exactly where the other begins. No pattern may take a piece out of another's
 # value, and none may leave a piece of its own behind.
 
-case: a jwt whose payload decodes to a personal access token
-in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMiLCJ0b2tlbiI6ImdocF8wMTIzNDU2Nzg5YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoifQ.0123456789abcdef
-out:  «jwt»
+case:     a jwt whose payload decodes to a personal access token
+in:       eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMiLCJ0b2tlbiI6ImdocF8wMTIzNDU2Nzg5YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoifQ.0123456789abcdef
+out:      «jwt»
 
-case: a jwt directly followed by a personal access token
-in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdefghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «jwt»
+case:     a jwt directly followed by a personal access token
+in:       eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdefghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «jwt»
 
-case: a personal access token directly followed by a jwt
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     a personal access token directly followed by a jwt
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: a jwt whose signature opens like a token prefix
-in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «jwt»
+case:     a jwt whose signature opens like a token prefix
+in:       eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «jwt»
 
-case: a jwt whose header segment carries a token prefix before it
-in:   ghp_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghp_«jwt»
+case:     a jwt whose header segment carries a token prefix before it
+in:       ghp_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghp_«jwt»
 
-case: an access key id written where the base64 of a key stands
-in:   -----BEGIN PRIVATE KEY-----\nAKIA0123456789ABCDEF\n-----END PRIVATE KEY-----
-out:  «private-key»
+case:     an access key id written where the base64 of a key stands
+in:       -----BEGIN PRIVATE KEY-----\nAKIA0123456789ABCDEF\n-----END PRIVATE KEY-----
+out:      «private-key»
 
 # A dot is not base64, so what is written between two boundaries is not always
 # a body, and the pattern that does read it is the one that locates it.
 
-case: a jwt written where the base64 of a key would stand
-in:   -----BEGIN PRIVATE KEY-----\neyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\n-----END PRIVATE KEY-----
-out:  -----BEGIN PRIVATE KEY-----\n«jwt»\n-----END PRIVATE KEY-----
+case:     a jwt written where the base64 of a key would stand
+in:       -----BEGIN PRIVATE KEY-----\neyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\n-----END PRIVATE KEY-----
+out:      -----BEGIN PRIVATE KEY-----\n«jwt»\n-----END PRIVATE KEY-----
 
-case: a fine grained token whose second run opens like a header
-in:   github_pat_0123456789abcdefABCDEF_eyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLM
-out:  «github-token»
+case:     a fine grained token whose second run opens like a header
+in:       github_pat_0123456789abcdefABCDEF_eyJhbGciOiJIUzI1NiJ9abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLM
+out:      «github-token»
 
-case: a stateless installation token whose app id is a classic token body
-in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token whose app id is a classic token body
+in:       ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: a stateless installation token whose inner jwt names alg none
-in:   ghs_123456_eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token whose inner jwt names alg none
+in:       ghs_123456_eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: a stateless installation token, a fine grained token and a jwt on one line
-in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token» «github-token» «jwt»
+case:     a stateless installation token, a fine grained token and a jwt on one line
+in:       ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token» «github-token» «jwt»
 
-case: a json body holding a classic token, a fine grained token and a jwt
-in:   {"classic":"ghp_0123456789abcdefghijklmnopqrstuvwxyz","fine":"github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW","jwt":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"}
-out:  {"classic":"«github-token»","fine":"«github-token»","jwt":"«jwt»"}
+case:     a json body holding a classic token, a fine grained token and a jwt
+in:       {"classic":"ghp_0123456789abcdefghijklmnopqrstuvwxyz","fine":"github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW","jwt":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"}
+out:      {"classic":"«github-token»","fine":"«github-token»","jwt":"«jwt»"}
 
-case: a token in an authorization header and a jwt in a cookie on one line
-in:   Authorization: token ghp_0123456789abcdefghijklmnopqrstuvwxyz; Cookie: session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  Authorization: token «github-token»; Cookie: session=«jwt»
+case:     a token in an authorization header and a jwt in a cookie on one line
+in:       Authorization: token ghp_0123456789abcdefghijklmnopqrstuvwxyz; Cookie: session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      Authorization: token «github-token»; Cookie: session=«jwt»
 
-case: a url carrying a token in its userinfo and a jwt in its query
-in:   https://x-access-token:ghs_0123456789abcdefghijklmnopqrstuvwxyz@example.com/callback?id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  https://x-access-token:«github-token»@example.com/callback?id_token=«jwt»
+case:     a url carrying a token in its userinfo and a jwt in its query
+in:       https://x-access-token:ghs_0123456789abcdefghijklmnopqrstuvwxyz@example.com/callback?id_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      https://x-access-token:«github-token»@example.com/callback?id_token=«jwt»
 
-case: a jwt and a token with a single dot between them
-in:   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef.ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «jwt».«github-token»
+case:     a jwt and a token with a single dot between them
+in:       eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef.ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «jwt».«github-token»
 
-case: a token and a jwt with a single dot between them
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token».«jwt»
+case:     a token and a jwt with a single dot between them
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token».«jwt»
 
 # An access key ID inside a value of another kind. The alphabet a key is
 # written in — uppercase letters and digits — is inside the alphabet of a
@@ -133,33 +133,33 @@ out:  «github-token».«jwt»
 # spans overlap and are redacted as one; the surrounding value is what starts
 # earliest, so that is what the redaction is attributed to.
 
-case: an access key id inside a classic token body
-in:   ghp_AKIA0123456789ABCDEF0123456789abcdef
-out:  «github-token»
+case:     an access key id inside a classic token body
+in:       ghp_AKIA0123456789ABCDEF0123456789abcdef
+out:      «github-token»
 
-case: an access key id inside the app id of a stateless installation token
-in:   ghs_AKIA0123456789ABCDEF_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     an access key id inside the app id of a stateless installation token
+in:       ghs_AKIA0123456789ABCDEF_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: an access key id inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.AKIA0123456789ABCDEF
-out:  «jwt»
+case:     an access key id inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.AKIA0123456789ABCDEF
+out:      «jwt»
 
-case: an access key id directly after a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdefAKIA0123456789ABCDEF
-out:  «jwt»
+case:     an access key id directly after a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdefAKIA0123456789ABCDEF
+out:      «jwt»
 
-case: an access key id directly after a classic token
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzAKIA0123456789ABCDEF
-out:  «github-token»
+case:     an access key id directly after a classic token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzAKIA0123456789ABCDEF
+out:      «github-token»
 
-case: an access key id and a jwt with a single dot between them
-in:   AKIA0123456789ABCDEF.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «aws-access-key-id».«jwt»
+case:     an access key id and a jwt with a single dot between them
+in:       AKIA0123456789ABCDEF.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «aws-access-key-id».«jwt»
 
-case: an access key id in an environment file beside a github token
-in:   AWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  AWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an access key id in an environment file beside a github token
+in:       AWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      AWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A Slack token beside the other kinds, and inside them. A Slack body is read
 # as letters, digits and the hyphen its parts are joined with, so an access key
@@ -170,29 +170,29 @@ out:  AWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 # the prefix and the identifier in front of them in the text, which authenticate
 # nothing on their own.
 
-case: a slack token beside a github token and a jwt
-in:   slack=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  slack=«slack-token» github=«github-token» jwt=«jwt»
+case:     a slack token beside a github token and a jwt
+in:       slack=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      slack=«slack-token» github=«github-token» jwt=«jwt»
 
-case: an access key id inside a slack token body
-in:   xoxb-0123456789ab-AKIA0123456789ABCDEF
-out:  «slack-token»
+case:     an access key id inside a slack token body
+in:       xoxb-0123456789ab-AKIA0123456789ABCDEF
+out:      «slack-token»
 
-case: an access key id directly after a slack token
-in:   xoxb-0123456789ab-0123456789abcdefghijklmnAKIA0123456789ABCDEF
-out:  «slack-token»
+case:     an access key id directly after a slack token
+in:       xoxb-0123456789ab-0123456789abcdefghijklmnAKIA0123456789ABCDEF
+out:      «slack-token»
 
-case: a github token after a slack prefix, which the underscore keeps apart
-in:   xoxb-0123456789ab_ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  xoxb-0123456789ab_«github-token»
+case:     a github token after a slack prefix, which the underscore keeps apart
+in:       xoxb-0123456789ab_ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      xoxb-0123456789ab_«github-token»
 
-case: a jwt directly after a slack token, which the dot keeps apart
-in:   xoxb-0123456789ab-0123456789abcdefgh.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «slack-token».«jwt»
+case:     a jwt directly after a slack token, which the dot keeps apart
+in:       xoxb-0123456789ab-0123456789abcdefgh.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «slack-token».«jwt»
 
-case: an environment file holding one of each
-in:   SLACK_BOT_TOKEN=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  SLACK_BOT_TOKEN=«slack-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding one of each
+in:       SLACK_BOT_TOKEN=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      SLACK_BOT_TOKEN=«slack-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # The other direction: a Slack prefix written against the end of an access key
 # ID rather than a key written into a Slack body. A prefix standing behind a
@@ -209,9 +209,9 @@ out:  SLACK_BOT_TOKEN=«slack-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\n
 # Mask says so; checkSecondPass (properties_test.go) is what holds a second
 # pass here, and this is the input it was written against.
 
-case: a slack prefix written against the end of an access key id
-in:   AKIA0123456789ABCDEFxoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn
-out:  «aws-access-key-id»xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn
+case:     a slack prefix written against the end of an access key id
+in:       AKIA0123456789ABCDEFxoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn
+out:      «aws-access-key-id»xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn
 
 # A GitLab token beside the others. Its body is read in the base64url alphabet
 # and to a count the kind fixes, which is what makes it behave unlike the Slack
@@ -221,29 +221,29 @@ out:  «aws-access-key-id»xoxb-0123456789ab-0123456789abc-0123456789abcdefghijk
 # The dot ends a body, which is what keeps a JWT written after a token out of
 # it.
 
-case: a gitlab token beside a github token and a jwt
-in:   gitlab=glpat-0123456789abcdefghij github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  gitlab=«gitlab-token» github=«github-token» jwt=«jwt»
+case:     a gitlab token beside a github token and a jwt
+in:       gitlab=glpat-0123456789abcdefghij github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      gitlab=«gitlab-token» github=«github-token» jwt=«jwt»
 
-case: an access key id inside a gitlab token body
-in:   glpat-AKIA0123456789ABCDEF
-out:  «gitlab-token»
+case:     an access key id inside a gitlab token body
+in:       glpat-AKIA0123456789ABCDEF
+out:      «gitlab-token»
 
-case: an access key id where a gitlab token body ends
-in:   glpat-0123456789abcdefghijAKIA0123456789ABCDEF
-out:  «gitlab-token»«aws-access-key-id»
+case:     an access key id where a gitlab token body ends
+in:       glpat-0123456789abcdefghijAKIA0123456789ABCDEF
+out:      «gitlab-token»«aws-access-key-id»
 
-case: a github token after a gitlab prefix, which the body alphabet draws in
-in:   glpat-ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «gitlab-token»
+case:     a github token after a gitlab prefix, which the body alphabet draws in
+in:       glpat-ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «gitlab-token»
 
-case: a jwt directly after a gitlab token, which the dot keeps apart
-in:   glpat-0123456789abcdefghij.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «gitlab-token».«jwt»
+case:     a jwt directly after a gitlab token, which the dot keeps apart
+in:       glpat-0123456789abcdefghij.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «gitlab-token».«jwt»
 
-case: an environment file holding a gitlab token among the others
-in:   GITLAB_TOKEN=glpat-0123456789abcdefghij\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  GITLAB_TOKEN=«gitlab-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding a gitlab token among the others
+in:       GITLAB_TOKEN=glpat-0123456789abcdefghij\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      GITLAB_TOKEN=«gitlab-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A Google API key beside the others, and inside them. A key is thirty-nine
 # characters of base64url and its prefix is written in that same alphabet, so it
@@ -253,41 +253,41 @@ out:  GITLAB_TOKEN=«gitlab-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGI
 # earliest. Where it is the count that ends a key rather than a separator,
 # whatever is written straight after one is a value of its own, and both go.
 
-case: a google api key beside a github token and a jwt
-in:   google=AIza0123456789abcdefghijklmnopqrstuvwxy github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  google=«google-api-key» github=«github-token» jwt=«jwt»
+case:     a google api key beside a github token and a jwt
+in:       google=AIza0123456789abcdefghijklmnopqrstuvwxy github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      google=«google-api-key» github=«github-token» jwt=«jwt»
 
-case: a google api key inside a classic github token body
-in:   ghp_AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  «github-token»
+case:     a google api key inside a classic github token body
+in:       ghp_AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      «github-token»
 
-case: a google api key inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  «jwt»
+case:     a google api key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      «jwt»
 
-case: a google api key inside a gitlab oauth application secret
-in:   gloas-AIza0123456789abcdefghijklmnopqrstuvwxy0123456789abcdefghijklmno
-out:  «gitlab-token»
+case:     a google api key inside a gitlab oauth application secret
+in:       gloas-AIza0123456789abcdefghijklmnopqrstuvwxy0123456789abcdefghijklmno
+out:      «gitlab-token»
 
-case: a google api key where a gitlab token body ends
-in:   glpat-0123456789abcdefghijAIza0123456789abcdefghijklmnopqrstuvwxy
-out:  «gitlab-token»«google-api-key»
+case:     a google api key where a gitlab token body ends
+in:       glpat-0123456789abcdefghijAIza0123456789abcdefghijklmnopqrstuvwxy
+out:      «gitlab-token»«google-api-key»
 
-case: a google api key directly after a classic github token
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzAIza0123456789abcdefghijklmnopqrstuvwxy
-out:  «github-token»
+case:     a google api key directly after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzAIza0123456789abcdefghijklmnopqrstuvwxy
+out:      «github-token»
 
-case: a gitlab token where a google api key ends
-in:   AIza0123456789abcdefghijklmnopqrstuvwxyglpat-0123456789abcdefghij
-out:  «google-api-key»«gitlab-token»
+case:     a gitlab token where a google api key ends
+in:       AIza0123456789abcdefghijklmnopqrstuvwxyglpat-0123456789abcdefghij
+out:      «google-api-key»«gitlab-token»
 
-case: a jwt written straight after a google api key
-in:   AIza0123456789abcdefghijklmnopqrstuvwxy.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «google-api-key».«jwt»
+case:     a jwt written straight after a google api key
+in:       AIza0123456789abcdefghijklmnopqrstuvwxy.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «google-api-key».«jwt»
 
-case: an environment file holding a google api key among the others
-in:   GOOGLE_API_KEY=AIza0123456789abcdefghijklmnopqrstuvwxy\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  GOOGLE_API_KEY=«google-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding a google api key among the others
+in:       GOOGLE_API_KEY=AIza0123456789abcdefghijklmnopqrstuvwxy\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      GOOGLE_API_KEY=«google-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # An OpenAI API key beside the others, and inside them. A key is the prefix, a
 # run of base64url characters, and the marker T3BlbkFJ somewhere inside that
@@ -301,33 +301,33 @@ out:  GOOGLE_API_KEY=«google-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
 # Google counts do. A dot ends the run, which is what keeps a JWT written after
 # a key apart from it.
 
-case: an openai api key beside a github token and a jwt
-in:   openai=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  openai=«openai-api-key» github=«github-token» jwt=«jwt»
+case:     an openai api key beside a github token and a jwt
+in:       openai=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      openai=«openai-api-key» github=«github-token» jwt=«jwt»
 
-case: an openai api key inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sk-0123456789abcdefT3BlbkFJ0123456789abcdef
-out:  «jwt»
+case:     an openai api key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sk-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:      «jwt»
 
-case: an openai api key inside a gitlab oauth application secret
-in:   gloas-sk-0123456789abcdefT3BlbkFJ0123456789abcdef0123456789abcdef01234
-out:  «gitlab-token»
+case:     an openai api key inside a gitlab oauth application secret
+in:       gloas-sk-0123456789abcdefT3BlbkFJ0123456789abcdef0123456789abcdef01234
+out:      «gitlab-token»
 
-case: a google api key inside an openai api key run
-in:   sk-proj-AIza0123456789abcdefghijklmnopqrstuvwxyT3BlbkFJ0123456789abcdef
-out:  «openai-api-key»
+case:     a google api key inside an openai api key run
+in:       sk-proj-AIza0123456789abcdefghijklmnopqrstuvwxyT3BlbkFJ0123456789abcdef
+out:      «openai-api-key»
 
-case: an access key id written straight after an openai api key
-in:   sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdefAKIA0123456789ABCDEF
-out:  «openai-api-key»
+case:     an access key id written straight after an openai api key
+in:       sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdefAKIA0123456789ABCDEF
+out:      «openai-api-key»
 
-case: a jwt directly after an openai api key, which the dot keeps apart
-in:   sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «openai-api-key».«jwt»
+case:     a jwt directly after an openai api key, which the dot keeps apart
+in:       sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «openai-api-key».«jwt»
 
-case: an environment file holding an openai api key among the others
-in:   OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  OPENAI_API_KEY=«openai-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding an openai api key among the others
+in:       OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      OPENAI_API_KEY=«openai-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # An Anthropic API key beside the others, and inside them. A key opens sk-, as
 # an OpenAI key does, and what tells the two apart is what follows: ant-, a kind
@@ -341,37 +341,37 @@ out:  OPENAI_API_KEY=«openai-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
 # and Google counts. A dot ends the run, which is what keeps a JWT written after
 # a key apart from it.
 
-case: an anthropic api key beside a github token and a jwt
-in:   anthropic=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  anthropic=«anthropic-api-key» github=«github-token» jwt=«jwt»
+case:     an anthropic api key beside a github token and a jwt
+in:       anthropic=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      anthropic=«anthropic-api-key» github=«github-token» jwt=«jwt»
 
-case: an anthropic api key and an openai api key on one line
-in:   ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
-out:  ANTHROPIC_API_KEY=«anthropic-api-key» OPENAI_API_KEY=«openai-api-key»
+case:     an anthropic api key and an openai api key on one line
+in:       ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:      ANTHROPIC_API_KEY=«anthropic-api-key» OPENAI_API_KEY=«openai-api-key»
 
-case: an anthropic api key whose body carries the marker an openai key is read by
-in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789aT3BlbkFJ3456789abcdef0123456789abcdef0123456789abcde
-out:  «anthropic-api-key»
+case:     an anthropic api key whose body carries the marker an openai key is read by
+in:       sk-ant-api03-0123456789abcdef0123456789abcdef0123456789aT3BlbkFJ3456789abcdef0123456789abcdef0123456789abcde
+out:      «anthropic-api-key»
 
-case: a google api key inside an anthropic api key body
-in:   sk-ant-api03-AIza0123456789abcdefghijklmnopqrstuvwxy789abcdef0123456789abcdef0123456789abcdef0123456789abcde
-out:  «anthropic-api-key»
+case:     a google api key inside an anthropic api key body
+in:       sk-ant-api03-AIza0123456789abcdefghijklmnopqrstuvwxy789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «anthropic-api-key»
 
-case: an access key id written straight after an anthropic api key
-in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeAKIA0123456789ABCDEF
-out:  «anthropic-api-key»
+case:     an access key id written straight after an anthropic api key
+in:       sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeAKIA0123456789ABCDEF
+out:      «anthropic-api-key»
 
-case: an anthropic api key inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
-out:  «jwt»
+case:     an anthropic api key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «jwt»
 
-case: a jwt directly after an anthropic api key, which the dot keeps apart
-in:   sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «anthropic-api-key».«jwt»
+case:     a jwt directly after an anthropic api key, which the dot keeps apart
+in:       sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «anthropic-api-key».«jwt»
 
-case: an environment file holding an anthropic api key among the others
-in:   ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  ANTHROPIC_API_KEY=«anthropic-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding an anthropic api key among the others
+in:       ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      ANTHROPIC_API_KEY=«anthropic-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A PyPI API token beside the others, and inside them. Behind its prefix a
 # token is base64url read to the end of its run, as an OpenAI or an Anthropic
@@ -383,37 +383,37 @@ out:  ANTHROPIC_API_KEY=«anthropic-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-ke
 # falls inside that JWT's span, which starts earlier, so the redaction is
 # attributed to the JWT.
 
-case: a pypi api token beside a github token and a jwt
-in:   pypi=pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  pypi=«pypi-api-token» github=«github-token» jwt=«jwt»
+case:     a pypi api token beside a github token and a jwt
+in:       pypi=pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      pypi=«pypi-api-token» github=«github-token» jwt=«jwt»
 
-case: a pypi api token inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «jwt»
+case:     a pypi api token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «jwt»
 
-case: a google api key inside a pypi api token body
-in:   pypi-AgEIcHlwaS5vcmcAIza0123456789abcdefghijklmnopqrstuvwxy0123456789abcdef
-out:  «pypi-api-token»
+case:     a google api key inside a pypi api token body
+in:       pypi-AgEIcHlwaS5vcmcAIza0123456789abcdefghijklmnopqrstuvwxy0123456789abcdef
+out:      «pypi-api-token»
 
-case: an access key id inside a pypi api token body
-in:   pypi-AgEIcHlwaS5vcmc0123456789ABCDEFAKIA0123456789ABCDEF0123456789abcdef
-out:  «pypi-api-token»
+case:     an access key id inside a pypi api token body
+in:       pypi-AgEIcHlwaS5vcmc0123456789ABCDEFAKIA0123456789ABCDEF0123456789abcdef
+out:      «pypi-api-token»
 
-case: an access key id written straight after a pypi api token
-in:   pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdefAKIA0123456789ABCDEF
-out:  «pypi-api-token»
+case:     an access key id written straight after a pypi api token
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdefAKIA0123456789ABCDEF
+out:      «pypi-api-token»
 
-case: a pypi api token where a gitlab token body ends
-in:   glpat-0123456789abcdefghijpypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «gitlab-token»«pypi-api-token»
+case:     a pypi api token where a gitlab token body ends
+in:       glpat-0123456789abcdefghijpypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «gitlab-token»«pypi-api-token»
 
-case: a jwt directly after a pypi api token, which the dot keeps apart
-in:   pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «pypi-api-token».«jwt»
+case:     a jwt directly after a pypi api token, which the dot keeps apart
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «pypi-api-token».«jwt»
 
-case: an environment file holding a pypi api token among the others
-in:   PYPI_API_TOKEN=pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  PYPI_API_TOKEN=«pypi-api-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding a pypi api token among the others
+in:       PYPI_API_TOKEN=pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      PYPI_API_TOKEN=«pypi-api-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # An npm access token beside the others, and inside them. A body is base62 read
 # to the end of its run: the letters of both cases and the digits, which is the
@@ -426,37 +426,37 @@ out:  PYPI_API_TOKEN=«pypi-api-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
 # still overlap, because that run reached the letters standing in front of the
 # underscore.
 
-case: an npm access token beside a github token and a jwt
-in:   npm=npm_0123456789abcdefghijklmnopqrstuvwxyz github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  npm=«npm-access-token» github=«github-token» jwt=«jwt»
+case:     an npm access token beside a github token and a jwt
+in:       npm=npm_0123456789abcdefghijklmnopqrstuvwxyz github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      npm=«npm-access-token» github=«github-token» jwt=«jwt»
 
-case: an access key id inside an npm access token body
-in:   npm_AKIA0123456789ABCDEF0123456789abcdef
-out:  «npm-access-token»
+case:     an access key id inside an npm access token body
+in:       npm_AKIA0123456789ABCDEF0123456789abcdef
+out:      «npm-access-token»
 
-case: a google api key inside an npm access token body
-in:   npm_AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  «npm-access-token»
+case:     a google api key inside an npm access token body
+in:       npm_AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      «npm-access-token»
 
-case: an npm access token inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «jwt»
+case:     an npm access token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «jwt»
 
-case: a classic github token written straight after an npm access token
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyzghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «npm-access-token»
+case:     a classic github token written straight after an npm access token
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyzghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «npm-access-token»
 
-case: an npm access token written straight after a classic github token
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyznpm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «github-token»
+case:     an npm access token written straight after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyznpm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «github-token»
 
-case: a jwt directly after an npm access token, which the dot keeps apart
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyz.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «npm-access-token».«jwt»
+case:     a jwt directly after an npm access token, which the dot keeps apart
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyz.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «npm-access-token».«jwt»
 
-case: an environment file holding an npm access token among the others
-in:   NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  NPM_TOKEN=«npm-access-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding an npm access token among the others
+in:       NPM_TOKEN=npm_0123456789abcdefghijklmnopqrstuvwxyz\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      NPM_TOKEN=«npm-access-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # The same reading against a PyPI token, which is where base62 standing inside
 # base64url is read the other way round. A PyPI body admits the underscore an
@@ -467,17 +467,17 @@ out:  NPM_TOKEN=«npm-access-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nG
 # earliest — nothing of either is left in the text, which is what separates this
 # pairing from the Stripe one the end of this file states.
 
-case: an npm access token inside a pypi api token body
-in:   pypi-AgEIcHlwaS5vcmcnpm_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdef
-out:  «pypi-api-token»
+case:     an npm access token inside a pypi api token body
+in:       pypi-AgEIcHlwaS5vcmcnpm_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdef
+out:      «pypi-api-token»
 
-case: an npm access token written straight after a pypi api token
-in:   pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdefnpm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «pypi-api-token»
+case:     an npm access token written straight after a pypi api token
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdefnpm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «pypi-api-token»
 
-case: a pypi api token written straight after an npm access token
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyzpypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «npm-access-token»
+case:     a pypi api token written straight after an npm access token
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyzpypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «npm-access-token»
 
 # Where the GitHub and JWT patterns disagree about a stateless installation
 # token. The GitHub pattern asks for an app id, a single underscore, and a JWT
@@ -486,21 +486,21 @@ out:  «npm-access-token»
 # declines can still be a JWT to the second, and what is then left in the text
 # is the ghs_ and the app id, which authenticate nothing on their own.
 
-case: a stateless installation token whose jwt has an empty signature
-in:   ghs_123456_eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.
-out:  ghs_123456_«jwt»
+case:     a stateless installation token whose jwt has an empty signature
+in:       ghs_123456_eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.
+out:      ghs_123456_«jwt»
 
-case: a stateless installation token with no app id
-in:   ghs__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghs__«jwt»
+case:     a stateless installation token with no app id
+in:       ghs__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghs__«jwt»
 
-case: a stateless installation token whose app id is separated by two underscores
-in:   ghs_123456__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghs_123456__«jwt»
+case:     a stateless installation token whose app id is separated by two underscores
+in:       ghs_123456__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghs_123456__«jwt»
 
-case: a stateless installation token carrying an encrypted jwt
-in:   ghs_123456_eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.0123456789abcdef.0123456789.0123456789abcdef.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token carrying an encrypted jwt
+in:       ghs_123456_eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.0123456789abcdef.0123456789.0123456789abcdef.0123456789abcdef
+out:      «github-token»
 
 # And the shapes no pattern takes anything from. Each of the three shapes below
 # is a GitHub credential the GitHub and JWT patterns each decline for a reason
@@ -539,17 +539,17 @@ out:  «github-token»
 # authenticate a request. The case below breaks it after the dot that ends the
 # header.
 
-case: a stateless installation token cut before its signature
-in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
-out:  ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
+case:     a stateless installation token cut before its signature
+in:       ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
+out:      ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
 
-case: a stateless installation token whose header is written with a tab after the brace
-in:   ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a stateless installation token whose header is written with a tab after the brace
+in:       ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: a stateless installation token written across a line break
-in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a stateless installation token written across a line break
+in:       ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.0123456789abcdef
 
 # A SendGrid key beside the other kinds, and inside them. A key is three
 # dot-separated base64url segments, which is a JWT's shape as well, and the two
@@ -565,33 +565,33 @@ out:  ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\neyJzdWIiOiJhYmMifQ.01234
 # is what the count being a count buys: a token written straight after one keeps
 # a redaction of its own where a Stripe key's run would have reached into it.
 
-case: a sendgrid key is one value, not a key and a jwt
-in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
-out:  «sendgrid-api-key»
+case:     a sendgrid key is one value, not a key and a jwt
+in:       SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:      «sendgrid-api-key»
 
-case: a sendgrid key beside a github token and a jwt
-in:   sendgrid=SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  sendgrid=«sendgrid-api-key» github=«github-token» jwt=«jwt»
+case:     a sendgrid key beside a github token and a jwt
+in:       sendgrid=SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      sendgrid=«sendgrid-api-key» github=«github-token» jwt=«jwt»
 
-case: an access key id inside a sendgrid key identifier
-in:   SG.AKIA0123456789ABCDEF01.0123456789abcdef0123456789abcdef0123456789a
-out:  «sendgrid-api-key»
+case:     an access key id inside a sendgrid key identifier
+in:       SG.AKIA0123456789ABCDEF01.0123456789abcdef0123456789abcdef0123456789a
+out:      «sendgrid-api-key»
 
-case: a google api key inside a sendgrid key secret
-in:   SG.0123456789abcdef012345.AIza0123456789abcdef0123456789abcdef0123456
-out:  «sendgrid-api-key»
+case:     a google api key inside a sendgrid key secret
+in:       SG.0123456789abcdef012345.AIza0123456789abcdef0123456789abcdef0123456
+out:      «sendgrid-api-key»
 
-case: a github token directly after a sendgrid key
-in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789aghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «sendgrid-api-key»«github-token»
+case:     a github token directly after a sendgrid key
+in:       SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789aghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «sendgrid-api-key»«github-token»
 
-case: a jwt directly after a sendgrid key, which the dot keeps apart
-in:   SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «sendgrid-api-key».«jwt»
+case:     a jwt directly after a sendgrid key, which the dot keeps apart
+in:       SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «sendgrid-api-key».«jwt»
 
-case: a sendgrid key in an environment file beside a stripe key and an access key id
-in:   SENDGRID_API_KEY=SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a\nSTRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF
-out:  SENDGRID_API_KEY=«sendgrid-api-key»\nSTRIPE_SECRET_KEY=«stripe-secret-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
+case:     a sendgrid key in an environment file beside a stripe key and an access key id
+in:       SENDGRID_API_KEY=SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a\nSTRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF
+out:      SENDGRID_API_KEY=«sendgrid-api-key»\nSTRIPE_SECRET_KEY=«stripe-secret-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
 
 # A Sentry auth token beside the other kinds, and inside one. The token with a
 # hexadecimal body is read to an exact count, so a value written straight after
@@ -607,29 +607,29 @@ out:  SENDGRID_API_KEY=«sendgrid-api-key»\nSTRIPE_SECRET_KEY=«stripe-secret-k
 # token's span reaches into the Sentry prefix and stops at the underscore behind
 # it — the two spans overlap there and both values go.
 
-case: a sentry token beside a github token and a jwt
-in:   sentry=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  sentry=«sentry-auth-token» github=«github-token» jwt=«jwt»
+case:     a sentry token beside a github token and a jwt
+in:       sentry=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      sentry=«sentry-auth-token» github=«github-token» jwt=«jwt»
 
-case: an access key id inside an organization payload
-in:   sntrys_AKIA0123456789ABCDEF0123456789ab_0123456789abcdef0123456789abcdef0123456789a
-out:  «sentry-auth-token»
+case:     an access key id inside an organization payload
+in:       sntrys_AKIA0123456789ABCDEF0123456789ab_0123456789abcdef0123456789abcdef0123456789a
+out:      «sentry-auth-token»
 
-case: a google api key inside an organization secret
-in:   sntrys_0123456789abcdef0123456789abcdef_AIza0123456789abcdef0123456789abcdef0123456
-out:  «sentry-auth-token»
+case:     a google api key inside an organization secret
+in:       sntrys_0123456789abcdef0123456789abcdef_AIza0123456789abcdef0123456789abcdef0123456
+out:      «sentry-auth-token»
 
-case: a github token directly after a sentry token
-in:   sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «sentry-auth-token»«github-token»
+case:     a github token directly after a sentry token
+in:       sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «sentry-auth-token»«github-token»
 
-case: a sentry token written against the end of an npm access token
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyzsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «npm-access-token»
+case:     a sentry token written against the end of an npm access token
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyzsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «npm-access-token»
 
-case: a sentry token in an environment file beside a stripe key and an access key id
-in:   SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\nSTRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF
-out:  SENTRY_AUTH_TOKEN=«sentry-auth-token»\nSTRIPE_SECRET_KEY=«stripe-secret-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
+case:     a sentry token in an environment file beside a stripe key and an access key id
+in:       SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\nSTRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF
+out:      SENTRY_AUTH_TOKEN=«sentry-auth-token»\nSTRIPE_SECRET_KEY=«stripe-secret-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
 
 # A Linear API key beside the other kinds, and inside them. A body is base62
 # read to the end of its run, as an npm body is, so a value written in an
@@ -646,41 +646,41 @@ out:  SENTRY_AUTH_TOKEN=«sentry-auth-token»\nSTRIPE_SECRET_KEY=«stripe-secret
 # inside a JWT signature or a PyPI token body without ending either, and the
 # spans overlap there too.
 
-case: a linear key beside a github token and a jwt
-in:   linear=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  linear=«linear-api-key» github=«github-token» jwt=«jwt»
+case:     a linear key beside a github token and a jwt
+in:       linear=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      linear=«linear-api-key» github=«github-token» jwt=«jwt»
 
-case: an access key id inside a linear key body
-in:   lin_api_AKIA0123456789ABCDEF0123456789abcdefghij
-out:  «linear-api-key»
+case:     an access key id inside a linear key body
+in:       lin_api_AKIA0123456789ABCDEF0123456789abcdefghij
+out:      «linear-api-key»
 
-case: a google api key inside a linear key body
-in:   lin_api_AIza0123456789abcdefghijklmnopqrstuvwxy0
-out:  «linear-api-key»
+case:     a google api key inside a linear key body
+in:       lin_api_AIza0123456789abcdefghijklmnopqrstuvwxy0
+out:      «linear-api-key»
 
-case: a linear key inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  «jwt»
+case:     a linear key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      «jwt»
 
-case: a linear key inside a pypi api token body
-in:   pypi-AgEIcHlwaS5vcmclin_api_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdef
-out:  «pypi-api-token»
+case:     a linear key inside a pypi api token body
+in:       pypi-AgEIcHlwaS5vcmclin_api_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdef
+out:      «pypi-api-token»
 
-case: a classic github token written straight after a linear key
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «linear-api-key»
+case:     a classic github token written straight after a linear key
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «linear-api-key»
 
-case: a linear key written straight after a classic github token
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  «github-token»
+case:     a linear key written straight after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      «github-token»
 
-case: a jwt directly after a linear key, which the dot keeps apart
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «linear-api-key».«jwt»
+case:     a jwt directly after a linear key, which the dot keeps apart
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «linear-api-key».«jwt»
 
-case: an environment file holding a linear key among the others
-in:   LINEAR_API_KEY=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  LINEAR_API_KEY=«linear-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding a linear key among the others
+in:       LINEAR_API_KEY=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      LINEAR_API_KEY=«linear-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A Stripe key written against the end of a Linear key, which is the shape the
 # block closing this file states of an npm access token and ends the same way. A
@@ -692,13 +692,13 @@ out:  LINEAR_API_KEY=«linear-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
 # into the Linear prefix and stops at its underscore, so the two spans overlap
 # and both values go.
 
-case: a stripe key written against the end of a linear key
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123sk_live_0123456789abcdef01234567
-out:  «linear-api-key»_live_0123456789abcdef01234567
+case:     a stripe key written against the end of a linear key
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123sk_live_0123456789abcdef01234567
+out:      «linear-api-key»_live_0123456789abcdef01234567
 
-case: a linear key written against the end of a stripe key
-in:   sk_live_0123456789abcdef01234567lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  «stripe-secret-key»
+case:     a linear key written against the end of a stripe key
+in:       sk_live_0123456789abcdef01234567lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      «stripe-secret-key»
 
 # A Stripe key beside the other kinds, and inside them. Both halves of the
 # format are here — the case named "a google api key inside a stripe key body"
@@ -715,29 +715,29 @@ out:  «stripe-secret-key»
 # The block closing this file is the other direction, and is where a value
 # beside a Stripe key costs one of them.
 
-case: a stripe key beside a github token and a jwt
-in:   stripe=sk_live_0123456789abcdef01234567 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  stripe=«stripe-secret-key» github=«github-token» jwt=«jwt»
+case:     a stripe key beside a github token and a jwt
+in:       stripe=sk_live_0123456789abcdef01234567 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      stripe=«stripe-secret-key» github=«github-token» jwt=«jwt»
 
-case: an access key id inside a stripe key body
-in:   sk_live_AKIA0123456789ABCDEF0123
-out:  «stripe-secret-key»
+case:     an access key id inside a stripe key body
+in:       sk_live_AKIA0123456789ABCDEF0123
+out:      «stripe-secret-key»
 
-case: a google api key inside a stripe key body
-in:   pk_live_AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  «stripe-publishable-key»
+case:     a google api key inside a stripe key body
+in:       pk_live_AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      «stripe-publishable-key»
 
-case: a github token directly after a stripe key
-in:   sk_live_0123456789abcdef01234567ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «stripe-secret-key»
+case:     a github token directly after a stripe key
+in:       sk_live_0123456789abcdef01234567ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «stripe-secret-key»
 
-case: a jwt directly after a stripe key, which the dot keeps apart
-in:   sk_live_0123456789abcdef01234567.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «stripe-secret-key».«jwt»
+case:     a jwt directly after a stripe key, which the dot keeps apart
+in:       sk_live_0123456789abcdef01234567.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «stripe-secret-key».«jwt»
 
-case: a stripe key in an environment file beside a github token and an access key id
-in:   STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  STRIPE_SECRET_KEY=«stripe-secret-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     a stripe key in an environment file beside a github token and an access key id
+in:       STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      STRIPE_SECRET_KEY=«stripe-secret-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # The other direction: a Stripe prefix written against the end of a value of
 # another kind rather than a value written into a Stripe body. A prefix standing
@@ -753,9 +753,9 @@ out:  STRIPE_SECRET_KEY=«stripe-secret-key»\nAWS_ACCESS_KEY_ID=«aws-access-ke
 # letter had closed is open to a second pass and the key is redacted then.
 # Masking is not idempotent, and the doc comment on Mask says so.
 
-case: a stripe prefix written against the end of an access key id
-in:   AKIA0123456789ABCDEFsk_live_0123456789abcdef01234567
-out:  «aws-access-key-id»sk_live_0123456789abcdef01234567
+case:     a stripe prefix written against the end of an access key id
+in:       AKIA0123456789ABCDEFsk_live_0123456789abcdef01234567
+out:      «aws-access-key-id»sk_live_0123456789abcdef01234567
 
 # The same shape with an npm access token in front of the Stripe key, which ends
 # differently and worse. An npm body is read to the end of its run and the sk
@@ -788,17 +788,17 @@ out:  «aws-access-key-id»sk_live_0123456789abcdef01234567
 # through as the false positive it is rather than written around, because what
 # the corpus states is not the secret scanner's to narrow.
 
-case: a stripe key written against the end of an npm access token
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyzsk_live_0123456789abcdef01234567
-out:  «npm-access-token»_live_0123456789abcdef01234567
+case:     a stripe key written against the end of an npm access token
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyzsk_live_0123456789abcdef01234567
+out:      «npm-access-token»_live_0123456789abcdef01234567
 
-case: an npm access token written against the end of a stripe key
-in:   sk_live_0123456789abcdef01234567npm_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «stripe-secret-key»
+case:     an npm access token written against the end of a stripe key
+in:       sk_live_0123456789abcdef01234567npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «stripe-secret-key»
 
-case: an npm access token and a stripe key with a space between them
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyz sk_live_0123456789abcdef01234567
-out:  «npm-access-token» «stripe-secret-key»
+case:     an npm access token and a stripe key with a space between them
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyz sk_live_0123456789abcdef01234567
+out:      «npm-access-token» «stripe-secret-key»
 
 # A Notion token beside the others, and inside them. A body is base62 read to a
 # fixed count: the letters of both cases and the digits, which is the alphabet a
@@ -813,37 +813,37 @@ out:  «npm-access-token» «stripe-secret-key»
 # reaches three characters into a Notion prefix and stops at the underscore
 # behind them, so the two overlap there and both go.
 
-case: a notion token beside a github token and a jwt
-in:   notion=ntn_0123456789abcdef0123456789abcdef0123456789abcd github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  notion=«notion-api-token» github=«github-token» jwt=«jwt»
+case:     a notion token beside a github token and a jwt
+in:       notion=ntn_0123456789abcdef0123456789abcdef0123456789abcd github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      notion=«notion-api-token» github=«github-token» jwt=«jwt»
 
-case: an access key id inside a notion token body
-in:   ntn_AKIA0123456789ABCDEF0123456789abcdef0123456789
-out:  «notion-api-token»
+case:     an access key id inside a notion token body
+in:       ntn_AKIA0123456789ABCDEF0123456789abcdef0123456789
+out:      «notion-api-token»
 
-case: a google api key inside a notion token body
-in:   ntn_AIza0123456789abcdefghijklmnopqrstuvwxy0123456
-out:  «notion-api-token»
+case:     a google api key inside a notion token body
+in:       ntn_AIza0123456789abcdefghijklmnopqrstuvwxy0123456
+out:      «notion-api-token»
 
-case: a notion token inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.ntn_0123456789abcdef0123456789abcdef0123456789abcd
-out:  «jwt»
+case:     a notion token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:      «jwt»
 
-case: a notion token written straight after a classic github token
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzntn_0123456789abcdef0123456789abcdef0123456789abcd
-out:  «github-token»
+case:     a notion token written straight after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:      «github-token»
 
-case: a classic github token written straight after a notion token
-in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «notion-api-token»«github-token»
+case:     a classic github token written straight after a notion token
+in:       ntn_0123456789abcdef0123456789abcdef0123456789abcdghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «notion-api-token»«github-token»
 
-case: a jwt directly after a notion token, which the dot keeps apart
-in:   ntn_0123456789abcdef0123456789abcdef0123456789abcd.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «notion-api-token».«jwt»
+case:     a jwt directly after a notion token, which the dot keeps apart
+in:       ntn_0123456789abcdef0123456789abcdef0123456789abcd.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «notion-api-token».«jwt»
 
-case: an environment file holding a notion token among the others
-in:   NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abcd\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  NOTION_TOKEN=«notion-api-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding a notion token among the others
+in:       NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abcd\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      NOTION_TOKEN=«notion-api-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A Stripe prefix written against the end of a Notion token, which is the
 # shape the case named "a stripe prefix written against the end of an access
@@ -861,9 +861,9 @@ out:  NOTION_TOKEN=«notion-api-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»
 # the key is redacted then. Masking is not idempotent, and the doc comment on
 # Mask says so.
 
-case: a stripe prefix written against the end of a notion token
-in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdsk_live_0123456789abcdef01234567
-out:  «notion-api-token»sk_live_0123456789abcdef01234567
+case:     a stripe prefix written against the end of a notion token
+in:       ntn_0123456789abcdef0123456789abcdef0123456789abcdsk_live_0123456789abcdef01234567
+out:      «notion-api-token»sk_live_0123456789abcdef01234567
 
 # A Vault token beside the values it can be written inside of, and inside. The
 # two cases the Vault file states as its own over-matching open the block: the
@@ -874,37 +874,37 @@ out:  «notion-api-token»sk_live_0123456789abcdef01234567
 # of its run reaches into what follows and a base62 body reaches into a Vault
 # prefix. Every one of them comes out as a single redaction.
 
-case: a jwt whose payload closes on a vault prefix
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQhvs.0123456789abcdef01234567
-out:  «jwt»
+case:     a jwt whose payload closes on a vault prefix
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQhvs.0123456789abcdef01234567
+out:      «jwt»
 
-case: a sendgrid key whose first segment closes on a vault prefix
-in:   SG.0123456789abcdef012hvb.0123456789abcdef0123456789abcdef0123456789a
-out:  «sendgrid-api-key»
+case:     a sendgrid key whose first segment closes on a vault prefix
+in:       SG.0123456789abcdef012hvb.0123456789abcdef0123456789abcdef0123456789a
+out:      «sendgrid-api-key»
 
-case: an access key id inside a vault token body
-in:   hvs.AKIA0123456789ABCDEF0123456
-out:  «hashicorp-vault-token»
+case:     an access key id inside a vault token body
+in:       hvs.AKIA0123456789ABCDEF0123456
+out:      «hashicorp-vault-token»
 
-case: a google api key inside a vault token body
-in:   hvs.AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  «hashicorp-vault-token»
+case:     a google api key inside a vault token body
+in:       hvs.AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      «hashicorp-vault-token»
 
-case: a vault token written straight after a classic github token
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzhvs.0123456789abcdef01234567
-out:  «github-token»
+case:     a vault token written straight after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzhvs.0123456789abcdef01234567
+out:      «github-token»
 
-case: a classic github token written straight after a vault token
-in:   hvs.0123456789abcdef01234567ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «hashicorp-vault-token»
+case:     a classic github token written straight after a vault token
+in:       hvs.0123456789abcdef01234567ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «hashicorp-vault-token»
 
-case: a vault token and a jwt on one line
-in:   VAULT_TOKEN=hvs.0123456789abcdef01234567 jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  VAULT_TOKEN=«hashicorp-vault-token» jwt=«jwt»
+case:     a vault token and a jwt on one line
+in:       VAULT_TOKEN=hvs.0123456789abcdef01234567 jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      VAULT_TOKEN=«hashicorp-vault-token» jwt=«jwt»
 
-case: an environment file holding a vault token among the others
-in:   VAULT_TOKEN=hvs.0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  VAULT_TOKEN=«hashicorp-vault-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding a vault token among the others
+in:       VAULT_TOKEN=hvs.0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      VAULT_TOKEN=«hashicorp-vault-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A Grafana service account token beside the others, and the credentials that
 # can be written inside one. A secret is thirty-two base62 characters, which is
@@ -918,37 +918,37 @@ out:  VAULT_TOKEN=«hashicorp-vault-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-
 # what is written after the forty-sixth character keeps a redaction of its own
 # or none.
 
-case: a grafana token beside a github token and a jwt
-in:   grafana=glsa_0123456789abcdef0123456789abcdef_01234567 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  grafana=«grafana-service-account-token» github=«github-token» jwt=«jwt»
+case:     a grafana token beside a github token and a jwt
+in:       grafana=glsa_0123456789abcdef0123456789abcdef_01234567 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      grafana=«grafana-service-account-token» github=«github-token» jwt=«jwt»
 
-case: an access key id inside a grafana secret
-in:   glsa_AKIA0123456789ABCDEF0123456789ab_01234567
-out:  «grafana-service-account-token»
+case:     an access key id inside a grafana secret
+in:       glsa_AKIA0123456789ABCDEF0123456789ab_01234567
+out:      «grafana-service-account-token»
 
-case: a google api key inside a grafana secret
-in:   glsa_AIza0123456789abcdef0123456789ab_01234567
-out:  «grafana-service-account-token»
+case:     a google api key inside a grafana secret
+in:       glsa_AIza0123456789abcdef0123456789ab_01234567
+out:      «grafana-service-account-token»
 
-case: a grafana token inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.glsa_0123456789abcdef0123456789abcdef_01234567
-out:  «jwt»
+case:     a grafana token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.glsa_0123456789abcdef0123456789abcdef_01234567
+out:      «jwt»
 
-case: a grafana token written straight after a classic github token
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzglsa_0123456789abcdef0123456789abcdef_01234567
-out:  «github-token»
+case:     a grafana token written straight after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzglsa_0123456789abcdef0123456789abcdef_01234567
+out:      «github-token»
 
-case: a classic github token written straight after a grafana token
-in:   glsa_0123456789abcdef0123456789abcdef_01234567ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «grafana-service-account-token»«github-token»
+case:     a classic github token written straight after a grafana token
+in:       glsa_0123456789abcdef0123456789abcdef_01234567ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «grafana-service-account-token»«github-token»
 
-case: a notion token written straight after a grafana token
-in:   glsa_0123456789abcdef0123456789abcdef_01234567ntn_0123456789abcdef0123456789abcdef0123456789abcd
-out:  «grafana-service-account-token»«notion-api-token»
+case:     a notion token written straight after a grafana token
+in:       glsa_0123456789abcdef0123456789abcdef_01234567ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:      «grafana-service-account-token»«notion-api-token»
 
-case: an environment file holding a grafana token among the others
-in:   GRAFANA_TOKEN=glsa_0123456789abcdef0123456789abcdef_01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  GRAFANA_TOKEN=«grafana-service-account-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding a grafana token among the others
+in:       GRAFANA_TOKEN=glsa_0123456789abcdef0123456789abcdef_01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      GRAFANA_TOKEN=«grafana-service-account-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A Stripe prefix written against the end of a Grafana token, which is the shape
 # the two cases named "a stripe prefix written against the end of an access key
@@ -966,13 +966,13 @@ out:  GRAFANA_TOKEN=«grafana-service-account-token»\nAWS_ACCESS_KEY_ID=«aws-a
 # is redacted then. Masking is not idempotent, and the doc comment on Mask says
 # so.
 
-case: a stripe prefix written against the end of a grafana token
-in:   glsa_0123456789abcdef0123456789abcdef_01234567sk_live_0123456789abcdef01234567
-out:  «grafana-service-account-token»sk_live_0123456789abcdef01234567
+case:     a stripe prefix written against the end of a grafana token
+in:       glsa_0123456789abcdef0123456789abcdef_01234567sk_live_0123456789abcdef01234567
+out:      «grafana-service-account-token»sk_live_0123456789abcdef01234567
 
-case: a stripe key a space away from a grafana token
-in:   glsa_0123456789abcdef0123456789abcdef_01234567 sk_live_0123456789abcdef01234567
-out:  «grafana-service-account-token» «stripe-secret-key»
+case:     a stripe key a space away from a grafana token
+in:       glsa_0123456789abcdef0123456789abcdef_01234567 sk_live_0123456789abcdef01234567
+out:      «grafana-service-account-token» «stripe-secret-key»
 
 # The Supabase access token beside the others, in both the forms it is issued
 # in. A body is written in lowercase hexadecimal digits and nothing else, and
@@ -986,37 +986,37 @@ out:  «grafana-service-account-token» «stripe-secret-key»
 # a Grafana token: what is written after the forty-fourth character keeps a
 # redaction of its own or none.
 
-case: a supabase token beside a github token and a jwt
-in:   supabase=sbp_0123456789abcdef0123456789abcdef01234567 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  supabase=«supabase-access-token» github=«github-token» jwt=«jwt»
+case:     a supabase token beside a github token and a jwt
+in:       supabase=sbp_0123456789abcdef0123456789abcdef01234567 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      supabase=«supabase-access-token» github=«github-token» jwt=«jwt»
 
-case: an access key id written into a supabase body
-in:   sbp_AKIA0123456789ABCDEF0123456789abcdef0123
-out:  sbp_«aws-access-key-id»0123456789abcdef0123
+case:     an access key id written into a supabase body
+in:       sbp_AKIA0123456789ABCDEF0123456789abcdef0123
+out:      sbp_«aws-access-key-id»0123456789abcdef0123
 
-case: a google api key written into a supabase body
-in:   sbp_AIza0123456789abcdef0123456789abcdef0123
-out:  sbp_«google-api-key»3
+case:     a google api key written into a supabase body
+in:       sbp_AIza0123456789abcdef0123456789abcdef0123
+out:      sbp_«google-api-key»3
 
-case: a supabase token inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sbp_0123456789abcdef0123456789abcdef01234567
-out:  «jwt»
+case:     a supabase token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sbp_0123456789abcdef0123456789abcdef01234567
+out:      «jwt»
 
-case: a supabase token written straight after a classic github token
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzsbp_0123456789abcdef0123456789abcdef01234567
-out:  «github-token»
+case:     a supabase token written straight after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzsbp_0123456789abcdef0123456789abcdef01234567
+out:      «github-token»
 
-case: a classic github token written straight after a supabase token
-in:   sbp_0123456789abcdef0123456789abcdef01234567ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «supabase-access-token»«github-token»
+case:     a classic github token written straight after a supabase token
+in:       sbp_0123456789abcdef0123456789abcdef01234567ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «supabase-access-token»«github-token»
 
-case: an oauth token written straight after a notion token
-in:   ntn_0123456789abcdef0123456789abcdef0123456789abcdsbp_oauth_0123456789abcdef0123456789abcdef01234567
-out:  «notion-api-token»«supabase-access-token»
+case:     an oauth token written straight after a notion token
+in:       ntn_0123456789abcdef0123456789abcdef0123456789abcdsbp_oauth_0123456789abcdef0123456789abcdef01234567
+out:      «notion-api-token»«supabase-access-token»
 
-case: an environment file holding a supabase token among the others
-in:   SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  SUPABASE_ACCESS_TOKEN=«supabase-access-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding a supabase token among the others
+in:       SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      SUPABASE_ACCESS_TOKEN=«supabase-access-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # The two Supabase project keys beside the token, which is where the pattern's
 # own file says one of them lands. The anon key those replaced is a JWT signed
@@ -1025,9 +1025,9 @@ out:  SUPABASE_ACCESS_TOKEN=«supabase-access-token»\nAWS_ACCESS_KEY_ID=«aws-a
 # because nothing published states what stands behind sb_secret_. The line below
 # is what a project's environment file looks like with all three in it.
 
-case: a personal access token, an anon key and a project secret key on one line
-in:   SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567\nSUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.0123456789abcdef\nSUPABASE_SECRET_KEY=sb_secret_0123456789abcdef0123456789abcdef012
-out:  SUPABASE_ACCESS_TOKEN=«supabase-access-token»\nSUPABASE_ANON_KEY=«jwt»\nSUPABASE_SECRET_KEY=sb_secret_0123456789abcdef0123456789abcdef012
+case:     a personal access token, an anon key and a project secret key on one line
+in:       SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567\nSUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.0123456789abcdef\nSUPABASE_SECRET_KEY=sb_secret_0123456789abcdef0123456789abcdef012
+out:      SUPABASE_ACCESS_TOKEN=«supabase-access-token»\nSUPABASE_ANON_KEY=«jwt»\nSUPABASE_SECRET_KEY=sb_secret_0123456789abcdef0123456789abcdef012
 
 # A Stripe prefix written against the end of a Supabase token, which is the shape
 # the cases named "a stripe prefix written against the end of an access key id",
@@ -1044,13 +1044,13 @@ out:  SUPABASE_ACCESS_TOKEN=«supabase-access-token»\nSUPABASE_ANON_KEY=«jwt»
 # its last one stood, so the prefix is open to a second pass and the key is
 # redacted then. Masking is not idempotent, and the doc comment on Mask says so.
 
-case: a stripe prefix written against the end of a supabase token
-in:   sbp_0123456789abcdef0123456789abcdef01234567sk_live_0123456789abcdef01234567
-out:  «supabase-access-token»sk_live_0123456789abcdef01234567
+case:     a stripe prefix written against the end of a supabase token
+in:       sbp_0123456789abcdef0123456789abcdef01234567sk_live_0123456789abcdef01234567
+out:      «supabase-access-token»sk_live_0123456789abcdef01234567
 
-case: a stripe key a space away from a supabase token
-in:   sbp_0123456789abcdef0123456789abcdef01234567 sk_live_0123456789abcdef01234567
-out:  «supabase-access-token» «stripe-secret-key»
+case:     a stripe key a space away from a supabase token
+in:       sbp_0123456789abcdef0123456789abcdef01234567 sk_live_0123456789abcdef01234567
+out:      «supabase-access-token» «stripe-secret-key»
 
 # A RubyGems API key beside the others, and the credentials written where a
 # body would stand. This is where the block for every other pattern shows a
@@ -1070,45 +1070,45 @@ out:  «supabase-access-token» «stripe-secret-key»
 # is written after the fifty-seventh character keeps a redaction of its own or
 # none.
 
-case: an access key id where a body would begin
-in:   rubygems_AKIA0123456789ABCDEF0123456789abcdef0123456789ab
-out:  rubygems_«aws-access-key-id»0123456789abcdef0123456789ab
+case:     an access key id where a body would begin
+in:       rubygems_AKIA0123456789ABCDEF0123456789abcdef0123456789ab
+out:      rubygems_«aws-access-key-id»0123456789abcdef0123456789ab
 
-case: a google api key where a body would begin
-in:   rubygems_AIza0123456789abcdefghijklmnopqrstuvwxy012345678
-out:  rubygems_«google-api-key»012345678
+case:     a google api key where a body would begin
+in:       rubygems_AIza0123456789abcdefghijklmnopqrstuvwxy012345678
+out:      rubygems_«google-api-key»012345678
 
-case: a rubygems key beside a github token and a jwt
-in:   rubygems=rubygems_0123456789abcdef0123456789abcdef0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  rubygems=«rubygems-api-key» github=«github-token» jwt=«jwt»
+case:     a rubygems key beside a github token and a jwt
+in:       rubygems=rubygems_0123456789abcdef0123456789abcdef0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      rubygems=«rubygems-api-key» github=«github-token» jwt=«jwt»
 
-case: a rubygems key written straight after a classic github token
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzrubygems_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «github-token»
+case:     a rubygems key written straight after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzrubygems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «github-token»
 
-case: a classic github token written straight after a rubygems key
-in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdefghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «rubygems-api-key»«github-token»
+case:     a classic github token written straight after a rubygems key
+in:       rubygems_0123456789abcdef0123456789abcdef0123456789abcdefghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «rubygems-api-key»«github-token»
 
-case: a rubygems key written straight after an npm access token
-in:   npm_0123456789abcdefghijklmnopqrstuvwxyzrubygems_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «npm-access-token»
+case:     a rubygems key written straight after an npm access token
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyzrubygems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «npm-access-token»
 
-case: a notion token written straight after a rubygems key
-in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdefntn_0123456789abcdef0123456789abcdef0123456789abcd
-out:  «rubygems-api-key»«notion-api-token»
+case:     a notion token written straight after a rubygems key
+in:       rubygems_0123456789abcdef0123456789abcdef0123456789abcdefntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:      «rubygems-api-key»«notion-api-token»
 
-case: a rubygems key inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.rubygems_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «jwt»
+case:     a rubygems key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.rubygems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «jwt»
 
-case: a rubygems key behind a vault prefix
-in:   hvs.rubygems_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «hashicorp-vault-token»
+case:     a rubygems key behind a vault prefix
+in:       hvs.rubygems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «hashicorp-vault-token»
 
-case: an environment file holding a rubygems key among the others
-in:   RUBYGEMS_API_rubygems_0123456789abcdef0123456789abcdef0123456789abcdef=rubygems_0123456789abcdef0123456789abcdef0123456789abcdef\nAWS_ACCESS_rubygems_0123456789abcdef0123456789abcdef0123456789abcdef_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  RUBYGEMS_API_«rubygems-api-key»=«rubygems-api-key»\nAWS_ACCESS_«rubygems-api-key»_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding a rubygems key among the others
+in:       RUBYGEMS_API_rubygems_0123456789abcdef0123456789abcdef0123456789abcdef=rubygems_0123456789abcdef0123456789abcdef0123456789abcdef\nAWS_ACCESS_rubygems_0123456789abcdef0123456789abcdef0123456789abcdef_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      RUBYGEMS_API_«rubygems-api-key»=«rubygems-api-key»\nAWS_ACCESS_«rubygems-api-key»_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A Stripe prefix written against the end of a RubyGems key, which is the shape
 # the cases named "a stripe prefix written against the end of an access key id",
@@ -1125,13 +1125,13 @@ out:  RUBYGEMS_API_«rubygems-api-key»=«rubygems-api-key»\nAWS_ACCESS_«rubyg
 # its last one stood, so the prefix is open to a second pass and the key is
 # redacted then. Masking is not idempotent, and the doc comment on Mask says so.
 
-case: a stripe prefix written against the end of a rubygems key
-in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdefsk_live_0123456789abcdef01234567
-out:  «rubygems-api-key»sk_live_0123456789abcdef01234567
+case:     a stripe prefix written against the end of a rubygems key
+in:       rubygems_0123456789abcdef0123456789abcdef0123456789abcdefsk_live_0123456789abcdef01234567
+out:      «rubygems-api-key»sk_live_0123456789abcdef01234567
 
-case: a stripe key a space away from a rubygems key
-in:   rubygems_0123456789abcdef0123456789abcdef0123456789abcdef sk_live_0123456789abcdef01234567
-out:  «rubygems-api-key» «stripe-secret-key»
+case:     a stripe key a space away from a rubygems key
+in:       rubygems_0123456789abcdef0123456789abcdef0123456789abcdef sk_live_0123456789abcdef01234567
+out:      «rubygems-api-key» «stripe-secret-key»
 
 # An OpenRouter API key beside the others, and inside them. A key opens sk-, as
 # an OpenAI key and an Anthropic key do, and what tells the three apart is what
@@ -1155,45 +1155,45 @@ out:  «rubygems-api-key» «stripe-secret-key»
 # written in that run's own alphabet, so the two spans overlap and the line
 # comes out as one redaction rather than two.
 
-case: an openrouter key beside a github token and a jwt
-in:   openrouter=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  openrouter=«openrouter-api-key» github=«github-token» jwt=«jwt»
+case:     an openrouter key beside a github token and a jwt
+in:       openrouter=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      openrouter=«openrouter-api-key» github=«github-token» jwt=«jwt»
 
-case: an openrouter key and an openai api key on one line
-in:   OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
-out:  OPENROUTER_API_KEY=«openrouter-api-key» OPENAI_API_KEY=«openai-api-key»
+case:     an openrouter key and an openai api key on one line
+in:       OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:      OPENROUTER_API_KEY=«openrouter-api-key» OPENAI_API_KEY=«openai-api-key»
 
-case: an openrouter key and an anthropic api key on one line
-in:   OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
-out:  OPENROUTER_API_KEY=«openrouter-api-key» ANTHROPIC_API_KEY=«anthropic-api-key»
+case:     an openrouter key and an anthropic api key on one line
+in:       OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      OPENROUTER_API_KEY=«openrouter-api-key» ANTHROPIC_API_KEY=«anthropic-api-key»
 
-case: an openrouter key in front of the marker an openai key is read by
-in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefT3BlbkFJ0123456789abcdef
-out:  «openai-api-key»
+case:     an openrouter key in front of the marker an openai key is read by
+in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefT3BlbkFJ0123456789abcdef
+out:      «openai-api-key»
 
-case: an openrouter key inside the signature of a jwt
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «jwt»
+case:     an openrouter key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «jwt»
 
-case: a jwt directly after an openrouter key, which the dot keeps apart
-in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «openrouter-api-key».«jwt»
+case:     a jwt directly after an openrouter key, which the dot keeps apart
+in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «openrouter-api-key».«jwt»
 
-case: an access key id written straight after an openrouter key
-in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefAKIA0123456789ABCDEF
-out:  «openrouter-api-key»«aws-access-key-id»
+case:     an access key id written straight after an openrouter key
+in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefAKIA0123456789ABCDEF
+out:      «openrouter-api-key»«aws-access-key-id»
 
-case: a classic github token written straight after an openrouter key
-in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «openrouter-api-key»«github-token»
+case:     a classic github token written straight after an openrouter key
+in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «openrouter-api-key»«github-token»
 
-case: an openrouter key written straight after a classic github token
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzsk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «github-token»
+case:     an openrouter key written straight after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzsk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «github-token»
 
-case: an environment file holding an openrouter key among the others
-in:   OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  OPENROUTER_API_KEY=«openrouter-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+case:     an environment file holding an openrouter key among the others
+in:       OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      OPENROUTER_API_KEY=«openrouter-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A Stripe prefix written against the end of an OpenRouter key, which is the
 # shape the cases named "a stripe prefix written against the end of an access
@@ -1210,13 +1210,13 @@ out:  OPENROUTER_API_KEY=«openrouter-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-
 # its last one stood, so the prefix is open to a second pass and the key is
 # redacted then. Masking is not idempotent, and the doc comment on Mask says so.
 
-case: a stripe prefix written against the end of an openrouter key
-in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsk_live_0123456789abcdef01234567
-out:  «openrouter-api-key»sk_live_0123456789abcdef01234567
+case:     a stripe prefix written against the end of an openrouter key
+in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsk_live_0123456789abcdef01234567
+out:      «openrouter-api-key»sk_live_0123456789abcdef01234567
 
-case: a stripe key a space away from an openrouter key
-in:   sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk_live_0123456789abcdef01234567
-out:  «openrouter-api-key» «stripe-secret-key»
+case:     a stripe key a space away from an openrouter key
+in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk_live_0123456789abcdef01234567
+out:      «openrouter-api-key» «stripe-secret-key»
 
 # The Stripe patterns together. An API key and a webhook signing secret are
 # written into the same environment file and are read by patterns with different
@@ -1239,17 +1239,17 @@ out:  «openrouter-api-key» «stripe-secret-key»
 # reached over the key type, so there is no prefix left for a second pass to
 # open and the body stays in the clear for good.
 
-case: a stripe environment file holding one of each
-in:   STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nSTRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef01234567\nSTRIPE_WEBHOOK_SECRET=whsec_0123456789abcdef0123456789abcdef
-out:  STRIPE_SECRET_KEY=«stripe-secret-key»\nSTRIPE_PUBLISHABLE_KEY=«stripe-publishable-key»\nSTRIPE_WEBHOOK_SECRET=«stripe-webhook-signing-secret»
+case:     a stripe environment file holding one of each
+in:       STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nSTRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef01234567\nSTRIPE_WEBHOOK_SECRET=whsec_0123456789abcdef0123456789abcdef
+out:      STRIPE_SECRET_KEY=«stripe-secret-key»\nSTRIPE_PUBLISHABLE_KEY=«stripe-publishable-key»\nSTRIPE_WEBHOOK_SECRET=«stripe-webhook-signing-secret»
 
-case: a signing secret written straight onto the end of a secret key
-in:   sk_live_0123456789abcdef01234567whsec_0123456789abcdef0123456789abcdef
-out:  «stripe-secret-key»
+case:     a signing secret written straight onto the end of a secret key
+in:       sk_live_0123456789abcdef01234567whsec_0123456789abcdef0123456789abcdef
+out:      «stripe-secret-key»
 
-case: a secret key written straight onto the end of a signing secret
-in:   whsec_0123456789abcdef0123456789abcdefsk_live_0123456789abcdef01234567
-out:  «stripe-webhook-signing-secret»_live_0123456789abcdef01234567
+case:     a secret key written straight onto the end of a signing secret
+in:       whsec_0123456789abcdef0123456789abcdefsk_live_0123456789abcdef01234567
+out:      «stripe-webhook-signing-secret»_live_0123456789abcdef01234567
 
 # The two Cloudflare patterns, which read the two halves of one format: the same
 # forty characters of secret and eight of checksum behind a prefix that says
@@ -1260,13 +1260,13 @@ out:  «stripe-webhook-signing-secret»_live_0123456789abcdef01234567
 # Written side by side, each keeps its own name and its own span, whether or not
 # anything stands between them.
 
-case: a cloudflare key and a cloudflare token on one line
-in:   CLOUDFLARE_API_KEY=cfk_0123456789abcdef0123456789abcdef0123456789abcdef CLOUDFLARE_API_TOKEN=cfut_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
-out:  CLOUDFLARE_API_KEY=«cloudflare-api-key» CLOUDFLARE_API_TOKEN=«cloudflare-api-token»
+case:     a cloudflare key and a cloudflare token on one line
+in:       CLOUDFLARE_API_KEY=cfk_0123456789abcdef0123456789abcdef0123456789abcdef CLOUDFLARE_API_TOKEN=cfut_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      CLOUDFLARE_API_KEY=«cloudflare-api-key» CLOUDFLARE_API_TOKEN=«cloudflare-api-token»
 
-case: a cloudflare key and a cloudflare token with nothing between them
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdefcfut_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
-out:  «cloudflare-api-key»«cloudflare-api-token»
+case:     a cloudflare key and a cloudflare token with nothing between them
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdefcfut_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «cloudflare-api-key»«cloudflare-api-token»
 
 # They also reach into each other, and how far is settled by the prefix rather
 # than chosen by either scan. Every prefix closes with an underscore that no
@@ -1280,18 +1280,18 @@ out:  «cloudflare-api-key»«cloudflare-api-token»
 # them the two spans overlap and are redacted as one, attributed to whichever
 # starts earliest, which is the outer value.
 
-case: a cloudflare key beginning two characters inside a cloudflare token
-in:   cfut_0123456789abcdef0123456789abcdef01234567012345cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-token»
+case:     a cloudflare key beginning two characters inside a cloudflare token
+in:       cfut_0123456789abcdef0123456789abcdef01234567012345cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-token»
 
-case: a cloudflare key beginning one character inside a cloudflare token
-in:   cfut_0123456789abcdef0123456789abcdef012345670123456cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-token»
+case:     a cloudflare key beginning one character inside a cloudflare token
+in:       cfut_0123456789abcdef0123456789abcdef012345670123456cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-token»
 
-case: a cloudflare token beginning two characters inside a cloudflare key
-in:   cfk_0123456789abcdef0123456789abcdef01234567012345cfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-key»
+case:     a cloudflare token beginning two characters inside a cloudflare key
+in:       cfk_0123456789abcdef0123456789abcdef01234567012345cfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-key»
 
-case: an account owned cloudflare token beginning three characters inside a cloudflare key
-in:   cfk_0123456789abcdef0123456789abcdef0123456701234cfat_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-key»
+case:     an account owned cloudflare token beginning three characters inside a cloudflare key
+in:       cfk_0123456789abcdef0123456789abcdef0123456701234cfat_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-key»

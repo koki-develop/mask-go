@@ -19,76 +19,76 @@
 
 patterns: earlier-and-later
 
-case: values that overlap are redacted as one
-in:   xxabcdefxx
-out:  xx«early»xx
+case:     values that overlap are redacted as one
+in:       xxabcdefxx
+out:      xx«early»xx
 
-case: values that do not overlap stay apart
-in:   abcdxxcdef
-out:  «early»xx«late»
+case:     values that do not overlap stay apart
+in:       abcdxxcdef
+out:      «early»xx«late»
 
-case: patterns that find nothing
-in:   nothing here at all
-out:  nothing here at all
+case:     patterns that find nothing
+in:       nothing here at all
+out:      nothing here at all
 
 patterns: earlier-and-later-reversed
 
-case: the earlier value is attributed however the patterns were ordered
-in:   xxabcdefxx
-out:  xx«early»xx
+case:     the earlier value is attributed however the patterns were ordered
+in:       xxabcdefxx
+out:      xx«early»xx
 
 patterns: same-start
 
-case: on the same start the longest value is attributed
-in:   abcdefxx
-out:  «long»efxx
+case:     on the same start the longest value is attributed
+in:       abcdefxx
+out:      «long»efxx
 
 patterns: same-start-reversed
 
-case: on the same start the longest is attributed however the patterns were ordered
-in:   abcdefxx
-out:  «long»efxx
+case:     on the same start the longest is attributed however the patterns were ordered
+in:       abcdefxx
+out:      «long»efxx
 
 patterns: same-span
 
-case: on the same span the pattern added first is attributed
-in:   abcdxx
-out:  «first»xx
+case:     on the same span the pattern added first is attributed
+in:       abcdxx
+out:      «first»xx
 
 patterns: same-span-reversed
 
-case: on the same span the order of the patterns decides, not the name
-in:   abcdxx
-out:  «second»xx
+case:     on the same span the order of the patterns decides, not the name
+in:       abcdxx
+out:      «second»xx
 
 patterns: containing
 
-case: a value inside another is redacted as part of it
-in:   abcdef
-out:  «outer»
+case:     a value inside another is redacted as part of it
+in:       abcdef
+out:      «outer»
 
 patterns: containing-reversed
 
-case: a value inside another is attributed to the containing one whatever the order
-in:   abcdef
-out:  «outer»
+case:     a value inside another is attributed to the containing one whatever the order
+in:       abcdef
+out:      «outer»
 
 patterns: chained
 
-case: a chain of overlaps merges into one value
-in:   abcdefg
-out:  «first»
+case:     a chain of overlaps merges into one value
+in:       abcdefg
+out:      «first»
 
-case: a chain that stops short leaves the rest alone
-in:   abcxxefgxx
-out:  «first»xx«third»xx
+case:     a chain that stops short leaves the rest alone
+in:       abcxxefgxx
+out:      «first»xx«third»xx
 
 patterns: adjacent
 
-case: values that touch but do not overlap stay apart
-in:   abcd
-out:  «first»«second»
+case:     values that touch but do not overlap stay apart
+in:       abcd
+out:      «first»«second»
 
-case: touching values twice over
-in:   abcdabcd
-out:  «first»«second»«first»«second»
+case:     touching values twice over
+in:       abcdabcd
+out:      «first»«second»«first»«second»

@@ -15,41 +15,41 @@ patterns: gitlab-token
 # The kinds of token GitLab gives both a prefix and a shape, each stated once
 # rather than assumed to follow from the one above it.
 
-case: a personal access token in an environment assignment
-in:   GITLAB_TOKEN=glpat-0123456789abcdefghij
-out:  GITLAB_TOKEN=«gitlab-token»
+case:     a personal access token in an environment assignment
+in:       GITLAB_TOKEN=glpat-0123456789abcdefghij
+out:      GITLAB_TOKEN=«gitlab-token»
 
-case: a deploy token
-in:   gldt-0123456789abcdefghij
-out:  «gitlab-token»
+case:     a deploy token
+in:       gldt-0123456789abcdefghij
+out:      «gitlab-token»
 
-case: a runner authentication token
-in:   glrt-0123456789abcdefghij
-out:  «gitlab-token»
+case:     a runner authentication token
+in:       glrt-0123456789abcdefghij
+out:      «gitlab-token»
 
-case: a runner authentication token created through a registration token
-in:   glrtr-0123456789abcdefghij
-out:  «gitlab-token»
+case:     a runner authentication token created through a registration token
+in:       glrtr-0123456789abcdefghij
+out:      «gitlab-token»
 
-case: a feed token
-in:   glft-0123456789abcdefghij
-out:  «gitlab-token»
+case:     a feed token
+in:       glft-0123456789abcdefghij
+out:      «gitlab-token»
 
-case: a scim oauth token
-in:   glsoat-0123456789abcdefghij
-out:  «gitlab-token»
+case:     a scim oauth token
+in:       glsoat-0123456789abcdefghij
+out:      «gitlab-token»
 
-case: a feature flags client token
-in:   glffct-0123456789abcdefghij
-out:  «gitlab-token»
+case:     a feature flags client token
+in:       glffct-0123456789abcdefghij
+out:      «gitlab-token»
 
-case: an incoming mail token
-in:   glimt-0123456789abcdefghijklmno
-out:  «gitlab-token»
+case:     an incoming mail token
+in:       glimt-0123456789abcdefghijklmno
+out:      «gitlab-token»
 
-case: a pipeline trigger token
-in:   glptt-0123456789abcdefghijklmnopqrstuvwxyzABCD
-out:  «gitlab-token»
+case:     a pipeline trigger token
+in:       glptt-0123456789abcdefghijklmnopqrstuvwxyzABCD
+out:      «gitlab-token»
 
 # The pipeline trigger token is the one kind GitLab's own ruleset writes two
 # counts for, twenty characters behind the prefix or forty, and both are read.
@@ -58,40 +58,40 @@ out:  «gitlab-token»
 # the longer, a run reaching past the longer, and a run one character short of
 # the shorter — where nothing is located at all.
 
-case: a pipeline trigger token written to the shorter of its two counts
-in:   glptt-0123456789abcdefghij
-out:  «gitlab-token»
+case:     a pipeline trigger token written to the shorter of its two counts
+in:       glptt-0123456789abcdefghij
+out:      «gitlab-token»
 
-case: a pipeline trigger token whose run falls between its two counts
-in:   glptt-0123456789abcdefghijklmnopqrst
-out:  «gitlab-token»klmnopqrst
+case:     a pipeline trigger token whose run falls between its two counts
+in:       glptt-0123456789abcdefghijklmnopqrst
+out:      «gitlab-token»klmnopqrst
 
-case: a pipeline trigger token whose run is longer than its longer count
-in:   glptt-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHI
-out:  «gitlab-token»EFGHI
+case:     a pipeline trigger token whose run is longer than its longer count
+in:       glptt-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHI
+out:      «gitlab-token»EFGHI
 
-case: a pipeline trigger token one short of its shorter count
-in:   glptt-0123456789abcdefghi
-out:  glptt-0123456789abcdefghi
+case:     a pipeline trigger token one short of its shorter count
+in:       glptt-0123456789abcdefghi
+out:      glptt-0123456789abcdefghi
 
-case: an agent token
-in:   glagent-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN
-out:  «gitlab-token»
+case:     an agent token
+in:       glagent-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN
+out:      «gitlab-token»
 
-case: an oauth application secret
-in:   gloas-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01
-out:  «gitlab-token»
+case:     an oauth application secret
+in:       gloas-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01
+out:      «gitlab-token»
 
 # A CI/CD job token is the one kind whose classic body carries anything in front
 # of it: the partition id of the job, and the underscore closing it.
 
-case: a ci job token
-in:   glcbt-0f_0123456789abcdefghij
-out:  «gitlab-token»
+case:     a ci job token
+in:       glcbt-0f_0123456789abcdefghij
+out:      «gitlab-token»
 
-case: a ci job token with the longest partition id
-in:   glcbt-0123f_0123456789abcdefghij
-out:  «gitlab-token»
+case:     a ci job token with the longest partition id
+in:       glcbt-0123f_0123456789abcdefghij
+out:      «gitlab-token»
 
 # The shape GitLab.com is moving to for Cells. The payload carries the routing
 # information and is closed by a dot, the length of the payload and a checksum —
@@ -99,83 +99,83 @@ out:  «gitlab-token»
 # length nor the checksum is read as a number, so both are written from the
 # ordered run like everything else here.
 
-case: a routable personal access token
-in:   glpat-0123456789abcdefghijklmnopq.012345678
-out:  «gitlab-token»
+case:     a routable personal access token
+in:       glpat-0123456789abcdefghijklmnopq.012345678
+out:      «gitlab-token»
 
-case: a routable personal access token carrying a version
-in:   glpat-0123456789abcdefghijklmnopq.01.012345678
-out:  «gitlab-token»
+case:     a routable personal access token carrying a version
+in:       glpat-0123456789abcdefghijklmnopq.01.012345678
+out:      «gitlab-token»
 
-case: a routable runner authentication token, whose scope stands in its payload
-in:   glrt-t1_0123456789abcdefghijklmnopq.012345678
-out:  «gitlab-token»
+case:     a routable runner authentication token, whose scope stands in its payload
+in:       glrt-t1_0123456789abcdefghijklmnopq.012345678
+out:      «gitlab-token»
 
-case: a routable ci job token, whose partition id stands in its payload
-in:   glcbt-0f_0123456789abcdefghijklmnopq.012345678
-out:  «gitlab-token»
+case:     a routable ci job token, whose partition id stands in its payload
+in:       glcbt-0f_0123456789abcdefghijklmnopq.012345678
+out:      «gitlab-token»
 
-case: a payload longer than the shortest one
-in:   glpat-0123456789abcdefghijklmnopqrstuvwxyzABCDEF.012345678
-out:  «gitlab-token»
+case:     a payload longer than the shortest one
+in:       glpat-0123456789abcdefghijklmnopqrstuvwxyzABCDEF.012345678
+out:      «gitlab-token»
 
 # A token as the text around it is ordinarily written.
 
-case: a token in a clone url
-in:   https://oauth2:glpat-0123456789abcdefghij@gitlab.com/group/project.git
-out:  https://oauth2:«gitlab-token»@gitlab.com/group/project.git
+case:     a token in a clone url
+in:       https://oauth2:glpat-0123456789abcdefghij@gitlab.com/group/project.git
+out:      https://oauth2:«gitlab-token»@gitlab.com/group/project.git
 
-case: a token in a private token header
-in:   PRIVATE-TOKEN: glpat-0123456789abcdefghij
-out:  PRIVATE-TOKEN: «gitlab-token»
+case:     a token in a private token header
+in:       PRIVATE-TOKEN: glpat-0123456789abcdefghij
+out:      PRIVATE-TOKEN: «gitlab-token»
 
-case: a token in json
-in:   {"token":"glpat-0123456789abcdefghij","scopes":["api"]}
-out:  {"token":"«gitlab-token»","scopes":["api"]}
+case:     a token in json
+in:       {"token":"glpat-0123456789abcdefghij","scopes":["api"]}
+out:      {"token":"«gitlab-token»","scopes":["api"]}
 
-case: a runner registration command
-in:   gitlab-runner register --url https://gitlab.com --token glrt-0123456789abcdefghij
-out:  gitlab-runner register --url https://gitlab.com --token «gitlab-token»
+case:     a runner registration command
+in:       gitlab-runner register --url https://gitlab.com --token glrt-0123456789abcdefghij
+out:      gitlab-runner register --url https://gitlab.com --token «gitlab-token»
 
-case: two tokens of different kinds on one line
-in:   glpat-0123456789abcdefghij gldt-0123456789abcdefghij
-out:  «gitlab-token» «gitlab-token»
+case:     two tokens of different kinds on one line
+in:       glpat-0123456789abcdefghij gldt-0123456789abcdefghij
+out:      «gitlab-token» «gitlab-token»
 
 # The count a classic body is read to is exact, so a longer run of the alphabet
 # is a token and what was written after it. The characters left behind belong to
 # no credential if the ones in front of them are a token.
 
-case: an alphabet run longer than a body is a body and what follows it
-in:   glpat-0123456789abcdefghijklmn
-out:  «gitlab-token»klmn
+case:     an alphabet run longer than a body is a body and what follows it
+in:       glpat-0123456789abcdefghijklmn
+out:      «gitlab-token»klmn
 
-case: a hyphen after a token, which is a body character and still not part of one
-in:   glpat-0123456789abcdefghij-backup
-out:  «gitlab-token»-backup
+case:     a hyphen after a token, which is a body character and still not part of one
+in:       glpat-0123456789abcdefghij-backup
+out:      «gitlab-token»-backup
 
 # There is no boundary in front of a match either, so a token written against a
 # word character is trimmed rather than dropped — and a token can begin inside
 # the one before it, which is why the scan resumes one byte along. The two
 # values overlap and are redacted as one.
 
-case: a token written against a word character
-in:   GITLAB_TOKEN_glpat-0123456789abcdefghij
-out:  GITLAB_TOKEN_«gitlab-token»
+case:     a token written against a word character
+in:       GITLAB_TOKEN_glpat-0123456789abcdefghij
+out:      GITLAB_TOKEN_«gitlab-token»
 
-case: a token beginning inside the token before it
-in:   glpat-0123456789abcdefglpat-0123456789abcdefghij
-out:  «gitlab-token»
+case:     a token beginning inside the token before it
+in:       glpat-0123456789abcdefglpat-0123456789abcdefghij
+out:      «gitlab-token»
 
 # A candidate that falls short of the routable shape is read as a classic token
 # rather than left alone, so the dot and what follows it stay in the text.
 
-case: a payload closed by too short a checksum is read as a classic token
-in:   glpat-0123456789abcdefghijklmnopq.01234567
-out:  «gitlab-token»klmnopq.01234567
+case:     a payload closed by too short a checksum is read as a classic token
+in:       glpat-0123456789abcdefghijklmnopq.01234567
+out:      «gitlab-token»klmnopq.01234567
 
-case: a classic token is shorter than a payload, so a dot behind one is text
-in:   glpat-0123456789abcdefghij.012345678
-out:  «gitlab-token».012345678
+case:     a classic token is shorter than a payload, so a dot behind one is text
+in:       glpat-0123456789abcdefghij.012345678
+out:      «gitlab-token».012345678
 
 # What the pattern redacts that GitLab did not issue. The alphabet a body is
 # read in holds the hyphen and the underscore, so a hyphenated identifier
@@ -185,64 +185,64 @@ out:  «gitlab-token».012345678
 # either from a token — and both are written here so that the day one of them
 # stops being redacted is a decision rather than a discovery.
 
-case: a hyphenated identifier of exactly the count behind a prefix
-in:   glagent-config-map-0123456789abcdef-production-tokyo-01234
-out:  «gitlab-token»
+case:     a hyphenated identifier of exactly the count behind a prefix
+in:       glagent-config-map-0123456789abcdef-production-tokyo-01234
+out:      «gitlab-token»
 
-case: a host label of nine characters read as a checksum
-in:   glagent-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN.production.example.com
-out:  «gitlab-token»n.example.com
+case:     a host label of nine characters read as a checksum
+in:       glagent-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN.production.example.com
+out:      «gitlab-token»n.example.com
 
-case: a host label of eight characters, which is one short of a checksum
-in:   glagent-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN.internal.example.com
-out:  «gitlab-token».internal.example.com
+case:     a host label of eight characters, which is one short of a checksum
+in:       glagent-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN.internal.example.com
+out:      «gitlab-token».internal.example.com
 
 # And what the pattern leaves alone.
 
-case: a body one character too short
-in:   glpat-0123456789abcdefghi
-out:  glpat-0123456789abcdefghi
+case:     a body one character too short
+in:       glpat-0123456789abcdefghi
+out:      glpat-0123456789abcdefghi
 
-case: an incoming mail token at the count of the shorter kinds
-in:   glimt-0123456789abcdefghij
-out:  glimt-0123456789abcdefghij
+case:     an incoming mail token at the count of the shorter kinds
+in:       glimt-0123456789abcdefghij
+out:      glimt-0123456789abcdefghij
 
-case: an uppercase prefix
-in:   GLPAT-0123456789abcdefghij
-out:  GLPAT-0123456789abcdefghij
+case:     an uppercase prefix
+in:       GLPAT-0123456789abcdefghij
+out:      GLPAT-0123456789abcdefghij
 
-case: a prefix with no hyphen behind it
-in:   glpat0123456789abcdefghij
-out:  glpat0123456789abcdefghij
+case:     a prefix with no hyphen behind it
+in:       glpat0123456789abcdefghij
+out:      glpat0123456789abcdefghij
 
-case: a space inside a body
-in:   glpat-0123456789abcdef ghij
-out:  glpat-0123456789abcdef ghij
+case:     a space inside a body
+in:       glpat-0123456789abcdef ghij
+out:      glpat-0123456789abcdef ghij
 
-case: a workspace token, a kind GitLab publishes no shape for
-in:   glwt-0123456789abcdefghij
-out:  glwt-0123456789abcdefghij
+case:     a workspace token, a kind GitLab publishes no shape for
+in:       glwt-0123456789abcdefghij
+out:      glwt-0123456789abcdefghij
 
-case: a runner registration token, which GitLab removed in 18.0
-in:   GR13489410123456789abcdefghij
-out:  GR13489410123456789abcdefghij
+case:     a runner registration token, which GitLab removed in 18.0
+in:       GR13489410123456789abcdefghij
+out:      GR13489410123456789abcdefghij
 
-case: a session cookie, which is named by the text in front of it
-in:   _gitlab_session=0123456789abcdef0123456789abcdef
-out:  _gitlab_session=0123456789abcdef0123456789abcdef
+case:     a session cookie, which is named by the text in front of it
+in:       _gitlab_session=0123456789abcdef0123456789abcdef
+out:      _gitlab_session=0123456789abcdef0123456789abcdef
 
-case: a ci job token with no partition id
-in:   glcbt-0123456789abcdefghij
-out:  glcbt-0123456789abcdefghij
+case:     a ci job token with no partition id
+in:       glcbt-0123456789abcdefghij
+out:      glcbt-0123456789abcdefghij
 
-case: a ci job token with a partition id too long
-in:   glcbt-01234f_0123456789abcdefghij
-out:  glcbt-01234f_0123456789abcdefghij
+case:     a ci job token with a partition id too long
+in:       glcbt-01234f_0123456789abcdefghij
+out:      glcbt-01234f_0123456789abcdefghij
 
-case: a prefix that is none of the kinds
-in:   glzzz-0123456789abcdefghij
-out:  glzzz-0123456789abcdefghij
+case:     a prefix that is none of the kinds
+in:       glzzz-0123456789abcdefghij
+out:      glzzz-0123456789abcdefghij
 
-case: prose holding the two bytes a candidate opens with
-in:   the global glossary is a glimpse of a glacier
-out:  the global glossary is a glimpse of a glacier
+case:     prose holding the two bytes a candidate opens with
+in:       the global glossary is a glimpse of a glacier
+out:      the global glossary is a glimpse of a glacier

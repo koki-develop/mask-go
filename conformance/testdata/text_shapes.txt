@@ -12,184 +12,184 @@
 
 patterns: default
 
-case: a structured log line
-in:   time=2026-08-17T00:00:00Z level=info msg="calling api" token=ghp_0123456789abcdefghijklmnopqrstuvwxyz status=200
-out:  time=2026-08-17T00:00:00Z level=info msg="calling api" token=«github-token» status=200
+case:     a structured log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" token=ghp_0123456789abcdefghijklmnopqrstuvwxyz status=200
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" token=«github-token» status=200
 
-case: a line of json
-in:   {"level":"info","token":"ghp_0123456789abcdefghijklmnopqrstuvwxyz","jwt":"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"}
-out:  {"level":"info","token":"«github-token»","jwt":"«jwt»"}
+case:     a line of json
+in:       {"level":"info","token":"ghp_0123456789abcdefghijklmnopqrstuvwxyz","jwt":"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"}
+out:      {"level":"info","token":"«github-token»","jwt":"«jwt»"}
 
-case: json with the credential nested
-in:   {"auth":{"github":{"token":"ghs_0123456789abcdefghijklmnopqrstuvwxyz"}}}
-out:  {"auth":{"github":{"token":"«github-token»"}}}
+case:     json with the credential nested
+in:       {"auth":{"github":{"token":"ghs_0123456789abcdefghijklmnopqrstuvwxyz"}}}
+out:      {"auth":{"github":{"token":"«github-token»"}}}
 
-case: a file of environment variables
-in:   HOME=/root\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz\nPATH=/usr/bin
-out:  HOME=/root\nGITHUB_TOKEN=«github-token»\nPATH=/usr/bin
+case:     a file of environment variables
+in:       HOME=/root\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz\nPATH=/usr/bin
+out:      HOME=/root\nGITHUB_TOKEN=«github-token»\nPATH=/usr/bin
 
-case: a shared credentials file
-in:   [default]\naws_access_key_id = AKIA0123456789ABCDEF\nregion = us-east-1
-out:  [default]\naws_access_key_id = «aws-access-key-id»\nregion = us-east-1
+case:     a shared credentials file
+in:       [default]\naws_access_key_id = AKIA0123456789ABCDEF\nregion = us-east-1
+out:      [default]\naws_access_key_id = «aws-access-key-id»\nregion = us-east-1
 
-case: several credentials over several lines
-in:   github: ghp_0123456789abcdefghijklmnopqrstuvwxyz\njwt: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\nnothing: here
-out:  github: «github-token»\njwt: «jwt»\nnothing: here
+case:     several credentials over several lines
+in:       github: ghp_0123456789abcdefghijklmnopqrstuvwxyz\njwt: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\nnothing: here
+out:      github: «github-token»\njwt: «jwt»\nnothing: here
 
-case: a curl command
-in:   curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef" https://api.example.com/v1/user
-out:  curl -H "Authorization: Bearer «jwt»" https://api.example.com/v1/user
+case:     a curl command
+in:       curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef" https://api.example.com/v1/user
+out:      curl -H "Authorization: Bearer «jwt»" https://api.example.com/v1/user
 
-case: a docker run command
-in:   docker run -e GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz -it ubuntu:24.04 bash
-out:  docker run -e GITHUB_TOKEN=«github-token» -it ubuntu:24.04 bash
+case:     a docker run command
+in:       docker run -e GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz -it ubuntu:24.04 bash
+out:      docker run -e GITHUB_TOKEN=«github-token» -it ubuntu:24.04 bash
 
-case: a git remote url
-in:   origin\thttps://x-access-token:ghs_0123456789abcdefghijklmnopqrstuvwxyz@github.com/koki-develop/mask-go.git (fetch)
-out:  origin\thttps://x-access-token:«github-token»@github.com/koki-develop/mask-go.git (fetch)
+case:     a git remote url
+in:       origin\thttps://x-access-token:ghs_0123456789abcdefghijklmnopqrstuvwxyz@github.com/koki-develop/mask-go.git (fetch)
+out:      origin\thttps://x-access-token:«github-token»@github.com/koki-develop/mask-go.git (fetch)
 
-case: a fragment of yaml
-in:   env:\n  - name: GITHUB_TOKEN\n    value: ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  env:\n  - name: GITHUB_TOKEN\n    value: «github-token»
+case:     a fragment of yaml
+in:       env:\n  - name: GITHUB_TOKEN\n    value: ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      env:\n  - name: GITHUB_TOKEN\n    value: «github-token»
 
-case: a fragment of toml
-in:   [auth]\ntoken = "ghp_0123456789abcdefghijklmnopqrstuvwxyz"
-out:  [auth]\ntoken = "«github-token»"
+case:     a fragment of toml
+in:       [auth]\ntoken = "ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+out:      [auth]\ntoken = "«github-token»"
 
-case: a row of csv
-in:   alice,admin,ghp_0123456789abcdefghijklmnopqrstuvwxyz,2026-08-17
-out:  alice,admin,«github-token»,2026-08-17
+case:     a row of csv
+in:       alice,admin,ghp_0123456789abcdefghijklmnopqrstuvwxyz,2026-08-17
+out:      alice,admin,«github-token»,2026-08-17
 
-case: a query string
-in:   /callback?code=abc&id_token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef&state=xyz
-out:  /callback?code=abc&id_token=«jwt»&state=xyz
+case:     a query string
+in:       /callback?code=abc&id_token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef&state=xyz
+out:      /callback?code=abc&id_token=«jwt»&state=xyz
 
-case: an http request dump
-in:   GET /user HTTP/1.1\nHost: api.github.com\nAuthorization: Bearer ghp_0123456789abcdefghijklmnopqrstuvwxyz\nAccept: application/json
-out:  GET /user HTTP/1.1\nHost: api.github.com\nAuthorization: Bearer «github-token»\nAccept: application/json
+case:     an http request dump
+in:       GET /user HTTP/1.1\nHost: api.github.com\nAuthorization: Bearer ghp_0123456789abcdefghijklmnopqrstuvwxyz\nAccept: application/json
+out:      GET /user HTTP/1.1\nHost: api.github.com\nAuthorization: Bearer «github-token»\nAccept: application/json
 
-case: a line of an error message
-in:   request failed: POST https://api.github.com/repos: 401 Unauthorized (token ghp_0123456789abcdefghijklmnopqrstuvwxyz)
-out:  request failed: POST https://api.github.com/repos: 401 Unauthorized (token «github-token»)
+case:     a line of an error message
+in:       request failed: POST https://api.github.com/repos: 401 Unauthorized (token ghp_0123456789abcdefghijklmnopqrstuvwxyz)
+out:      request failed: POST https://api.github.com/repos: 401 Unauthorized (token «github-token»)
 
-case: a credential quoted inside another quoted string
-in:   msg="failed to authenticate with \\"ghp_0123456789abcdefghijklmnopqrstuvwxyz\\""
-out:  msg="failed to authenticate with \\"«github-token»\\""
+case:     a credential quoted inside another quoted string
+in:       msg="failed to authenticate with \\"ghp_0123456789abcdefghijklmnopqrstuvwxyz\\""
+out:      msg="failed to authenticate with \\"«github-token»\\""
 
-case: text in japanese around a credential
-in:   トークンは ghp_0123456789abcdefghijklmnopqrstuvwxyz です
-out:  トークンは «github-token» です
+case:     text in japanese around a credential
+in:       トークンは ghp_0123456789abcdefghijklmnopqrstuvwxyz です
+out:      トークンは «github-token» です
 
-case: a log line with nothing to redact
-in:   time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user status=200
-out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user status=200
+case:     a log line with nothing to redact
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user status=200
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.github.com/user status=200
 
-case: a base64 blob that is not a token
-in:   data=aGVsbG8gd29ybGQgdGhpcyBpcyBub3QgYSB0b2tlbiBhdCBhbGw
-out:  data=aGVsbG8gd29ybGQgdGhpcyBpcyBub3QgYSB0b2tlbiBhdCBhbGw
+case:     a base64 blob that is not a token
+in:       data=aGVsbG8gd29ybGQgdGhpcyBpcyBub3QgYSB0b2tlbiBhdCBhbGw
+out:      data=aGVsbG8gd29ybGQgdGhpcyBpcyBub3QgYSB0b2tlbiBhdCBhbGw
 
-case: a uuid
-in:   request_id=0123456789ab-cdef-0123-4567-89abcdef0123
-out:  request_id=0123456789ab-cdef-0123-4567-89abcdef0123
+case:     a uuid
+in:       request_id=0123456789ab-cdef-0123-4567-89abcdef0123
+out:      request_id=0123456789ab-cdef-0123-4567-89abcdef0123
 
-case: a hexadecimal digest
-in:   sha256=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  sha256=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a hexadecimal digest
+in:       sha256=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      sha256=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a slack prefix whose every part is too short to be a secret
-in:   SLACK_TOKEN=xoxb-0123456789abcdef-0123456789abcdef
-out:  SLACK_TOKEN=xoxb-0123456789abcdef-0123456789abcdef
+case:     a slack prefix whose every part is too short to be a secret
+in:       SLACK_TOKEN=xoxb-0123456789abcdef-0123456789abcdef
+out:      SLACK_TOKEN=xoxb-0123456789abcdef-0123456789abcdef
 
-case: an image tag whose digest stands against a slack prefix
-in:   image: registry.example.com/xapp-8f14e45fceea167a5a36dedd4bea2543
-out:  image: registry.example.com/xapp-8f14e45fceea167a5a36dedd4bea2543
+case:     an image tag whose digest stands against a slack prefix
+in:       image: registry.example.com/xapp-8f14e45fceea167a5a36dedd4bea2543
+out:      image: registry.example.com/xapp-8f14e45fceea167a5a36dedd4bea2543
 
-case: a branch name whose digest stands against a slack prefix
-in:   branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
-out:  branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
+case:     a branch name whose digest stands against a slack prefix
+in:       branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
+out:      branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
 
-case: a password is not one of the kinds this library knows
-in:   password=hunter2
-out:  password=hunter2
+case:     a password is not one of the kinds this library knows
+in:       password=hunter2
+out:      password=hunter2
 
 # More of the shapes a credential arrives in, and more of the kinds this
 # library leaves alone.
 
-case: a github actions log line
-in:   ##[group]Run gh auth login\n  GITHUB_TOKEN: ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\n##[endgroup]
-out:  ##[group]Run gh auth login\n  GITHUB_TOKEN: «github-token»\n##[endgroup]
+case:     a github actions log line
+in:       ##[group]Run gh auth login\n  GITHUB_TOKEN: ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\n##[endgroup]
+out:      ##[group]Run gh auth login\n  GITHUB_TOKEN: «github-token»\n##[endgroup]
 
-case: a kubernetes secret manifest
-in:   apiVersion: v1\nkind: Secret\nstringData:\n  token: ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  apiVersion: v1\nkind: Secret\nstringData:\n  token: «github-token»
+case:     a kubernetes secret manifest
+in:       apiVersion: v1\nkind: Secret\nstringData:\n  token: ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      apiVersion: v1\nkind: Secret\nstringData:\n  token: «github-token»
 
-case: an nginx access log
-in:   10.0.0.1 - - [17/Aug/2026:00:00:00 +0000] "GET /v1/user HTTP/1.1" 200 42 "-" "curl/8.0" "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"
-out:  10.0.0.1 - - [17/Aug/2026:00:00:00 +0000] "GET /v1/user HTTP/1.1" 200 42 "-" "curl/8.0" "Bearer «jwt»"
+case:     an nginx access log
+in:       10.0.0.1 - - [17/Aug/2026:00:00:00 +0000] "GET /v1/user HTTP/1.1" 200 42 "-" "curl/8.0" "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"
+out:      10.0.0.1 - - [17/Aug/2026:00:00:00 +0000] "GET /v1/user HTTP/1.1" 200 42 "-" "curl/8.0" "Bearer «jwt»"
 
-case: a docker compose fragment
-in:   services:\n  app:\n    environment:\n      GITHUB_TOKEN: ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  services:\n  app:\n    environment:\n      GITHUB_TOKEN: «github-token»
+case:     a docker compose fragment
+in:       services:\n  app:\n    environment:\n      GITHUB_TOKEN: ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      services:\n  app:\n    environment:\n      GITHUB_TOKEN: «github-token»
 
-case: a line of jsonl
-in:   {"ts":"2026-08-17T00:00:00Z","msg":"authenticated","token":"github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW"}
-out:  {"ts":"2026-08-17T00:00:00Z","msg":"authenticated","token":"«github-token»"}
+case:     a line of jsonl
+in:       {"ts":"2026-08-17T00:00:00Z","msg":"authenticated","token":"github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW"}
+out:      {"ts":"2026-08-17T00:00:00Z","msg":"authenticated","token":"«github-token»"}
 
-case: an http response with a set-cookie header
-in:   HTTP/1.1 200 OK\nSet-Cookie: session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef; HttpOnly; Secure\nContent-Length: 0
-out:  HTTP/1.1 200 OK\nSet-Cookie: session=«jwt»; HttpOnly; Secure\nContent-Length: 0
+case:     an http response with a set-cookie header
+in:       HTTP/1.1 200 OK\nSet-Cookie: session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef; HttpOnly; Secure\nContent-Length: 0
+out:      HTTP/1.1 200 OK\nSet-Cookie: session=«jwt»; HttpOnly; Secure\nContent-Length: 0
 
-case: a shell heredoc
-in:   cat <<EOF > .env\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz\nEOF
-out:  cat <<EOF > .env\nGITHUB_TOKEN=«github-token»\nEOF
+case:     a shell heredoc
+in:       cat <<EOF > .env\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz\nEOF
+out:      cat <<EOF > .env\nGITHUB_TOKEN=«github-token»\nEOF
 
-case: a line of a makefile
-in:   deploy:\n\tGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz ./scripts/deploy.sh
-out:  deploy:\n\tGITHUB_TOKEN=«github-token» ./scripts/deploy.sh
+case:     a line of a makefile
+in:       deploy:\n\tGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz ./scripts/deploy.sh
+out:      deploy:\n\tGITHUB_TOKEN=«github-token» ./scripts/deploy.sh
 
-case: a syslog line
-in:   Aug 17 00:00:00 host app[1234]: authenticated with ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  Aug 17 00:00:00 host app[1234]: authenticated with «github-token»
+case:     a syslog line
+in:       Aug 17 00:00:00 host app[1234]: authenticated with ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      Aug 17 00:00:00 host app[1234]: authenticated with «github-token»
 
-case: a url encoded form body
-in:   grant_type=refresh_token&refresh_token=ghr_0123456789abcdefghijklmnopqrstuvwxyz&client_id=Iv1.0123456789abcdef
-out:  grant_type=refresh_token&refresh_token=«github-token»&client_id=Iv1.0123456789abcdef
+case:     a url encoded form body
+in:       grant_type=refresh_token&refresh_token=ghr_0123456789abcdefghijklmnopqrstuvwxyz&client_id=Iv1.0123456789abcdef
+out:      grant_type=refresh_token&refresh_token=«github-token»&client_id=Iv1.0123456789abcdef
 
-case: an api key in the query string of a request
-in:   curl "https://maps.googleapis.com/maps/api/geocode/json?address=Tokyo&key=AIza0123456789abcdefghijklmnopqrstuvwxy"
-out:  curl "https://maps.googleapis.com/maps/api/geocode/json?address=Tokyo&key=«google-api-key»"
+case:     an api key in the query string of a request
+in:       curl "https://maps.googleapis.com/maps/api/geocode/json?address=Tokyo&key=AIza0123456789abcdefghijklmnopqrstuvwxy"
+out:      curl "https://maps.googleapis.com/maps/api/geocode/json?address=Tokyo&key=«google-api-key»"
 
-case: an api key in a client side configuration object
-in:   const firebaseConfig = { apiKey: "AIza0123456789abcdefghijklmnopqrstuvwxy", authDomain: "example.firebaseapp.com" };
-out:  const firebaseConfig = { apiKey: "«google-api-key»", authDomain: "example.firebaseapp.com" };
+case:     an api key in a client side configuration object
+in:       const firebaseConfig = { apiKey: "AIza0123456789abcdefghijklmnopqrstuvwxy", authDomain: "example.firebaseapp.com" };
+out:      const firebaseConfig = { apiKey: "«google-api-key»", authDomain: "example.firebaseapp.com" };
 
-case: text in japanese around a jwt
-in:   アクセストークンは eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef です
-out:  アクセストークンは «jwt» です
+case:     text in japanese around a jwt
+in:       アクセストークンは eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef です
+out:      アクセストークンは «jwt» です
 
-case: a comment in source code
-in:   // TODO: stop hard coding ghp_0123456789abcdefghijklmnopqrstuvwxyz here
-out:  // TODO: stop hard coding «github-token» here
+case:     a comment in source code
+in:       // TODO: stop hard coding ghp_0123456789abcdefghijklmnopqrstuvwxyz here
+out:      // TODO: stop hard coding «github-token» here
 
-case: a line of a ci job log
-in:   $ aws sts assume-role --role-arn arn:aws:iam::012345678901:role/deploy\n{"AccessKeyId":"ASIA0123456789ABCDEF"}
-out:  $ aws sts assume-role --role-arn arn:aws:iam::012345678901:role/deploy\n{"AccessKeyId":"«aws-access-key-id»"}
+case:     a line of a ci job log
+in:       $ aws sts assume-role --role-arn arn:aws:iam::012345678901:role/deploy\n{"AccessKeyId":"ASIA0123456789ABCDEF"}
+out:      $ aws sts assume-role --role-arn arn:aws:iam::012345678901:role/deploy\n{"AccessKeyId":"«aws-access-key-id»"}
 
-case: an aws secret access key is not one of the kinds this library knows
-in:   AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567
-out:  AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567
+case:     an aws secret access key is not one of the kinds this library knows
+in:       AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567
+out:      AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567
 
-case: a key opening sk- with none of the marker an openai key carries
-in:   OPENAI_API_KEY=sk-0123456789abcdef0123456789abcdef0123456789abcdef
-out:  OPENAI_API_KEY=sk-0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a key opening sk- with none of the marker an openai key carries
+in:       OPENAI_API_KEY=sk-0123456789abcdef0123456789abcdef0123456789abcdef
+out:      OPENAI_API_KEY=sk-0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a basic authorization header is not one of the kinds this library knows
-in:   Authorization: Basic dXNlcjowMTIzNDU2Nzg5YWJjZGVm
-out:  Authorization: Basic dXNlcjowMTIzNDU2Nzg5YWJjZGVm
+case:     a basic authorization header is not one of the kinds this library knows
+in:       Authorization: Basic dXNlcjowMTIzNDU2Nzg5YWJjZGVm
+out:      Authorization: Basic dXNlcjowMTIzNDU2Nzg5YWJjZGVm
 
-case: a github app client secret is not one of the kinds this library knows
-in:   GITHUB_CLIENT_SECRET=0123456789abcdef0123456789abcdef01234567
-out:  GITHUB_CLIENT_SECRET=0123456789abcdef0123456789abcdef01234567
+case:     a github app client secret is not one of the kinds this library knows
+in:       GITHUB_CLIENT_SECRET=0123456789abcdef0123456789abcdef01234567
+out:      GITHUB_CLIENT_SECRET=0123456789abcdef0123456789abcdef01234567
 
 # And a credential of a kind a pattern here does know, encoded on its way into
 # the text. The scan reads the bytes it is handed and decodes nothing, so a
@@ -200,6 +200,6 @@ out:  GITHUB_CLIENT_SECRET=0123456789abcdef0123456789abcdef01234567
 # written; the one below carries a classic token, which it does know, and is
 # what states what the encoding costs.
 
-case: a classic token encoded into base64 is not located
-in:   Authorization: Basic eC1hY2Nlc3MtdG9rZW46Z2hwXzAxMjM0NTY3ODlhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==
-out:  Authorization: Basic eC1hY2Nlc3MtdG9rZW46Z2hwXzAxMjM0NTY3ODlhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==
+case:     a classic token encoded into base64 is not located
+in:       Authorization: Basic eC1hY2Nlc3MtdG9rZW46Z2hwXzAxMjM0NTY3ODlhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==
+out:      Authorization: Basic eC1hY2Nlc3MtdG9rZW46Z2hwXzAxMjM0NTY3ODlhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==

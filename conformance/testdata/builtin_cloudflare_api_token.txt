@@ -17,29 +17,29 @@ patterns: cloudflare-api-token
 # what it is allowed to do: the response it is read out of, the bearer header it
 # is sent in, and the environment it is kept in.
 
-case: a token a user owns in an environment assignment
-in:   CLOUDFLARE_API_TOKEN=cfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  CLOUDFLARE_API_TOKEN=«cloudflare-api-token»
+case:     a token a user owns in an environment assignment
+in:       CLOUDFLARE_API_TOKEN=cfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      CLOUDFLARE_API_TOKEN=«cloudflare-api-token»
 
-case: a token an account owns in an environment assignment
-in:   CLOUDFLARE_API_TOKEN=cfat_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  CLOUDFLARE_API_TOKEN=«cloudflare-api-token»
+case:     a token an account owns in an environment assignment
+in:       CLOUDFLARE_API_TOKEN=cfat_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      CLOUDFLARE_API_TOKEN=«cloudflare-api-token»
 
-case: a token in the response that first reports it
-in:   {"result":{"id":"0123456789abcdef0123456789abcdef","value":"cfat_0123456789abcdef0123456789abcdef0123456789abcdef"}}
-out:  {"result":{"id":"0123456789abcdef0123456789abcdef","value":"«cloudflare-api-token»"}}
+case:     a token in the response that first reports it
+in:       {"result":{"id":"0123456789abcdef0123456789abcdef","value":"cfat_0123456789abcdef0123456789abcdef0123456789abcdef"}}
+out:      {"result":{"id":"0123456789abcdef0123456789abcdef","value":"«cloudflare-api-token»"}}
 
-case: a token in a bearer token header
-in:   Authorization: Bearer cfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  Authorization: Bearer «cloudflare-api-token»
+case:     a token in a bearer token header
+in:       Authorization: Bearer cfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      Authorization: Bearer «cloudflare-api-token»
 
-case: a token on a command line
-in:   curl -H "Authorization: Bearer cfut_0123456789abcdef0123456789abcdef0123456789abcdef" https://api.cloudflare.com/client/v4/user/tokens/verify
-out:  curl -H "Authorization: Bearer «cloudflare-api-token»" https://api.cloudflare.com/client/v4/user/tokens/verify
+case:     a token on a command line
+in:       curl -H "Authorization: Bearer cfut_0123456789abcdef0123456789abcdef0123456789abcdef" https://api.cloudflare.com/client/v4/user/tokens/verify
+out:      curl -H "Authorization: Bearer «cloudflare-api-token»" https://api.cloudflare.com/client/v4/user/tokens/verify
 
-case: a token at the end of a sentence
-in:   the token is cfut_0123456789abcdef0123456789abcdef0123456789abcdef.
-out:  the token is «cloudflare-api-token».
+case:     a token at the end of a sentence
+in:       the token is cfut_0123456789abcdef0123456789abcdef0123456789abcdef.
+out:      the token is «cloudflare-api-token».
 
 # The alphabets, which are two rather than one. The forty characters of the
 # secret are letters and digits, so they run past f and admit neither the hyphen
@@ -50,29 +50,29 @@ out:  the token is «cloudflare-api-token».
 # day an encoder wrote one in uppercase. The prefix is read in one case, and the
 # case named "an uppercase prefix" below is what that comes to.
 
-case: an uppercase body
-in:   cfut_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
-out:  «cloudflare-api-token»
+case:     an uppercase body
+in:       cfut_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «cloudflare-api-token»
 
-case: a secret carrying letters past f
-in:   cfut_0123456789abcdefghijklmnopqrstuvwxyzABCD0123abcd
-out:  «cloudflare-api-token»
+case:     a secret carrying letters past f
+in:       cfut_0123456789abcdefghijklmnopqrstuvwxyzABCD0123abcd
+out:      «cloudflare-api-token»
 
-case: a letter past f at the end of the checksum
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdeg
-out:  cfut_0123456789abcdef0123456789abcdef0123456789abcdeg
+case:     a letter past f at the end of the checksum
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdeg
+out:      cfut_0123456789abcdef0123456789abcdef0123456789abcdeg
 
-case: a letter past f at the start of the checksum
-in:   cfut_0123456789abcdef0123456789abcdef01234567gabcdef0
-out:  cfut_0123456789abcdef0123456789abcdef01234567gabcdef0
+case:     a letter past f at the start of the checksum
+in:       cfut_0123456789abcdef0123456789abcdef01234567gabcdef0
+out:      cfut_0123456789abcdef0123456789abcdef01234567gabcdef0
 
-case: a hyphen inside the secret
-in:   cfut_0123456789abcdef-123456789abcdef0123456789abcdef
-out:  cfut_0123456789abcdef-123456789abcdef0123456789abcdef
+case:     a hyphen inside the secret
+in:       cfut_0123456789abcdef-123456789abcdef0123456789abcdef
+out:      cfut_0123456789abcdef-123456789abcdef0123456789abcdef
 
-case: an underscore inside the secret
-in:   cfut_0123456789abcdef_123456789abcdef0123456789abcdef
-out:  cfut_0123456789abcdef_123456789abcdef0123456789abcdef
+case:     an underscore inside the secret
+in:       cfut_0123456789abcdef_123456789abcdef0123456789abcdef
+out:      cfut_0123456789abcdef_123456789abcdef0123456789abcdef
 
 # The lengths. Forty is what Cloudflare's page on token formats writes, and both
 # forty and eight are what the Credentials and Secrets row of its predefined DLP
@@ -81,17 +81,17 @@ out:  cfut_0123456789abcdef_123456789abcdef0123456789abcdef
 # located nowhere, and a run one character longer is a token with a character
 # written after it.
 
-case: a body of forty-eight characters is a token
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-token»
+case:     a body of forty-eight characters is a token
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-token»
 
-case: a body one character short is not
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcde
-out:  cfut_0123456789abcdef0123456789abcdef0123456789abcde
+case:     a body one character short is not
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcde
+out:      cfut_0123456789abcdef0123456789abcdef0123456789abcde
 
-case: a body run one character longer is a token and the character after it
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdef0
-out:  «cloudflare-api-token»0
+case:     a body run one character longer is a token and the character after it
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdef0
+out:      «cloudflare-api-token»0
 
 # The checksum is read as a shape and not verified, where Cloudflare's own
 # scanner recomputes it. The two cases below carry the same secret and different
@@ -99,13 +99,13 @@ out:  «cloudflare-api-token»0
 # redacted anyway: a token whose checksum was mistyped or truncated is still a
 # secret somebody can read.
 
-case: one checksum over a secret
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-token»
+case:     one checksum over a secret
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-token»
 
-case: another checksum over the same secret
-in:   cfut_0123456789abcdef0123456789abcdef01234567abcdef01
-out:  «cloudflare-api-token»
+case:     another checksum over the same secret
+in:       cfut_0123456789abcdef0123456789abcdef01234567abcdef01
+out:      «cloudflare-api-token»
 
 # What a token may be written against. There is no boundary on either side of
 # the prefix, so a token keeps its span whatever word character it abuts, and
@@ -114,29 +114,29 @@ out:  «cloudflare-api-token»
 # would buy, and it is all it would buy: no word is spelled cfut or cfat, so what
 # can reach a prefix is a snake_case name whose last segment is one of the two.
 
-case: a token after an underscore
-in:   CLOUDFLARE_API_TOKEN_cfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  CLOUDFLARE_API_TOKEN_«cloudflare-api-token»
+case:     a token after an underscore
+in:       CLOUDFLARE_API_TOKEN_cfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      CLOUDFLARE_API_TOKEN_«cloudflare-api-token»
 
-case: a token after a letter
-in:   xcfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  x«cloudflare-api-token»
+case:     a token after a letter
+in:       xcfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      x«cloudflare-api-token»
 
-case: a snake_case name closing on the prefix
-in:   zone_cfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  zone_«cloudflare-api-token»
+case:     a snake_case name closing on the prefix
+in:       zone_cfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      zone_«cloudflare-api-token»
 
-case: a word written against a token
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdefsuffix
-out:  «cloudflare-api-token»suffix
+case:     a word written against a token
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdefsuffix
+out:      «cloudflare-api-token»suffix
 
-case: a hyphenated word written against a token
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdef-suffix
-out:  «cloudflare-api-token»-suffix
+case:     a hyphenated word written against a token
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdef-suffix
+out:      «cloudflare-api-token»-suffix
 
-case: an underscored word written against a token
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdef_suffix
-out:  «cloudflare-api-token»_suffix
+case:     an underscored word written against a token
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdef_suffix
+out:      «cloudflare-api-token»_suffix
 
 # Two tokens written together, and a token written inside another. The
 # underscore every prefix closes with is written in no body, so it has to fall
@@ -148,25 +148,25 @@ out:  «cloudflare-api-token»_suffix
 # consuming its match for that shape: the two spans overlap and are redacted as
 # one, where a scan consuming the first would have left the second whole.
 
-case: two tokens with nothing between them
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdefcfat_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
-out:  «cloudflare-api-token»«cloudflare-api-token»
+case:     two tokens with nothing between them
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdefcfat_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «cloudflare-api-token»«cloudflare-api-token»
 
-case: two tokens separated by a space
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdef cfat_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
-out:  «cloudflare-api-token» «cloudflare-api-token»
+case:     two tokens separated by a space
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdef cfat_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «cloudflare-api-token» «cloudflare-api-token»
 
-case: a token a user owns beginning two characters inside another
-in:   cfut_0123456789abcdef0123456789abcdef012345670123abcfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-token»
+case:     a token a user owns beginning two characters inside another
+in:       cfut_0123456789abcdef0123456789abcdef012345670123abcfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-token»
 
-case: a token an account owns beginning three characters inside another
-in:   cfut_0123456789abcdef0123456789abcdef0123456701234cfat_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-token»
+case:     a token an account owns beginning three characters inside another
+in:       cfut_0123456789abcdef0123456789abcdef0123456701234cfat_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-token»
 
-case: a candidate whose body opens with a prefix
-in:   cfut_cfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  cfut_«cloudflare-api-token»
+case:     a candidate whose body opens with a prefix
+in:       cfut_cfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      cfut_«cloudflare-api-token»
 
 # A digest written behind the prefix, which every prefix in this package leaves
 # as a collision and which this one pays rather than avoids. Hexadecimal digits
@@ -180,21 +180,21 @@ out:  cfut_«cloudflare-api-token»
 # shorter digests are turned away by the counts, and a digest on its own carries
 # no underscore and so holds no prefix to be found in.
 
-case: a sha256 behind the prefix
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-token»0123456789abcdef
+case:     a sha256 behind the prefix
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-token»0123456789abcdef
 
-case: a sha1 behind the prefix
-in:   cfut_0123456789abcdef0123456789abcdef01234567
-out:  cfut_0123456789abcdef0123456789abcdef01234567
+case:     a sha1 behind the prefix
+in:       cfut_0123456789abcdef0123456789abcdef01234567
+out:      cfut_0123456789abcdef0123456789abcdef01234567
 
-case: an md5 behind the prefix
-in:   cfut_0123456789abcdef0123456789abcdef
-out:  cfut_0123456789abcdef0123456789abcdef
+case:     an md5 behind the prefix
+in:       cfut_0123456789abcdef0123456789abcdef
+out:      cfut_0123456789abcdef0123456789abcdef
 
-case: a sha256 in a cache key
-in:   key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a sha256 in a cache key
+in:       key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 # And what this pattern leaves alone. First the prefix: the case Cloudflare
 # writes it in, the third prefix it issues, which stands in front of the
@@ -208,38 +208,38 @@ out:  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 # searches for as prose writes them, and the log line no pattern here has
 # anything to find in.
 
-case: an uppercase prefix
-in:   CFUT_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  CFUT_0123456789abcdef0123456789abcdef0123456789abcdef
+case:     an uppercase prefix
+in:       CFUT_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      CFUT_0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: the api key prefix
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+case:     the api key prefix
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      cfk_0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a kind cloudflare issues neither of
-in:   cfxt_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  cfxt_0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a kind cloudflare issues neither of
+in:       cfxt_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      cfxt_0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a hyphen where the prefix carries its underscore
-in:   cfut-0123456789abcdef0123456789abcdef0123456789abcdef
-out:  cfut-0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a hyphen where the prefix carries its underscore
+in:       cfut-0123456789abcdef0123456789abcdef0123456789abcdef
+out:      cfut-0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a token of the format issued before the prefixes
-in:   CLOUDFLARE_API_TOKEN=0123456789abcdef0123456789abcdef0123-_ab
-out:  CLOUDFLARE_API_TOKEN=0123456789abcdef0123456789abcdef0123-_ab
+case:     a token of the format issued before the prefixes
+in:       CLOUDFLARE_API_TOKEN=0123456789abcdef0123456789abcdef0123-_ab
+out:      CLOUDFLARE_API_TOKEN=0123456789abcdef0123456789abcdef0123-_ab
 
-case: a body of the right shape opening with no prefix
-in:   xxxx_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  xxxx_0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a body of the right shape opening with no prefix
+in:       xxxx_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      xxxx_0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a token broken by a space
-in:   cfut_0123456789abcdef0123456789 abcdef0123456789abcdef
-out:  cfut_0123456789abcdef0123456789 abcdef0123456789abcdef
+case:     a token broken by a space
+in:       cfut_0123456789abcdef0123456789 abcdef0123456789abcdef
+out:      cfut_0123456789abcdef0123456789 abcdef0123456789abcdef
 
-case: the opening as prose writes it
-in:   cf. the token formats page for what a token is made of
-out:  cf. the token formats page for what a token is made of
+case:     the opening as prose writes it
+in:       cf. the token formats page for what a token is made of
+out:      cf. the token formats page for what a token is made of
 
-case: a log line
-in:   time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/zones
-out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/zones
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/zones
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/zones

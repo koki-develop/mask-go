@@ -18,37 +18,37 @@ patterns: hashicorp-vault-token
 # what it is allowed to do, which is carried by the policies attached to it
 # inside Vault.
 
-case: a service token in an environment assignment
-in:   VAULT_TOKEN=hvs.0123456789abcdef01234567
-out:  VAULT_TOKEN=«hashicorp-vault-token»
+case:     a service token in an environment assignment
+in:       VAULT_TOKEN=hvs.0123456789abcdef01234567
+out:      VAULT_TOKEN=«hashicorp-vault-token»
 
-case: a service token in the header a request to vault carries
-in:   X-Vault-Token: hvs.0123456789abcdef01234567
-out:  X-Vault-Token: «hashicorp-vault-token»
+case:     a service token in the header a request to vault carries
+in:       X-Vault-Token: hvs.0123456789abcdef01234567
+out:      X-Vault-Token: «hashicorp-vault-token»
 
-case: a batch token in an environment assignment
-in:   VAULT_TOKEN=hvb.0123456789abcdef0123456789abcdef0123456789abcdef
-out:  VAULT_TOKEN=«hashicorp-vault-token»
+case:     a batch token in an environment assignment
+in:       VAULT_TOKEN=hvb.0123456789abcdef0123456789abcdef0123456789abcdef
+out:      VAULT_TOKEN=«hashicorp-vault-token»
 
-case: a recovery token where the operator command prints one
-in:   Recovery Token: hvr.0123456789abcdef01234567
-out:  Recovery Token: «hashicorp-vault-token»
+case:     a recovery token where the operator command prints one
+in:       Recovery Token: hvr.0123456789abcdef01234567
+out:      Recovery Token: «hashicorp-vault-token»
 
-case: a token in the response a login writes
-in:   {"auth":{"client_token":"hvs.0123456789abcdef01234567","lease_duration":3600}}
-out:  {"auth":{"client_token":"«hashicorp-vault-token»","lease_duration":3600}}
+case:     a token in the response a login writes
+in:       {"auth":{"client_token":"hvs.0123456789abcdef01234567","lease_duration":3600}}
+out:      {"auth":{"client_token":"«hashicorp-vault-token»","lease_duration":3600}}
 
-case: a token on a command line
-in:   vault login hvs.0123456789abcdef01234567
-out:  vault login «hashicorp-vault-token»
+case:     a token on a command line
+in:       vault login hvs.0123456789abcdef01234567
+out:      vault login «hashicorp-vault-token»
 
-case: a token in a workflow environment block
-in:   env:\n  VAULT_TOKEN: hvs.0123456789abcdef01234567
-out:  env:\n  VAULT_TOKEN: «hashicorp-vault-token»
+case:     a token in a workflow environment block
+in:       env:\n  VAULT_TOKEN: hvs.0123456789abcdef01234567
+out:      env:\n  VAULT_TOKEN: «hashicorp-vault-token»
 
-case: a token of each kind on one line
-in:   hvs.0123456789abcdef01234567 hvb.0123456789abcdef01234567 hvr.0123456789abcdef01234567
-out:  «hashicorp-vault-token» «hashicorp-vault-token» «hashicorp-vault-token»
+case:     a token of each kind on one line
+in:       hvs.0123456789abcdef01234567 hvb.0123456789abcdef01234567 hvr.0123456789abcdef01234567
+out:      «hashicorp-vault-token» «hashicorp-vault-token» «hashicorp-vault-token»
 
 # The two shapes a service token comes in. Where server side consistent tokens
 # are off, and for a root token whatever they are set to, Vault writes the
@@ -58,13 +58,13 @@ out:  «hashicorp-vault-token» «hashicorp-vault-token» «hashicorp-vault-toke
 # ninety-one characters or more. Both are located, and the floor is what lets
 # one grammar reach both.
 
-case: a service token at the length vault documents
-in:   hvs.0123456789abcdef01234567
-out:  «hashicorp-vault-token»
+case:     a service token at the length vault documents
+in:       hvs.0123456789abcdef01234567
+out:      «hashicorp-vault-token»
 
-case: a server side consistent service token
-in:   hvs.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789a
-out:  «hashicorp-vault-token»
+case:     a server side consistent service token
+in:       hvs.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789a
+out:      «hashicorp-vault-token»
 
 # The alphabet a body is written in. The two long shapes are written with
 # base64.RawURLEncoding, so a body is base64url: the letters of both cases, the
@@ -72,21 +72,21 @@ out:  «hashicorp-vault-token»
 # instead are not admitted, and neither is its padding, which RawURLEncoding does
 # not write — either of them ends a body where it stands.
 
-case: a body carrying both characters base64url adds
-in:   hvs.0123456789abcdef-123456789_bcdef0123456789abcdef
-out:  «hashicorp-vault-token»
+case:     a body carrying both characters base64url adds
+in:       hvs.0123456789abcdef-123456789_bcdef0123456789abcdef
+out:      «hashicorp-vault-token»
 
-case: a body written in capitals
-in:   hvs.0123456789ABCDEF01234567
-out:  «hashicorp-vault-token»
+case:     a body written in capitals
+in:       hvs.0123456789ABCDEF01234567
+out:      «hashicorp-vault-token»
 
-case: a body carrying a character of standard base64
-in:   hvs.0123456789abcdef+1234567
-out:  hvs.0123456789abcdef+1234567
+case:     a body carrying a character of standard base64
+in:       hvs.0123456789abcdef+1234567
+out:      hvs.0123456789abcdef+1234567
 
-case: a token written against standard base64 padding
-in:   hvs.0123456789abcdef01234567==
-out:  «hashicorp-vault-token»==
+case:     a token written against standard base64 padding
+in:       hvs.0123456789abcdef01234567==
+out:      «hashicorp-vault-token»==
 
 # The lengths either side of twenty-four. Vault states the count itself — "after
 # the prefix, a string of 24 or more randomly-generated characters is appended"
@@ -96,17 +96,17 @@ out:  «hashicorp-vault-token»==
 # short of twenty-four keeps every random character written in front of the cut,
 # and none of them is redacted.
 
-case: a body of twenty-four characters is a token
-in:   hvs.0123456789abcdef01234567
-out:  «hashicorp-vault-token»
+case:     a body of twenty-four characters is a token
+in:       hvs.0123456789abcdef01234567
+out:      «hashicorp-vault-token»
 
-case: a body of twenty-three characters is not
-in:   hvs.0123456789abcdef0123456
-out:  hvs.0123456789abcdef0123456
+case:     a body of twenty-three characters is not
+in:       hvs.0123456789abcdef0123456
+out:      hvs.0123456789abcdef0123456
 
-case: an alphabet run longer than the floor is a token to the end of it
-in:   hvs.0123456789abcdef012345678
-out:  «hashicorp-vault-token»
+case:     an alphabet run longer than the floor is a token to the end of it
+in:       hvs.0123456789abcdef012345678
+out:      «hashicorp-vault-token»
 
 # The floor admits a length Vault does not issue, which is worth stating rather
 # than leaving to be found. Put the two shapes together and a body is
@@ -119,17 +119,17 @@ out:  «hashicorp-vault-token»
 # grammar would leave in the output whole. Cut below twenty-four and nothing is
 # located, which is the far side of the same floor.
 
-case: a body of thirty-five characters, which no shape vault issues has
-in:   hvs.0123456789abcdef0123456789abcdef012
-out:  «hashicorp-vault-token»
+case:     a body of thirty-five characters, which no shape vault issues has
+in:       hvs.0123456789abcdef0123456789abcdef012
+out:      «hashicorp-vault-token»
 
-case: a consistent token a column limit cut inside its body
-in:   VAULT_TOKEN=hvs.0123456789abcdef0123456789abcdef01234567
-out:  VAULT_TOKEN=«hashicorp-vault-token»
+case:     a consistent token a column limit cut inside its body
+in:       VAULT_TOKEN=hvs.0123456789abcdef0123456789abcdef01234567
+out:      VAULT_TOKEN=«hashicorp-vault-token»
 
-case: the same token cut below the floor
-in:   VAULT_TOKEN=hvs.0123456789abcdef0123456
-out:  VAULT_TOKEN=hvs.0123456789abcdef0123456
+case:     the same token cut below the floor
+in:       VAULT_TOKEN=hvs.0123456789abcdef0123456
+out:      VAULT_TOKEN=hvs.0123456789abcdef0123456
 
 # What a token may be written against. The prefix is the whole of the anchor and
 # there is no boundary on either side of it, so a token keeps its span whatever
@@ -139,33 +139,33 @@ out:  VAULT_TOKEN=hvs.0123456789abcdef0123456
 # pattern from the npm, Linear and Notion ones: their bodies are base62 and stop
 # at either.
 
-case: a token after an underscore
-in:   VAULT_TOKEN_hvs.0123456789abcdef01234567
-out:  VAULT_TOKEN_«hashicorp-vault-token»
+case:     a token after an underscore
+in:       VAULT_TOKEN_hvs.0123456789abcdef01234567
+out:      VAULT_TOKEN_«hashicorp-vault-token»
 
-case: a token after a letter
-in:   xhvs.0123456789abcdef01234567
-out:  x«hashicorp-vault-token»
+case:     a token after a letter
+in:       xhvs.0123456789abcdef01234567
+out:      x«hashicorp-vault-token»
 
-case: a word written against a token
-in:   hvs.0123456789abcdef01234567suffix
-out:  «hashicorp-vault-token»
+case:     a word written against a token
+in:       hvs.0123456789abcdef01234567suffix
+out:      «hashicorp-vault-token»
 
-case: a hyphenated word written against a token
-in:   hvs.0123456789abcdef01234567-suffix
-out:  «hashicorp-vault-token»
+case:     a hyphenated word written against a token
+in:       hvs.0123456789abcdef01234567-suffix
+out:      «hashicorp-vault-token»
 
-case: an underscored word written against a token
-in:   hvs.0123456789abcdef01234567_suffix
-out:  «hashicorp-vault-token»
+case:     an underscored word written against a token
+in:       hvs.0123456789abcdef01234567_suffix
+out:      «hashicorp-vault-token»
 
-case: a token at the end of a sentence
-in:   the token is hvs.0123456789abcdef01234567.
-out:  the token is «hashicorp-vault-token».
+case:     a token at the end of a sentence
+in:       the token is hvs.0123456789abcdef01234567.
+out:      the token is «hashicorp-vault-token».
 
-case: a token in front of a path segment
-in:   /v1/auth/token/lookup hvs.0123456789abcdef01234567/renew
-out:  /v1/auth/token/lookup «hashicorp-vault-token»/renew
+case:     a token in front of a path segment
+in:       /v1/auth/token/lookup hvs.0123456789abcdef01234567/renew
+out:      /v1/auth/token/lookup «hashicorp-vault-token»/renew
 
 # Two tokens written together. Both characters of the anchor and the letter
 # naming a kind belong to the alphabet a body is written in, so a body may close
@@ -177,17 +177,17 @@ out:  /v1/auth/token/lookup «hashicorp-vault-token»/renew
 # is left. A space ends the first run where it stands, and the two are separate
 # values.
 
-case: a token beginning inside the token before it
-in:   hvs.0123456789abcdef01234hvs.0123456789abcdef01234567
-out:  «hashicorp-vault-token»
+case:     a token beginning inside the token before it
+in:       hvs.0123456789abcdef01234hvs.0123456789abcdef01234567
+out:      «hashicorp-vault-token»
 
-case: two tokens with nothing between them
-in:   hvs.0123456789abcdef01234567hvs.0123456789abcdef01234567
-out:  «hashicorp-vault-token»
+case:     two tokens with nothing between them
+in:       hvs.0123456789abcdef01234567hvs.0123456789abcdef01234567
+out:      «hashicorp-vault-token»
 
-case: two tokens separated by a space
-in:   hvs.0123456789abcdef01234567 hvs.0123456789ABCDEF01234567
-out:  «hashicorp-vault-token» «hashicorp-vault-token»
+case:     two tokens separated by a space
+in:       hvs.0123456789abcdef01234567 hvs.0123456789ABCDEF01234567
+out:      «hashicorp-vault-token» «hashicorp-vault-token»
 
 # The namespace of a token is the one thing a span is left short of. Vault
 # appends the namespace ID behind the body, separated by the same dot the prefix
@@ -195,9 +195,9 @@ out:  «hashicorp-vault-token» «hashicorp-vault-token»
 # of it and the namespace ID stays in the output. It identifies a namespace
 # rather than the token, and what it is written beside is already redacted.
 
-case: a batch token minted in a namespace
-in:   hvb.0123456789abcdef0123456789abcdef0123456789abcdef.0abcd
-out:  «hashicorp-vault-token».0abcd
+case:     a batch token minted in a namespace
+in:       hvb.0123456789abcdef0123456789abcdef0123456789abcdef.0abcd
+out:      «hashicorp-vault-token».0abcd
 
 # What this pattern redacts that nobody issued, and where the separator decides
 # it is reachable at all. No run of base64url carries a dot, so a certificate, a
@@ -209,17 +209,17 @@ out:  «hashicorp-vault-token».0abcd
 # built-in, the JWT and SendGrid patterns redact the whole of either of these,
 # which builtins_together.txt states.
 
-case: a jwt whose payload closes on a prefix
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQhvs.0123456789abcdef01234567
-out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ«hashicorp-vault-token»
+case:     a jwt whose payload closes on a prefix
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQhvs.0123456789abcdef01234567
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ«hashicorp-vault-token»
 
-case: a sendgrid key whose first segment closes on a prefix
-in:   SG.0123456789abcdef012hvb.0123456789abcdef0123456789abcdef0123456789a
-out:  SG.0123456789abcdef012«hashicorp-vault-token»
+case:     a sendgrid key whose first segment closes on a prefix
+in:       SG.0123456789abcdef012hvb.0123456789abcdef0123456789abcdef0123456789a
+out:      SG.0123456789abcdef012«hashicorp-vault-token»
 
-case: a jwt no segment of which closes on a prefix
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef01234567
-out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef01234567
+case:     a jwt no segment of which closes on a prefix
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef01234567
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef01234567
 
 # And where writing rather than encoding reaches the same shape: a name written
 # in dot-separated segments, where the segment after the hvs, hvb or hvr runs to
@@ -238,25 +238,25 @@ out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef01234567
 # and is admitted for the reasons given there. A segment short of the floor is
 # what turns an ordinary name away.
 
-case: a hostname whose first label is a prefix
-in:   https://hvs.0123456789abcdef01234567.example.com/v1
-out:  https://«hashicorp-vault-token».example.com/v1
+case:     a hostname whose first label is a prefix
+in:       https://hvs.0123456789abcdef01234567.example.com/v1
+out:      https://«hashicorp-vault-token».example.com/v1
 
-case: a hostname whose second label is shorter than the floor
-in:   https://hvs.0123456789abcdef0123456.example.com/v1
-out:  https://hvs.0123456789abcdef0123456.example.com/v1
+case:     a hostname whose second label is shorter than the floor
+in:       https://hvs.0123456789abcdef0123456.example.com/v1
+out:      https://hvs.0123456789abcdef0123456.example.com/v1
 
-case: a call on a receiver named for a prefix
-in:   token, err := hvs.CreateOrUpdateSecretVersion(ctx, req)
-out:  token, err := «hashicorp-vault-token»(ctx, req)
+case:     a call on a receiver named for a prefix
+in:       token, err := hvs.CreateOrUpdateSecretVersion(ctx, req)
+out:      token, err := «hashicorp-vault-token»(ctx, req)
 
-case: the same call with the name written in snake case
-in:   token, err := hvs.create_or_update_secret_version(ctx, req)
-out:  token, err := «hashicorp-vault-token»(ctx, req)
+case:     the same call with the name written in snake case
+in:       token, err := hvs.create_or_update_secret_version(ctx, req)
+out:      token, err := «hashicorp-vault-token»(ctx, req)
 
-case: the same call with a name shorter than the floor
-in:   token, err := hvs.CreateOrUpdateSecret(ctx, req)
-out:  token, err := hvs.CreateOrUpdateSecret(ctx, req)
+case:     the same call with a name shorter than the floor
+in:       token, err := hvs.CreateOrUpdateSecret(ctx, req)
+out:      token, err := hvs.CreateOrUpdateSecret(ctx, req)
 
 # The tokens Vault issued until 1.10, which are not read. They still
 # authenticate where they have not expired, so these cases hold a credential
@@ -266,21 +266,21 @@ out:  token, err := hvs.CreateOrUpdateSecret(ctx, req)
 # window of surrounding text to tell the two apart, which is what both rulesets
 # reading the old prefix need.
 
-case: a service token of the format issued before vault 1.10
-in:   VAULT_TOKEN=s.0123456789abcdef01234567
-out:  VAULT_TOKEN=s.0123456789abcdef01234567
+case:     a service token of the format issued before vault 1.10
+in:       VAULT_TOKEN=s.0123456789abcdef01234567
+out:      VAULT_TOKEN=s.0123456789abcdef01234567
 
-case: a batch token of that format
-in:   VAULT_TOKEN=b.0123456789abcdef01234567
-out:  VAULT_TOKEN=b.0123456789abcdef01234567
+case:     a batch token of that format
+in:       VAULT_TOKEN=b.0123456789abcdef01234567
+out:      VAULT_TOKEN=b.0123456789abcdef01234567
 
-case: a recovery token of that format
-in:   VAULT_TOKEN=r.0123456789abcdef01234567
-out:  VAULT_TOKEN=r.0123456789abcdef01234567
+case:     a recovery token of that format
+in:       VAULT_TOKEN=r.0123456789abcdef01234567
+out:      VAULT_TOKEN=r.0123456789abcdef01234567
 
-case: the field access that grammar could not be told from
-in:   logger.WithField("vault", s.0123456789abcdef01234567)
-out:  logger.WithField("vault", s.0123456789abcdef01234567)
+case:     the field access that grammar could not be told from
+in:       logger.WithField("vault", s.0123456789abcdef01234567)
+out:      logger.WithField("vault", s.0123456789abcdef01234567)
 
 # And what this pattern leaves alone. The first four are the prefix, read in the
 # case Vault writes it, in the letter that names a kind and in the character it
@@ -292,42 +292,42 @@ out:  logger.WithField("vault", s.0123456789abcdef01234567)
 # its hv names no kind of token and an underscore stands where a prefix carries
 # its dot.
 
-case: an uppercase prefix
-in:   HVS.0123456789abcdef01234567
-out:  HVS.0123456789abcdef01234567
+case:     an uppercase prefix
+in:       HVS.0123456789abcdef01234567
+out:      HVS.0123456789abcdef01234567
 
-case: a letter naming no kind of token
-in:   hvx.0123456789abcdef01234567
-out:  hvx.0123456789abcdef01234567
+case:     a letter naming no kind of token
+in:       hvx.0123456789abcdef01234567
+out:      hvx.0123456789abcdef01234567
 
-case: an underscore where the prefix carries its separator
-in:   hvs_0123456789abcdef01234567
-out:  hvs_0123456789abcdef01234567
+case:     an underscore where the prefix carries its separator
+in:       hvs_0123456789abcdef01234567
+out:      hvs_0123456789abcdef01234567
 
-case: the anchor with no kind behind it
-in:   hv.0123456789abcdef01234567
-out:  hv.0123456789abcdef01234567
+case:     the anchor with no kind behind it
+in:       hv.0123456789abcdef01234567
+out:      hv.0123456789abcdef01234567
 
-case: a body broken by a space
-in:   hvs.0123456789abcdef 01234567
-out:  hvs.0123456789abcdef 01234567
+case:     a body broken by a space
+in:       hvs.0123456789abcdef 01234567
+out:      hvs.0123456789abcdef 01234567
 
-case: a run of the right length opening with no prefix
-in:   0123456789abcdef01234567
-out:  0123456789abcdef01234567
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdef01234567
+out:      0123456789abcdef01234567
 
-case: a hexadecimal digest
-in:   sha1=0123456789abcdef0123456789abcdef01234567
-out:  sha1=0123456789abcdef0123456789abcdef01234567
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
 
-case: prose
-in:   there is no credential in this sentence
-out:  there is no credential in this sentence
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
 
-case: the environment a vault client is configured through
-in:   VAULT_ADDR=https://vault.example.com:8200 VAULT_NAMESPACE=admin
-out:  VAULT_ADDR=https://vault.example.com:8200 VAULT_NAMESPACE=admin
+case:     the environment a vault client is configured through
+in:       VAULT_ADDR=https://vault.example.com:8200 VAULT_NAMESPACE=admin
+out:      VAULT_ADDR=https://vault.example.com:8200 VAULT_NAMESPACE=admin
 
-case: an oidc provider client secret
-in:   hvo_secret_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  hvo_secret_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     an oidc provider client secret
+in:       hvo_secret_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      hvo_secret_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef

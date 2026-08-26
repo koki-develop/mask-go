@@ -17,42 +17,42 @@ patterns: linear-api-key
 # allowed to do, and the cases below are that one shape in the places a key is
 # written.
 
-case: a key in an environment assignment
-in:   LINEAR_API_KEY=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  LINEAR_API_KEY=«linear-api-key»
+case:     a key in an environment assignment
+in:       LINEAR_API_KEY=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      LINEAR_API_KEY=«linear-api-key»
 
-case: a key in the authorization header, which Linear asks for without a Bearer
-in:   Authorization: lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  Authorization: «linear-api-key»
+case:     a key in the authorization header, which Linear asks for without a Bearer
+in:       Authorization: lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      Authorization: «linear-api-key»
 
-case: a key in json
-in:   {"apiKey":"lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123"}
-out:  {"apiKey":"«linear-api-key»"}
+case:     a key in json
+in:       {"apiKey":"lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123"}
+out:      {"apiKey":"«linear-api-key»"}
 
-case: a key on a command line
-in:   curl -H "Authorization: lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123" https://api.linear.app/graphql
-out:  curl -H "Authorization: «linear-api-key»" https://api.linear.app/graphql
+case:     a key on a command line
+in:       curl -H "Authorization: lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123" https://api.linear.app/graphql
+out:      curl -H "Authorization: «linear-api-key»" https://api.linear.app/graphql
 
-case: a key in a configuration environment block
-in:   "env": {"LINEAR_API_KEY": "lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123"}
-out:  "env": {"LINEAR_API_KEY": "«linear-api-key»"}
+case:     a key in a configuration environment block
+in:       "env": {"LINEAR_API_KEY": "lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123"}
+out:      "env": {"LINEAR_API_KEY": "«linear-api-key»"}
 
 # The alphabet the forty characters are written in. It is base62 — the letters
 # of both cases and the digits — which is what both rulesets stating a shape
 # admit behind the prefix. The two characters base64url adds, the hyphen and the
 # underscore, are not admitted, and either of them ends a body.
 
-case: a body written in capitals
-in:   lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123
-out:  «linear-api-key»
+case:     a body written in capitals
+in:       lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123
+out:      «linear-api-key»
 
-case: a body carrying a hyphen
-in:   lin_api_0123456789abcdefghij-lmnopqrstuvwxyz0123
-out:  lin_api_0123456789abcdefghij-lmnopqrstuvwxyz0123
+case:     a body carrying a hyphen
+in:       lin_api_0123456789abcdefghij-lmnopqrstuvwxyz0123
+out:      lin_api_0123456789abcdefghij-lmnopqrstuvwxyz0123
 
-case: a body carrying an underscore
-in:   lin_api_0123456789abcdefghij_lmnopqrstuvwxyz0123
-out:  lin_api_0123456789abcdefghij_lmnopqrstuvwxyz0123
+case:     a body carrying an underscore
+in:       lin_api_0123456789abcdefghij_lmnopqrstuvwxyz0123
+out:      lin_api_0123456789abcdefghij_lmnopqrstuvwxyz0123
 
 # The lengths either side of forty. Linear states no length for a key, and no
 # alphabet and no checksum either; forty is the count both rulesets stating a
@@ -64,17 +64,17 @@ out:  lin_api_0123456789abcdefghij_lmnopqrstuvwxyz0123
 # middle case below — a key cut short of forty keeps every random character
 # written in front of the cut, and none of them is redacted.
 
-case: a body of forty characters is a key
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  «linear-api-key»
+case:     a body of forty characters is a key
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      «linear-api-key»
 
-case: a body of thirty-nine characters is not
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz012
-out:  lin_api_0123456789abcdefghijklmnopqrstuvwxyz012
+case:     a body of thirty-nine characters is not
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz012
+out:      lin_api_0123456789abcdefghijklmnopqrstuvwxyz012
 
-case: an alphabet run longer than the floor is a key to the end of it
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz01234
-out:  «linear-api-key»
+case:     an alphabet run longer than the floor is a key to the end of it
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      «linear-api-key»
 
 # What a key may be written against. There is no boundary on either side of the
 # prefix, so a key keeps its span whatever word character it abuts — and where
@@ -83,29 +83,29 @@ out:  «linear-api-key»
 # is what tells this pattern apart from the OpenAI and Anthropic ones: their
 # bodies are base64url and would draw a hyphenated word in.
 
-case: a key after an underscore
-in:   LINEAR_API_KEY_lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  LINEAR_API_KEY_«linear-api-key»
+case:     a key after an underscore
+in:       LINEAR_API_KEY_lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      LINEAR_API_KEY_«linear-api-key»
 
-case: a key after a letter
-in:   xlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  x«linear-api-key»
+case:     a key after a letter
+in:       xlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      x«linear-api-key»
 
-case: a word written against a key
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123suffix
-out:  «linear-api-key»
+case:     a word written against a key
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123suffix
+out:      «linear-api-key»
 
-case: a hyphenated word written against a key
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123-suffix
-out:  «linear-api-key»-suffix
+case:     a hyphenated word written against a key
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123-suffix
+out:      «linear-api-key»-suffix
 
-case: an underscored word written against a key
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123_suffix
-out:  «linear-api-key»_suffix
+case:     an underscored word written against a key
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123_suffix
+out:      «linear-api-key»_suffix
 
-case: a key at the end of a sentence
-in:   the key is lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123.
-out:  the key is «linear-api-key».
+case:     a key at the end of a sentence
+in:       the key is lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123.
+out:      the key is «linear-api-key».
 
 # Two keys written together. The three letters the prefix opens with belong to
 # the alphabet a body is written in, so a body may close with lin and the
@@ -116,17 +116,17 @@ out:  the key is «linear-api-key».
 # behind them, so those two overlap as well. Written with a space between them
 # the two are separate values, and both go.
 
-case: a key beginning inside the key before it
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  «linear-api-key»
+case:     a key beginning inside the key before it
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      «linear-api-key»
 
-case: two keys with nothing between them
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123
-out:  «linear-api-key»
+case:     two keys with nothing between them
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123
+out:      «linear-api-key»
 
-case: two keys separated by a space
-in:   lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123
-out:  «linear-api-key» «linear-api-key»
+case:     two keys separated by a space
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123
+out:      «linear-api-key» «linear-api-key»
 
 # A word closing on the three letters the prefix opens with. berlin, dublin,
 # merlin, muslin, kaolin, insulin, gremlin, violin and javelin each end on lin,
@@ -140,13 +140,13 @@ out:  «linear-api-key» «linear-api-key»
 # with its body whole. What holds the ordinary name away instead is the floor,
 # which the next underscore of such a name ends long before.
 
-case: a word closing on the prefix with a body behind it
-in:   berlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  ber«linear-api-key»
+case:     a word closing on the prefix with a body behind it
+in:       berlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      ber«linear-api-key»
 
-case: a word closing on the prefix with a short segment behind it
-in:   berlin_api_key=1 dublin_api_host=localhost
-out:  berlin_api_key=1 dublin_api_host=localhost
+case:     a word closing on the prefix with a short segment behind it
+in:       berlin_api_key=1 dublin_api_host=localhost
+out:      berlin_api_key=1 dublin_api_host=localhost
 
 # What this pattern redacts that nobody issued. The prefix carries two
 # underscores, which standard base64 writes nowhere, so only a base64url
@@ -159,13 +159,13 @@ out:  berlin_api_key=1 dublin_api_host=localhost
 # would spare a real key written the same way. What is taken is a stretch of a
 # value that was already opaque to a reader.
 
-case: the prefix inside a longer run of base64url
-in:   payload=zzzzlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123zzzz
-out:  payload=zzzz«linear-api-key»
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzzlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123zzzz
+out:      payload=zzzz«linear-api-key»
 
-case: the prefix where a signature stands
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123zzzz
-out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«linear-api-key»
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123zzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«linear-api-key»
 
 # A digest written behind the prefix, which is the one over-match here that
 # takes a value a reader had a use for. Hexadecimal digits are base62 and a
@@ -177,21 +177,21 @@ out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«linear-api-key»
 # an MD5 is thirty-two characters, eight short of a body, and a hyphen is no
 # character the prefix carries.
 
-case: a sha1 behind the prefix
-in:   lin_api_0123456789abcdef0123456789abcdef01234567
-out:  «linear-api-key»
+case:     a sha1 behind the prefix
+in:       lin_api_0123456789abcdef0123456789abcdef01234567
+out:      «linear-api-key»
 
-case: a sha256 in a cache key
-in:   key: lin_api_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  key: «linear-api-key»
+case:     a sha256 in a cache key
+in:       key: lin_api_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      key: «linear-api-key»
 
-case: an md5 behind the prefix, eight characters short of a body
-in:   lin_api_0123456789abcdef0123456789abcdef
-out:  lin_api_0123456789abcdef0123456789abcdef
+case:     an md5 behind the prefix, eight characters short of a body
+in:       lin_api_0123456789abcdef0123456789abcdef
+out:      lin_api_0123456789abcdef0123456789abcdef
 
-case: a sha1 behind hyphens rather than the prefix
-in:   lin-api-0123456789abcdef0123456789abcdef01234567
-out:  lin-api-0123456789abcdef0123456789abcdef01234567
+case:     a sha1 behind hyphens rather than the prefix
+in:       lin-api-0123456789abcdef0123456789abcdef01234567
+out:      lin-api-0123456789abcdef0123456789abcdef01234567
 
 # And what this pattern leaves alone. The first four are the prefix, read in the
 # case Linear writes it, in both of the underscores it carries and in the word
@@ -203,37 +203,37 @@ out:  lin-api-0123456789abcdef0123456789abcdef01234567
 # two hold no underscore where the prefix wants one, so neither holds a position
 # to be found at however long it runs.
 
-case: an uppercase prefix
-in:   LIN_API_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  LIN_API_0123456789abcdefghijklmnopqrstuvwxyz0123
+case:     an uppercase prefix
+in:       LIN_API_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      LIN_API_0123456789abcdefghijklmnopqrstuvwxyz0123
 
-case: hyphens where the prefix carries underscores
-in:   lin-api-0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  lin-api-0123456789abcdefghijklmnopqrstuvwxyz0123
+case:     hyphens where the prefix carries underscores
+in:       lin-api-0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      lin-api-0123456789abcdefghijklmnopqrstuvwxyz0123
 
-case: the prefix without its closing underscore
-in:   lin_api0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  lin_api0123456789abcdefghijklmnopqrstuvwxyz0123
+case:     the prefix without its closing underscore
+in:       lin_api0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      lin_api0123456789abcdefghijklmnopqrstuvwxyz0123
 
-case: another word where the prefix carries api
-in:   lin_key_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  lin_key_0123456789abcdefghijklmnopqrstuvwxyz0123
+case:     another word where the prefix carries api
+in:       lin_key_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      lin_key_0123456789abcdefghijklmnopqrstuvwxyz0123
 
-case: a body broken by a space
-in:   lin_api_0123456789abcdefghij lmnopqrstuvwxyz0123
-out:  lin_api_0123456789abcdefghij lmnopqrstuvwxyz0123
+case:     a body broken by a space
+in:       lin_api_0123456789abcdefghij lmnopqrstuvwxyz0123
+out:      lin_api_0123456789abcdefghij lmnopqrstuvwxyz0123
 
-case: a run of the right length opening with no prefix
-in:   0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  0123456789abcdefghijklmnopqrstuvwxyz0123
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      0123456789abcdefghijklmnopqrstuvwxyz0123
 
-case: a hexadecimal digest
-in:   sha1=0123456789abcdef0123456789abcdef01234567
-out:  sha1=0123456789abcdef0123456789abcdef01234567
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
 
-case: prose
-in:   there is no credential in this sentence
-out:  there is no credential in this sentence
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
 
 # The prefix this pattern does not read. Linear's changelog names lin_oauth_
 # beside lin_api_ and names nothing else about it — no ruleset carries a rule
@@ -243,10 +243,10 @@ out:  there is no credential in this sentence
 # cases below are here to move with the scan: a body invented for the second
 # prefix would start locating them.
 
-case: an oauth access token
-in:   lin_oauth_0123456789abcdefghijklmnopqrstuvwxyz0123
-out:  lin_oauth_0123456789abcdefghijklmnopqrstuvwxyz0123
+case:     an oauth access token
+in:       lin_oauth_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      lin_oauth_0123456789abcdefghijklmnopqrstuvwxyz0123
 
-case: an oauth access token in an environment assignment
-in:   LINEAR_OAUTH_TOKEN=lin_oauth_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  LINEAR_OAUTH_TOKEN=lin_oauth_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     an oauth access token in an environment assignment
+in:       LINEAR_OAUTH_TOKEN=lin_oauth_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      LINEAR_OAUTH_TOKEN=lin_oauth_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef

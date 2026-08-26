@@ -18,25 +18,25 @@ patterns: cloudflare-api-key
 # goes in a header of its own rather than in the bearer header a token goes in,
 # and beside the email address of the user holding it.
 
-case: a key in an environment assignment
-in:   CLOUDFLARE_API_KEY=cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  CLOUDFLARE_API_KEY=«cloudflare-api-key»
+case:     a key in an environment assignment
+in:       CLOUDFLARE_API_KEY=cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      CLOUDFLARE_API_KEY=«cloudflare-api-key»
 
-case: a key in the auth key header
-in:   X-Auth-Email: user@example.com\nX-Auth-Key: cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  X-Auth-Email: user@example.com\nX-Auth-Key: «cloudflare-api-key»
+case:     a key in the auth key header
+in:       X-Auth-Email: user@example.com\nX-Auth-Key: cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      X-Auth-Email: user@example.com\nX-Auth-Key: «cloudflare-api-key»
 
-case: a key in the response that reports it
-in:   {"result":{"id":"0123456789abcdef0123456789abcdef","value":"cfk_0123456789abcdef0123456789abcdef0123456789abcdef"}}
-out:  {"result":{"id":"0123456789abcdef0123456789abcdef","value":"«cloudflare-api-key»"}}
+case:     a key in the response that reports it
+in:       {"result":{"id":"0123456789abcdef0123456789abcdef","value":"cfk_0123456789abcdef0123456789abcdef0123456789abcdef"}}
+out:      {"result":{"id":"0123456789abcdef0123456789abcdef","value":"«cloudflare-api-key»"}}
 
-case: a key on a command line
-in:   curl -H "X-Auth-Key: cfk_0123456789abcdef0123456789abcdef0123456789abcdef" https://api.cloudflare.com/client/v4/user
-out:  curl -H "X-Auth-Key: «cloudflare-api-key»" https://api.cloudflare.com/client/v4/user
+case:     a key on a command line
+in:       curl -H "X-Auth-Key: cfk_0123456789abcdef0123456789abcdef0123456789abcdef" https://api.cloudflare.com/client/v4/user
+out:      curl -H "X-Auth-Key: «cloudflare-api-key»" https://api.cloudflare.com/client/v4/user
 
-case: a key at the end of a sentence
-in:   the key is cfk_0123456789abcdef0123456789abcdef0123456789abcdef.
-out:  the key is «cloudflare-api-key».
+case:     a key at the end of a sentence
+in:       the key is cfk_0123456789abcdef0123456789abcdef0123456789abcdef.
+out:      the key is «cloudflare-api-key».
 
 # The alphabets, which are two rather than one. The forty characters of the
 # secret are letters and digits, so they run past f and admit neither the hyphen
@@ -47,29 +47,29 @@ out:  the key is «cloudflare-api-key».
 # is read in one case, and the case named "an uppercase prefix" below is what
 # that comes to.
 
-case: an uppercase body
-in:   cfk_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
-out:  «cloudflare-api-key»
+case:     an uppercase body
+in:       cfk_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «cloudflare-api-key»
 
-case: a secret carrying letters past f
-in:   cfk_0123456789abcdefghijklmnopqrstuvwxyzABCD0123abcd
-out:  «cloudflare-api-key»
+case:     a secret carrying letters past f
+in:       cfk_0123456789abcdefghijklmnopqrstuvwxyzABCD0123abcd
+out:      «cloudflare-api-key»
 
-case: a letter past f at the end of the checksum
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdeg
-out:  cfk_0123456789abcdef0123456789abcdef0123456789abcdeg
+case:     a letter past f at the end of the checksum
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdeg
+out:      cfk_0123456789abcdef0123456789abcdef0123456789abcdeg
 
-case: a letter past f at the start of the checksum
-in:   cfk_0123456789abcdef0123456789abcdef01234567gabcdef0
-out:  cfk_0123456789abcdef0123456789abcdef01234567gabcdef0
+case:     a letter past f at the start of the checksum
+in:       cfk_0123456789abcdef0123456789abcdef01234567gabcdef0
+out:      cfk_0123456789abcdef0123456789abcdef01234567gabcdef0
 
-case: a hyphen inside the secret
-in:   cfk_0123456789abcdef-123456789abcdef0123456789abcdef
-out:  cfk_0123456789abcdef-123456789abcdef0123456789abcdef
+case:     a hyphen inside the secret
+in:       cfk_0123456789abcdef-123456789abcdef0123456789abcdef
+out:      cfk_0123456789abcdef-123456789abcdef0123456789abcdef
 
-case: an underscore inside the secret
-in:   cfk_0123456789abcdef_123456789abcdef0123456789abcdef
-out:  cfk_0123456789abcdef_123456789abcdef0123456789abcdef
+case:     an underscore inside the secret
+in:       cfk_0123456789abcdef_123456789abcdef0123456789abcdef
+out:      cfk_0123456789abcdef_123456789abcdef0123456789abcdef
 
 # The lengths. Forty is what Cloudflare's page on token formats writes, and both
 # forty and eight are what the Credentials and Secrets row of its predefined DLP
@@ -78,17 +78,17 @@ out:  cfk_0123456789abcdef_123456789abcdef0123456789abcdef
 # short is located nowhere, and a run one character longer is a key with a
 # character written after it.
 
-case: a body of forty-eight characters is a key
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-key»
+case:     a body of forty-eight characters is a key
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-key»
 
-case: a body one character short is not
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcde
-out:  cfk_0123456789abcdef0123456789abcdef0123456789abcde
+case:     a body one character short is not
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcde
+out:      cfk_0123456789abcdef0123456789abcdef0123456789abcde
 
-case: a body run one character longer is a key and the character after it
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdef0
-out:  «cloudflare-api-key»0
+case:     a body run one character longer is a key and the character after it
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdef0
+out:      «cloudflare-api-key»0
 
 # The checksum is read as a shape and not verified, where Cloudflare's own
 # scanner recomputes it. The two cases below carry the same secret and different
@@ -96,13 +96,13 @@ out:  «cloudflare-api-key»0
 # redacted anyway: a key whose checksum was mistyped or truncated is still a
 # secret somebody can read.
 
-case: one checksum over a secret
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-key»
+case:     one checksum over a secret
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-key»
 
-case: another checksum over the same secret
-in:   cfk_0123456789abcdef0123456789abcdef01234567abcdef01
-out:  «cloudflare-api-key»
+case:     another checksum over the same secret
+in:       cfk_0123456789abcdef0123456789abcdef01234567abcdef01
+out:      «cloudflare-api-key»
 
 # What a key may be written against. There is no boundary on either side of the
 # prefix, so a key keeps its span whatever word character it abuts, and what
@@ -111,29 +111,29 @@ out:  «cloudflare-api-key»
 # buy, and it is all it would buy: no word is spelled cfk, so what can reach the
 # prefix is a snake_case name whose last segment is those three characters.
 
-case: a key after an underscore
-in:   CLOUDFLARE_API_KEY_cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  CLOUDFLARE_API_KEY_«cloudflare-api-key»
+case:     a key after an underscore
+in:       CLOUDFLARE_API_KEY_cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      CLOUDFLARE_API_KEY_«cloudflare-api-key»
 
-case: a key after a letter
-in:   xcfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  x«cloudflare-api-key»
+case:     a key after a letter
+in:       xcfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      x«cloudflare-api-key»
 
-case: a snake_case name closing on the prefix
-in:   zone_cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  zone_«cloudflare-api-key»
+case:     a snake_case name closing on the prefix
+in:       zone_cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      zone_«cloudflare-api-key»
 
-case: a word written against a key
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdefsuffix
-out:  «cloudflare-api-key»suffix
+case:     a word written against a key
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdefsuffix
+out:      «cloudflare-api-key»suffix
 
-case: a hyphenated word written against a key
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdef-suffix
-out:  «cloudflare-api-key»-suffix
+case:     a hyphenated word written against a key
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdef-suffix
+out:      «cloudflare-api-key»-suffix
 
-case: an underscored word written against a key
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdef_suffix
-out:  «cloudflare-api-key»_suffix
+case:     an underscored word written against a key
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdef_suffix
+out:      «cloudflare-api-key»_suffix
 
 # Two keys written together, and a key written inside another. The underscore
 # the prefix closes with is written in no body, so it has to fall past the first
@@ -145,25 +145,25 @@ out:  «cloudflare-api-key»_suffix
 # consuming its match for that shape: the two spans overlap and are redacted as
 # one, where a scan consuming the first would have left the second whole.
 
-case: two keys with nothing between them
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdefcfk_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
-out:  «cloudflare-api-key»«cloudflare-api-key»
+case:     two keys with nothing between them
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdefcfk_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «cloudflare-api-key»«cloudflare-api-key»
 
-case: two keys separated by a space
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdef cfk_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
-out:  «cloudflare-api-key» «cloudflare-api-key»
+case:     two keys separated by a space
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdef cfk_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «cloudflare-api-key» «cloudflare-api-key»
 
-case: a key beginning at the last two characters of another
-in:   cfk_0123456789abcdef0123456789abcdef01234567012345cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-key»
+case:     a key beginning at the last two characters of another
+in:       cfk_0123456789abcdef0123456789abcdef01234567012345cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-key»
 
-case: a key beginning at the last character of another
-in:   cfk_0123456789abcdef0123456789abcdef012345670123456cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-key»
+case:     a key beginning at the last character of another
+in:       cfk_0123456789abcdef0123456789abcdef012345670123456cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-key»
 
-case: a candidate whose body opens with a prefix
-in:   cfk_cfk_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  cfk_«cloudflare-api-key»
+case:     a candidate whose body opens with a prefix
+in:       cfk_cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      cfk_«cloudflare-api-key»
 
 # A digest written behind the prefix, which every prefix in this package leaves
 # as a collision and which this one pays rather than avoids. Hexadecimal digits
@@ -177,21 +177,21 @@ out:  cfk_«cloudflare-api-key»
 # digests are turned away by the counts, and a digest on its own carries no
 # underscore and so holds no prefix to be found in.
 
-case: a sha256 behind the prefix
-in:   cfk_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «cloudflare-api-key»0123456789abcdef
+case:     a sha256 behind the prefix
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «cloudflare-api-key»0123456789abcdef
 
-case: a sha1 behind the prefix
-in:   cfk_0123456789abcdef0123456789abcdef01234567
-out:  cfk_0123456789abcdef0123456789abcdef01234567
+case:     a sha1 behind the prefix
+in:       cfk_0123456789abcdef0123456789abcdef01234567
+out:      cfk_0123456789abcdef0123456789abcdef01234567
 
-case: an md5 behind the prefix
-in:   cfk_0123456789abcdef0123456789abcdef
-out:  cfk_0123456789abcdef0123456789abcdef
+case:     an md5 behind the prefix
+in:       cfk_0123456789abcdef0123456789abcdef
+out:      cfk_0123456789abcdef0123456789abcdef
 
-case: a sha256 in a cache key
-in:   key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a sha256 in a cache key
+in:       key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 # And what this pattern leaves alone. First the prefix: the case Cloudflare
 # writes it in, the two prefixes standing in front of the credentials it calls
@@ -204,46 +204,46 @@ out:  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 # two characters both Cloudflare formats open with as prose writes them, and the
 # log line no pattern here has anything to find in.
 
-case: an uppercase prefix
-in:   CFK_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  CFK_0123456789abcdef0123456789abcdef0123456789abcdef
+case:     an uppercase prefix
+in:       CFK_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      CFK_0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: the api token prefix a user owns
-in:   cfut_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  cfut_0123456789abcdef0123456789abcdef0123456789abcdef
+case:     the api token prefix a user owns
+in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      cfut_0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: the api token prefix an account owns
-in:   cfat_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  cfat_0123456789abcdef0123456789abcdef0123456789abcdef
+case:     the api token prefix an account owns
+in:       cfat_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      cfat_0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a kind cloudflare issues none of
-in:   cfx_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  cfx_0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a kind cloudflare issues none of
+in:       cfx_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      cfx_0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a hyphen where the prefix carries its underscore
-in:   cfk-0123456789abcdef0123456789abcdef0123456789abcdef
-out:  cfk-0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a hyphen where the prefix carries its underscore
+in:       cfk-0123456789abcdef0123456789abcdef0123456789abcdef
+out:      cfk-0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a key of the format issued before the prefix
-in:   CLOUDFLARE_API_KEY=0123456789abcdef0123456789abcdef01234
-out:  CLOUDFLARE_API_KEY=0123456789abcdef0123456789abcdef01234
+case:     a key of the format issued before the prefix
+in:       CLOUDFLARE_API_KEY=0123456789abcdef0123456789abcdef01234
+out:      CLOUDFLARE_API_KEY=0123456789abcdef0123456789abcdef01234
 
-case: the longest key of the format issued before the prefix
-in:   CLOUDFLARE_API_KEY=0123456789abcdef0123456789abcdef0123456789abc
-out:  CLOUDFLARE_API_KEY=0123456789abcdef0123456789abcdef0123456789abc
+case:     the longest key of the format issued before the prefix
+in:       CLOUDFLARE_API_KEY=0123456789abcdef0123456789abcdef0123456789abc
+out:      CLOUDFLARE_API_KEY=0123456789abcdef0123456789abcdef0123456789abc
 
-case: a body of the right shape opening with no prefix
-in:   xxx_0123456789abcdef0123456789abcdef0123456789abcdef
-out:  xxx_0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a body of the right shape opening with no prefix
+in:       xxx_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      xxx_0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a key broken by a space
-in:   cfk_0123456789abcdef0123456789 abcdef0123456789abcdef
-out:  cfk_0123456789abcdef0123456789 abcdef0123456789abcdef
+case:     a key broken by a space
+in:       cfk_0123456789abcdef0123456789 abcdef0123456789abcdef
+out:      cfk_0123456789abcdef0123456789 abcdef0123456789abcdef
 
-case: the opening as prose writes it
-in:   cf. the token formats page for what a key is made of
-out:  cf. the token formats page for what a key is made of
+case:     the opening as prose writes it
+in:       cf. the token formats page for what a key is made of
+out:      cf. the token formats page for what a key is made of
 
-case: a log line
-in:   time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/user
-out:  time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/user
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/user
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/user

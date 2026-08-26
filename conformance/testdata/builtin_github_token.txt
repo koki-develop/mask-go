@@ -9,29 +9,29 @@ patterns: github-token
 # length, so each kind is stated once rather than being assumed to follow from
 # another.
 
-case: a personal access token in an environment assignment
-in:   GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  GITHUB_TOKEN=«github-token»
+case:     a personal access token in an environment assignment
+in:       GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      GITHUB_TOKEN=«github-token»
 
-case: an oauth app access token on its own
-in:   gho_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «github-token»
+case:     an oauth app access token on its own
+in:       gho_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «github-token»
 
-case: a github app user access token
-in:   ghu_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «github-token»
+case:     a github app user access token
+in:       ghu_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «github-token»
 
-case: an installation access token in its classic form
-in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «github-token»
+case:     an installation access token in its classic form
+in:       ghs_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «github-token»
 
-case: a refresh token
-in:   ghr_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «github-token»
+case:     a refresh token
+in:       ghr_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «github-token»
 
-case: a fine grained personal access token
-in:   github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  «github-token»
+case:     a fine grained personal access token
+in:       github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+out:      «github-token»
 
 # The lengths either side of what each kind must reach. GitHub gives no length,
 # so what the library accepts is the shortest body it has seen, and the pair of
@@ -39,25 +39,25 @@ out:  «github-token»
 # written without the underscore a real body carries, because it is the count
 # that decides here and not the shape.
 
-case: a classic body of thirty-six characters is a token
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «github-token»
+case:     a classic body of thirty-six characters is a token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «github-token»
 
-case: a classic body of thirty-five characters is not
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxy
-out:  ghp_0123456789abcdefghijklmnopqrstuvwxy
+case:     a classic body of thirty-five characters is not
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxy
+out:      ghp_0123456789abcdefghijklmnopqrstuvwxy
 
-case: a classic body longer than thirty-six characters is redacted whole
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz0123456789
-out:  «github-token»
+case:     a classic body longer than thirty-six characters is redacted whole
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz0123456789
+out:      «github-token»
 
-case: a fine grained body of eighty-two characters is a token
-in:   github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789
-out:  «github-token»
+case:     a fine grained body of eighty-two characters is a token
+in:       github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789
+out:      «github-token»
 
-case: a fine grained body of eighty-one characters is not
-in:   github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678
-out:  github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678
+case:     a fine grained body of eighty-one characters is not
+in:       github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678
+out:      github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz012345678
 
 # The stateless installation token, which carries a JWT after the app id.
 #
@@ -74,49 +74,49 @@ out:  github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopq
 # be a classic body, that body is what is located, which the block on file
 # names below states.
 
-case: a stateless installation token
-in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token
+in:       ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: a stateless user access token
-in:   ghu_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     a stateless user access token
+in:       ghu_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: a personal access token prefix in the stateless form
-in:   ghp_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghp_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a personal access token prefix in the stateless form
+in:       ghp_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghp_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: an oauth app access token prefix in the stateless form
-in:   gho_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  gho_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     an oauth app access token prefix in the stateless form
+in:       gho_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      gho_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: a refresh token prefix in the stateless form
-in:   ghr_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghr_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a refresh token prefix in the stateless form
+in:       ghr_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghr_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: a stateless installation token with a long app id
-in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token with a long app id
+in:       ghs_0123456789abcdefghijklmnopqrstuvwxyz0123_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: an app id as long as a whole classic token body
-in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     an app id as long as a whole classic token body
+in:       ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: a stateless installation token cut before its signature is not redacted
-in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
-out:  ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
+case:     a stateless installation token cut before its signature is not redacted
+in:       ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
+out:      ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ
 
-case: one character of signature is enough for the whole token
-in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0
-out:  «github-token»
+case:     one character of signature is enough for the whole token
+in:       ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0
+out:      «github-token»
 
-case: an app id followed by something that is not a jwt
-in:   ghs_123456_0123456789abcdef.0123456789.0123456789
-out:  ghs_123456_0123456789abcdef.0123456789.0123456789
+case:     an app id followed by something that is not a jwt
+in:       ghs_123456_0123456789abcdef.0123456789.0123456789
+out:      ghs_123456_0123456789abcdef.0123456789.0123456789
 
-case: an installation token followed by a file name is not drawn into one span
-in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_backup.tar.gz
-out:  «github-token»_backup.tar.gz
+case:     an installation token followed by a file name is not drawn into one span
+in:       ghs_0123456789abcdefghijklmnopqrstuvwxyz_backup.tar.gz
+out:      «github-token»_backup.tar.gz
 
 # The same file name, beginning with the two letters a JOSE header opens with.
 # What anchors the JWT of a stateless installation token is what anchors one
@@ -141,41 +141,41 @@ out:  «github-token»_backup.tar.gz
 # not: the first goes into the span, the second is left where it is and the
 # token beside it is redacted on its own.
 
-case: an installation token followed by a file name beginning with the letters a header opens with
-in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyes.tar.gz
-out:  «github-token»_eyes.tar.gz
+case:     an installation token followed by a file name beginning with the letters a header opens with
+in:       ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyes.tar.gz
+out:      «github-token»_eyes.tar.gz
 
-case: an app id followed by a file name beginning with those letters
-in:   ghs_1_eyes.tar.gz
-out:  ghs_1_eyes.tar.gz
+case:     an app id followed by a file name beginning with those letters
+in:       ghs_1_eyes.tar.gz
+out:      ghs_1_eyes.tar.gz
 
-case: a file name of two extensions after an app id
-in:   ghs_123456_eyeball.jpg.bak
-out:  ghs_123456_eyeball.jpg.bak
+case:     a file name of two extensions after an app id
+in:       ghs_123456_eyeball.jpg.bak
+out:      ghs_123456_eyeball.jpg.bak
 
-case: the same file name after a kind of token that carries no jwt
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz_eyes.tar.gz
-out:  «github-token»_eyes.tar.gz
+case:     the same file name after a kind of token that carries no jwt
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz_eyes.tar.gz
+out:      «github-token»_eyes.tar.gz
 
-case: a file name with one extension after an app id
-in:   ghs_1_eyes.tar
-out:  ghs_1_eyes.tar
+case:     a file name with one extension after an app id
+in:       ghs_1_eyes.tar
+out:      ghs_1_eyes.tar
 
-case: an app id followed by a file name whose third character a header leaves
-in:   ghs_123456_eyJson.min.js
-out:  «github-token»
+case:     an app id followed by a file name whose third character a header leaves
+in:       ghs_123456_eyJson.min.js
+out:      «github-token»
 
-case: an installation token followed by such a file name is drawn into one span
-in:   ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js
-out:  «github-token»
+case:     an installation token followed by such a file name is drawn into one span
+in:       ghs_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js
+out:      «github-token»
 
-case: a user access token followed by such a file name is drawn in as well
-in:   ghu_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js
-out:  «github-token»
+case:     a user access token followed by such a file name is drawn in as well
+in:       ghu_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js
+out:      «github-token»
 
-case: the same file name after a kind read for the classic form alone
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js
-out:  «github-token»_eyJson.min.js
+case:     the same file name after a kind read for the classic form alone
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz_eyJson.min.js
+out:      «github-token»_eyJson.min.js
 
 # The third character of the header, which both patterns read. It says which
 # byte stands behind the brace a JSON object opens with: four of the characters
@@ -190,29 +190,29 @@ out:  «github-token»_eyJson.min.js
 # one. That is why the four below are tokens though none of them holds a header
 # the JWT pattern would accept.
 
-case: a stateless installation token whose header opens on a digit
-in:   ghs_123456_eyI0123456789abcdef.0123456789abcdef.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token whose header opens on a digit
+in:       ghs_123456_eyI0123456789abcdef.0123456789abcdef.0123456789abcdef
+out:      «github-token»
 
-case: a stateless installation token whose header opens on a letter
-in:   ghs_123456_eyJ0123456789abcdef.0123456789abcdef.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token whose header opens on a letter
+in:       ghs_123456_eyJ0123456789abcdef.0123456789abcdef.0123456789abcdef
+out:      «github-token»
 
-case: a stateless installation token whose header opens on a byte no character opens with
-in:   ghs_123456_eyK0123456789abcdef.0123456789abcdef.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token whose header opens on a byte no character opens with
+in:       ghs_123456_eyK0123456789abcdef.0123456789abcdef.0123456789abcdef
+out:      «github-token»
 
-case: a stateless installation token whose header opens outside ascii
-in:   ghs_123456_eyL0123456789abcdef.0123456789abcdef.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token whose header opens outside ascii
+in:       ghs_123456_eyL0123456789abcdef.0123456789abcdef.0123456789abcdef
+out:      «github-token»
 
-case: an app id followed by a run one character below the four a quote leaves
-in:   ghs_123456_eyH0123456789abcdef.0123456789abcdef.0123456789abcdef
-out:  ghs_123456_eyH0123456789abcdef.0123456789abcdef.0123456789abcdef
+case:     an app id followed by a run one character below the four a quote leaves
+in:       ghs_123456_eyH0123456789abcdef.0123456789abcdef.0123456789abcdef
+out:      ghs_123456_eyH0123456789abcdef.0123456789abcdef.0123456789abcdef
 
-case: an app id followed by a run one character above them
-in:   ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
-out:  ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
+case:     an app id followed by a run one character above them
+in:       ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
+out:      ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
 
 # And the character a space leaves, which is admitted the same way: JSON allows
 # a space between the brace and the first member name, and the anchor reads the
@@ -237,105 +237,105 @@ out:  ghs_123456_eyM0123456789abcdef.0123456789abcdef.0123456789abcdef
 # clear with both patterns enabled; builtins_together.txt states that where the
 # two can be read side by side.
 
-case: a stateless installation token whose header is written with a space after the brace
-in:   ghs_123456_eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token whose header is written with a space after the brace
+in:       ghs_123456_eyAiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: a stateless installation token whose header is written with a tab after the brace
-in:   ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a stateless installation token whose header is written with a tab after the brace
+in:       ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghs_123456_ewkiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: a stateless installation token whose header is written with a carriage return after the brace
-in:   ghs_123456_ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghs_123456_ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a stateless installation token whose header is written with a carriage return after the brace
+in:       ghs_123456_ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghs_123456_ew0iYWxnIjoiSFMyNTYifQ.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: a stateless installation token whose header is written over three lines
-in:   ghs_123456_ewoiYWxnIjoiSFMyNTYiCn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghs_123456_ewoiYWxnIjoiSFMyNTYiCn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a stateless installation token whose header is written over three lines
+in:       ghs_123456_ewoiYWxnIjoiSFMyNTYiCn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghs_123456_ewoiYWxnIjoiSFMyNTYiCn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: an app id followed by a run one character above the four a space leaves
-in:   ghs_123456_eyE0123456789abcdef.0123456789abcdef.0123456789abcdef
-out:  ghs_123456_eyE0123456789abcdef.0123456789abcdef.0123456789abcdef
+case:     an app id followed by a run one character above the four a space leaves
+in:       ghs_123456_eyE0123456789abcdef.0123456789abcdef.0123456789abcdef
+out:      ghs_123456_eyE0123456789abcdef.0123456789abcdef.0123456789abcdef
 
 # Where a token sits.
 
-case: a token in a json body
-in:   {"token":"ghp_0123456789abcdefghijklmnopqrstuvwxyz","scope":"repo"}
-out:  {"token":"«github-token»","scope":"repo"}
+case:     a token in a json body
+in:       {"token":"ghp_0123456789abcdefghijklmnopqrstuvwxyz","scope":"repo"}
+out:      {"token":"«github-token»","scope":"repo"}
 
-case: a token in an authorization header
-in:   Authorization: token ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  Authorization: token «github-token»
+case:     a token in an authorization header
+in:       Authorization: token ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      Authorization: token «github-token»
 
-case: a token exported by a shell
-in:   export GITHUB_TOKEN="ghp_0123456789abcdefghijklmnopqrstuvwxyz"
-out:  export GITHUB_TOKEN="«github-token»"
+case:     a token exported by a shell
+in:       export GITHUB_TOKEN="ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+out:      export GITHUB_TOKEN="«github-token»"
 
-case: a token in a clone url
-in:   git clone https://x-access-token:ghs_0123456789abcdefghijklmnopqrstuvwxyz@github.com/koki-develop/mask-go.git
-out:  git clone https://x-access-token:«github-token»@github.com/koki-develop/mask-go.git
+case:     a token in a clone url
+in:       git clone https://x-access-token:ghs_0123456789abcdefghijklmnopqrstuvwxyz@github.com/koki-develop/mask-go.git
+out:      git clone https://x-access-token:«github-token»@github.com/koki-develop/mask-go.git
 
-case: a token run together with the word before it
-in:   TOKEN_ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  TOKEN_«github-token»
+case:     a token run together with the word before it
+in:       TOKEN_ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      TOKEN_«github-token»
 
-case: a token ending a sentence keeps the full stop
-in:   the token is ghp_0123456789abcdefghijklmnopqrstuvwxyz.
-out:  the token is «github-token».
+case:     a token ending a sentence keeps the full stop
+in:       the token is ghp_0123456789abcdefghijklmnopqrstuvwxyz.
+out:      the token is «github-token».
 
-case: two tokens on one line
-in:   old=ghp_0123456789abcdefghijklmnopqrstuvwxyz new=gho_0123456789abcdefghijklmnopqrstuvwxyz
-out:  old=«github-token» new=«github-token»
+case:     two tokens on one line
+in:       old=ghp_0123456789abcdefghijklmnopqrstuvwxyz new=gho_0123456789abcdefghijklmnopqrstuvwxyz
+out:      old=«github-token» new=«github-token»
 
-case: a classic token and a fine grained one
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789
-out:  «github-token» «github-token»
+case:     a classic token and a fine grained one
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789
+out:      «github-token» «github-token»
 
-case: a token at the very start and another at the very end
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz in between gho_0123456789abcdefghijklmnopqrstuvwxyz
-out:  «github-token» in between «github-token»
+case:     a token at the very start and another at the very end
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz in between gho_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «github-token» in between «github-token»
 
 # What is not a token.
 
-case: prose mentioning a ghost
-in:   the ghost of a token haunts this line
-out:  the ghost of a token haunts this line
+case:     prose mentioning a ghost
+in:       the ghost of a token haunts this line
+out:      the ghost of a token haunts this line
 
-case: a prefix with no body
-in:   ghp_
-out:  ghp_
+case:     a prefix with no body
+in:       ghp_
+out:      ghp_
 
-case: a prefix naming no kind of token
-in:   ghx_0123456789abcdefghijklmnopqrstuvwxyz
-out:  ghx_0123456789abcdefghijklmnopqrstuvwxyz
+case:     a prefix naming no kind of token
+in:       ghx_0123456789abcdefghijklmnopqrstuvwxyz
+out:      ghx_0123456789abcdefghijklmnopqrstuvwxyz
 
-case: a prefix written with a hyphen
-in:   ghp-0123456789abcdefghijklmnopqrstuvwxyz
-out:  ghp-0123456789abcdefghijklmnopqrstuvwxyz
+case:     a prefix written with a hyphen
+in:       ghp-0123456789abcdefghijklmnopqrstuvwxyz
+out:      ghp-0123456789abcdefghijklmnopqrstuvwxyz
 
-case: a prefix missing its kind
-in:   gh_0123456789abcdefghijklmnopqrstuvwxyz
-out:  gh_0123456789abcdefghijklmnopqrstuvwxyz
+case:     a prefix missing its kind
+in:       gh_0123456789abcdefghijklmnopqrstuvwxyz
+out:      gh_0123456789abcdefghijklmnopqrstuvwxyz
 
-case: a prefix in capitals
-in:   GHP_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
-out:  GHP_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+case:     a prefix in capitals
+in:       GHP_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      GHP_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
 
-case: a body broken by a hyphen
-in:   ghp_0123456789abcdef-ghijklmnopqrstuvwxyz0123456
-out:  ghp_0123456789abcdef-ghijklmnopqrstuvwxyz0123456
+case:     a body broken by a hyphen
+in:       ghp_0123456789abcdef-ghijklmnopqrstuvwxyz0123456
+out:      ghp_0123456789abcdef-ghijklmnopqrstuvwxyz0123456
 
-case: an environment assignment with nothing after it
-in:   GITHUB_TOKEN=
-out:  GITHUB_TOKEN=
+case:     an environment assignment with nothing after it
+in:       GITHUB_TOKEN=
+out:      GITHUB_TOKEN=
 
-case: a git command line
-in:   git push origin main --force-with-lease
-out:  git push origin main --force-with-lease
+case:     a git command line
+in:       git push origin main --force-with-lease
+out:      git push origin main --force-with-lease
 
-case: a fine grained prefix with a classic length body
-in:   github_pat_0123456789abcdefghijklmnopqrstuvwxyz
-out:  github_pat_0123456789abcdefghijklmnopqrstuvwxyz
+case:     a fine grained prefix with a classic length body
+in:       github_pat_0123456789abcdefghijklmnopqrstuvwxyz
+out:      github_pat_0123456789abcdefghijklmnopqrstuvwxyz
 
 # The body of a real token is base62: GitHub encodes 30 characters of randomness
 # and a six character CRC32 checksum, so capitals are as ordinary in one as
@@ -347,37 +347,37 @@ out:  github_pat_0123456789abcdefghijklmnopqrstuvwxyz
 # in: the third character of an encoded JOSE header is one of four, and all
 # four are capitals.
 
-case: a classic token whose body carries capitals
-in:   ghp_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
-out:  «github-token»
+case:     a classic token whose body carries capitals
+in:       ghp_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
+out:      «github-token»
 
-case: a classic token whose body mixes both cases and digits
-in:   ghp_0123456789abcdefABCDEFghijKLMNopqrST
-out:  «github-token»
+case:     a classic token whose body mixes both cases and digits
+in:       ghp_0123456789abcdefABCDEFghijKLMNopqrST
+out:      «github-token»
 
-case: a classic token whose last six characters are a checksum in capitals
-in:   ghp_0123456789abcdefghijklmnopqrstABCDEF
-out:  «github-token»
+case:     a classic token whose last six characters are a checksum in capitals
+in:       ghp_0123456789abcdefghijklmnopqrstABCDEF
+out:      «github-token»
 
-case: an oauth app access token whose body carries capitals
-in:   gho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
-out:  «github-token»
+case:     an oauth app access token whose body carries capitals
+in:       gho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
+out:      «github-token»
 
-case: a github app user access token whose body carries capitals
-in:   ghu_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
-out:  «github-token»
+case:     a github app user access token whose body carries capitals
+in:       ghu_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
+out:      «github-token»
 
-case: an installation access token whose body carries capitals
-in:   ghs_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
-out:  «github-token»
+case:     an installation access token whose body carries capitals
+in:       ghs_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
+out:      «github-token»
 
-case: a refresh token whose body carries capitals
-in:   ghr_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
-out:  «github-token»
+case:     a refresh token whose body carries capitals
+in:       ghr_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
+out:      «github-token»
 
-case: a classic token whose body carries capitals in an environment assignment
-in:   GITHUB_TOKEN=ghp_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
-out:  GITHUB_TOKEN=«github-token»
+case:     a classic token whose body carries capitals in an environment assignment
+in:       GITHUB_TOKEN=ghp_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
+out:      GITHUB_TOKEN=«github-token»
 
 # The fine grained token where it is written down. Its form — github_pat_,
 # twenty-two characters, an underscore, and fifty-nine more, ninety-three in
@@ -394,37 +394,37 @@ out:  GITHUB_TOKEN=«github-token»
 # to eighty-two and is. The count is what decides, as it does for the pair at
 # the top of this file, and the lengths of the runs decide nothing.
 
-case: a fine grained token in an environment assignment
-in:   GITHUB_TOKEN=github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  GITHUB_TOKEN=«github-token»
+case:     a fine grained token in an environment assignment
+in:       GITHUB_TOKEN=github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+out:      GITHUB_TOKEN=«github-token»
 
-case: a fine grained token in a json body
-in:   {"token":"github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW"}
-out:  {"token":"«github-token»"}
+case:     a fine grained token in a json body
+in:       {"token":"github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW"}
+out:      {"token":"«github-token»"}
 
-case: a fine grained token in an authorization header
-in:   Authorization: Bearer github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  Authorization: Bearer «github-token»
+case:     a fine grained token in an authorization header
+in:       Authorization: Bearer github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+out:      Authorization: Bearer «github-token»
 
-case: two fine grained tokens on one line
-in:   old=github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW new=github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVZ
-out:  old=«github-token» new=«github-token»
+case:     two fine grained tokens on one line
+in:       old=github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW new=github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVZ
+out:      old=«github-token» new=«github-token»
 
-case: a fine grained body of eighty-one characters, the underscore counted, is not a token
-in:   github_pat_0123456789abcdefABCDE_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  github_pat_0123456789abcdefABCDE_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+case:     a fine grained body of eighty-one characters, the underscore counted, is not a token
+in:       github_pat_0123456789abcdefABCDE_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+out:      github_pat_0123456789abcdefABCDE_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 
-case: a fine grained body of eighty-two whose runs are not the lengths github issues
-in:   github_pat_0123456789abcdefABCDE_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZ
-out:  «github-token»
+case:     a fine grained body of eighty-two whose runs are not the lengths github issues
+in:       github_pat_0123456789abcdefABCDE_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWZ
+out:      «github-token»
 
-case: a fine grained token whose body carries a second underscore
-in:   github_pat_0123456789abcdefABCDEF_0123456789abcdef_hijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  «github-token»
+case:     a fine grained token whose body carries a second underscore
+in:       github_pat_0123456789abcdefABCDEF_0123456789abcdef_hijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+out:      «github-token»
 
-case: a fine grained token with a hyphen where the underscore goes
-in:   github_pat_0123456789abcdefABCDEF-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  github_pat_0123456789abcdefABCDEF-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+case:     a fine grained token with a hyphen where the underscore goes
+in:       github_pat_0123456789abcdefABCDEF-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+out:      github_pat_0123456789abcdefABCDEF-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 
 # And what the underscore costs at the other end of the body. The body is read
 # as far as its alphabet runs and that alphabet holds the underscore, so a word
@@ -437,13 +437,13 @@ out:  github_pat_0123456789abcdefABCDEF-0123456789abcdefghijklmnopqrstuvwxyzABCD
 # where its alphabet does run on is stated for the classic kinds too, under
 # "tokens with nothing between them" below that.
 
-case: a fine grained token followed by an underscore and a word, which goes with it
-in:   github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW_backup
-out:  «github-token»
+case:     a fine grained token followed by an underscore and a word, which goes with it
+in:       github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW_backup
+out:      «github-token»
 
-case: a fine grained token run together with the word before it
-in:   TOKEN_github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  TOKEN_«github-token»
+case:     a fine grained token run together with the word before it
+in:       TOKEN_github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+out:      TOKEN_«github-token»
 
 # The stateless installation token, in the form GitHub moved to in 2026:
 # ghs_, an app id, an underscore and a JWT, around five hundred and twenty
@@ -451,145 +451,145 @@ out:  TOKEN_«github-token»
 # state it at the size it arrives in, and with the app ids and inner tokens it
 # can carry.
 
-case: a stateless installation token at the length github issues
-in:   ghs_123456_eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjAxMjM0NTY3ODlhYmNkZWYifQ.eyJpc3MiOiJnaXRodWItaW50ZXJuYWwiLCJhcHBfaWQiOjEyMzQ1NiwiaW5zdGFsbGF0aW9uX2lkIjo3ODksImV4cCI6MTgwMDAwMDAwMCwiaWF0IjoxNzk5OTk5MDAwLCJqdGkiOiIwMTIzNDU2Nzg5YWJjZGVmLTAxMjMtNDU2Ny04OWFiLWNkZWYwMTIzNDU2NyIsInBlcm1pc3Npb25zIjp7ImNvbnRlbnRzIjoicmVhZCIsImlzc3VlcyI6IndyaXRlIiwicHVsbF9yZXF1ZXN0cyI6IndyaXRlIiwibWV0YWRhdGEiOiJyZWFkIn0sInJlcG9zaXRvcnlfaWRzIjpbMSwyLDMsNCw1LDYsNyw4XX0.0123456789abcdefABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_
-out:  «github-token»
+case:     a stateless installation token at the length github issues
+in:       ghs_123456_eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjAxMjM0NTY3ODlhYmNkZWYifQ.eyJpc3MiOiJnaXRodWItaW50ZXJuYWwiLCJhcHBfaWQiOjEyMzQ1NiwiaW5zdGFsbGF0aW9uX2lkIjo3ODksImV4cCI6MTgwMDAwMDAwMCwiaWF0IjoxNzk5OTk5MDAwLCJqdGkiOiIwMTIzNDU2Nzg5YWJjZGVmLTAxMjMtNDU2Ny04OWFiLWNkZWYwMTIzNDU2NyIsInBlcm1pc3Npb25zIjp7ImNvbnRlbnRzIjoicmVhZCIsImlzc3VlcyI6IndyaXRlIiwicHVsbF9yZXF1ZXN0cyI6IndyaXRlIiwibWV0YWRhdGEiOiJyZWFkIn0sInJlcG9zaXRvcnlfaWRzIjpbMSwyLDMsNCw1LDYsNyw4XX0.0123456789abcdefABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_
+out:      «github-token»
 
-case: a stateless installation token at that length in an authorization header
-in:   Authorization: Bearer ghs_123456_eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjAxMjM0NTY3ODlhYmNkZWYifQ.eyJpc3MiOiJnaXRodWItaW50ZXJuYWwiLCJhcHBfaWQiOjEyMzQ1NiwiaW5zdGFsbGF0aW9uX2lkIjo3ODksImV4cCI6MTgwMDAwMDAwMCwiaWF0IjoxNzk5OTk5MDAwLCJqdGkiOiIwMTIzNDU2Nzg5YWJjZGVmLTAxMjMtNDU2Ny04OWFiLWNkZWYwMTIzNDU2NyIsInBlcm1pc3Npb25zIjp7ImNvbnRlbnRzIjoicmVhZCIsImlzc3VlcyI6IndyaXRlIiwicHVsbF9yZXF1ZXN0cyI6IndyaXRlIiwibWV0YWRhdGEiOiJyZWFkIn0sInJlcG9zaXRvcnlfaWRzIjpbMSwyLDMsNCw1LDYsNyw4XX0.0123456789abcdefABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_
-out:  Authorization: Bearer «github-token»
+case:     a stateless installation token at that length in an authorization header
+in:       Authorization: Bearer ghs_123456_eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjAxMjM0NTY3ODlhYmNkZWYifQ.eyJpc3MiOiJnaXRodWItaW50ZXJuYWwiLCJhcHBfaWQiOjEyMzQ1NiwiaW5zdGFsbGF0aW9uX2lkIjo3ODksImV4cCI6MTgwMDAwMDAwMCwiaWF0IjoxNzk5OTk5MDAwLCJqdGkiOiIwMTIzNDU2Nzg5YWJjZGVmLTAxMjMtNDU2Ny04OWFiLWNkZWYwMTIzNDU2NyIsInBlcm1pc3Npb25zIjp7ImNvbnRlbnRzIjoicmVhZCIsImlzc3VlcyI6IndyaXRlIiwicHVsbF9yZXF1ZXN0cyI6IndyaXRlIiwibWV0YWRhdGEiOiJyZWFkIn0sInJlcG9zaXRvcnlfaWRzIjpbMSwyLDMsNCw1LDYsNyw4XX0.0123456789abcdefABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_
+out:      Authorization: Bearer «github-token»
 
-case: a stateless installation token with no app id
-in:   ghs__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghs__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a stateless installation token with no app id
+in:       ghs__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghs__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: a stateless installation token whose app id is a single digit
-in:   ghs_1_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token whose app id is a single digit
+in:       ghs_1_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: a stateless installation token whose app id carries capitals
-in:   ghs_A0123456789abcdef_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token whose app id carries capitals
+in:       ghs_A0123456789abcdef_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: a stateless installation token whose app id is separated by two underscores
-in:   ghs_123456__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  ghs_123456__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+case:     a stateless installation token whose app id is separated by two underscores
+in:       ghs_123456__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghs_123456__eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 
-case: a stateless installation token whose jwt names alg none and has no signature
-in:   ghs_123456_eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.
-out:  ghs_123456_eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.
+case:     a stateless installation token whose jwt names alg none and has no signature
+in:       ghs_123456_eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.
+out:      ghs_123456_eyJhbGciOiJub25lIn0.eyJzdWIiOiJhYmMifQ.
 
-case: a stateless installation token carrying an encrypted jwt
-in:   ghs_123456_eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.0123456789abcdef.0123456789.0123456789abcdef.0123456789abcdef
-out:  «github-token».0123456789abcdef.0123456789abcdef
+case:     a stateless installation token carrying an encrypted jwt
+in:       ghs_123456_eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0.0123456789abcdef.0123456789.0123456789abcdef.0123456789abcdef
+out:      «github-token».0123456789abcdef.0123456789abcdef
 
-case: a stateless installation token whose jwt carries hyphens and underscores
-in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef-_ABC
-out:  «github-token»
+case:     a stateless installation token whose jwt carries hyphens and underscores
+in:       ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef-_ABC
+out:      «github-token»
 
-case: a stateless installation token whose jwt is followed by a fourth segment
-in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef.0123456789abcdef
-out:  «github-token».0123456789abcdef
+case:     a stateless installation token whose jwt is followed by a fourth segment
+in:       ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef.0123456789abcdef
+out:      «github-token».0123456789abcdef
 
-case: a stateless installation token whose jwt header names no algorithm
-in:   ghs_123456_eyJ0eXAiOiJKV1QiLCJraWQiOiIxIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  «github-token»
+case:     a stateless installation token whose jwt header names no algorithm
+in:       ghs_123456_eyJ0eXAiOiJKV1QiLCJraWQiOiIxIn0.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      «github-token»
 
-case: a stateless installation token in a clone url
-in:   git clone https://x-access-token:ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef@github.com/koki-develop/mask-go.git
-out:  git clone https://x-access-token:«github-token»@github.com/koki-develop/mask-go.git
+case:     a stateless installation token in a clone url
+in:       git clone https://x-access-token:ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef@github.com/koki-develop/mask-go.git
+out:      git clone https://x-access-token:«github-token»@github.com/koki-develop/mask-go.git
 
-case: a stateless installation token quoted in json
-in:   {"token":"ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef","expires_at":"2026-08-18T00:00:00Z"}
-out:  {"token":"«github-token»","expires_at":"2026-08-18T00:00:00Z"}
+case:     a stateless installation token quoted in json
+in:       {"token":"ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef","expires_at":"2026-08-18T00:00:00Z"}
+out:      {"token":"«github-token»","expires_at":"2026-08-18T00:00:00Z"}
 
-case: a stateless installation token followed by a comma
-in:   ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef, expires in an hour
-out:  «github-token», expires in an hour
+case:     a stateless installation token followed by a comma
+in:       ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef, expires in an hour
+out:      «github-token», expires in an hour
 
-case: two stateless installation tokens on one line
-in:   old=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef new=ghs_654321_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4eXoifQ.0123456789abcdef
-out:  old=«github-token» new=«github-token»
+case:     two stateless installation tokens on one line
+in:       old=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef new=ghs_654321_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4eXoifQ.0123456789abcdef
+out:      old=«github-token» new=«github-token»
 
-case: a stateless installation token on a line of its own between two lines
-in:   before\nghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\nafter
-out:  before\n«github-token»\nafter
+case:     a stateless installation token on a line of its own between two lines
+in:       before\nghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef\nafter
+out:      before\n«github-token»\nafter
 
 # What stands either side of a token. GitHub gives no rule for it, so every
 # character that could end a run is stated rather than assumed to behave like
 # the space in the cases above.
 
-case: a token run together with a letter before it
-in:   xghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  x«github-token»
+case:     a token run together with a letter before it
+in:       xghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      x«github-token»
 
-case: a token run together with a digit before it
-in:   0ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  0«github-token»
+case:     a token run together with a digit before it
+in:       0ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      0«github-token»
 
-case: a token preceded by a hyphen
-in:   --token=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  --token=«github-token»
+case:     a token preceded by a hyphen
+in:       --token=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      --token=«github-token»
 
-case: a token followed by a hyphen and a word
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz-backup
-out:  «github-token»-backup
+case:     a token followed by a hyphen and a word
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz-backup
+out:      «github-token»-backup
 
-case: a token followed by an underscore and a word, which stays where it is
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz_backup
-out:  «github-token»_backup
+case:     a token followed by an underscore and a word, which stays where it is
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz_backup
+out:      «github-token»_backup
 
-case: a token followed by a comma
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz, and the next one
-out:  «github-token», and the next one
+case:     a token followed by a comma
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz, and the next one
+out:      «github-token», and the next one
 
-case: a token followed by a semicolon
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz; done
-out:  «github-token»; done
+case:     a token followed by a semicolon
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz; done
+out:      «github-token»; done
 
-case: a token in parentheses
-in:   (ghp_0123456789abcdefghijklmnopqrstuvwxyz)
-out:  («github-token»)
+case:     a token in parentheses
+in:       (ghp_0123456789abcdefghijklmnopqrstuvwxyz)
+out:      («github-token»)
 
-case: a token in square brackets
-in:   [ghp_0123456789abcdefghijklmnopqrstuvwxyz]
-out:  [«github-token»]
+case:     a token in square brackets
+in:       [ghp_0123456789abcdefghijklmnopqrstuvwxyz]
+out:      [«github-token»]
 
-case: a token in single quotes
-in:   'ghp_0123456789abcdefghijklmnopqrstuvwxyz'
-out:  '«github-token»'
+case:     a token in single quotes
+in:       'ghp_0123456789abcdefghijklmnopqrstuvwxyz'
+out:      '«github-token»'
 
-case: a token in a markdown code span
-in:   use `ghp_0123456789abcdefghijklmnopqrstuvwxyz` to authenticate
-out:  use `«github-token»` to authenticate
+case:     a token in a markdown code span
+in:       use `ghp_0123456789abcdefghijklmnopqrstuvwxyz` to authenticate
+out:      use `«github-token»` to authenticate
 
-case: a token in a markdown link
-in:   [the token](https://example.com/?t=ghp_0123456789abcdefghijklmnopqrstuvwxyz)
-out:  [the token](https://example.com/?t=«github-token»)
+case:     a token in a markdown link
+in:       [the token](https://example.com/?t=ghp_0123456789abcdefghijklmnopqrstuvwxyz)
+out:      [the token](https://example.com/?t=«github-token»)
 
-case: a token on a line a diff adds
-in:   +GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  +GITHUB_TOKEN=«github-token»
+case:     a token on a line a diff adds
+in:       +GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      +GITHUB_TOKEN=«github-token»
 
-case: a token on a line a diff removes
-in:   -GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  -GITHUB_TOKEN=«github-token»
+case:     a token on a line a diff removes
+in:       -GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      -GITHUB_TOKEN=«github-token»
 
-case: a token followed by a carriage return and a newline
-in:   GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz\r\nHOME=/root
-out:  GITHUB_TOKEN=«github-token»\r\nHOME=/root
+case:     a token followed by a carriage return and a newline
+in:       GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz\r\nHOME=/root
+out:      GITHUB_TOKEN=«github-token»\r\nHOME=/root
 
-case: a token between tabs
-in:   github\tghp_0123456789abcdefghijklmnopqrstuvwxyz\tvalid
-out:  github\t«github-token»\tvalid
+case:     a token between tabs
+in:       github\tghp_0123456789abcdefghijklmnopqrstuvwxyz\tvalid
+out:      github\t«github-token»\tvalid
 
-case: a token followed immediately by japanese
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzです
-out:  «github-token»です
+case:     a token followed immediately by japanese
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzです
+out:      «github-token»です
 
-case: a token preceded immediately by japanese
-in:   トークンはghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  トークンは«github-token»
+case:     a token preceded immediately by japanese
+in:       トークンはghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      トークンは«github-token»
 
 # Tokens with nothing between them. GitHub documents no length, so the body of
 # the first is read as far as its alphabet runs: it swallows the gh and the kind
@@ -598,130 +598,130 @@ out:  トークンは«github-token»
 # values overlap. One resuming past a value would leave every token but the
 # first whole.
 
-case: two tokens run together with nothing between them
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzgho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
-out:  «github-token»
+case:     two tokens run together with nothing between them
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzgho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ
+out:      «github-token»
 
-case: three tokens run together with nothing between them
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyzgho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZghu_0123456789abcdefABCDEFghijKLMNopqrST
-out:  «github-token»
+case:     three tokens run together with nothing between them
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzgho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZghu_0123456789abcdefABCDEFghijKLMNopqrST
+out:      «github-token»
 
-case: a token inside a longer word
-in:   prefixghp_0123456789abcdefghijklmnopqrstuvwxyzsuffix
-out:  prefix«github-token»
+case:     a token inside a longer word
+in:       prefixghp_0123456789abcdefghijklmnopqrstuvwxyzsuffix
+out:      prefix«github-token»
 
-case: a token followed by a full stop and more base64
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz.0123456789abcdef
-out:  «github-token».0123456789abcdef
+case:     a token followed by a full stop and more base64
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz.0123456789abcdef
+out:      «github-token».0123456789abcdef
 
 # Where a token is actually written down.
 
-case: a token in an npmrc
-in:   //npm.pkg.github.com/:_authToken=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  //npm.pkg.github.com/:_authToken=«github-token»
+case:     a token in an npmrc
+in:       //npm.pkg.github.com/:_authToken=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      //npm.pkg.github.com/:_authToken=«github-token»
 
-case: a token in a netrc
-in:   machine github.com login x-access-token password ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  machine github.com login x-access-token password «github-token»
+case:     a token in a netrc
+in:       machine github.com login x-access-token password ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      machine github.com login x-access-token password «github-token»
 
-case: a token in a git credentials file
-in:   https://x-access-token:ghp_0123456789abcdefghijklmnopqrstuvwxyz@github.com
-out:  https://x-access-token:«github-token»@github.com
+case:     a token in a git credentials file
+in:       https://x-access-token:ghp_0123456789abcdefghijklmnopqrstuvwxyz@github.com
+out:      https://x-access-token:«github-token»@github.com
 
-case: a token given to curl with a user flag
-in:   curl -u koki-develop:ghp_0123456789abcdefghijklmnopqrstuvwxyz https://api.github.com/user
-out:  curl -u koki-develop:«github-token» https://api.github.com/user
+case:     a token given to curl with a user flag
+in:       curl -u koki-develop:ghp_0123456789abcdefghijklmnopqrstuvwxyz https://api.github.com/user
+out:      curl -u koki-develop:«github-token» https://api.github.com/user
 
-case: a token in a bearer authorization header
-in:   Authorization: Bearer ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  Authorization: Bearer «github-token»
+case:     a token in a bearer authorization header
+in:       Authorization: Bearer ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      Authorization: Bearer «github-token»
 
-case: a token in an authorization header written in lower case
-in:   authorization: bearer ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  authorization: bearer «github-token»
+case:     a token in an authorization header written in lower case
+in:       authorization: bearer ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      authorization: bearer «github-token»
 
-case: a token in a json array
-in:   {"tokens":["ghp_0123456789abcdefghijklmnopqrstuvwxyz","gho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ"]}
-out:  {"tokens":["«github-token»","«github-token»"]}
+case:     a token in a json array
+in:       {"tokens":["ghp_0123456789abcdefghijklmnopqrstuvwxyz","gho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ"]}
+out:      {"tokens":["«github-token»","«github-token»"]}
 
-case: a token in an ini file
-in:   [github]\ntoken=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  [github]\ntoken=«github-token»
+case:     a token in an ini file
+in:       [github]\ntoken=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      [github]\ntoken=«github-token»
 
-case: a token in a python traceback
-in:   File "app.py", line 12, in main\n    client = Github("ghp_0123456789abcdefghijklmnopqrstuvwxyz")
-out:  File "app.py", line 12, in main\n    client = Github("«github-token»")
+case:     a token in a python traceback
+in:       File "app.py", line 12, in main\n    client = Github("ghp_0123456789abcdefghijklmnopqrstuvwxyz")
+out:      File "app.py", line 12, in main\n    client = Github("«github-token»")
 
-case: a token in a url path segment
-in:   https://example.com/tokens/ghp_0123456789abcdefghijklmnopqrstuvwxyz/revoke
-out:  https://example.com/tokens/«github-token»/revoke
+case:     a token in a url path segment
+in:       https://example.com/tokens/ghp_0123456789abcdefghijklmnopqrstuvwxyz/revoke
+out:      https://example.com/tokens/«github-token»/revoke
 
-case: the same token twice on one line
-in:   ghp_0123456789abcdefghijklmnopqrstuvwxyz and ghp_0123456789abcdefghijklmnopqrstuvwxyz again
-out:  «github-token» and «github-token» again
+case:     the same token twice on one line
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz and ghp_0123456789abcdefghijklmnopqrstuvwxyz again
+out:      «github-token» and «github-token» again
 
-case: a token on each of three lines
-in:   a=ghp_0123456789abcdefghijklmnopqrstuvwxyz\nb=gho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ\nc=ghu_0123456789abcdefABCDEFghijKLMNopqrST
-out:  a=«github-token»\nb=«github-token»\nc=«github-token»
+case:     a token on each of three lines
+in:       a=ghp_0123456789abcdefghijklmnopqrstuvwxyz\nb=gho_0123456789abcdefGHIJKLMNOPQRSTUVWXYZ\nc=ghu_0123456789abcdefABCDEFghijKLMNopqrST
+out:      a=«github-token»\nb=«github-token»\nc=«github-token»
 
-case: a classic token and a stateless installation token on one line
-in:   classic=ghp_0123456789abcdefghijklmnopqrstuvwxyz stateless=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:  classic=«github-token» stateless=«github-token»
+case:     a classic token and a stateless installation token on one line
+in:       classic=ghp_0123456789abcdefghijklmnopqrstuvwxyz stateless=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      classic=«github-token» stateless=«github-token»
 
 # What is not a token, where the text around it says otherwise.
 
-case: a token of the forty character hexadecimal form github issued before prefixes
-in:   0123456789abcdef0123456789abcdef01234567
-out:  0123456789abcdef0123456789abcdef01234567
+case:     a token of the forty character hexadecimal form github issued before prefixes
+in:       0123456789abcdef0123456789abcdef01234567
+out:      0123456789abcdef0123456789abcdef01234567
 
-case: an actions expression naming the token
-in:   token: ${{ secrets.GITHUB_TOKEN }}
-out:  token: ${{ secrets.GITHUB_TOKEN }}
+case:     an actions expression naming the token
+in:       token: ${{ secrets.GITHUB_TOKEN }}
+out:      token: ${{ secrets.GITHUB_TOKEN }}
 
-case: a token the runner has already replaced
-in:   GITHUB_TOKEN=***
-out:  GITHUB_TOKEN=***
+case:     a token the runner has already replaced
+in:       GITHUB_TOKEN=***
+out:      GITHUB_TOKEN=***
 
-case: a token cut short with an ellipsis
-in:   ghp_0123456789abcdef...
-out:  ghp_0123456789abcdef...
+case:     a token cut short with an ellipsis
+in:       ghp_0123456789abcdef...
+out:      ghp_0123456789abcdef...
 
-case: a token with its middle elided
-in:   ghp_0123456789abcdef...vwxyz
-out:  ghp_0123456789abcdef...vwxyz
+case:     a token with its middle elided
+in:       ghp_0123456789abcdef...vwxyz
+out:      ghp_0123456789abcdef...vwxyz
 
-case: a container registry reference
-in:   ghcr.io/koki-develop/mask-go:0123456789abcdef
-out:  ghcr.io/koki-develop/mask-go:0123456789abcdef
+case:     a container registry reference
+in:       ghcr.io/koki-develop/mask-go:0123456789abcdef
+out:      ghcr.io/koki-develop/mask-go:0123456789abcdef
 
-case: a prefix and a body with a space between them
-in:   ghp_ 0123456789abcdefghijklmnopqrstuvwxyz
-out:  ghp_ 0123456789abcdefghijklmnopqrstuvwxyz
+case:     a prefix and a body with a space between them
+in:       ghp_ 0123456789abcdefghijklmnopqrstuvwxyz
+out:      ghp_ 0123456789abcdefghijklmnopqrstuvwxyz
 
-case: a prefix written twice before a body
-in:   ghp_ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:  ghp_«github-token»
+case:     a prefix written twice before a body
+in:       ghp_ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      ghp_«github-token»
 
-case: a body of thirty-six characters with no prefix at all
-in:   0123456789abcdefghijklmnopqrstuvwxyz
-out:  0123456789abcdefghijklmnopqrstuvwxyz
+case:     a body of thirty-six characters with no prefix at all
+in:       0123456789abcdefghijklmnopqrstuvwxyz
+out:      0123456789abcdefghijklmnopqrstuvwxyz
 
-case: a word ending in the letters of a prefix
-in:   the tough_0123456789abcdefghijklmnopqrstuvwxyz
-out:  the tough_0123456789abcdefghijklmnopqrstuvwxyz
+case:     a word ending in the letters of a prefix
+in:       the tough_0123456789abcdefghijklmnopqrstuvwxyz
+out:      the tough_0123456789abcdefghijklmnopqrstuvwxyz
 
-case: a fine grained prefix in capitals
-in:   GITHUB_PAT_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  GITHUB_PAT_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+case:     a fine grained prefix in capitals
+in:       GITHUB_PAT_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+out:      GITHUB_PAT_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 
-case: a fine grained prefix missing its underscore
-in:   githubpat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  githubpat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+case:     a fine grained prefix missing its underscore
+in:       githubpat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+out:      githubpat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 
-case: a fine grained prefix written with a hyphen
-in:   github-pat-0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  github-pat-0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+case:     a fine grained prefix written with a hyphen
+in:       github-pat-0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+out:      github-pat-0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 
-case: a prefix naming no kind of token before a fine grained body
-in:   ghz_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
-out:  ghz_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+case:     a prefix naming no kind of token before a fine grained body
+in:       ghz_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+out:      ghz_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW

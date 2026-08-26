@@ -26,21 +26,21 @@ patterns: stripe-publishable-key
 
 # The two modes, which is the whole of what a publishable key is written in.
 
-case: a live publishable key in an environment assignment
-in:   STRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef01234567
-out:  STRIPE_PUBLISHABLE_KEY=«stripe-publishable-key»
+case:     a live publishable key in an environment assignment
+in:       STRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef01234567
+out:      STRIPE_PUBLISHABLE_KEY=«stripe-publishable-key»
 
-case: a sandbox publishable key
-in:   pk_test_0123456789abcdef01234567
-out:  «stripe-publishable-key»
+case:     a sandbox publishable key
+in:       pk_test_0123456789abcdef01234567
+out:      «stripe-publishable-key»
 
-case: a publishable key in a client side configuration object
-in:   {"publishableKey":"pk_test_0123456789abcdef01234567","locale":"auto"}
-out:  {"publishableKey":"«stripe-publishable-key»","locale":"auto"}
+case:     a publishable key in a client side configuration object
+in:       {"publishableKey":"pk_test_0123456789abcdef01234567","locale":"auto"}
+out:      {"publishableKey":"«stripe-publishable-key»","locale":"auto"}
 
-case: a publishable key in the script that initializes a page with it
-in:   const stripe = Stripe('pk_live_0123456789abcdef01234567');
-out:  const stripe = Stripe('«stripe-publishable-key»');
+case:     a publishable key in the script that initializes a page with it
+in:       const stripe = Stripe('pk_live_0123456789abcdef01234567');
+out:      const stripe = Stripe('«stripe-publishable-key»');
 
 # How long a body is, which is the one count this pattern reads, and it is the
 # floor the secret keys are held to because it is the same format. Twenty-four
@@ -54,54 +54,54 @@ out:  const stripe = Stripe('«stripe-publishable-key»');
 # through one leaves a prefix and a body too short to be a body, and every
 # random character written before the cut comes through in the clear.
 
-case: the length Stripe issues today
-in:   pk_live_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
-out:  «stripe-publishable-key»
+case:     the length Stripe issues today
+in:       pk_live_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      «stripe-publishable-key»
 
-case: a body one character longer than the floor
-in:   pk_live_0123456789abcdef01234567z
-out:  «stripe-publishable-key»
+case:     a body one character longer than the floor
+in:       pk_live_0123456789abcdef01234567z
+out:      «stripe-publishable-key»
 
-case: a key one character short of the floor
-in:   STRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef0123456
-out:  STRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef0123456
+case:     a key one character short of the floor
+in:       STRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef0123456
+out:      STRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef0123456
 
-case: a key cut off at its prefix
-in:   STRIPE_PUBLISHABLE_KEY=pk_live_
-out:  STRIPE_PUBLISHABLE_KEY=pk_live_
+case:     a key cut off at its prefix
+in:       STRIPE_PUBLISHABLE_KEY=pk_live_
+out:      STRIPE_PUBLISHABLE_KEY=pk_live_
 
-case: a placeholder where a key goes
-in:   STRIPE_PUBLISHABLE_KEY=pk_test_yourkeyhere
-out:  STRIPE_PUBLISHABLE_KEY=pk_test_yourkeyhere
+case:     a placeholder where a key goes
+in:       STRIPE_PUBLISHABLE_KEY=pk_test_yourkeyhere
+out:      STRIPE_PUBLISHABLE_KEY=pk_test_yourkeyhere
 
 # The mode. It is read as one of the names Stripe writes rather than as any
 # lowercase word at all, which is what makes the anchor eight characters instead
 # of the three a key type is. What that wagers is a mode Stripe has not written
 # yet.
 
-case: a mode no Stripe page names
-in:   pk_prod_0123456789abcdef01234567
-out:  pk_prod_0123456789abcdef01234567
+case:     a mode no Stripe page names
+in:       pk_prod_0123456789abcdef01234567
+out:      pk_prod_0123456789abcdef01234567
 
-case: a key type with no mode behind it
-in:   pk_0123456789abcdef01234567
-out:  pk_0123456789abcdef01234567
+case:     a key type with no mode behind it
+in:       pk_0123456789abcdef01234567
+out:      pk_0123456789abcdef01234567
 
 # The alphabet a body is written in: the letters of both cases and the ten
 # digits. Neither the underscore nor the hyphen is in it, so either of them ends
 # a body where it stands and what is left in front of it is too short to be one.
 
-case: a body written in capitals
-in:   pk_live_0123456789ABCDEF01234567
-out:  «stripe-publishable-key»
+case:     a body written in capitals
+in:       pk_live_0123456789ABCDEF01234567
+out:      «stripe-publishable-key»
 
-case: an underscore in the body
-in:   pk_live_0123456789abcdef_01234567
-out:  pk_live_0123456789abcdef_01234567
+case:     an underscore in the body
+in:       pk_live_0123456789abcdef_01234567
+out:      pk_live_0123456789abcdef_01234567
 
-case: a hyphen in the body
-in:   pk_live_0123456789abcdef-01234567
-out:  pk_live_0123456789abcdef-01234567
+case:     a hyphen in the body
+in:       pk_live_0123456789abcdef-01234567
+out:      pk_live_0123456789abcdef-01234567
 
 # What a key may be written against. The byte in front of a prefix may be no
 # letter and no digit, which is the demand the secret keys are held to and is
@@ -116,49 +116,49 @@ out:  pk_live_0123456789abcdef-01234567
 # after a key is redacted with it; an underscore, a hyphen, a space or a quote
 # ends the run and stays.
 
-case: a key after an underscore
-in:   STRIPE_PUBLISHABLE_KEY_pk_live_0123456789abcdef01234567
-out:  STRIPE_PUBLISHABLE_KEY_«stripe-publishable-key»
+case:     a key after an underscore
+in:       STRIPE_PUBLISHABLE_KEY_pk_live_0123456789abcdef01234567
+out:      STRIPE_PUBLISHABLE_KEY_«stripe-publishable-key»
 
-case: a key after a letter
-in:   xpk_live_0123456789abcdef01234567
-out:  xpk_live_0123456789abcdef01234567
+case:     a key after a letter
+in:       xpk_live_0123456789abcdef01234567
+out:      xpk_live_0123456789abcdef01234567
 
-case: a key after a digit
-in:   1pk_live_0123456789abcdef01234567
-out:  1pk_live_0123456789abcdef01234567
+case:     a key after a digit
+in:       1pk_live_0123456789abcdef01234567
+out:      1pk_live_0123456789abcdef01234567
 
-case: a snake_case name closing on the publishable key type
-in:   the topk_live_0123456789abcdef01234567 fixture was rebuilt
-out:  the topk_live_0123456789abcdef01234567 fixture was rebuilt
+case:     a snake_case name closing on the publishable key type
+in:       the topk_live_0123456789abcdef01234567 fixture was rebuilt
+out:      the topk_live_0123456789abcdef01234567 fixture was rebuilt
 
-case: a key at the end of a sentence
-in:   the key is pk_live_0123456789abcdef01234567.
-out:  the key is «stripe-publishable-key».
+case:     a key at the end of a sentence
+in:       the key is pk_live_0123456789abcdef01234567.
+out:      the key is «stripe-publishable-key».
 
-case: a key before a word
-in:   pk_live_0123456789abcdef01234567suffix
-out:  «stripe-publishable-key»
+case:     a key before a word
+in:       pk_live_0123456789abcdef01234567suffix
+out:      «stripe-publishable-key»
 
-case: a key before an underscore, which ends the run
-in:   pk_live_0123456789abcdef01234567_suffix
-out:  «stripe-publishable-key»_suffix
+case:     a key before an underscore, which ends the run
+in:       pk_live_0123456789abcdef01234567_suffix
+out:      «stripe-publishable-key»_suffix
 
 # The other half of Stripe's format, which this pattern leaves alone. That is
 # the boundary between the two: Stripe's safe to expose column reads no for
 # every one of these three and yes for the key above.
 
-case: a secret key
-in:   STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567
-out:  STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567
+case:     a secret key
+in:       STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567
+out:      STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567
 
-case: a restricted key
-in:   rk_live_0123456789abcdef01234567
-out:  rk_live_0123456789abcdef01234567
+case:     a restricted key
+in:       rk_live_0123456789abcdef01234567
+out:      rk_live_0123456789abcdef01234567
 
-case: an organization key
-in:   sk_org_0123456789abcdef01234567
-out:  sk_org_0123456789abcdef01234567
+case:     an organization key
+in:       sk_org_0123456789abcdef01234567
+out:      sk_org_0123456789abcdef01234567
 
 # Two keys written together. No publishable key can begin inside the span of
 # another, and none inside a secret key's span either: a key opens only where no
@@ -168,21 +168,21 @@ out:  sk_org_0123456789abcdef01234567
 # of the byte in front, and it is why a caller running both halves of the format
 # gets no span reaching into another's and none nested inside one.
 
-case: two keys separated by a space
-in:   pk_live_0123456789abcdef01234567 pk_test_0123456789abcdef01234567
-out:  «stripe-publishable-key» «stripe-publishable-key»
+case:     two keys separated by a space
+in:       pk_live_0123456789abcdef01234567 pk_test_0123456789abcdef01234567
+out:      «stripe-publishable-key» «stripe-publishable-key»
 
-case: a key written straight onto the end of another
-in:   pk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
-out:  «stripe-publishable-key»_test_0123456789abcdef01234567
+case:     a key written straight onto the end of another
+in:       pk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
+out:      «stripe-publishable-key»_test_0123456789abcdef01234567
 
-case: a key written straight onto the end of a secret key
-in:   sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
-out:  sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
+case:     a key written straight onto the end of a secret key
+in:       sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
+out:      sk_live_0123456789abcdef01234567pk_test_0123456789abcdef01234567
 
-case: an underscore between a secret key and one of these
-in:   sk_live_0123456789abcdef01234567_pk_test_0123456789abcdef01234567
-out:  sk_live_0123456789abcdef01234567_«stripe-publishable-key»
+case:     an underscore between a secret key and one of these
+in:       sk_live_0123456789abcdef01234567_pk_test_0123456789abcdef01234567
+out:      sk_live_0123456789abcdef01234567_«stripe-publishable-key»
 
 # What this pattern redacts that nobody issued. A prefix carries two
 # underscores, so no base64 payload holds one and no digest does; what is left
@@ -194,13 +194,13 @@ out:  sk_live_0123456789abcdef01234567_«stripe-publishable-key»
 # tightening on offer is the count, which the pattern's own file weighs and
 # reads as a floor for the reason a wrong count costs a whole credential.
 
-case: a name whose segments spell a prefix, with a digest behind it
-in:   pk_live_0123456789abcdef0123456789abcdef
-out:  «stripe-publishable-key»
+case:     a name whose segments spell a prefix, with a digest behind it
+in:       pk_live_0123456789abcdef0123456789abcdef
+out:      «stripe-publishable-key»
 
-case: the same name at the start of a shell word
-in:   cat pk_test_0123456789abcdef01234567.json
-out:  cat «stripe-publishable-key».json
+case:     the same name at the start of a shell word
+in:       cat pk_test_0123456789abcdef01234567.json
+out:      cat «stripe-publishable-key».json
 
 # And what this pattern leaves alone. The first two are the prefix: read in its
 # own case, and written with the underscores Stripe writes rather than the
@@ -208,22 +208,22 @@ out:  cat «stripe-publishable-key».json
 # and so holds no prefix to be found at, and no word of prose is spelled
 # pk_live_.
 
-case: an uppercase prefix
-in:   PK_LIVE_0123456789abcdef01234567
-out:  PK_LIVE_0123456789abcdef01234567
+case:     an uppercase prefix
+in:       PK_LIVE_0123456789abcdef01234567
+out:      PK_LIVE_0123456789abcdef01234567
 
-case: hyphens where the prefix carries underscores
-in:   pk-live-0123456789abcdef01234567
-out:  pk-live-0123456789abcdef01234567
+case:     hyphens where the prefix carries underscores
+in:       pk-live-0123456789abcdef01234567
+out:      pk-live-0123456789abcdef01234567
 
-case: a run of the right length opening with no prefix
-in:   0123456789abcdef01234567
-out:  0123456789abcdef01234567
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdef01234567
+out:      0123456789abcdef01234567
 
-case: a hexadecimal digest
-in:   sha1=0123456789abcdef0123456789abcdef01234567
-out:  sha1=0123456789abcdef0123456789abcdef01234567
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
 
-case: prose
-in:   there is no credential in this sentence
-out:  there is no credential in this sentence
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence

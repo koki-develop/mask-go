@@ -15,21 +15,21 @@ patterns: google-api-key
 # credentialled principal, so nothing in the value says which API it was made
 # for, and the four cases below are that one shape in four places.
 
-case: an api key in an environment assignment
-in:   GOOGLE_API_KEY=AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  GOOGLE_API_KEY=«google-api-key»
+case:     an api key in an environment assignment
+in:       GOOGLE_API_KEY=AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      GOOGLE_API_KEY=«google-api-key»
 
-case: an api key in the query string a request carries it in
-in:   https://maps.googleapis.com/maps/api/geocode/json?address=Tokyo&key=AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  https://maps.googleapis.com/maps/api/geocode/json?address=Tokyo&key=«google-api-key»
+case:     an api key in the query string a request carries it in
+in:       https://maps.googleapis.com/maps/api/geocode/json?address=Tokyo&key=AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      https://maps.googleapis.com/maps/api/geocode/json?address=Tokyo&key=«google-api-key»
 
-case: an api key in a client side configuration object
-in:   {"apiKey":"AIza0123456789abcdefghijklmnopqrstuvwxy","projectId":"example"}
-out:  {"apiKey":"«google-api-key»","projectId":"example"}
+case:     an api key in a client side configuration object
+in:       {"apiKey":"AIza0123456789abcdefghijklmnopqrstuvwxy","projectId":"example"}
+out:      {"apiKey":"«google-api-key»","projectId":"example"}
 
-case: an api key on a command line
-in:   gcloud services api-keys create --display-name=maps --key-string=AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  gcloud services api-keys create --display-name=maps --key-string=«google-api-key»
+case:     an api key on a command line
+in:       gcloud services api-keys create --display-name=maps --key-string=AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      gcloud services api-keys create --display-name=maps --key-string=«google-api-key»
 
 # The alphabet the thirty-five characters are written in. It is base64url, which
 # is what every published statement of the shape admits and what Google's own
@@ -37,13 +37,13 @@ out:  gcloud services api-keys create --display-name=maps --key-string=«google-
 # neither is inferred. The two characters standard base64 writes in their place,
 # the plus and the slash, are not admitted, and a body carrying one is no key.
 
-case: a body carrying a hyphen and an underscore
-in:   AIza0123456789abcdef-hijklmnopqrstuvwx_
-out:  «google-api-key»
+case:     a body carrying a hyphen and an underscore
+in:       AIza0123456789abcdef-hijklmnopqrstuvwx_
+out:      «google-api-key»
 
-case: a body carrying the two characters standard base64 uses instead
-in:   AIza0123456789abcdef+hijklmnopqrstuvwx/
-out:  AIza0123456789abcdef+hijklmnopqrstuvwx/
+case:     a body carrying the two characters standard base64 uses instead
+in:       AIza0123456789abcdef+hijklmnopqrstuvwx/
+out:      AIza0123456789abcdef+hijklmnopqrstuvwx/
 
 # The lengths either side of thirty-nine. Google states no length for an API key
 # anywhere the pattern's author could find; what it states is that the string is
@@ -55,58 +55,58 @@ out:  AIza0123456789abcdef+hijklmnopqrstuvwx/
 # behind the match — a boundary there would drop this key rather than trim it,
 # and a real key written against a letter would come through whole.
 
-case: a body of thirty-five characters is a key
-in:   AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  «google-api-key»
+case:     a body of thirty-five characters is a key
+in:       AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      «google-api-key»
 
-case: a body of thirty-four characters is not
-in:   AIza0123456789abcdefghijklmnopqrstuvwx
-out:  AIza0123456789abcdefghijklmnopqrstuvwx
+case:     a body of thirty-four characters is not
+in:       AIza0123456789abcdefghijklmnopqrstuvwx
+out:      AIza0123456789abcdefghijklmnopqrstuvwx
 
-case: an alphabet run longer than a key is a key and what follows it
-in:   AIza0123456789abcdefghijklmnopqrstuvwxyz
-out:  «google-api-key»z
+case:     an alphabet run longer than a key is a key and what follows it
+in:       AIza0123456789abcdefghijklmnopqrstuvwxyz
+out:      «google-api-key»z
 
 # What a key may be written against. The prefix is the whole of the anchor and
 # there is no boundary on either side of it, so a key keeps its span whatever
 # word character it abuts.
 
-case: an api key after an underscore
-in:   GOOGLE_API_KEY_AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  GOOGLE_API_KEY_«google-api-key»
+case:     an api key after an underscore
+in:       GOOGLE_API_KEY_AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      GOOGLE_API_KEY_«google-api-key»
 
-case: an api key after a letter
-in:   xAIza0123456789abcdefghijklmnopqrstuvwxy
-out:  x«google-api-key»
+case:     an api key after a letter
+in:       xAIza0123456789abcdefghijklmnopqrstuvwxy
+out:      x«google-api-key»
 
 # Two keys written together. The prefix is written in the alphabet a body is, so
 # a key can begin inside the span of the one before it; the two spans overlap
 # and are redacted as one. Written without that overlap the two are separate
 # values, and both go.
 
-case: a key beginning inside the key before it
-in:   AIzaAIza0123456789abcdefghijklmnopqrstuvwxy
-out:  «google-api-key»
+case:     a key beginning inside the key before it
+in:       AIzaAIza0123456789abcdefghijklmnopqrstuvwxy
+out:      «google-api-key»
 
-case: two keys with nothing between them
-in:   AIza0123456789abcdefghijklmnopqrstuvwxyAIza0123456789abcdefghijklmnopqrstuvwxy
-out:  «google-api-key»«google-api-key»
+case:     two keys with nothing between them
+in:       AIza0123456789abcdefghijklmnopqrstuvwxyAIza0123456789abcdefghijklmnopqrstuvwxy
+out:      «google-api-key»«google-api-key»
 
 # What is written after a key. The count is what ends one, so what follows it
 # stays in the text whether or not it belongs to the alphabet a body is read in,
 # and a dot, a full stop and a hyphen come to the same thing here.
 
-case: an api key before a host name
-in:   host=AIza0123456789abcdefghijklmnopqrstuvwxy.example.com
-out:  host=«google-api-key».example.com
+case:     an api key before a host name
+in:       host=AIza0123456789abcdefghijklmnopqrstuvwxy.example.com
+out:      host=«google-api-key».example.com
 
-case: an api key at the end of a sentence
-in:   the key is AIza0123456789abcdefghijklmnopqrstuvwxy.
-out:  the key is «google-api-key».
+case:     an api key at the end of a sentence
+in:       the key is AIza0123456789abcdefghijklmnopqrstuvwxy.
+out:      the key is «google-api-key».
 
-case: an api key before a hyphenated word
-in:   AIza0123456789abcdefghijklmnopqrstuvwxy-suffix
-out:  «google-api-key»-suffix
+case:     an api key before a hyphenated word
+in:       AIza0123456789abcdefghijklmnopqrstuvwxy-suffix
+out:      «google-api-key»-suffix
 
 # What this pattern redacts that nobody issued. The prefix is four characters of
 # an alphabet of sixty-four, so a base64 value long enough carries it about once
@@ -120,13 +120,13 @@ out:  «google-api-key»-suffix
 # pattern's own file weighs the tightening that was available and what it would
 # have cost.
 
-case: the prefix inside a longer run of the alphabet
-in:   payload=zzzzAIza0123456789abcdefghijklmnopqrstuvwxyzzzz
-out:  payload=zzzz«google-api-key»zzzz
+case:     the prefix inside a longer run of the alphabet
+in:       payload=zzzzAIza0123456789abcdefghijklmnopqrstuvwxyzzzz
+out:      payload=zzzz«google-api-key»zzzz
 
-case: the prefix where a signature stands
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.AIza0123456789abcdefghijklmnopqrstuvwxy
-out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.«google-api-key»
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.«google-api-key»
 
 # And what this pattern leaves alone. The first three are the prefix, which is
 # read in the case Google writes it and in all four of its characters; the two
@@ -137,37 +137,37 @@ out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.«google-api-key»
 # so neither a digest nor prose holds a position to be found at however long it
 # runs.
 
-case: a lowercase prefix
-in:   aiza0123456789abcdefghijklmnopqrstuvwxy
-out:  aiza0123456789abcdefghijklmnopqrstuvwxy
+case:     a lowercase prefix
+in:       aiza0123456789abcdefghijklmnopqrstuvwxy
+out:      aiza0123456789abcdefghijklmnopqrstuvwxy
 
-case: an uppercase prefix
-in:   AIZA0123456789abcdefghijklmnopqrstuvwxy
-out:  AIZA0123456789abcdefghijklmnopqrstuvwxy
+case:     an uppercase prefix
+in:       AIZA0123456789abcdefghijklmnopqrstuvwxy
+out:      AIZA0123456789abcdefghijklmnopqrstuvwxy
 
-case: three characters of the prefix
-in:   AIzb0123456789abcdefghijklmnopqrstuvwxy
-out:  AIzb0123456789abcdefghijklmnopqrstuvwxy
+case:     three characters of the prefix
+in:       AIzb0123456789abcdefghijklmnopqrstuvwxy
+out:      AIzb0123456789abcdefghijklmnopqrstuvwxy
 
-case: the prefix alone
-in:   AIza
-out:  AIza
+case:     the prefix alone
+in:       AIza
+out:      AIza
 
-case: a body broken by a space
-in:   AIza0123456789abcdef hijklmnopqrstuvwxy
-out:  AIza0123456789abcdef hijklmnopqrstuvwxy
+case:     a body broken by a space
+in:       AIza0123456789abcdef hijklmnopqrstuvwxy
+out:      AIza0123456789abcdef hijklmnopqrstuvwxy
 
-case: a run of the right length opening with no prefix
-in:   0123456789abcdefghijklmnopqrstuvwxyzABC
-out:  0123456789abcdefghijklmnopqrstuvwxyzABC
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdefghijklmnopqrstuvwxyzABC
+out:      0123456789abcdefghijklmnopqrstuvwxyzABC
 
-case: a hexadecimal digest
-in:   sha1=0123456789abcdef0123456789abcdef01234567
-out:  sha1=0123456789abcdef0123456789abcdef01234567
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
 
-case: prose
-in:   there is no credential in this sentence
-out:  there is no credential in this sentence
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
 
 # And a Google credential this pattern has nothing to say about. A service
 # account key is a JSON document holding an RSA private key, and the secret in
@@ -177,6 +177,6 @@ out:  there is no credential in this sentence
 # pattern, and builtin_private_key.txt carries the same document as a case of
 # its own.
 
-case: a service account key file
-in:   {"type":"service_account","project_id":"example","private_key":"-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\n"}
-out:  {"type":"service_account","project_id":"example","private_key":"-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\n"}
+case:     a service account key file
+in:       {"type":"service_account","project_id":"example","private_key":"-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\n"}
+out:      {"type":"service_account","project_id":"example","private_key":"-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\n"}

@@ -26,32 +26,32 @@ patterns: pypi-api-token
 # x.io. Both rulesets that read this format read pypi.org into their
 # expressions and locate nothing in the second or the third.
 
-case: a token from pypi.org in an environment assignment
-in:   PYPI_API_TOKEN=pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  PYPI_API_TOKEN=«pypi-api-token»
+case:     a token from pypi.org in an environment assignment
+in:       PYPI_API_TOKEN=pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      PYPI_API_TOKEN=«pypi-api-token»
 
-case: a token from test.pypi.org
-in:   pypi-AgENdGVzdC5weXBpLm9yZw0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «pypi-api-token»
+case:     a token from test.pypi.org
+in:       pypi-AgENdGVzdC5weXBpLm9yZw0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «pypi-api-token»
 
-case: a token from an index this pattern was never told about
-in:   pypi-AgEEeC5pbw0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «pypi-api-token»
+case:     a token from an index this pattern was never told about
+in:       pypi-AgEEeC5pbw0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «pypi-api-token»
 
 # The places a token is written. The username PyPI asks for beside it,
 # __token__, is not a credential and stays in the text.
 
-case: a token in the password field of a pypirc
-in:   [pypi]\n  username = __token__\n  password = pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  [pypi]\n  username = __token__\n  password = «pypi-api-token»
+case:     a token in the password field of a pypirc
+in:       [pypi]\n  username = __token__\n  password = pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      [pypi]\n  username = __token__\n  password = «pypi-api-token»
 
-case: a token on a twine command line
-in:   twine upload -u __token__ -p pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef dist/*
-out:  twine upload -u __token__ -p «pypi-api-token» dist/*
+case:     a token on a twine command line
+in:       twine upload -u __token__ -p pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef dist/*
+out:      twine upload -u __token__ -p «pypi-api-token» dist/*
 
-case: a token in a workflow secret
-in:   {"secrets":{"PYPI_API_TOKEN":"pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef"}}
-out:  {"secrets":{"PYPI_API_TOKEN":"«pypi-api-token»"}}
+case:     a token in a workflow secret
+in:       {"secrets":{"PYPI_API_TOKEN":"pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef"}}
+out:      {"secrets":{"PYPI_API_TOKEN":"«pypi-api-token»"}}
 
 # The alphabet the body is written in. It is base64url with the padding
 # stripped, which is what pymacaroons writes: the letters of both cases, the
@@ -61,21 +61,21 @@ out:  {"secrets":{"PYPI_API_TOKEN":"«pypi-api-token»"}}
 # alphabet standing inside a token leaves what is in front of it short of the
 # floor rather than leaving a shorter token.
 
-case: a body carrying a hyphen and an underscore
-in:   pypi-AgEIcHlwaS5vcmc0123456789abcdef-0123456789abcdef_0123456789abcdef
-out:  «pypi-api-token»
+case:     a body carrying a hyphen and an underscore
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef-0123456789abcdef_0123456789abcdef
+out:      «pypi-api-token»
 
-case: a plus inside the body
-in:   pypi-AgEIcHlwaS5vcmc0123456789abcdef+0123456789abcdef0123456789abcdef
-out:  pypi-AgEIcHlwaS5vcmc0123456789abcdef+0123456789abcdef0123456789abcdef
+case:     a plus inside the body
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef+0123456789abcdef0123456789abcdef
+out:      pypi-AgEIcHlwaS5vcmc0123456789abcdef+0123456789abcdef0123456789abcdef
 
-case: a slash inside the body
-in:   pypi-AgEIcHlwaS5vcmc0123456789abcdef/0123456789abcdef0123456789abcdef
-out:  pypi-AgEIcHlwaS5vcmc0123456789abcdef/0123456789abcdef0123456789abcdef
+case:     a slash inside the body
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef/0123456789abcdef0123456789abcdef
+out:      pypi-AgEIcHlwaS5vcmc0123456789abcdef/0123456789abcdef0123456789abcdef
 
-case: a dot inside the body
-in:   pypi-AgEIcHlwaS5vcmc0123456789abcdef.0123456789abcdef0123456789abcdef
-out:  pypi-AgEIcHlwaS5vcmc0123456789abcdef.0123456789abcdef0123456789abcdef
+case:     a dot inside the body
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef.0123456789abcdef0123456789abcdef
+out:      pypi-AgEIcHlwaS5vcmc0123456789abcdef.0123456789abcdef0123456789abcdef
 
 # How long a body is, which the pattern reads as a floor and not as a count.
 # What a macaroon carries between its location and its signature is a caveat
@@ -88,13 +88,13 @@ out:  pypi-AgEIcHlwaS5vcmc0123456789abcdef.0123456789abcdef0123456789abcdef
 # is left in the text is a version byte, a field number and the opening of a
 # domain name rather than the signature a macaroon is a credential by.
 
-case: a body exactly as long as the floor
-in:   pypi-AgE0123456789abcdef0123456789abcdef0123456789abcde
-out:  «pypi-api-token»
+case:     a body exactly as long as the floor
+in:       pypi-AgE0123456789abcdef0123456789abcdef0123456789abcde
+out:      «pypi-api-token»
 
-case: a body one character short of the floor
-in:   pypi-AgE0123456789abcdef0123456789abcdef0123456789abcd
-out:  pypi-AgE0123456789abcdef0123456789abcdef0123456789abcd
+case:     a body one character short of the floor
+in:       pypi-AgE0123456789abcdef0123456789abcdef0123456789abcd
+out:      pypi-AgE0123456789abcdef0123456789abcdef0123456789abcd
 
 # What a token may be written against, and what it draws in. The anchor is the
 # whole of what a token is found by and there is no boundary on either side of
@@ -104,41 +104,41 @@ out:  pypi-AgE0123456789abcdef0123456789abcdef0123456789abcd
 # written straight after a token is redacted with the token, and a space, a dot
 # or a quote is not.
 
-case: a token after an underscore
-in:   PYPI_API_TOKEN_pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  PYPI_API_TOKEN_«pypi-api-token»
+case:     a token after an underscore
+in:       PYPI_API_TOKEN_pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      PYPI_API_TOKEN_«pypi-api-token»
 
-case: a token after a letter
-in:   xpypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  x«pypi-api-token»
+case:     a token after a letter
+in:       xpypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      x«pypi-api-token»
 
-case: a token at the end of a sentence
-in:   the token is pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef.
-out:  the token is «pypi-api-token».
+case:     a token at the end of a sentence
+in:       the token is pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef.
+out:      the token is «pypi-api-token».
 
-case: a token inside quotes
-in:   export PYPI_API_TOKEN="pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef"
-out:  export PYPI_API_TOKEN="«pypi-api-token»"
+case:     a token inside quotes
+in:       export PYPI_API_TOKEN="pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef"
+out:      export PYPI_API_TOKEN="«pypi-api-token»"
 
-case: a token before a hyphenated word
-in:   pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef-suffix
-out:  «pypi-api-token»
+case:     a token before a hyphenated word
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef-suffix
+out:      «pypi-api-token»
 
-case: a token before a word
-in:   pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdefsuffix
-out:  «pypi-api-token»
+case:     a token before a word
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdefsuffix
+out:      «pypi-api-token»
 
 # Two tokens written together. Every character of the anchor belongs to the
 # alphabet a body is, so a token can begin inside the span of the one before it;
 # the two spans overlap and are redacted as one. Written apart, both go.
 
-case: a token beginning inside the token before it
-in:   pypi-AgEpypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «pypi-api-token»
+case:     a token beginning inside the token before it
+in:       pypi-AgEpypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «pypi-api-token»
 
-case: two tokens separated by a space
-in:   pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef pypi-AgENdGVzdC5weXBpLm9yZw0123456789abcdef0123456789abcdef0123456789abcdef
-out:  «pypi-api-token» «pypi-api-token»
+case:     two tokens separated by a space
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef pypi-AgENdGVzdC5weXBpLm9yZw0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «pypi-api-token» «pypi-api-token»
 
 # What this pattern redacts that nobody issued. The anchor is eight characters
 # of the base64url alphabet, so a long enough encoding written in that alphabet
@@ -150,13 +150,13 @@ out:  «pypi-api-token» «pypi-api-token»
 # reading costs a credential and this costs a reader nothing. The pattern's own
 # file weighs both.
 
-case: the anchor inside a longer run of the alphabet
-in:   payload=zzzzpypi-AgEzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-out:  payload=zzzz«pypi-api-token»
+case:     the anchor inside a longer run of the alphabet
+in:       payload=zzzzpypi-AgEzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+out:      payload=zzzz«pypi-api-token»
 
-case: the anchor where a signature stands
-in:   eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzpypi-AgEzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«pypi-api-token»
+case:     the anchor where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzpypi-AgEzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«pypi-api-token»
 
 # And what this pattern leaves alone. The first three are the three characters
 # of the header: read in the case the serialization writes them, read in all
@@ -172,49 +172,49 @@ out:  eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«pypi-api-token»
 # turns them away; a digest carries no hyphen for the prefix and neither a g nor
 # an E for the header; and no word of prose is spelled with either.
 
-case: a header in the wrong case
-in:   pypi-age0123456789abcdef0123456789abcdef0123456789abcde
-out:  pypi-age0123456789abcdef0123456789abcdef0123456789abcde
+case:     a header in the wrong case
+in:       pypi-age0123456789abcdef0123456789abcdef0123456789abcde
+out:      pypi-age0123456789abcdef0123456789abcdef0123456789abcde
 
-case: two characters of the header
-in:   pypi-Ag0123456789abcdef0123456789abcdef0123456789abcdef
-out:  pypi-Ag0123456789abcdef0123456789abcdef0123456789abcdef
+case:     two characters of the header
+in:       pypi-Ag0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pypi-Ag0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a body carrying no header at all
-in:   pypi-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-out:  pypi-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a body carrying no header at all
+in:       pypi-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pypi-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a header spelling a location of sixty-four characters or more
-in:   pypi-AgFA0123456789abcdef0123456789abcdef0123456789abcdef
-out:  pypi-AgFA0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a header spelling a location of sixty-four characters or more
+in:       pypi-AgFA0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pypi-AgFA0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: an uppercase prefix
-in:   PyPI-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  PyPI-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+case:     an uppercase prefix
+in:       PyPI-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      PyPI-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: an underscore where the prefix carries a hyphen
-in:   pypi_AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  pypi_AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+case:     an underscore where the prefix carries a hyphen
+in:       pypi_AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pypi_AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a dot between the prefix and the header
-in:   pypi-.AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  pypi-.AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+case:     a dot between the prefix and the header
+in:       pypi-.AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pypi-.AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: the header with no prefix in front of it
-in:   AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
-out:  AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+case:     the header with no prefix in front of it
+in:       AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
 
-case: a line of names carrying the prefix
-in:   the gh-action-pypi-publish workflow replaced pypi-timemachine and pypi-server
-out:  the gh-action-pypi-publish workflow replaced pypi-timemachine and pypi-server
+case:     a line of names carrying the prefix
+in:       the gh-action-pypi-publish workflow replaced pypi-timemachine and pypi-server
+out:      the gh-action-pypi-publish workflow replaced pypi-timemachine and pypi-server
 
-case: a hexadecimal digest
-in:   sha1=0123456789abcdef0123456789abcdef01234567
-out:  sha1=0123456789abcdef0123456789abcdef01234567
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
 
-case: prose
-in:   there is no credential in this sentence
-out:  there is no credential in this sentence
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
 
 # And a PyPI credential this pattern has nothing to say about. A project's
 # Trusted Publisher exchange hands back a token of exactly this shape, so that
@@ -222,6 +222,6 @@ out:  there is no credential in this sentence
 # get it, which is a JWT and is the JWT pattern's to locate — with that pattern
 # out of the set, the string comes through whole.
 
-case: an openid connect token offered in exchange for one
-in:   {"token":"eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"}
-out:  {"token":"eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"}
+case:     an openid connect token offered in exchange for one
+in:       {"token":"eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"}
+out:      {"token":"eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"}
