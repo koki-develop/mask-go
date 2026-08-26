@@ -83,7 +83,10 @@ type streamOptions struct {
 //
 // So the limit is a last resort rather than a knob to tune down. The default is
 // generous enough that no credential written in one piece comes near it, and
-// zero holds without limit for a caller who would rather spend the memory.
+// zero holds without limit for a caller who would rather spend the memory. Any
+// n below zero is read as that same zero rather than as a limit no text can
+// come under, which is what strings.SplitN reads a negative count as and what a
+// caller computing the limit from a budget gets when the budget runs out.
 //
 // What is redacted after that is redacted a write at a time, since a stream
 // cannot hold the rest of itself back to redact it as one. Fill writes a rune
@@ -142,10 +145,17 @@ func (s *stream) pending() int { return len(s.ready) - s.taken }
 // take copies what is waiting to leave into p and reports how much it moved.
 func (s *stream) take(p []byte) int {
 	n := copy(p, s.ready[s.taken:])
+	s.consumed(n)
+	return n
+}
+
+// consumed records that n bytes of the masked text have left, and starts that
+// text again once all of it has. A Reader copies them out and a Writer writes
+// them on, and the cursor either moves is the same one, so both end here.
+func (s *stream) consumed(n int) {
 	if s.taken += n; s.taken == len(s.ready) {
 		s.empty()
 	}
-	return n
 }
 
 // empty starts the masked text again once all of it has left, rather than
@@ -189,8 +199,7 @@ func (s *stream) advance(final bool) {
 		// The stream gave up holding, and what it gave up on was a value it
 		// could not see the end of. Everything from there on goes out redacted.
 		s.giveUp(src, final)
-		s.discard()
-		s.held = len(s.buf) - s.out
+		s.scanned()
 		return
 	}
 
@@ -249,6 +258,14 @@ func (s *stream) advance(final bool) {
 		s.giveUp(src, final)
 	}
 
+	s.scanned()
+}
+
+// scanned closes a pass of the patterns: it drops the text they can no longer
+// reach and records what they were left holding, which is what the next pass is
+// weighed against. Both ways out of advance end here, so that a change to what
+// closes a pass cannot be made to one of them and missed on the other.
+func (s *stream) scanned() {
 	s.discard()
 	s.held = len(s.buf) - s.out
 }
@@ -399,10 +416,7 @@ func (w *Writer) drain() error {
 		return nil
 	}
 	n, err := w.dst.Write(w.s.ready[w.s.taken:])
-	w.s.taken += n
-	if w.s.taken == len(w.s.ready) {
-		w.s.empty()
-	}
+	w.s.consumed(n)
 	if err == nil && n < want {
 		err = io.ErrShortWrite
 	}
