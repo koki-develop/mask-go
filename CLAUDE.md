@@ -113,10 +113,16 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
 - What a scan settles — the second result of `Pattern.Find` — is held by
   `Test_builtins_retainSettles` and `FuzzBuiltins_retain`, and end to end by the
   cut properties in `conformance`. Those hold a scan to settling no more than it
-  may; `Test_builtins_settleWhatIsNoValue` holds it to settling as much as it
-  must. A scan pinned by text that will never become a value holds a stream open
-  until the limit, and what a stream holds at the limit is redacted — so
-  settling too little turns a log into asterisks.
+  may; `Test_builtins_settleWhatIsNoValue` and
+  `Test_builtins_holdNoFurtherBackThanTheCutCandidate` hold it to settling as
+  much as it must. A scan pinned by text that will never become a value holds a
+  stream open until the limit, and what a stream holds at the limit is redacted
+  — so settling too little turns a log into asterisks. What a scan may hold on
+  to is the candidate the end of the input cut short, and `builtin_scan.go`
+  argues why it gives up on such a candidate rather than reading what is written
+  of it. The two tests divide that between them: the first follows every prefix
+  with prose, so its inputs end inside no candidate, and the second ends the
+  input inside one.
 - Adding a built-in pattern is `.claude/rules/builtin-patterns.md` and
   `conformance/CLAUDE.md`.
 

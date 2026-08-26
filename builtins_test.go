@@ -867,3 +867,60 @@ func Test_builtins_settleWhatIsNoValue(t *testing.T) {
 		})
 	}
 }
+
+func Test_builtins_holdNoFurtherBackThanTheCutCandidate(t *testing.T) {
+	// The direction Test_builtins_settleWhatIsNoValue cannot reach. That test
+	// follows every prefix with lines of prose, so its inputs never end inside
+	// a candidate and the branch a scan takes when they do — builtin_scan.go
+	// argues there that a scan gives up on such a candidate rather than reading
+	// what is written of it — runs in none of its cases. Here the prefix is the
+	// end of the input, which is what puts that branch under a test at all.
+	//
+	// What a scan may give up on there is the candidate the end cut short. The
+	// text in front of it was settled before that candidate opened, and no
+	// continuation reaches back over a line break to change it, so a scan
+	// pinned in front of that candidate gave up on more than the end took from
+	// it — and a stream would hold, and at its limit redact, text that was
+	// never part of any candidate.
+	//
+	// Where the candidate opens is what the bound has to be, and an anchor is
+	// what says so: it is what opens a candidate of this kind with nothing
+	// written in front of it, so behind the prose it opens one exactly where
+	// the prose ends. A sample cannot say that. Most carry a lead-in — an
+	// environment variable name, a word the value is written against — and a
+	// candidate opening inside one and failing is a candidate the scan may
+	// give up on as well, so the two are driven here under bounds of different
+	// strength rather than under one that is wrong for the samples or toothless
+	// for the anchors.
+	prose := "a line of prose, and nothing else at all\n"
+	for _, b := range builtinPatterns {
+		t.Run(b.name, func(t *testing.T) {
+			p := b.pattern()
+
+			// The candidate opens where the prose ends, so this is the whole of
+			// the rule: the candidate and no more.
+			for _, anchor := range b.anchors {
+				for i := range len(anchor) + 1 {
+					src := prose + anchor[:i]
+					if _, retain := p.Find(src); retain < len(prose) {
+						t.Errorf("Find(prose + %q) settled %d, in front of the candidate opening at %d",
+							anchor[:i], retain, len(prose))
+					}
+				}
+			}
+
+			// And the half of it a sample can be held to, over the bodies an
+			// anchor is too short to reach: whatever the scan gave up on, it
+			// was not text a line break had closed.
+			for _, sample := range b.samples {
+				for i := range len(sample) + 1 {
+					src := prose + sample[:i]
+					if _, retain := p.Find(src); retain < len(prose) {
+						t.Errorf("Find(prose + %q) settled %d, in front of the %d bytes of prose handed to it first",
+							sample[:i], retain, len(prose))
+					}
+				}
+			}
+		})
+	}
+}

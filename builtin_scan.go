@@ -52,7 +52,7 @@ package mask
 // it on what stands behind, so there are exactly two places the end of the
 // input can leave a scan without an answer. A prefix the end cut in half opens
 // no candidate at all and the scan walks past it having found nothing: that is
-// fragmentStart below, which every scan calls with its own prefixes. A
+// prefixTail.start below, which every scan calls with its own prefixes. A
 // candidate whose body the end cut short is the scan's own to report, at the
 // candidate, and what it reports there is the candidate's start.
 //
@@ -61,6 +61,15 @@ package mask
 // releases a few more bytes at the end of a write, and it costs a second
 // grammar — the grammar of the halves — kept beside the first and free to
 // disagree with it. The bytes are not worth that.
+//
+// What it gives up on there is the candidate and no more, which
+// Test_builtins_holdNoFurtherBackThanTheCutCandidate holds it to: the text in
+// front of a candidate the end cut short was settled before that candidate
+// opened, and a scan pinned in front of it holds a stream open on text that
+// was never part of any candidate. Test_builtins_settleWhatIsNoValue asks the
+// same of an input that goes on past the candidate and cannot ask it here,
+// since every input it builds is followed by prose and so ends inside no
+// candidate at all.
 //
 // Every pattern holds its own anchor to standing at its own index in every
 // prefix that pattern can match, in a test of its own beside the scan. What
