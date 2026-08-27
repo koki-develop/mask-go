@@ -54,4 +54,6 @@ var builtins = []Pattern{
 	stripeSecretKey,
 	stripeWebhookSigningSecret,
 	supabaseAccessToken,
+	supabasePublishableKey,
+	supabaseSecretKey,
 }

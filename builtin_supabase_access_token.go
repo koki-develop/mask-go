@@ -175,32 +175,21 @@ func SupabaseAccessToken() Pattern { return supabaseAccessToken }
 // tenth, where the marker stands — nothing but the digits and the first six
 // letters for forty characters together, with no space anywhere in it.
 //
-// The other credentials Supabase issues are not read, and each is declined for a
-// reason of its own.
+// The other credentials Supabase issues are read by other patterns, and this
+// one reads none of them. The project API keys open with sb_publishable_ and
+// sb_secret_, which SupabasePublishableKey and SupabaseSecretKey locate; the
+// anon and service_role keys those replaced are JWTs signed with the project's
+// secret, carrying the role as a claim, which JWT locates as what they are and
+// which need nothing from this pattern, since a second one reading the same
+// string would report a span JWT already covers.
 //
-// The project API keys that replaced the anon and service_role keys open with
-// sb_publishable_ and sb_secret_, and nothing published states what stands
-// behind either. The announcement and the documentation write them as
-// sb_publishable_xxx and sb_secret_xxx, with no length and no alphabet, and the
-// rules written against them are guesses at both. Three read sb_secret_ and put
-// the count in two different places — exactly thirty-one in one, thirty-one to
-// thirty-six in the other two — and two of the three need an entropy floor or a
-// demand for upper and lower case behind the count to hold what its alphabet
-// lets in, which is what a count nobody can check looks like. sb_publishable_
-// has one rule of its own, reading twenty-four to forty, and one more count
-// written into a filter for a generic rule rather than into a rule at all. A
-// floor invented here would be a guess at exactly the part of the grammar that
-// is load-bearing, in an alphabet holding the hyphen and the underscore, and
-// the examples those rules are written from divide their thirty-one characters
-// with an underscore that no published sentence says is there.
-// Test_SupabaseAccessToken_theOtherSupabaseCredentials pins the
-// decision, so that reading sb_secret_ is a change somebody argues for rather
-// than one somebody notices afterwards.
-//
-// The anon and service_role keys those replaced need nothing from this pattern.
-// They are JWTs signed with the project's secret, carrying the role as a claim,
-// and JWT in builtin_jwt.go locates them as what they are; a second pattern
-// reading the same string would report a span the first already covers.
+// What keeps this pattern out of the project keys is the third character of a
+// prefix: sbp_ carries the p of a personal access token where either project
+// key carries the underscore opening the word that names its kind, so no
+// reading of a candidate gets past it.
+// Test_SupabaseAccessToken_theOtherSupabaseCredentials holds the boundary,
+// which is worth holding because the three prefixes agree on their first two
+// characters and a widening here would reach the keys rather than fail.
 //
 // referenceSupabaseAccessToken in
 // builtin_supabase_access_token_test.go keeps the grammar as a regular

@@ -433,6 +433,32 @@ var builtinPatterns = []struct {
 		anchors:    []string{"sbp_0123", "sbp_oauth_0123"},
 		benchmarks: supabaseAccessTokenFindBenchmarks,
 	},
+	{
+		name:    "supabase-publishable-key",
+		pattern: SupabasePublishableKey,
+		ref:     referenceSupabasePublishableKeyFind,
+		samples: []string{
+			"SUPABASE_PUBLISHABLE_KEY=sb_publishable_0123456789abcdef012345_01234567",
+			"sb_publishable_0123456789abcdef012345_01234567",
+			"sb_publishable_0123456789abcdef012345_01234567sb_publishable_0123456789abcdef012345_01234567",
+			"sb_publishable_sb_publishable_0123456789abcdef012345_01234567",
+		},
+		anchors:    []string{"sb_publishable_0123"},
+		benchmarks: supabasePublishableKeyFindBenchmarks,
+	},
+	{
+		name:    "supabase-secret-key",
+		pattern: SupabaseSecretKey,
+		ref:     referenceSupabaseSecretKeyFind,
+		samples: []string{
+			"SUPABASE_SECRET_KEY=sb_secret_0123456789abcdef012345_01234567",
+			"sb_secret_0123456789abcdef012345_01234567",
+			"sb_secret_0123456789abcdef012345_01234567sb_secret_0123456789abcdef012345_01234567",
+			"sb_secret_sb_secret_0123456789ab_012345670_01234567",
+		},
+		anchors:    []string{"sb_secret_0123"},
+		benchmarks: supabaseSecretKeyFindBenchmarks,
+	},
 }
 
 // noValueInputs is text no built-in pattern has anything to find in: ordinary

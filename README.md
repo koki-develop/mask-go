@@ -59,7 +59,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `SentryPatterns() []Pattern` | Sentry user auth tokens, organization auth tokens, user application tokens, internal integration tokens |
 | `SlackPatterns() []Pattern` | Slack bot tokens, user tokens, app-level tokens, workflow tokens, refresh tokens, rotatable bot and user access tokens |
 | `StripePatterns() []Pattern` | Stripe publishable API keys, restricted API keys, secret API keys, organization API keys, webhook signing secrets |
-| `SupabasePatterns() []Pattern` | Supabase personal access tokens, Supabase OAuth access tokens |
+| `SupabasePatterns() []Pattern` | Supabase personal access tokens, Supabase OAuth access tokens, Supabase publishable API keys, Supabase secret API keys |
 
 `MustRegexp` builds a pattern from a regular expression:
 
