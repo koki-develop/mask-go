@@ -1,0 +1,160 @@
+# What Supabase publishable keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is: the random part is that run written once and then as far as 5,
+# which is the twenty-two characters the generator slices out of a base64url
+# encoding, and the checksum behind the separator is the first eight of the same
+# run. It is the body a secret key carries as well — one generator writes both
+# and is told only which prefix to put in front — so what this file states about
+# a body is stated in builtin_supabase_secret_key.txt too, and what is its own is
+# the prefix and the count that prefix makes: forty-six characters.
+
+patterns: supabase-publishable-key
+
+# A key as it is written. Supabase says a publishable key is safe to expose and
+# prints one into browser code, so what carries one is the client, the bundle
+# that client is built into and the configuration either is read from — which is
+# why it is a pattern of its own rather than one switch with the secret keys: a
+# caller masking a frontend bundle has reason to keep it and a caller masking a
+# configuration dump reason to redact it.
+
+case:     a key in an environment assignment
+in:       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_0123456789abcdef012345_01234567
+out:      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=«supabase-publishable-key»
+
+case:     a key in a client constructor
+in:       createClient(url, "sb_publishable_0123456789abcdef012345_01234567")
+out:      createClient(url, "«supabase-publishable-key»")
+
+case:     a key in an apikey header
+in:       apikey: sb_publishable_0123456789abcdef012345_01234567
+out:      apikey: «supabase-publishable-key»
+
+case:     a key in a bearer token header
+in:       Authorization: Bearer sb_publishable_0123456789abcdef012345_01234567
+out:      Authorization: Bearer «supabase-publishable-key»
+
+case:     a key in the response that lists it
+in:       {"api_key":"sb_publishable_0123456789abcdef012345_01234567","type":"publishable"}
+out:      {"api_key":"«supabase-publishable-key»","type":"publishable"}
+
+case:     a key at the end of a sentence
+in:       the key is sb_publishable_0123456789abcdef012345_01234567.
+out:      the key is «supabase-publishable-key».
+
+# The body, which is the secret keys' body exactly: both cases, the digits, the
+# hyphen and the underscore throughout, the separator the generator writes
+# twenty-three characters behind the prefix, and the two counts read exactly
+# rather than as the range the one ruleset reading this prefix reads.
+
+case:     an uppercase random part
+in:       sb_publishable_0123456789ABCDEF012345_01234567
+out:      «supabase-publishable-key»
+
+case:     a hyphen in the random part
+in:       sb_publishable_0123456789-bcdef012345_01234567
+out:      «supabase-publishable-key»
+
+case:     an underscore in the random part
+in:       sb_publishable_0123456789_bcdef012345_01234567
+out:      «supabase-publishable-key»
+
+case:     a dot in the random part
+in:       sb_publishable_0123456789.bcdef012345_01234567
+out:      sb_publishable_0123456789.bcdef012345_01234567
+
+case:     a hyphen where the separator stands
+in:       sb_publishable_0123456789abcdef012345-01234567
+out:      sb_publishable_0123456789abcdef012345-01234567
+
+case:     a body of the right length with no separator
+in:       sb_publishable_0123456789abcdef012345001234567
+out:      sb_publishable_0123456789abcdef012345001234567
+
+case:     a body one character short is not a key
+in:       sb_publishable_0123456789abcdef012345_0123456
+out:      sb_publishable_0123456789abcdef012345_0123456
+
+case:     a body run one character longer is a key and the character after it
+in:       sb_publishable_0123456789abcdef012345_012345678
+out:      «supabase-publishable-key»8
+
+# What a key may be written against, which is what the secret keys are held to
+# as well: no boundary on either side of the prefix, so a key keeps its span
+# whatever character it abuts and what stands past the forty-sixth character
+# stays where it was written.
+
+case:     a key after an underscore
+in:       SUPABASE_KEY_sb_publishable_0123456789abcdef012345_01234567
+out:      SUPABASE_KEY_«supabase-publishable-key»
+
+case:     a key after a letter
+in:       xsb_publishable_0123456789abcdef012345_01234567
+out:      x«supabase-publishable-key»
+
+case:     a word written against a key
+in:       sb_publishable_0123456789abcdef012345_01234567suffix
+out:      «supabase-publishable-key»suffix
+
+# Keys written together, and the key written inside another. The alphabet a body
+# is drawn from holds every character the prefix is written with, so a body may
+# spell the prefix and open a candidate that reads on past the end of the key it
+# stands in. That is why the scan resumes a byte past the start of a candidate
+# rather than past the candidate, and the last case is what a scan stepping over
+# what it declined would lose: the two spans overlap and are redacted as one.
+
+case:     two keys with nothing between them
+in:       sb_publishable_0123456789abcdef012345_01234567sb_publishable_0123456789abcdef012345_01234567
+out:      «supabase-publishable-key»«supabase-publishable-key»
+
+case:     two keys separated by a space
+in:       sb_publishable_0123456789abcdef012345_01234567 sb_publishable_0123456789abcdef012345_01234567
+out:      «supabase-publishable-key» «supabase-publishable-key»
+
+case:     a prefix in front of a key
+in:       sb_publishable_sb_publishable_0123456789abcdef012345_01234567
+out:      sb_publishable_«supabase-publishable-key»
+
+case:     a key beginning inside another
+in:       sb_publishable_sb_publishable_0123456_01234567012345_01234567
+out:      «supabase-publishable-key»
+
+# And what this pattern leaves alone. First the prefix: the case the vendor
+# writes it in, the underscore it closes with written as a hyphen and then left
+# out. Then the secret prefix, which carries the same body behind a shorter one
+# and is what the pattern beside this reads — neither reads the other's prefix,
+# which is the whole of the boundary between them. Then a body of the right shape
+# with no prefix in front of it, and the prose and the log line no pattern here
+# has anything to find in.
+
+case:     an uppercase prefix
+in:       SB_PUBLISHABLE_0123456789abcdef012345_01234567
+out:      SB_PUBLISHABLE_0123456789abcdef012345_01234567
+
+case:     a hyphen where the prefix carries its closing underscore
+in:       sb_publishable-0123456789abcdef012345_01234567
+out:      sb_publishable-0123456789abcdef012345_01234567
+
+case:     the prefix without its closing underscore
+in:       sb_publishable0123456789abcdef012345_01234567
+out:      sb_publishable0123456789abcdef012345_01234567
+
+case:     a secret key
+in:       sb_secret_0123456789abcdef012345_01234567
+out:      sb_secret_0123456789abcdef012345_01234567
+
+case:     a personal access token
+in:       sbp_0123456789abcdef0123456789abcdef01234567
+out:      sbp_0123456789abcdef0123456789abcdef01234567
+
+case:     a body of the right shape opening with no prefix
+in:       xxxxxxxxxxxxxxx0123456789abcdef012345_01234567
+out:      xxxxxxxxxxxxxxx0123456789abcdef012345_01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.supabase.co/rest/v1/todos
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.supabase.co/rest/v1/todos

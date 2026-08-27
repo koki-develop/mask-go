@@ -139,4 +139,6 @@ func StripePatterns() []Pattern {
 // Supabase issues.
 //
 // The returned slice is freshly allocated and may be modified by the caller.
-func SupabasePatterns() []Pattern { return []Pattern{supabaseAccessToken} }
+func SupabasePatterns() []Pattern {
+	return []Pattern{supabaseAccessToken, supabasePublishableKey, supabaseSecretKey}
+}

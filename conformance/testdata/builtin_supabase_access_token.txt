@@ -257,33 +257,29 @@ in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api
 out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.supabase.com/v1/projects
 
 # The other credentials Supabase issues, none of which this pattern reads. The
-# project API keys open with sb_publishable_ and sb_secret_, and nothing
-# published states what stands behind either prefix: the announcement and the
-# documentation write them as sb_publishable_xxx and sb_secret_xxx. The rules
-# written against them put the count in different places — exactly thirty-one for
-# sb_secret_ in one and thirty-one to thirty-six in two others, twenty-four to
-# forty for sb_publishable_ in the one rule reading it — and most of them need an
-# entropy floor behind the count to hold what its alphabet lets in. A floor
-# invented here would be a guess at the load-bearing part of the grammar, so both
-# are left in the text whole and the cases are here to move with the scan: a
-# shape invented for either would start locating them.
+# project API keys open with sb_publishable_ and sb_secret_ and are located by
+# patterns of their own; the anon and service_role keys those replaced are JWTs
+# signed with the project's secret, carrying the role as a claim, which the JWT
+# pattern reads as what they are — and what the two come to together is in
+# builtins_together.txt.
 #
-# The anon and service_role keys those replaced are JWTs signed with the
-# project's secret, carrying the role as a claim. This pattern finding nothing in
-# one is all it has to do about them, and what does read them is the JWT pattern
-# — which is what the case for it in builtins_together.txt shows.
+# The boundary is worth cases because the three prefixes agree on their first two
+# characters: sbp_ carries the p of a personal access token where a project key
+# carries the underscore opening the word that names its kind, so the third
+# character is what decides between them. A widening here would reach the keys
+# rather than fail, and these cases are what would report it.
 
 case:     a project secret key
-in:       sb_secret_0123456789abcdef0123456789abcdef012
-out:      sb_secret_0123456789abcdef0123456789abcdef012
+in:       sb_secret_0123456789abcdef012345_01234567
+out:      sb_secret_0123456789abcdef012345_01234567
 
 case:     a project secret key in an environment assignment
-in:       SUPABASE_SECRET_KEY=sb_secret_0123456789abcdef0123456789abcdef012
-out:      SUPABASE_SECRET_KEY=sb_secret_0123456789abcdef0123456789abcdef012
+in:       SUPABASE_SECRET_KEY=sb_secret_0123456789abcdef012345_01234567
+out:      SUPABASE_SECRET_KEY=sb_secret_0123456789abcdef012345_01234567
 
 case:     a project publishable key
-in:       sb_publishable_0123456789abcdef0123456789abcd
-out:      sb_publishable_0123456789abcdef0123456789abcd
+in:       sb_publishable_0123456789abcdef012345_01234567
+out:      sb_publishable_0123456789abcdef012345_01234567
 
 case:     an anon key of the format the project keys replaced
 in:       eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.0123456789abcdef

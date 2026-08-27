@@ -460,31 +460,31 @@ func Test_SupabaseAccessToken_aDigestBehindThePrefix(t *testing.T) {
 func Test_SupabaseAccessToken_theOtherSupabaseCredentials(t *testing.T) {
 	// The credentials Supabase issues beside a personal access token, none of
 	// which this pattern reads. The project API keys open with sb_publishable_
-	// and sb_secret_, and builtin_supabase_access_token.go says why
-	// they are declined: nothing published states what stands behind either
-	// prefix, and the rules written against them put the count in different
-	// places, most of them behind an entropy floor doing the work it cannot. The
-	// anon and service_role keys those replaced are JWTs, which JWT in
-	// builtin_jwt.go locates as what they are — this pattern finding nothing in
-	// one is the whole of what it has to do about them.
+	// and sb_secret_ and are located by patterns of their own; the anon and
+	// service_role keys those replaced are JWTs, which the JWT pattern locates
+	// as what they are. This pattern finding nothing in any of them is the whole
+	// of what it has to do about them.
 	//
-	// The decisions are pinned here so that reading sb_secret_ is a change
-	// somebody argues for rather than one somebody notices afterwards.
+	// The boundary is worth pinning because the prefixes agree on their first two
+	// characters: sbp_ carries the p of a personal access token where a project
+	// key carries the underscore opening the word that names its kind. A
+	// widening here — a letter admitted in front of the underscore, the prefix
+	// read without regard to case — would reach the keys rather than fail.
 	tests := []struct {
 		name string
 		src  string
 	}{
 		{
 			name: "a project secret key",
-			src:  "sb_secret_0123456789abcdef0123456789abcdef012",
+			src:  "sb_secret_0123456789abcdef012345_01234567",
 		},
 		{
 			name: "a project secret key in an environment assignment",
-			src:  "SUPABASE_SECRET_KEY=sb_secret_0123456789abcdef0123456789abcdef012",
+			src:  "SUPABASE_SECRET_KEY=sb_secret_0123456789abcdef012345_01234567",
 		},
 		{
 			name: "a project publishable key",
-			src:  "sb_publishable_0123456789abcdef0123456789abcd",
+			src:  "sb_publishable_0123456789abcdef012345_01234567",
 		},
 		{
 			name: "an anon key of the format the project keys replaced",
@@ -721,9 +721,9 @@ func FuzzSupabaseAccessToken_matchesReference(f *testing.F) {
 	f.Add(strings.Repeat("sbp_", 32) + "0123456789abcdef0123456789abcdef01234567")
 	f.Add(strings.Repeat("sbp_0123456789abcdef0123456789abcdef01234567", 8))
 	f.Add(strings.Repeat("_", 128))
-	// The Supabase credentials this pattern declines to read.
-	f.Add("sb_secret_0123456789abcdef0123456789abcdef012")
-	f.Add("sb_publishable_0123456789abcdef0123456789abcd")
+	// The Supabase project API keys, which this pattern locates nothing in.
+	f.Add("sb_secret_0123456789abcdef012345_01234567")
+	f.Add("sb_publishable_0123456789abcdef012345_01234567")
 
 	fuzzAgainstReference(f, SupabaseAccessToken().Find, referenceSupabaseAccessTokenFind)
 }
