@@ -48,6 +48,7 @@ var builtins = []Pattern{
 	npmAccessToken,
 	openAIAPIKey,
 	openRouterAPIKey,
+	postmanAPIKey,
 	privateKey,
 	pypiAPIToken,
 	rubyGemsAPIKey,

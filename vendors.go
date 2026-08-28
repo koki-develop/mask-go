@@ -121,6 +121,12 @@ func OpenAIPatterns() []Pattern { return []Pattern{openAIAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func OpenRouterPatterns() []Pattern { return []Pattern{openRouterAPIKey} }
 
+// PostmanPatterns returns every built-in pattern that locates a credential
+// Postman issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func PostmanPatterns() []Pattern { return []Pattern{postmanAPIKey} }
+
 // PyPIPatterns returns every built-in pattern that locates a credential PyPI
 // issues.
 //

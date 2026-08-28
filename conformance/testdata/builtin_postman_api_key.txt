@@ -1,0 +1,158 @@
+# What Postman API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from ordered characters, which no real credential is.
+# A body is two runs of exact length — twenty-four and thirty-four — divided by
+# a hyphen neither run may carry, so with the prefix in front a key comes to
+# sixty-four. The key the cases are written around carries the run
+# 0123456789abcdef and eight characters more, then that run twice over and two
+# more; the two cases about the alphabet carry the same ordered characters
+# spelled on past f, or spelled uppercase instead.
+
+patterns: postman-api-key
+
+# A key as it is written: the header the Postman API reads it from, the
+# environment the tooling takes it out of, the command line it is passed on and
+# the body of a request that carries it.
+
+case:     a key in the api key header
+in:       X-API-Key: PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      X-API-Key: «postman-api-key»
+
+case:     a key in an environment assignment
+in:       POSTMAN_API_KEY=PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      POSTMAN_API_KEY=«postman-api-key»
+
+case:     a key on a curl command line
+in:       curl -H "X-API-Key: PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01" https://api.getpostman.com/me
+out:      curl -H "X-API-Key: «postman-api-key»" https://api.getpostman.com/me
+
+case:     a key in a json body
+in:       {"apiKey":"PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01"}
+out:      {"apiKey":"«postman-api-key»"}
+
+case:     a key at the end of a sentence
+in:       the key is PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01.
+out:      the key is «postman-api-key».
+
+# The body: the letters of both cases and the digits in both segments, which is
+# the wider of the two alphabets the rulesets that read this format divide on.
+# Postman publishes no expression of its own, so a key carrying a letter past f
+# is one nothing rules out, and reading hexadecimal alone would leave it in the
+# output whole. The counts are read exactly rather than as floors, so a run
+# longer than the second is a key and what was written after it.
+
+case:     an uppercase body
+in:       PMAK-0123456789ABCDEF01234567-0123456789ABCDEF0123456789ABCDEF01
+out:      «postman-api-key»
+
+case:     a body carrying letters past f
+in:       PMAK-0123456789abcdefghijklmn-0123456789abcdefghijklmnopqrstuvwx
+out:      «postman-api-key»
+
+case:     a second segment one character longer is a key and the character after it
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef012
+out:      «postman-api-key»2
+
+# What a key may be written against: no boundary on either side of the prefix,
+# so a key keeps its span whatever character it abuts and what stands past its
+# last character stays where it was written.
+
+case:     a key after an underscore
+in:       POSTMAN_API_KEY_PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      POSTMAN_API_KEY_«postman-api-key»
+
+case:     a key after a letter
+in:       xPMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      x«postman-api-key»
+
+case:     a word written against a key
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01suffix
+out:      «postman-api-key»suffix
+
+# Keys written together, and the key written inside another. The alphabet a body
+# is drawn from holds every letter the prefix opens with, so a second segment may
+# close on PMAK and the hyphen reading it back then stands past the end of the
+# key that segment closes. That is why the scan resumes a byte past the start of
+# a candidate rather than past the candidate, and the third case here is what a
+# scan stepping over what it found would lose: the spans overlap and are redacted
+# as one.
+
+case:     two keys with nothing between them
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      «postman-api-key»«postman-api-key»
+
+case:     two keys separated by a space
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01 PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      «postman-api-key» «postman-api-key»
+
+case:     a key beginning four characters from the end of another
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdPMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      «postman-api-key»
+
+case:     a prefix in front of a key
+in:       PMAK-PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      PMAK-«postman-api-key»
+
+case:     a first segment closing on PMAK, whose candidate borrows the key's own separator
+in:       PMAK-0123456789abcdef0123PMAK-0123456789abcdef0123456789abcdef01
+out:      «postman-api-key»
+
+# And what this pattern leaves alone. First the prefix: the case Postman writes
+# it in and the hyphen it closes with. Then the body, where a segment of the
+# wrong length or a separator written as anything else ends the reading — a run
+# of one alphabet all the way through is not a key however long it runs, so no
+# digest reaches this format and no UUID does either. Then the collection access
+# key, which Postman calls by another name and writes behind another prefix.
+# Then the prose and the log line, which no pattern here has anything to find in.
+
+case:     a lowercase prefix
+in:       pmak-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      pmak-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+
+case:     the prefix without its closing hyphen
+in:       PMAK0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      PMAK0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+
+case:     a first segment one character short
+in:       PMAK-0123456789abcdef0123456-0123456789abcdef0123456789abcdef01
+out:      PMAK-0123456789abcdef0123456-0123456789abcdef0123456789abcdef01
+
+case:     a second segment one character short
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0
+out:      PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0
+
+case:     the two segments written with no separator between them
+in:       PMAK-0123456789abcdef012345670123456789abcdef0123456789abcdef01
+out:      PMAK-0123456789abcdef012345670123456789abcdef0123456789abcdef01
+
+case:     an underscore where the separator stands
+in:       PMAK-0123456789abcdef01234567_0123456789abcdef0123456789abcdef01
+out:      PMAK-0123456789abcdef01234567_0123456789abcdef0123456789abcdef01
+
+case:     a dot in the second segment
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef.123456789abcdef01
+out:      PMAK-0123456789abcdef01234567-0123456789abcdef.123456789abcdef01
+
+case:     a sha-256 digest behind the prefix
+in:       PMAK-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      PMAK-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a uuid behind the prefix
+in:       PMAK-01234567-89ab-cdef-0123-456789abcdef
+out:      PMAK-01234567-89ab-cdef-0123-456789abcdef
+
+case:     a body of the right shape with no prefix
+in:       0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+
+case:     a collection access key
+in:       PMAT-0123456789abcdef0123456789
+out:      PMAT-0123456789abcdef0123456789
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.getpostman.com/me
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.getpostman.com/me
