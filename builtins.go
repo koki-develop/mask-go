@@ -34,6 +34,7 @@ var builtins = []Pattern{
 	cloudflareAPIKey,
 	cloudflareAPIToken,
 	cratesIOToken,
+	databricksOAuthClientSecret,
 	databricksPersonalAccessToken,
 	digitalOceanToken,
 	githubToken,

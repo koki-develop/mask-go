@@ -148,6 +148,20 @@ var builtinPatterns = []struct {
 		benchmarks: cratesIOTokenFindBenchmarks,
 	},
 	{
+		name:    "databricks-oauth-client-secret",
+		pattern: DatabricksOAuthClientSecret,
+		ref:     referenceDatabricksOAuthClientSecretFind,
+		samples: []string{
+			"DATABRICKS_CLIENT_SECRET=dose0123456789abcdef0123456789abcdef",
+			"dose0123456789abcdef0123456789abcdef",
+			"dosedose0123456789abcdef0123456789abcdef",
+			"dose0123456789abcdef0123456789abcdedose0123456789abcdef0123456789abcdef",
+			"dose0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"dose0123456789abcdef"},
+		benchmarks: databricksOAuthClientSecretFindBenchmarks,
+	},
+	{
 		name:    "databricks-personal-access-token",
 		pattern: DatabricksPersonalAccessToken,
 		ref:     referenceDatabricksPersonalAccessTokenFind,
