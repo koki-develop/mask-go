@@ -64,6 +64,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `OpenRouterPatterns() []Pattern` | OpenRouter API keys |
 | `PostmanPatterns() []Pattern` | Postman API keys |
 | `PrivateKey() Pattern` | PKCS#8 private keys, encrypted PKCS#8 private keys, PKCS#1 RSA private keys, EC private keys, DSA private keys, OpenSSH private keys, PGP private key blocks |
+| `PulumiPatterns() []Pattern` | Pulumi personal access tokens, organization access tokens, team access tokens |
 | `PyPIPatterns() []Pattern` | PyPI API tokens, TestPyPI API tokens, Trusted Publisher tokens |
 | `RubyGemsPatterns() []Pattern` | RubyGems.org API keys |
 | `SendGridPatterns() []Pattern` | Twilio SendGrid API keys |

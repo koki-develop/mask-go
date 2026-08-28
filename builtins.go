@@ -51,6 +51,7 @@ var builtins = []Pattern{
 	openRouterAPIKey,
 	postmanAPIKey,
 	privateKey,
+	pulumiAccessToken,
 	pypiAPIToken,
 	rubyGemsAPIKey,
 	sendGridAPIKey,

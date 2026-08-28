@@ -1,0 +1,202 @@
+# What Pulumi access tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: a body is forty hexadecimal characters, so the run twice over
+# and eight more is one, and the prefix in front brings a token to forty-four.
+# Where a case turns on the alphabet a body is written in, it carries the same
+# run spelled uppercase or carried on past f instead.
+
+patterns: pulumi-access-token
+
+# The one prefix Pulumi writes a token with, in the places a token is written.
+# There is a single kind of string here rather than a table of them: the token a
+# user creates for themselves, the token an organization is issued and the token
+# a team is issued share the prefix and carry no mark to tell one from another,
+# so a caller enabling this pattern is enabling all three at once.
+
+case:     a token in an environment assignment
+in:       PULUMI_ACCESS_TOKEN=pul-0123456789abcdef0123456789abcdef01234567
+out:      PULUMI_ACCESS_TOKEN=«pulumi-access-token»
+
+case:     a token in the header the rest api reads it from
+in:       Authorization: token pul-0123456789abcdef0123456789abcdef01234567
+out:      Authorization: token «pulumi-access-token»
+
+case:     a token in the credentials file the cli writes
+in:       {"current":"https://api.pulumi.com","accessTokens":{"https://api.pulumi.com":"pul-0123456789abcdef0123456789abcdef01234567"}}
+out:      {"current":"https://api.pulumi.com","accessTokens":{"https://api.pulumi.com":"«pulumi-access-token»"}}
+
+case:     a token in the yaml a deployment runner is configured with
+in:       token: pul-0123456789abcdef0123456789abcdef01234567\nversion: v0.0.5
+out:      token: «pulumi-access-token»\nversion: v0.0.5
+
+case:     a token in the json a token exchange returns
+in:       {"accessToken":"pul-0123456789abcdef0123456789abcdef01234567","tokenType":"Bearer","expiresIn":7200}
+out:      {"accessToken":"«pulumi-access-token»","tokenType":"Bearer","expiresIn":7200}
+
+case:     a token on a curl command line
+in:       curl -H "Authorization: token pul-0123456789abcdef0123456789abcdef01234567" https://api.pulumi.com/api/user
+out:      curl -H "Authorization: token «pulumi-access-token»" https://api.pulumi.com/api/user
+
+# The alphabet the forty characters are written in: lowercase hexadecimal, which
+# is what two of the three rules reading this format ask for. The third reads the
+# same count through a class holding every lowercase letter, and that class is
+# the widening the pattern's own file declines. A body carrying anything outside
+# hexadecimal is no body at all.
+
+case:     an uppercase body
+in:       pul-0123456789ABCDEF0123456789ABCDEF01234567
+out:      pul-0123456789ABCDEF0123456789ABCDEF01234567
+
+case:     one uppercase character in a body
+in:       pul-0123456789abcdef0123456789abcdef0123456F
+out:      pul-0123456789abcdef0123456789abcdef0123456F
+
+case:     a body carrying letters past f
+in:       pul-0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      pul-0123456789abcdefghijklmnopqrstuvwxyz0123
+
+case:     a body carrying an underscore
+in:       pul-0123456789abcdef_123456789abcdef01234567
+out:      pul-0123456789abcdef_123456789abcdef01234567
+
+case:     a body carrying a hyphen
+in:       pul-0123456789abcdef-123456789abcdef01234567
+out:      pul-0123456789abcdef-123456789abcdef01234567
+
+# The lengths either side of forty. That count is what every published rule
+# reading this format asks for, and it is used as a count rather than a floor:
+# thirty-nine characters are not a token, and forty-one are a token and one
+# character that belongs to no credential. The second of those is the price of
+# having no boundary behind the match — a boundary there would drop this token
+# rather than trim it, and a real token written against a digit would come
+# through whole.
+
+case:     a body of forty characters is a token
+in:       pul-0123456789abcdef0123456789abcdef01234567
+out:      «pulumi-access-token»
+
+case:     a body of thirty-nine characters is not
+in:       pul-0123456789abcdef0123456789abcdef0123456
+out:      pul-0123456789abcdef0123456789abcdef0123456
+
+case:     an alphabet run longer than a token is a token and what follows it
+in:       pul-0123456789abcdef0123456789abcdef012345678
+out:      «pulumi-access-token»8
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       PULUMI_ACCESS_TOKEN_pul-0123456789abcdef0123456789abcdef01234567
+out:      PULUMI_ACCESS_TOKEN_«pulumi-access-token»
+
+case:     a token after a letter
+in:       xpul-0123456789abcdef0123456789abcdef01234567
+out:      x«pulumi-access-token»
+
+case:     a word written against a token
+in:       pul-0123456789abcdef0123456789abcdef01234567suffix
+out:      «pulumi-access-token»suffix
+
+case:     a token at the end of a sentence
+in:       the token is pul-0123456789abcdef0123456789abcdef01234567.
+out:      the token is «pulumi-access-token».
+
+# Two tokens written together. No token can begin inside another here: everything
+# a span covers past the prefix is hexadecimal, and the p the prefix opens with
+# is neither of the letters behind it, is not the hyphen closing it and is no
+# character a body may hold. So two tokens written with nothing between them are
+# two separate values and both go, and a prefix standing where a body would have
+# to hold it ends the candidate in front of it and opens the token itself.
+
+case:     two tokens with nothing between them
+in:       pul-0123456789abcdef0123456789abcdef01234567pul-0123456789abcdef0123456789abcdef01234567
+out:      «pulumi-access-token»«pulumi-access-token»
+
+case:     a prefix written in front of a token
+in:       pul-pul-0123456789abcdef0123456789abcdef01234567
+out:      pul-«pulumi-access-token»
+
+# What this pattern redacts that nobody issued. Forty lowercase hexadecimal
+# characters behind the prefix is the format every rule reading it asks for, and
+# a SHA-1 is forty of them, so the prefix written straight in front of one is a
+# token character for character and the whole of it goes. A SHA-256 is longer and
+# is redacted for forty-four characters with the rest left in the text — which is
+# reachable, because the rules reading this format ask that no word character
+# stand in front of a match and this pattern does not: the name of a
+# content-addressed asset is a word, a hyphen and a digest, and where that word
+# ends in the letters the prefix opens with the digest behind it is read as a
+# body. That is the answer rather than a fault in it. Sparing these would mean
+# asking what stands in front of a token, and a token written against an
+# underscore is how one reaches a log line from a shell; what is taken instead is
+# a stretch of a value that was already opaque.
+
+case:     the prefix in front of a sha-1
+in:       pul-0123456789abcdef0123456789abcdef01234567
+out:      «pulumi-access-token»
+
+case:     the prefix in front of a sha-256
+in:       pul-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «pulumi-access-token»89abcdef0123456789abcdef
+
+case:     a word ending in the letters of the prefix in front of a digest
+in:       assets/vipul-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.png
+out:      assets/vi«pulumi-access-token»89abcdef0123456789abcdef.png
+
+# And what this pattern leaves alone. The first three are the prefix, which is
+# read in the case Pulumi writes it and with every character of it. Then the
+# digest the count turns away, a run of the right length with no prefix in front
+# of it, and a UUID, whose hyphens are no character a body may hold. The last two
+# carry no prefix at all: a hexadecimal run holds none of the four characters a
+# prefix is written with, so no digest carries one partway along.
+
+case:     an uppercase prefix
+in:       PUL-0123456789abcdef0123456789abcdef01234567
+out:      PUL-0123456789abcdef0123456789abcdef01234567
+
+case:     the prefix without the hyphen closing it
+in:       pul0123456789abcdef0123456789abcdef012345678
+out:      pul0123456789abcdef0123456789abcdef012345678
+
+case:     an underscore where the prefix closes
+in:       pul_0123456789abcdef0123456789abcdef01234567
+out:      pul_0123456789abcdef0123456789abcdef01234567
+
+case:     the prefix in front of an md5
+in:       pul-0123456789abcdef0123456789abcdef
+out:      pul-0123456789abcdef0123456789abcdef
+
+case:     a run of the right length opening with no prefix
+in:       xxxx0123456789abcdef0123456789abcdef01234567
+out:      xxxx0123456789abcdef0123456789abcdef01234567
+
+case:     a uuid behind the prefix
+in:       pul-01234567-89ab-cdef-0123-456789abcdef
+out:      pul-01234567-89ab-cdef-0123-456789abcdef
+
+case:     a digest with no prefix
+in:       sha=0123456789abcdef0123456789abcdef01234567
+out:      sha=0123456789abcdef0123456789abcdef01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And the text a token is written among, which this pattern has nothing to say
+# about. The word Pulumi's own host name and its CLI are spelled with opens with
+# the three letters of the prefix, and the hyphen closing that prefix is what
+# turns each of them away.
+
+case:     a log line naming the api a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="updating stack" url=https://api.pulumi.com/api/user/stacks
+out:      time=2026-08-17T00:00:00Z level=info msg="updating stack" url=https://api.pulumi.com/api/user/stacks
+
+case:     the command line a stack is updated from
+in:       pulumi up --yes --stack acme/website/prod --non-interactive
+out:      pulumi up --yes --stack acme/website/prod --non-interactive
+
+case:     the backend a token authenticates against
+in:       PULUMI_BACKEND_URL=https://api.pulumi.com
+out:      PULUMI_BACKEND_URL=https://api.pulumi.com
