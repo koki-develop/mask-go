@@ -361,6 +361,20 @@ var builtinPatterns = []struct {
 		benchmarks: openRouterAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "planetscale-token",
+		pattern: PlanetScaleToken,
+		ref:     referencePlanetScaleTokenFind,
+		samples: []string{
+			"PLANETSCALE_SERVICE_TOKEN=pscale_tkn_0123456789abcdef0123456789abcdef0123456789a",
+			"pscale_oauth_0123456789abcdef0123456789abcdef0123456789a",
+			"pscale_oauth_refresh_0123456789abcdef0123456789abcdef0123456789a",
+			"pscale_tkn_0123456789abcdef-0123456789abcdef_012345678",
+			"pscale_tkn_pscale_tkn_0123456789abcdef0123456789abcdef0123456789a",
+		},
+		anchors:    []string{"pscale_tkn_"},
+		benchmarks: planetScaleTokenFindBenchmarks,
+	},
+	{
 		name:    "postman-api-key",
 		pattern: PostmanAPIKey,
 		ref:     referencePostmanAPIKeyFind,

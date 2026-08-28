@@ -49,6 +49,7 @@ var builtins = []Pattern{
 	npmAccessToken,
 	openAIAPIKey,
 	openRouterAPIKey,
+	planetScaleToken,
 	postmanAPIKey,
 	privateKey,
 	pulumiAccessToken,
