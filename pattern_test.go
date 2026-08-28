@@ -443,6 +443,48 @@ func Test_MustRegexp_retainIsAFixedPointOfTheRule(t *testing.T) {
 	}
 }
 
+// fastestPair returns the least of several runs of each of a and b, which are
+// the runs carrying least of the machine: a run is slowed by a collection or by
+// whoever else the machine is running, and never sped up by either.
+//
+// Both are run once before any of them is timed, and then alternately, because
+// a ratio of two readings must not carry a difference between when they were
+// taken. The reading taken first pays for a clock that has not risen and for
+// pages nobody has touched, and pays it in every one of its runs, so the least
+// of them does not put it back.
+func fastestPair(a, b func()) (time.Duration, time.Duration) {
+	a()
+	b()
+
+	bestA, bestB := time.Duration(math.MaxInt64), time.Duration(math.MaxInt64)
+	// A deadline read from the clock, not the readings added up: a pair too
+	// quick for the clock to separate would add up to nothing and be sampled
+	// for ever.
+	deadline := time.Now().Add(fastestPairFloor)
+	for i := 0; i < 5 || time.Now().Before(deadline); i++ {
+		start := time.Now()
+		a()
+		bestA = min(bestA, time.Since(start))
+
+		start = time.Now()
+		b()
+		bestB = min(bestB, time.Since(start))
+	}
+	return bestA, bestB
+}
+
+// fastestPairFloor is how long a pair is given before the least of each of its
+// runs is taken, five runs apiece being the fewest whatever that comes to.
+//
+// A reading of a few milliseconds is one a burst of whatever else the machine
+// is running can double, so five of them are five chances to be unlucky. A
+// reading of a hundred is long enough that a burst is a fraction of it rather
+// than a multiple, and sampling it more often buys accuracy already there. The
+// floor tells the two apart without either being written down: it leaves a pair
+// under the race detector at five runs and gives the same pair without it as
+// many as it takes.
+const fastestPairFloor = 250 * time.Millisecond
+
 func Test_MustRegexp_findIsLinear(t *testing.T) {
 	// What Find does after matching is settle an offset by walking the spans,
 	// and there are two ways for that walk to cost more than the text. Walked
@@ -493,23 +535,9 @@ func Test_MustRegexp_findIsLinear(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := MustRegexp("p", tt.expr)
 
-			// The fastest of several runs, not one run and not their mean: a
-			// run is slowed by a collection or by whoever else the machine is
-			// running, and never sped up by either, so the least of them is the
-			// one carrying least of the machine. The first run of each is
-			// thrown away with them, which is what leaves the ratio comparing
-			// two warm reads rather than a cold one against a warm one.
-			took := func(n int) time.Duration {
-				src := strings.Repeat(tt.unit, n/len(tt.unit))
-				best := time.Duration(math.MaxInt64)
-				for range 5 {
-					start := time.Now()
-					p.Find(src)
-					best = min(best, time.Since(start))
-				}
-				return best
-			}
-			a, b := took(small), took(large)
+			text := func(n int) string { return strings.Repeat(tt.unit, n/len(tt.unit)) }
+			short, long := text(small), text(large)
+			a, b := fastestPair(func() { p.Find(short) }, func() { p.Find(long) })
 			if a <= 0 {
 				a = time.Nanosecond
 			}
@@ -735,35 +763,93 @@ func Test_MustRegexp_isLinear(t *testing.T) {
 	// an expression settles nothing and so is never handed a window, which is
 	// what lets the candidates inside a match go untried.
 	//
-	// Two seconds is a bound of use rather than one that merely passes: a
-	// linear scan reads this in single-figure milliseconds, and a quadratic one
-	// would read a mebibyte a million times.
-	size := 1 << 20
-	if raceEnabled {
-		size = 1 << 17
-	}
-	const limit = 2 * time.Second
+	// What is asserted is a ratio and not a deadline, for the reason
+	// Test_MustRegexp_findIsLinear gives above and for one this table has of
+	// its own. A deadline holds where one number lands in the middle of the gap
+	// between the two costs for every case under it, which is what
+	// Test_builtins_scanIsLinear has and this has not: the bounded expression
+	// below tries the candidates inside every match it finds, which is why it
+	// is read at a fraction of the length the rest are. A number with room for
+	// that one is a number the others never approach, and a number placed for
+	// the others fires on it with no scan having changed.
+	//
+	// Mask is what is timed rather than Find alone: it is what a caller pays,
+	// and the walk this is about is inside it. What it spends beyond the walk —
+	// merging the spans, writing the output — divides by the text as the walk
+	// does only because the two readings below are of one length, and that is
+	// what makes timing the whole of Mask say anything about the walk.
+	//
+	// The two readings are of one text and of the same text in halves, rather
+	// than of a text and of twice it. A scan costing the text reads the same
+	// number of bytes either way, so the two readings are of one length; one
+	// costing the candidates inside a match reads a quarter of the whole in
+	// each half and so takes half as long over the pair. Two readings of one
+	// length is what keeps whatever else the machine is running out of the
+	// answer — neither is exposed to it for longer than the other, and a burst
+	// of it lands on both — which two readings of two lengths cannot be, the
+	// longer of them absorbing twice the interference of the shorter.
+	//
+	// Both a half and the whole are long enough that Go's regexp has given up
+	// backtracking for the expression being timed, which it does at a length
+	// inversely proportional to the size of the compiled program. Its
+	// backtracker and its NFA are six to ten times apart per byte, so a half on
+	// one side of that length and the whole on the other reads as a quadratic
+	// scan whatever the scan does.
+	//
+	// The size is therefore the expression's own rather than the table's, and
+	// so is what it costs to read. All but one share the width below, whose
+	// half, being the shorter reading and so the one that has to clear the
+	// length, stands half again above the longest of them: 65536 bytes, for a
+	// program of four instructions, the shortest here. An expression added
+	// below has room under that. The one that does not share the width has by
+	// far the longest program, which puts its length at a tenth of that, and by
+	// far the dearest scan per byte, being the one that tries the candidates
+	// inside a match; read as wide as the rest it costs seconds and says no
+	// more.
+	const (
+		// Two is the quadratic answer and one the linear one. Three halves
+		// parts them with room for the constant factors either side, which is
+		// the call the pair pays twice and the whole pays once.
+		limit = 1.5
+		wide  = 3 << 16
+	)
 
 	// The inputs are what each expression matches densely, with a byte behind
 	// them that no match reaches: a run reaching the end of the text is one no
 	// candidate inside can carry further, and the skip that rests on that would
 	// otherwise hide what is being measured.
-	for _, tt := range []struct{ expr, unit string }{
-		{`[A-Za-z0-9]+`, "a"},
-		{`a+`, "a"},
-		{`(?:ab)+`, "ab"},
-		{`sk-[A-Za-z0-9]+`, "sk-"},
-		{`[0-9a-f]{40}`, "0123456789abcdef"},
-		{`INT-(?P<mask>[0-9a-f]{8})`, "INT-0123456789abcdef"},
+	for _, tt := range []struct {
+		expr, unit string
+		size       int
+	}{
+		{`[A-Za-z0-9]+`, "a", wide},
+		{`a+`, "a", wide},
+		{`(?:ab)+`, "ab", wide},
+		{`sk-[A-Za-z0-9]+`, "sk-", wide},
+		{`[0-9a-f]{40}`, "0123456789abcdef", 1 << 15},
+		{`INT-(?P<mask>[0-9a-f]{8})`, "INT-0123456789abcdef", wide},
 	} {
 		t.Run(tt.expr, func(t *testing.T) {
 			m := New(WithPatterns(MustRegexp("p", tt.expr)))
-			src := strings.Repeat(tt.unit, size/len(tt.unit)) + " Z"
+			text := func(n int) string {
+				return strings.Repeat(tt.unit, n/len(tt.unit)) + " Z"
+			}
+			whole := text(tt.size)
+			// Two strings rather than one read twice, so that the pair reads
+			// as much memory as the whole does rather than the same half of it
+			// over again.
+			first, second := text(tt.size/2), text(tt.size/2)
 
-			start := time.Now()
-			_ = m.Mask(src)
-			if d := time.Since(start); d > limit {
-				t.Errorf("masking %d bytes took %v", len(src), d)
+			one, halves := fastestPair(
+				func() { m.Mask(whole) },
+				func() { m.Mask(first); m.Mask(second) },
+			)
+			if halves <= 0 {
+				halves = time.Nanosecond
+			}
+			if got := float64(one) / float64(halves); got > limit {
+				t.Errorf("Mask() of %d bytes took %v and of the same text in halves %v, %.1fx for the text whole",
+					len(whole), one, halves, got)
 			}
 		})
 	}
