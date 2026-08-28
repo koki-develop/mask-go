@@ -1,5 +1,10 @@
 # mask-go
 
+[![GitHub Release](https://img.shields.io/github/v/release/koki-develop/mask-go?style=flat-square)](https://github.com/koki-develop/mask-go/releases/latest)
+[![Go Reference](https://pkg.go.dev/badge/github.com/koki-develop/mask-go.svg)](https://pkg.go.dev/github.com/koki-develop/mask-go)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/koki-develop/mask-go/ci.yml?style=flat-square&logo=github)](https://github.com/koki-develop/mask-go/actions/workflows/ci.yml)
+[![GitHub License](https://img.shields.io/github/license/koki-develop/mask-go?style=flat-square)](./LICENSE)
+
 A Go library for redacting API keys, access tokens and other credentials from text.
 
 ## Installation
