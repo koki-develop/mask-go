@@ -34,6 +34,7 @@ var builtins = []Pattern{
 	cloudflareAPIKey,
 	cloudflareAPIToken,
 	cratesIOToken,
+	digitalOceanToken,
 	githubToken,
 	gitLabToken,
 	googleAPIKey,

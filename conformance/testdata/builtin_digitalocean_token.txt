@@ -1,0 +1,222 @@
+# What DigitalOcean tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: a body is sixty-four lowercase hexadecimal characters, so the
+# run four times over is one, and the seven character prefix in front brings a
+# token to seventy-one. Where a case turns on what a body may close on, its last
+# character is written as a d instead.
+
+patterns: digitalocean-token
+
+# The three prefixes DigitalOcean writes a token with, one to a kind: dop_v1_
+# for the personal access token generated in the control panel, doo_v1_ for the
+# access token an application receives from the OAuth flow, dor_v1_ for the
+# refresh token handed out beside it. They are one pattern because a caller with
+# reason to redact any of them has the same reason for the rest, and the cases
+# below are the three of them in the places a token is written.
+
+case:     a personal access token in an environment assignment
+in:       DIGITALOCEAN_TOKEN=dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      DIGITALOCEAN_TOKEN=«digitalocean-token»
+
+case:     a token in the header a request carries it in
+in:       Authorization: Bearer dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      Authorization: Bearer «digitalocean-token»
+
+case:     an access token and the refresh token the oauth flow returns beside it
+in:       {"access_token":"doo_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","refresh_token":"dor_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}
+out:      {"access_token":"«digitalocean-token»","refresh_token":"«digitalocean-token»"}
+
+case:     a token in the file the cli writes it into
+in:       access-token: dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      access-token: «digitalocean-token»
+
+case:     a token in the command line a request is made from
+in:       curl -H 'Authorization: Bearer dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' https://api.digitalocean.com/v2/account
+out:      curl -H 'Authorization: Bearer «digitalocean-token»' https://api.digitalocean.com/v2/account
+
+# The alphabet the sixty-four characters are written in: lowercase hexadecimal,
+# which is what every token DigitalOcean's documentation, its CLI's tests and
+# its Go client print behind the prefix. The prefix is read in one case as well,
+# and the pattern's own file weighs what reading the uppercase shape would cost.
+# What the alphabet leaves out is everything else, the letters past f and the two
+# characters base64url adds among them, so a run carrying any of those is no
+# token.
+
+case:     an uppercase body
+in:       dop_v1_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      dop_v1_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+case:     an uppercase prefix
+in:       DOP_V1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      DOP_V1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a letter past f in the body
+in:       dop_v1_0123456789abcdefg123456789abcdef0123456789abcdef0123456789abcdef
+out:      dop_v1_0123456789abcdefg123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a body carrying a hyphen
+in:       dop_v1_0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcdef
+out:      dop_v1_0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a body carrying an underscore
+in:       dop_v1_0123456789abcdef_123456789abcdef0123456789abcdef0123456789abcdef
+out:      dop_v1_0123456789abcdef_123456789abcdef0123456789abcdef0123456789abcdef
+
+# The lengths either side of sixty-four. That count is what DigitalOcean's own
+# CLI demands, which accepts a token of seventy-one characters and nothing else,
+# and it is used as a count rather than a floor: sixty-three characters are not
+# a token, and sixty-five are a token and one character that belongs to no
+# credential. The second of those is the price of having no boundary behind the
+# match — a boundary there would drop this token rather than trim it, and a real
+# token written against a hexadecimal character would come through whole.
+
+case:     a body of sixty-four characters is a token
+in:       dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «digitalocean-token»
+
+case:     a body of sixty-three characters is not
+in:       dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     a hexadecimal run longer than a token is a token and what follows it
+in:       dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0
+out:      «digitalocean-token»0
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       DIGITALOCEAN_TOKEN_dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      DIGITALOCEAN_TOKEN_«digitalocean-token»
+
+case:     a token after a letter
+in:       xdop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      x«digitalocean-token»
+
+case:     a token before a hyphenated word
+in:       dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef-suffix
+out:      «digitalocean-token»-suffix
+
+case:     a token at the end of a sentence
+in:       the token is dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.
+out:      the token is «digitalocean-token».
+
+# Two tokens written together. A token can begin inside another at one position
+# and no other: the o of an opening is no hexadecimal character, so the two
+# letters a prefix opens with cannot both fall inside a body, and no character of
+# a prefix past its first is a d, so no prefix begins inside another prefix
+# either. What is left is a body closing on a d, with the rest of the next
+# prefix written past the end of the token that d belongs to. The two spans
+# overlap there and are redacted as one. Written without that overlap the two
+# are separate values and both go, and a prefix standing where a body would have
+# to hold it ends the candidate in front of it and opens the token itself.
+
+case:     two tokens with nothing between them
+in:       dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefdoo_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «digitalocean-token»«digitalocean-token»
+
+case:     a token beginning at the last character of the token before it
+in:       dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdedop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «digitalocean-token»
+
+case:     a prefix written where a body would stand
+in:       dop_v1_dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      dop_v1_«digitalocean-token»
+
+# What this pattern redacts that nobody issued. A SHA-256 is sixty-four
+# lowercase hexadecimal characters and a body is exactly that, so the prefix and
+# a digest is a token with nothing left over to tell the two apart. That is the
+# answer rather than a fault in it, because sparing it would spare a real token:
+# the vendor's format is that prefix and that many of those characters, and no
+# part of it is left for a digest to fail. The same goes for a word ending in
+# one of the three kinds with a version segment and a digest behind it: doo
+# closes voodoo, and there the redaction begins at the fourth character and
+# leaves the three in front of it in the text, which is what declining a word
+# boundary in front costs. The digests shorter than the count are turned away by
+# the count, and a base64url run can hold a prefix where standard base64 and
+# hexadecimal cannot — those write no underscore.
+
+case:     a sha-256 behind the prefix
+in:       dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «digitalocean-token»
+
+case:     a sha-1 behind the prefix
+in:       dop_v1_0123456789abcdef0123456789abcdef01234567
+out:      dop_v1_0123456789abcdef0123456789abcdef01234567
+
+case:     an md5 behind the prefix
+in:       dop_v1_0123456789abcdef0123456789abcdef
+out:      dop_v1_0123456789abcdef0123456789abcdef
+
+case:     the prefix inside a longer base64url run
+in:       payload=zzzzdop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefzzzz
+out:      payload=zzzz«digitalocean-token»zzzz
+
+case:     a word closing on the kind an oauth access token is named by
+in:       voodoo_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      voo«digitalocean-token»
+
+case:     a standard base64 payload, which carries no underscore
+in:       payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAdopv10123456789abcdef
+out:      payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAdopv10123456789abcdef
+
+# And what this pattern leaves alone. The first three are the prefix, read with
+# the version DigitalOcean writes and the underscores either side of it; the
+# fourth is a kind DigitalOcean publishes no prefix for, which GitHub's secret
+# scanning list names and the vendor documents nowhere. Then a body a space has
+# broken, and two inputs carrying no prefix at all: a body holds no space and no
+# punctuation, and the prefix closes on an underscore, so a word cannot run into
+# one.
+
+case:     a version digitalocean has not written
+in:       dop_v2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      dop_v2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     hyphens where the version carries its underscores
+in:       dop-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      dop-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     the version without the underscore that opens it
+in:       dopv1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0
+out:      dopv1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0
+
+case:     a kind digitalocean names no prefix for
+in:       dos_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      dos_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a body broken by a space
+in:       dop_v1_0123456789abcdef 123456789abcdef0123456789abcdef0123456789abcdef
+out:      dop_v1_0123456789abcdef 123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a run of the right length opening with no prefix
+in:       xxx_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      xxx_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And two shapes a reader auditing this pattern against DigitalOcean's own pages
+# meets. The first is what the OAuth reference prints: both of the tokens on that
+# page are seventy-one characters, which is what makes them worth reading for the
+# width, and both carry EXAMPLE written over the front of the body — uppercase
+# letters no hexadecimal string holds, so neither printed string is a value and
+# neither is located. The second is the token DigitalOcean issued before the
+# prefixes arrived, which its CLI still accepts: sixty-four characters with
+# nothing in front of them, which is a SHA-256's format exactly. Those tokens
+# were not revoked, so one reaching a log stays in the output whole; reading them
+# would mean redacting every digest a caller passes through.
+
+case:     the shape the documentation prints its examples in
+in:       dop_v1_EXAMPLE789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      dop_v1_EXAMPLE789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     the token format this one replaced
+in:       DIGITALOCEAN_TOKEN=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      DIGITALOCEAN_TOKEN=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a log line naming the api a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.digitalocean.com/v2/account
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.digitalocean.com/v2/account

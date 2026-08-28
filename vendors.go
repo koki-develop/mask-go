@@ -43,6 +43,12 @@ func CloudflarePatterns() []Pattern { return []Pattern{cloudflareAPIKey, cloudfl
 // The returned slice is freshly allocated and may be modified by the caller.
 func CratesIOPatterns() []Pattern { return []Pattern{cratesIOToken} }
 
+// DigitalOceanPatterns returns every built-in pattern that locates a credential
+// DigitalOcean issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func DigitalOceanPatterns() []Pattern { return []Pattern{digitalOceanToken} }
+
 // GitHubPatterns returns every built-in pattern that locates a credential
 // GitHub issues.
 //
