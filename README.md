@@ -48,7 +48,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `AWSPatterns() []Pattern` | AWS access key IDs, AWS secret access keys |
 | `CloudflarePatterns() []Pattern` | Cloudflare API tokens, Cloudflare API keys |
 | `CratesIOPatterns() []Pattern` | crates.io API tokens, Trusted Publishing access tokens |
-| `DatabricksPatterns() []Pattern` | Databricks personal access tokens |
+| `DatabricksPatterns() []Pattern` | Databricks personal access tokens, Databricks OAuth client secrets |
 | `DigitalOceanPatterns() []Pattern` | DigitalOcean personal access tokens, OAuth access tokens, OAuth refresh tokens |
 | `GitHubPatterns() []Pattern` | GitHub personal access tokens (classic and fine-grained), GitHub OAuth app access tokens, GitHub App user access tokens, GitHub App installation access tokens, GitHub App refresh tokens |
 | `GitLabPatterns() []Pattern` | GitLab personal access tokens, project access tokens, group access tokens, impersonation tokens, OAuth application secrets, deploy tokens, runner authentication tokens, CI/CD job tokens, pipeline trigger tokens, feed tokens, incoming mail tokens, GitLab agent for Kubernetes tokens, SCIM OAuth tokens, feature flags client tokens |

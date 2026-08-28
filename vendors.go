@@ -47,7 +47,9 @@ func CratesIOPatterns() []Pattern { return []Pattern{cratesIOToken} }
 // Databricks issues.
 //
 // The returned slice is freshly allocated and may be modified by the caller.
-func DatabricksPatterns() []Pattern { return []Pattern{databricksPersonalAccessToken} }
+func DatabricksPatterns() []Pattern {
+	return []Pattern{databricksOAuthClientSecret, databricksPersonalAccessToken}
+}
 
 // DigitalOceanPatterns returns every built-in pattern that locates a credential
 // DigitalOcean issues.

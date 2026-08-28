@@ -202,10 +202,10 @@ in:       there is no credential in this sentence
 out:      there is no credential in this sentence
 
 # And another credential Databricks issues a service principal, which this
-# pattern has nothing to say about. An OAuth client secret is written dose and a
-# body of a different alphabet, and carries no dapi to be found at; it is a
-# credential this pattern's name does not cover rather than one the scan happens
-# to miss.
+# pattern has nothing to say about. An OAuth client secret is written dose and
+# carries no dapi to be found at; it is a credential this pattern's name does not
+# cover rather than one the scan happens to miss, and
+# builtin_databricks_oauth_client_secret.txt is where it is redacted.
 
 case:     an oauth client secret
 in:       DATABRICKS_CLIENT_SECRET=dose0123456789abcdef0123456789abcdef

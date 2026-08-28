@@ -167,11 +167,11 @@ func DatabricksPersonalAccessToken() Pattern { return databricksPersonalAccessTo
 // outside hexadecimal, which twenty of the twenty-six letters are.
 //
 // Other credentials Databricks issues are left alone, and the prefix is what
-// leaves them. An OAuth client secret is written dose and a body of a
-// different alphabet, and carries no dapi to be found at; the OAuth access and
-// refresh tokens an authorization flow returns are JWTs, which are a format of
-// their own. Each is a credential this pattern does not name rather than one
-// the scan happens to miss.
+// leaves them. An OAuth client secret is written dose and carries no dapi to be
+// found at, which DatabricksOAuthClientSecret is the pattern for; the OAuth
+// access and refresh tokens an authorization flow returns are JWTs, which are a
+// format of their own. Each is a credential this pattern does not name rather
+// than one the scan happens to miss.
 //
 // referenceDatabricksPersonalAccessTokenFind in
 // builtin_databricks_personal_access_token_test.go keeps the grammar as a
