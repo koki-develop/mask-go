@@ -1,0 +1,220 @@
+# What Databricks personal access tokens the library redacts, and what it leaves
+# alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: a body is thirty-two hexadecimal characters, so the run twice
+# over is one, and the prefix in front brings a token to thirty-six. Where a case
+# turns on what a body may close on, it closes one on da or on d instead. The
+# hyphen and digit some tokens carry bring one to thirty-eight.
+
+patterns: databricks-personal-access-token
+
+# The one prefix Databricks writes a token with. There is a single kind of string
+# here rather than a table of them: the token a workspace user creates and the
+# token a service principal is issued are the same string with no mark on it to
+# tell one from another, so the cases below are that one shape in the places a
+# token is written.
+
+case:     a token in an environment assignment
+in:       DATABRICKS_TOKEN=dapi0123456789abcdef0123456789abcdef
+out:      DATABRICKS_TOKEN=«databricks-personal-access-token»
+
+case:     a token in the profile the cli writes
+in:       [DEFAULT]\nhost = https://dbc-01234567-89ab.cloud.databricks.com\ntoken = dapi0123456789abcdef0123456789abcdef
+out:      [DEFAULT]\nhost = https://dbc-01234567-89ab.cloud.databricks.com\ntoken = «databricks-personal-access-token»
+
+case:     a token in the header a request carries it in
+in:       Authorization: Bearer dapi0123456789abcdef0123456789abcdef
+out:      Authorization: Bearer «databricks-personal-access-token»
+
+case:     a token in the property a jdbc connection takes it as
+in:       jdbc:databricks://dbc-01234567-89ab.cloud.databricks.com:443/default;PWD=dapi0123456789abcdef0123456789abcdef
+out:      jdbc:databricks://dbc-01234567-89ab.cloud.databricks.com:443/default;PWD=«databricks-personal-access-token»
+
+case:     a token in the json the token endpoint returns
+in:       {"token_value":"dapi0123456789abcdef0123456789abcdef"}
+out:      {"token_value":"«databricks-personal-access-token»"}
+
+# The hyphen and the digit some tokens carry. No Databricks document writes them
+# down, and the pattern's own file says what is read there and why; what the
+# cases show is that one digit is read and no more, so a longer number written
+# behind a token is a tail and what follows it, exactly as a longer run of the
+# body alphabet is a body and what follows it.
+
+case:     a token carrying the tail
+in:       DATABRICKS_TOKEN=dapi0123456789abcdef0123456789abcdef-2
+out:      DATABRICKS_TOKEN=«databricks-personal-access-token»
+
+case:     a hyphen with no digit behind it is no tail
+in:       dapi0123456789abcdef0123456789abcdef-
+out:      «databricks-personal-access-token»-
+
+case:     a hyphen with a letter behind it is no tail
+in:       dapi0123456789abcdef0123456789abcdef-a
+out:      «databricks-personal-access-token»-a
+
+case:     a number longer than one digit is a tail and what follows it
+in:       dapi0123456789abcdef0123456789abcdef-2026-01-01
+out:      «databricks-personal-access-token»026-01-01
+
+# The alphabet the thirty-two characters are written in: lowercase hexadecimal,
+# which is what the rulesets that read this format agree on and what a
+# hexadecimal encoder settles once for all of its output. Uppercase is the
+# widening the pattern's own file declines, and a body carrying anything else is
+# no body at all.
+
+case:     an uppercase body
+in:       dapi0123456789ABCDEF0123456789ABCDEF
+out:      dapi0123456789ABCDEF0123456789ABCDEF
+
+case:     one uppercase character in a body
+in:       dapi0123456789abcdef0123456789abcdeF
+out:      dapi0123456789abcdef0123456789abcdeF
+
+case:     a body carrying a letter outside hexadecimal
+in:       dapi0123456789abcdefg123456789abcdef
+out:      dapi0123456789abcdefg123456789abcdef
+
+case:     a body carrying an underscore
+in:       dapi0123456789abcdef_123456789abcdef
+out:      dapi0123456789abcdef_123456789abcdef
+
+# The lengths either side of thirty-two. That count is the 128-bit key
+# Databricks' own classifier names, and it is used as a count rather than a
+# floor: thirty-one characters are not a token, and thirty-three are a token and
+# one character that belongs to no credential. The second of those is the price
+# of having no boundary behind the match — a boundary there would drop this token
+# rather than trim it, and a real token written against a letter would come
+# through whole.
+
+case:     a body of thirty-two characters is a token
+in:       dapi0123456789abcdef0123456789abcdef
+out:      «databricks-personal-access-token»
+
+case:     a body of thirty-one characters is not
+in:       dapi0123456789abcdef0123456789abcde
+out:      dapi0123456789abcdef0123456789abcde
+
+case:     an alphabet run longer than a token is a token and what follows it
+in:       dapi0123456789abcdef0123456789abcdef0
+out:      «databricks-personal-access-token»0
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       DATABRICKS_TOKEN_dapi0123456789abcdef0123456789abcdef
+out:      DATABRICKS_TOKEN_«databricks-personal-access-token»
+
+case:     a token after a letter
+in:       xdapi0123456789abcdef0123456789abcdef
+out:      x«databricks-personal-access-token»
+
+case:     a word written against a token
+in:       dapi0123456789abcdef0123456789abcdefsuffix
+out:      «databricks-personal-access-token»suffix
+
+case:     a token at the end of a sentence
+in:       the token is dapi0123456789abcdef0123456789abcdef.
+out:      the token is «databricks-personal-access-token».
+
+# Two tokens written together. A token can begin inside another, and the p of the
+# prefix is what bounds where: a candidate is found at that character and read
+# back two places from it, and the only p a token holds is the one its own prefix
+# carries, so a token beginning inside another begins at the last two characters
+# of the body, with that p standing past the end of the span. The two spans
+# overlap there and are redacted as one. Written without that overlap the two are
+# separate values and both go, and a prefix standing where a body would have to
+# hold it ends the candidate in front of it and opens the token itself.
+
+case:     two tokens with nothing between them
+in:       dapi0123456789abcdef0123456789abcdefdapi0123456789abcdef0123456789abcdef
+out:      «databricks-personal-access-token»«databricks-personal-access-token»
+
+case:     a token beginning two characters from the end of the token before it
+in:       dapi0123456789abcdef0123456789abcddapi0123456789abcdef0123456789abcdef
+out:      «databricks-personal-access-token»
+
+case:     a token beginning at the last character of the token before it
+in:       dapi0123456789abcdef0123456789abcdedapi0123456789abcdef0123456789abcdef
+out:      «databricks-personal-access-token»
+
+case:     a prefix written where a body would stand
+in:       dapi0123456789abcdapi0123456789abcdef0123456789abcdef
+out:      dapi0123456789abc«databricks-personal-access-token»
+
+# What this pattern redacts that nobody issued. Thirty-two lowercase hexadecimal
+# characters behind the prefix is the vendor's format exactly, and an MD5 is
+# thirty-two of them, so the prefix written straight in front of one is a token
+# character for character and the whole of it goes. A longer digest is redacted
+# for thirty-six characters with the rest left in the text. That is the answer
+# rather than a fault in it, because nothing in the text tells such a run from a
+# token: sparing these would spare a real token written the same way. What is
+# taken is a stretch of a value that was already opaque.
+
+case:     the prefix in front of an md5
+in:       dapi0123456789abcdef0123456789abcdef
+out:      «databricks-personal-access-token»
+
+case:     the prefix in front of a sha-1
+in:       dapi0123456789abcdef0123456789abcdef01234567
+out:      «databricks-personal-access-token»01234567
+
+case:     the prefix in front of a sha-256
+in:       dapi0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «databricks-personal-access-token»0123456789abcdef0123456789abcdef
+
+# And what this pattern leaves alone. The first two are the prefix, which is read
+# in the case Databricks writes it and with every character of it; the third is a
+# UUID, whose hyphens are no character a body may hold, so a hexadecimal run
+# divided that way is no body however many characters it comes to. Then a word
+# written against the prefix, whose body runs out at the first character
+# hexadecimal has not got. The last three carry no prefix at all: a hexadecimal
+# run holds neither the p nor the i, so no digest carries one partway along.
+
+case:     an uppercase prefix
+in:       DAPI0123456789abcdef0123456789abcdef
+out:      DAPI0123456789abcdef0123456789abcdef
+
+case:     the prefix without its closing letter
+in:       dap0123456789abcdef0123456789abcdef01
+out:      dap0123456789abcdef0123456789abcdef01
+
+case:     a uuid behind the prefix
+in:       dapi01234567-89ab-cdef-0123-456789abcdef
+out:      dapi01234567-89ab-cdef-0123-456789abcdef
+
+case:     a word written against the prefix
+in:       dapideadbeefcafe is no token
+out:      dapideadbeefcafe is no token
+
+case:     a run of the right length opening with no prefix
+in:       xxxx0123456789abcdef0123456789abcdef
+out:      xxxx0123456789abcdef0123456789abcdef
+
+case:     a digest with no prefix
+in:       md5=0123456789abcdef0123456789abcdef
+out:      md5=0123456789abcdef0123456789abcdef
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And another credential Databricks issues a service principal, which this
+# pattern has nothing to say about. An OAuth client secret is written dose and a
+# body of a different alphabet, and carries no dapi to be found at; it is a
+# credential this pattern's name does not cover rather than one the scan happens
+# to miss.
+
+case:     an oauth client secret
+in:       DATABRICKS_CLIENT_SECRET=dose0123456789abcdef0123456789abcdef
+out:      DATABRICKS_CLIENT_SECRET=dose0123456789abcdef0123456789abcdef
+
+case:     a log line naming the api a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://dbc-01234567-89ab.cloud.databricks.com/api/2.0/clusters/list
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://dbc-01234567-89ab.cloud.databricks.com/api/2.0/clusters/list
+
+case:     the workspace host a token authenticates against
+in:       DATABRICKS_HOST=https://dbc-01234567-89ab.cloud.databricks.com
+out:      DATABRICKS_HOST=https://dbc-01234567-89ab.cloud.databricks.com

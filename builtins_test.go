@@ -148,6 +148,20 @@ var builtinPatterns = []struct {
 		benchmarks: cratesIOTokenFindBenchmarks,
 	},
 	{
+		name:    "databricks-personal-access-token",
+		pattern: DatabricksPersonalAccessToken,
+		ref:     referenceDatabricksPersonalAccessTokenFind,
+		samples: []string{
+			"DATABRICKS_TOKEN=dapi0123456789abcdef0123456789abcdef",
+			"dapi0123456789abcdef0123456789abcdef-2",
+			"dapidapi0123456789abcdef0123456789abcdef",
+			"dapi0123456789abcdef0123456789abcddapi0123456789abcdef0123456789abcdef",
+			"dapi0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"dapi0123456789abcdef"},
+		benchmarks: databricksPersonalAccessTokenFindBenchmarks,
+	},
+	{
 		name:    "digitalocean-token",
 		pattern: DigitalOceanToken,
 		ref:     referenceDigitalOceanTokenFind,
