@@ -763,56 +763,34 @@ func Test_MustRegexp_isLinear(t *testing.T) {
 	// an expression settles nothing and so is never handed a window, which is
 	// what lets the candidates inside a match go untried.
 	//
-	// What is asserted is a ratio and not a deadline, for the reason
-	// Test_MustRegexp_findIsLinear gives above and for one this table has of
-	// its own. A deadline holds where one number lands in the middle of the gap
-	// between the two costs for every case under it, which is what
-	// Test_builtins_scanIsLinear has and this has not: the bounded expression
-	// below tries the candidates inside every match it finds, which is why it
-	// is read at a fraction of the length the rest are. A number with room for
-	// that one is a number the others never approach, and a number placed for
-	// the others fires on it with no scan having changed.
+	// A deadline, and not the ratio of two readings that
+	// Test_MustRegexp_findIsLinear asserts: three orders of magnitude separate
+	// the two costs here, so one number lands in the middle of them and a
+	// machine would have to be an order out to move the answer. A ratio buys
+	// nothing for that and costs the asymmetry of the two readings it is built
+	// from — an allocation of one size against an allocation of another, one
+	// call against two — which is a difference a linear scan carries as
+	// readily as a quadratic one.
 	//
-	// Mask is what is timed rather than Find alone: it is what a caller pays,
-	// and the walk this is about is inside it. What it spends beyond the walk —
-	// merging the spans, writing the output — divides by the text as the walk
-	// does only because the two readings below are of one length, and that is
-	// what makes timing the whole of Mask say anything about the walk.
+	// The number moves with the race detector, which costs these scans about
+	// ten times and costs a quadratic one the same. What moves is the number
+	// rather than the sizes, for the reason Test_builtins_scanIsLinear gives:
+	// halving a size takes three quarters off a quadratic scan and only half
+	// off a linear one, walking the number out of the middle of the gap.
 	//
-	// The two readings are of one text and of the same text in halves, rather
-	// than of a text and of twice it. A scan costing the text reads the same
-	// number of bytes either way, so the two readings are of one length; one
-	// costing the candidates inside a match reads a quarter of the whole in
-	// each half and so takes half as long over the pair. Two readings of one
-	// length is what keeps whatever else the machine is running out of the
-	// answer — neither is exposed to it for longer than the other, and a burst
-	// of it lands on both — which two readings of two lengths cannot be, the
-	// longer of them absorbing twice the interference of the shorter.
-	//
-	// Both a half and the whole are long enough that Go's regexp has given up
-	// backtracking for the expression being timed, which it does at a length
-	// inversely proportional to the size of the compiled program. Its
-	// backtracker and its NFA are six to ten times apart per byte, so a half on
-	// one side of that length and the whole on the other reads as a quadratic
-	// scan whatever the scan does.
-	//
-	// The size is therefore the expression's own rather than the table's, and
-	// so is what it costs to read. All but one share the width below, whose
-	// half, being the shorter reading and so the one that has to clear the
-	// length, stands half again above the longest of them: 65536 bytes, for a
-	// program of four instructions, the shortest here. An expression added
-	// below has room under that. The one that does not share the width has by
-	// far the longest program, which puts its length at a tenth of that, and by
-	// far the dearest scan per byte, being the one that tries the candidates
-	// inside a match; read as wide as the rest it costs seconds and says no
-	// more.
-	const (
-		// Two is the quadratic answer and one the linear one. Three halves
-		// parts them with room for the constant factors either side, which is
-		// the call the pair pays twice and the whole pays once.
-		limit = 1.5
-		wide  = 3 << 16
-	)
+	// The size is the expression's own. What needs the length is an expression
+	// with no ceiling on its width, since that is the one a quadratic scan
+	// would read to the end of a run from every character of: at the width
+	// below such a scan reads gigabytes and takes tens of seconds, where the
+	// linear one it has to be told from takes single-figure milliseconds. An
+	// expression with a ceiling tries the candidates inside its matches by
+	// design, which costs an order more a byte and buys no more of that
+	// signal, so the dearest of them is read at a sixteenth of the width.
+	const wide = 1 << 16
+	limit := 2 * time.Second
+	if raceEnabled {
+		limit = 8 * time.Second
+	}
 
 	// The inputs are what each expression matches densely, with a byte behind
 	// them that no match reaches: a run reaching the end of the text is one no
@@ -826,30 +804,17 @@ func Test_MustRegexp_isLinear(t *testing.T) {
 		{`a+`, "a", wide},
 		{`(?:ab)+`, "ab", wide},
 		{`sk-[A-Za-z0-9]+`, "sk-", wide},
-		{`[0-9a-f]{40}`, "0123456789abcdef", 1 << 15},
+		{`[0-9a-f]{40}`, "0123456789abcdef", wide / 16},
 		{`INT-(?P<mask>[0-9a-f]{8})`, "INT-0123456789abcdef", wide},
 	} {
 		t.Run(tt.expr, func(t *testing.T) {
 			m := New(WithPatterns(MustRegexp("p", tt.expr)))
-			text := func(n int) string {
-				return strings.Repeat(tt.unit, n/len(tt.unit)) + " Z"
-			}
-			whole := text(tt.size)
-			// Two strings rather than one read twice, so that the pair reads
-			// as much memory as the whole does rather than the same half of it
-			// over again.
-			first, second := text(tt.size/2), text(tt.size/2)
+			src := strings.Repeat(tt.unit, tt.size/len(tt.unit)) + " Z"
 
-			one, halves := fastestPair(
-				func() { m.Mask(whole) },
-				func() { m.Mask(first); m.Mask(second) },
-			)
-			if halves <= 0 {
-				halves = time.Nanosecond
-			}
-			if got := float64(one) / float64(halves); got > limit {
-				t.Errorf("Mask() of %d bytes took %v and of the same text in halves %v, %.1fx for the text whole",
-					len(whole), one, halves, got)
+			start := time.Now()
+			m.Mask(src)
+			if d := time.Since(start); d > limit {
+				t.Errorf("Mask() of %d bytes took %v", len(src), d)
 			}
 		})
 	}
