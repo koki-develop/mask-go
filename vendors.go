@@ -129,6 +129,12 @@ func OpenRouterPatterns() []Pattern { return []Pattern{openRouterAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func PostmanPatterns() []Pattern { return []Pattern{postmanAPIKey} }
 
+// PulumiPatterns returns every built-in pattern that locates a credential
+// Pulumi issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func PulumiPatterns() []Pattern { return []Pattern{pulumiAccessToken} }
+
 // PyPIPatterns returns every built-in pattern that locates a credential PyPI
 // issues.
 //

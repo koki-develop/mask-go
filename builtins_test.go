@@ -390,6 +390,20 @@ var builtinPatterns = []struct {
 		benchmarks: privateKeyFindBenchmarks,
 	},
 	{
+		name:    "pulumi-access-token",
+		pattern: PulumiAccessToken,
+		ref:     referencePulumiAccessTokenFind,
+		samples: []string{
+			"PULUMI_ACCESS_TOKEN=pul-0123456789abcdef0123456789abcdef01234567",
+			"pul-0123456789abcdef0123456789abcdef01234567",
+			"pul-0123456789abcdef0123456789abcdef012345670",
+			"pul-pul-0123456789abcdef0123456789abcdef01234567",
+			"pul-0123456789abcdef0123456789abcdef01234567pul-0123456789abcdef0123456789abcdef01234567",
+		},
+		anchors:    []string{"pul-0123456789"},
+		benchmarks: pulumiAccessTokenFindBenchmarks,
+	},
+	{
 		name:    "pypi-api-token",
 		pattern: PyPIAPIToken,
 		ref:     referencePyPIAPITokenFind,
