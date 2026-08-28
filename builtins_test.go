@@ -148,6 +148,20 @@ var builtinPatterns = []struct {
 		benchmarks: cratesIOTokenFindBenchmarks,
 	},
 	{
+		name:    "digitalocean-token",
+		pattern: DigitalOceanToken,
+		ref:     referenceDigitalOceanTokenFind,
+		samples: []string{
+			"DIGITALOCEAN_TOKEN=dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"doo_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"dor_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"dop_v1_dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdedop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"dop_v1_0123456789"},
+		benchmarks: digitalOceanTokenFindBenchmarks,
+	},
+	{
 		name:    "github-token",
 		pattern: GitHubToken,
 		ref:     referenceGitHubTokenFind,
