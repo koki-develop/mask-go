@@ -45,6 +45,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"NPMPatterns":          NPMPatterns,
 	"OpenAIPatterns":       OpenAIPatterns,
 	"OpenRouterPatterns":   OpenRouterPatterns,
+	"PostmanPatterns":      PostmanPatterns,
 	"PyPIPatterns":         PyPIPatterns,
 	"RubyGemsPatterns":     RubyGemsPatterns,
 	"SendGridPatterns":     SendGridPatterns,

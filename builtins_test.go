@@ -347,6 +347,20 @@ var builtinPatterns = []struct {
 		benchmarks: openRouterAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "postman-api-key",
+		pattern: PostmanAPIKey,
+		ref:     referencePostmanAPIKeyFind,
+		samples: []string{
+			"POSTMAN_API_KEY=PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01",
+			"PMAK-0123456789ABCDEF01234567-0123456789ABCDEF0123456789ABCDEF01",
+			"PMAK-0123456789abcdefghijklmn-0123456789abcdefghijklmnopqrstuvwx",
+			"PMAK-PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01",
+			"PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdPMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01",
+		},
+		anchors:    []string{"PMAK-0123456789"},
+		benchmarks: postmanAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "private-key",
 		pattern: PrivateKey,
 		ref:     referencePrivateKeyFind,
