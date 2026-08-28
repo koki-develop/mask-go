@@ -123,6 +123,12 @@ func OpenAIPatterns() []Pattern { return []Pattern{openAIAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func OpenRouterPatterns() []Pattern { return []Pattern{openRouterAPIKey} }
 
+// PlanetScalePatterns returns every built-in pattern that locates a credential
+// PlanetScale issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func PlanetScalePatterns() []Pattern { return []Pattern{planetScaleToken} }
+
 // PostmanPatterns returns every built-in pattern that locates a credential
 // Postman issues.
 //

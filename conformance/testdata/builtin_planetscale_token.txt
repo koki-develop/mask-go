@@ -1,0 +1,203 @@
+# What PlanetScale tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: a body is forty-three base64url characters, so the run twice
+# over and eleven more is one, and the three prefixes bring a token to
+# fifty-four, fifty-six and sixty-four. Where a case turns on the wider
+# alphabet, the uppercase letters, the hyphen or the underscore are written
+# among the run and the body stays forty-three characters.
+
+patterns: planetscale-token
+
+# The three prefixes PlanetScale writes a token with, one to a kind: pscale_tkn_
+# for the service token an organization is given, pscale_oauth_ for the access
+# token an application receives from the OAuth flow, pscale_oauth_refresh_ for
+# the refresh token handed out beside it. They are one pattern because a caller
+# with reason to redact any of them has the same reason for the rest, and the
+# cases below are the three of them in the places a token is written.
+
+case:     a service token in an environment assignment
+in:       PLANETSCALE_SERVICE_TOKEN=pscale_tkn_0123456789abcdef0123456789abcdef0123456789a
+out:      PLANETSCALE_SERVICE_TOKEN=«planetscale-token»
+
+case:     a token in the header a request carries it in
+in:       Authorization: Bearer pscale_tkn_0123456789abcdef0123456789abcdef0123456789a
+out:      Authorization: Bearer «planetscale-token»
+
+case:     an access token and the refresh token the oauth flow returns beside it
+in:       {"access_token":"pscale_oauth_0123456789abcdef0123456789abcdef0123456789a","token_type":"Bearer","refresh_token":"pscale_oauth_refresh_0123456789abcdef0123456789abcdef0123456789a"}
+out:      {"access_token":"«planetscale-token»","token_type":"Bearer","refresh_token":"«planetscale-token»"}
+
+case:     a token in the command line a request is made from
+in:       curl -H 'Authorization: Bearer pscale_tkn_0123456789abcdef0123456789abcdef0123456789a' https://api.planetscale.com/v1/organizations
+out:      curl -H 'Authorization: Bearer «planetscale-token»' https://api.planetscale.com/v1/organizations
+
+# The identifier a service token is kept under is written beside the token
+# wherever the CLI reads one, and is no credential: twelve characters carrying
+# none of the three prefixes.
+
+case:     a service token beside the identifier it is kept under
+in:       PLANETSCALE_SERVICE_TOKEN_ID=ihk9lqudel8z PLANETSCALE_SERVICE_TOKEN=pscale_tkn_0123456789abcdef0123456789abcdef0123456789a
+out:      PLANETSCALE_SERVICE_TOKEN_ID=ihk9lqudel8z PLANETSCALE_SERVICE_TOKEN=«planetscale-token»
+
+# The alphabet the forty-three characters are written in: base64url, which is
+# what thirty-two bytes are encoded in to come to that many. So the letters of
+# both cases, the digits, the hyphen and the underscore all stand in a body. The
+# prefix is read in one case alone. What the alphabet leaves out is what two of
+# the three rulesets reading this format admit — the equals sign that is
+# base64's padding, and the dot, which belongs to no encoding — so a run
+# carrying either is no token.
+
+case:     a body written with the uppercase letters
+in:       pscale_tkn_0123456789abcdefABCDEF0123456789abcdefABCDE
+out:      «planetscale-token»
+
+case:     a body carrying a hyphen and an underscore
+in:       pscale_tkn_0123456789abcdef-0123456789abcdef_012345678
+out:      «planetscale-token»
+
+case:     an uppercase prefix
+in:       PSCALE_TKN_0123456789abcdef0123456789abcdef0123456789a
+out:      PSCALE_TKN_0123456789abcdef0123456789abcdef0123456789a
+
+case:     a body carrying the padding character
+in:       pscale_tkn_0123456789abcdef=123456789abcdef0123456789a
+out:      pscale_tkn_0123456789abcdef=123456789abcdef0123456789a
+
+case:     a body carrying a dot
+in:       pscale_tkn_0123456789abcdef.123456789abcdef0123456789a
+out:      pscale_tkn_0123456789abcdef.123456789abcdef0123456789a
+
+# The lengths either side of forty-three. That count is what the two tokens
+# PlanetScale's API reference prints are written to and what trufflehog reads
+# behind the service token's prefix, and it is used as a count rather than a
+# floor: forty-two characters are not a token, and forty-four are a token and
+# one character that belongs to no credential. The second of those is the price
+# of having no boundary behind the match — a boundary there would drop this
+# token rather than trim it, and a real token written against a character of the
+# same alphabet would come through whole.
+
+case:     a body of forty-three characters is a token
+in:       pscale_tkn_0123456789abcdef0123456789abcdef0123456789a
+out:      «planetscale-token»
+
+case:     a body of forty-two characters is not
+in:       pscale_tkn_0123456789abcdef0123456789abcdef0123456789
+out:      pscale_tkn_0123456789abcdef0123456789abcdef0123456789
+
+case:     a base64url run longer than a token is a token and what follows it
+in:       pscale_tkn_0123456789abcdef0123456789abcdef0123456789a0
+out:      «planetscale-token»0
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       PLANETSCALE_SERVICE_TOKEN_pscale_tkn_0123456789abcdef0123456789abcdef0123456789a
+out:      PLANETSCALE_SERVICE_TOKEN_«planetscale-token»
+
+case:     a token after a letter
+in:       xpscale_tkn_0123456789abcdef0123456789abcdef0123456789a
+out:      x«planetscale-token»
+
+case:     a token before a hyphenated word
+in:       pscale_tkn_0123456789abcdef0123456789abcdef0123456789a-suffix
+out:      «planetscale-token»-suffix
+
+case:     a token at the end of a sentence
+in:       the token is pscale_tkn_0123456789abcdef0123456789abcdef0123456789a.
+out:      the token is «planetscale-token».
+
+# The refresh token is written behind the access token's own prefix, and
+# everything between them — refresh_ — is written in the body's alphabet. So a
+# whole refresh token is also pscale_oauth_ with forty-three characters behind
+# it, and both readings are true of the same text. A kind is tried before any
+# kind that is an opening of it, so a refresh token is one span of sixty-four
+# characters rather than that span and the fifty-six character one inside it;
+# where the longer reading has too little behind it the shorter is taken, and a
+# refresh prefix with thirty-five characters behind it is an access token's
+# shape exactly.
+
+case:     a refresh token
+in:       pscale_oauth_refresh_0123456789abcdef0123456789abcdef0123456789a
+out:      «planetscale-token»
+
+case:     a refresh prefix with an access token's body behind it
+in:       pscale_oauth_refresh_0123456789abcdef0123456789abcdef012
+out:      «planetscale-token»
+
+case:     a refresh prefix with a body too short for either reading
+in:       pscale_oauth_refresh_0123456789abcdef0123456789abcdef01
+out:      pscale_oauth_refresh_0123456789abcdef0123456789abcdef01
+
+# Two tokens written together. Every character of a prefix is written in the
+# body's alphabet, so a prefix can stand anywhere inside a body and a token
+# written inside another is located as well as the one around it. The two spans
+# overlap there and are redacted as one. Written without that overlap the two
+# are separate values and both go.
+
+case:     two tokens with nothing between them
+in:       pscale_tkn_0123456789abcdef0123456789abcdef0123456789apscale_oauth_0123456789abcdef0123456789abcdef0123456789a
+out:      «planetscale-token»«planetscale-token»
+
+case:     a prefix written where a body would stand
+in:       pscale_tkn_pscale_tkn_0123456789abcdef0123456789abcdef0123456789a
+out:      «planetscale-token»
+
+# What this pattern redacts that nobody issued, and the other credentials
+# PlanetScale writes with the same opening. A body is base64url, which is what a
+# JWT segment, a web push key and a routable payload are written in, so the
+# prefix and forty-three characters of an encoded blob is a token with nothing
+# left over to tell the two apart. That is the answer rather than a fault in it,
+# because sparing it would spare a real token. What the kind turns away is the
+# database password, which PlanetScale calls a password and never a token, and
+# the name its CLI gives a Postgres role.
+
+case:     an encoded blob behind the prefix
+in:       pscale_tkn_eyJhbGciOiJIUzI1NiJ90123456789abcdef0123456
+out:      «planetscale-token»
+
+case:     a database password
+in:       pscale_pw_0123456789abcdef0123456789abcdef0123456789a
+out:      pscale_pw_0123456789abcdef0123456789abcdef0123456789a
+
+case:     a database password in the connection string it is written into
+in:       mysql://0123456789abcd:pscale_pw_0123456789abcdef0123456789abcdef0123456789a@aws.connect.psdb.cloud/main
+out:      mysql://0123456789abcd:pscale_pw_0123456789abcdef0123456789abcdef0123456789a@aws.connect.psdb.cloud/main
+
+case:     the opening a postgres role is named by
+in:       pscale_api_0123456789abcdef0123456789abcdef0123456789a
+out:      pscale_api_0123456789abcdef0123456789abcdef0123456789a
+
+# And what else this pattern leaves alone. The first three are the prefix, read
+# with the kind PlanetScale writes and the underscores around it; then a body a
+# space has broken, and three inputs carrying no prefix at all.
+
+case:     a hyphen where the prefix carries its underscores
+in:       pscale-tkn-0123456789abcdef0123456789abcdef0123456789a
+out:      pscale-tkn-0123456789abcdef0123456789abcdef0123456789a
+
+case:     the kind without the underscore that closes it
+in:       pscale_tkn0123456789abcdef0123456789abcdef0123456789ab
+out:      pscale_tkn0123456789abcdef0123456789abcdef0123456789ab
+
+case:     the opening alone
+in:       pscale_
+out:      pscale_
+
+case:     a body broken by a space
+in:       pscale_tkn_0123456789abcdef 123456789abcdef0123456789a
+out:      pscale_tkn_0123456789abcdef 123456789abcdef0123456789a
+
+case:     a run of the right length opening with no prefix
+in:       xxxxxx_tkn_0123456789abcdef0123456789abcdef0123456789a
+out:      xxxxxx_tkn_0123456789abcdef0123456789abcdef0123456789a
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line naming the api a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.planetscale.com/v1/organizations
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.planetscale.com/v1/organizations
