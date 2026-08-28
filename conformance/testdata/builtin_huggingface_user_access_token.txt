@@ -1,0 +1,204 @@
+# What Hugging Face user access tokens the library redacts, and what it leaves
+# alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: a body is thirty-four characters, so the run twice over with 01
+# behind it is one, and the same run in uppercase is another. Where a case turns
+# on what a body may close on, it closes one on hf instead. The prefix in front
+# brings a token to thirty-seven.
+
+patterns: huggingface-user-access-token
+
+# The one prefix Hugging Face writes a token with. There is a single kind of
+# string here rather than a table of them: the three roles a token is issued
+# under — fine-grained, read and write — are given the same string with no mark
+# on it to tell one from another, so the cases below are that one shape in the
+# places a token is written.
+
+case:     a token in an environment assignment
+in:       HF_TOKEN=hf_0123456789abcdef0123456789abcdef01
+out:      HF_TOKEN=«huggingface-user-access-token»
+
+case:     a token in the argument a python call takes it as
+in:       AutoModel.from_pretrained("private/model", token="hf_0123456789abcdef0123456789abcdef01")
+out:      AutoModel.from_pretrained("private/model", token="«huggingface-user-access-token»")
+
+case:     a token in the header a request carries it in
+in:       Authorization: Bearer hf_0123456789abcdef0123456789abcdef01
+out:      Authorization: Bearer «huggingface-user-access-token»
+
+case:     a token in the git remote a repository is cloned with
+in:       git clone https://user:hf_0123456789abcdef0123456789abcdef01@huggingface.co/org/model
+out:      git clone https://user:«huggingface-user-access-token»@huggingface.co/org/model
+
+case:     a token in the body a revocation call posts
+in:       {"credentials":["hf_0123456789abcdef0123456789abcdef01"]}
+out:      {"credentials":["«huggingface-user-access-token»"]}
+
+# The alphabet the thirty-four characters are written in: the letters of both
+# cases with the digits, which is what Hugging Face's own token validation
+# admits behind the prefix. Two of the rulesets that read this format admit no
+# digit, on the strength of the tokens that have been published being spelled in
+# letters alone, and the pattern's own file weighs what that narrower class
+# would cost. What the alphabet leaves out is everything else, the hyphen and
+# the underscore among them, so a run carrying either is no token.
+
+case:     an uppercase body
+in:       hf_0123456789ABCDEF0123456789ABCDEF01
+out:      «huggingface-user-access-token»
+
+case:     a body carrying a hyphen
+in:       hf_0123456789abcdef-123456789abcdef01
+out:      hf_0123456789abcdef-123456789abcdef01
+
+case:     a body carrying an underscore
+in:       hf_0123456789abcdef_123456789abcdef01
+out:      hf_0123456789abcdef_123456789abcdef01
+
+# The lengths either side of thirty-four. That count is what Hugging Face's own
+# token validation asks for, and it is used as a count rather than a floor:
+# thirty-three characters are not a token, and thirty-five are a token and one
+# character that belongs to no credential. The second of those is the price of
+# having no boundary behind the match — a boundary there would drop this token
+# rather than trim it, and a real token written against a letter would come
+# through whole.
+
+case:     a body of thirty-four characters is a token
+in:       hf_0123456789abcdef0123456789abcdef01
+out:      «huggingface-user-access-token»
+
+case:     a body of thirty-three characters is not
+in:       hf_0123456789abcdef0123456789abcdef0
+out:      hf_0123456789abcdef0123456789abcdef0
+
+case:     an alphabet run longer than a token is a token and what follows it
+in:       hf_0123456789abcdef0123456789abcdef012
+out:      «huggingface-user-access-token»2
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       HUGGINGFACE_TOKEN_hf_0123456789abcdef0123456789abcdef01
+out:      HUGGINGFACE_TOKEN_«huggingface-user-access-token»
+
+case:     a token after a letter
+in:       xhf_0123456789abcdef0123456789abcdef01
+out:      x«huggingface-user-access-token»
+
+case:     a token before a hyphenated word
+in:       hf_0123456789abcdef0123456789abcdef01-suffix
+out:      «huggingface-user-access-token»-suffix
+
+case:     a token at the end of a sentence
+in:       the token is hf_0123456789abcdef0123456789abcdef01.
+out:      the token is «huggingface-user-access-token».
+
+# Two tokens written together. A token can begin inside another, and the
+# underscore is what bounds where: a candidate opens at an underscore two
+# characters behind its start, and the one underscore a token holds is the one
+# its own prefix closes with, so a token beginning inside another begins at the
+# last two characters of the body, with that underscore standing past the end of
+# the span. The two spans overlap there and are redacted as one. Written without
+# that overlap the two are separate values and both go, and a prefix standing
+# where a body would have to hold it ends the candidate in front of it and opens
+# the token itself.
+
+case:     two tokens with nothing between them
+in:       hf_0123456789abcdef0123456789abcdef01hf_0123456789abcdef0123456789abcdef01
+out:      «huggingface-user-access-token»«huggingface-user-access-token»
+
+case:     a token beginning at the end of the token before it
+in:       hf_0123456789abcdef0123456789abcdefhf_0123456789abcdef0123456789abcdef01
+out:      «huggingface-user-access-token»
+
+case:     a prefix written where a body would stand
+in:       hf_0123456789abchf_0123456789abcdef0123456789abcdef01
+out:      hf_0123456789abc«huggingface-user-access-token»
+
+# What this pattern redacts that nobody issued. Thirty-four letters and digits
+# behind the prefix is the vendor's format exactly, so a digest written there is
+# redacted for thirty-four of its characters with the rest left in the text, and
+# so is a stretch of base64url text that happens to hold the prefix — that
+# alphabet carries the underscore where hexadecimal and standard base64 do not,
+# which is why a payload written in it can hold one at all and the base64 case
+# below holds none. That is the answer rather than a fault in it, because
+# nothing in the text tells such a run from a token: sparing these would spare a
+# real token written the same way. What is taken is a stretch of a value that
+# was already opaque.
+
+case:     the prefix in front of a sha-1
+in:       hf_0123456789abcdef0123456789abcdef01234567
+out:      «huggingface-user-access-token»234567
+
+case:     the prefix in front of a sha-256
+in:       hf_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «huggingface-user-access-token»23456789abcdef0123456789abcdef
+
+case:     the prefix inside a longer base64url run
+in:       payload=zzzzhf_0123456789abcdef0123456789abcdef01zzzz
+out:      payload=zzzz«huggingface-user-access-token»zzzz
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.hf_0123456789abcdef0123456789abcdef01
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.«huggingface-user-access-token»
+
+case:     a standard base64 payload, which carries no underscore
+in:       payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhf0123456789abcdef
+out:      payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhf0123456789abcdef
+
+# And what this pattern leaves alone. The first two are the prefix, which is
+# read in the case Hugging Face writes it and with the underscore it closes on;
+# the two after them are a body a space has broken and a character the alphabet
+# has not got. The last three carry no prefix at all: a body holds no space and
+# no punctuation, and the prefix closes on an underscore, so a word cannot run
+# into one.
+
+case:     an uppercase prefix
+in:       HF_0123456789abcdef0123456789abcdef01
+out:      HF_0123456789abcdef0123456789abcdef01
+
+case:     a hyphen where the prefix closes
+in:       hf-0123456789abcdef0123456789abcdef01
+out:      hf-0123456789abcdef0123456789abcdef01
+
+case:     a body broken by a space
+in:       hf_0123456789abcdef 123456789abcdef01
+out:      hf_0123456789abcdef 123456789abcdef01
+
+case:     a character outside the alphabet in the body
+in:       hf_0123456789abcdef.123456789abcdef01
+out:      hf_0123456789abcdef.123456789abcdef01
+
+case:     a run of the right length opening with no prefix
+in:       xxx0123456789abcdef0123456789abcdef01
+out:      xxx0123456789abcdef0123456789abcdef01
+
+case:     a digest with no prefix
+in:       md5=0123456789abcdef0123456789abcdef
+out:      md5=0123456789abcdef0123456789abcdef
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And two Hugging Face credentials this pattern has nothing to say about, both
+# left alone by the alphabet a body is read in. An OAuth access token is written
+# hf_oauth_ and then a body Hugging Face publishes nothing of, and the
+# underscore closing oauth is no character a body may carry, so the candidate
+# the prefix opens is turned away five characters in. The organization API token
+# carries a prefix of its own, which holds no hf_ to be found at; Hugging Face
+# deprecated it and its documentation no longer names it.
+
+case:     an oauth access token
+in:       hf_oauth_0123456789abcdef0123456789abcdef01
+out:      hf_oauth_0123456789abcdef0123456789abcdef01
+
+case:     an organization api token
+in:       api_org_0123456789abcdef0123456789abcdef01
+out:      api_org_0123456789abcdef0123456789abcdef01
+
+case:     a log line naming the api a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://huggingface.co/api/whoami-v2
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://huggingface.co/api/whoami-v2
