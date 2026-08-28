@@ -207,6 +207,20 @@ var builtinPatterns = []struct {
 		benchmarks: hashiCorpVaultTokenFindBenchmarks,
 	},
 	{
+		name:    "huggingface-user-access-token",
+		pattern: HuggingFaceUserAccessToken,
+		ref:     referenceHuggingFaceUserAccessTokenFind,
+		samples: []string{
+			"HF_TOKEN=hf_0123456789abcdef0123456789abcdef01",
+			"hf_0123456789ABCDEF0123456789ABCDEF01",
+			"hf_0123456789abcdef0123456789abcdefhf_0123456789abcdef0123456789abcdef01",
+			"hf_0123456789abchf_0123456789abcdef0123456789abcdef01",
+			"hf_0123456789abcdef0123456789abcdef01hf_0123456789abcdef0123456789abcdef01",
+		},
+		anchors:    []string{"hf_0123"},
+		benchmarks: huggingFaceUserAccessTokenFindBenchmarks,
+	},
+	{
 		name:    "jwt",
 		pattern: JWT,
 		ref:     referenceJWTFind,

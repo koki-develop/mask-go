@@ -38,6 +38,7 @@ var builtins = []Pattern{
 	googleAPIKey,
 	grafanaServiceAccountToken,
 	hashiCorpVaultToken,
+	huggingFaceUserAccessToken,
 	jsonWebToken,
 	linearAPIKey,
 	notionAPIToken,
