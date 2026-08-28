@@ -132,6 +132,22 @@ var builtinPatterns = []struct {
 		benchmarks: cloudflareAPITokenFindBenchmarks,
 	},
 	{
+		name:    "crates-io-token",
+		pattern: CratesIOToken,
+		ref:     referenceCratesIOTokenFind,
+		samples: []string{
+			"CARGO_REGISTRY_TOKEN=cio0123456789abcdef0123456789abcdef",
+			"cio_tp_0123456789abcdef0123456789abcdef",
+			"cio0123456789ABCDEF0123456789ABCDEF",
+			"cio_tp_0123456789ABCDEF0123456789ABCDEF",
+			"ciocio0123456789abcdef0123456789abcdef",
+			"cio_tp_0123456789abcdef0123456cio0123456789abcdef0123456789abcdef",
+			"cio0123456789abcdef0123456789abcdefcio0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"cio0123456789", "cio_tp_0123456789"},
+		benchmarks: cratesIOTokenFindBenchmarks,
+	},
+	{
 		name:    "github-token",
 		pattern: GitHubToken,
 		ref:     referenceGitHubTokenFind,

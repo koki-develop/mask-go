@@ -31,6 +31,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"AnthropicPatterns":   AnthropicPatterns,
 	"AWSPatterns":         AWSPatterns,
 	"CloudflarePatterns":  CloudflarePatterns,
+	"CratesIOPatterns":    CratesIOPatterns,
 	"GitHubPatterns":      GitHubPatterns,
 	"GitLabPatterns":      GitLabPatterns,
 	"GooglePatterns":      GooglePatterns,

@@ -37,6 +37,12 @@ func AWSPatterns() []Pattern { return []Pattern{awsAccessKeyID, awsSecretAccessK
 // The returned slice is freshly allocated and may be modified by the caller.
 func CloudflarePatterns() []Pattern { return []Pattern{cloudflareAPIKey, cloudflareAPIToken} }
 
+// CratesIOPatterns returns every built-in pattern that locates a credential
+// crates.io issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func CratesIOPatterns() []Pattern { return []Pattern{cratesIOToken} }
+
 // GitHubPatterns returns every built-in pattern that locates a credential
 // GitHub issues.
 //

@@ -1,0 +1,186 @@
+# What crates.io tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: the body is that run written twice, which is the thirty-two
+# characters either form carries. With the opening in front an API token comes to
+# thirty-five characters, and with the Trusted Publishing prefix a token comes to
+# thirty-nine.
+#
+# The two forms are one pattern because neither is published by design, both
+# authenticate the same endpoints, and a caller with reason to redact one has the
+# same reason for the other.
+
+patterns: crates-io-token
+
+# An API token as it is written: the credentials file cargo login stores it in,
+# the environment variable CI hands it through, the command line it is passed on
+# and the header the API reads it from.
+
+case:     a token in the credentials file
+in:       token = "cio0123456789abcdef0123456789abcdef"
+out:      token = "«crates-io-token»"
+
+case:     a token in an environment assignment
+in:       CARGO_REGISTRY_TOKEN=cio0123456789abcdef0123456789abcdef
+out:      CARGO_REGISTRY_TOKEN=«crates-io-token»
+
+case:     a token on a cargo login command line
+in:       cargo login cio0123456789abcdef0123456789abcdef
+out:      cargo login «crates-io-token»
+
+case:     a token in an authorization header
+in:       Authorization: cio0123456789abcdef0123456789abcdef
+out:      Authorization: «crates-io-token»
+
+case:     a token at the end of a sentence
+in:       the token is cio0123456789abcdef0123456789abcdef.
+out:      the token is «crates-io-token».
+
+# The Trusted Publishing form, which is the same body behind a longer prefix: a
+# CI job exchanges an OIDC token for one and uses it to publish. Its last
+# character stands for the XOR of the thirty-one in front of it, and this pattern
+# does not do the arithmetic — the f written here is not the o crates.io would
+# have written, and it is redacted all the same.
+
+case:     a token in the response that mints it
+in:       {"token":"cio_tp_0123456789abcdef0123456789abcdef","expires_at":"2026-08-17T00:30:00Z"}
+out:      {"token":"«crates-io-token»","expires_at":"2026-08-17T00:30:00Z"}
+
+case:     a token in a workflow output
+in:       token: cio_tp_0123456789abcdef0123456789abcdef
+out:      token: «crates-io-token»
+
+case:     a token whose last character is not the checksum of the rest
+in:       cio_tp_0123456789abcdef0123456789abcdef
+out:      «crates-io-token»
+
+case:     the same body with the checksum crates.io would write
+in:       cio_tp_0123456789abcdef0123456789abcdeo
+out:      «crates-io-token»
+
+# The body: the letters of both cases and the digits throughout, and the counts
+# read exactly rather than as floors. A run longer than the count is a token and
+# what was written after it.
+
+case:     an uppercase body
+in:       cio0123456789ABCDEF0123456789ABCDEF
+out:      «crates-io-token»
+
+case:     a body of letters alone
+in:       cioabcdefghijklmnopqrstuvwxyzabcdef
+out:      «crates-io-token»
+
+case:     a body of digits alone
+in:       cio01234567890123456789012345678901
+out:      «crates-io-token»
+
+case:     a body run one character longer is a token and the character after it
+in:       cio0123456789abcdef0123456789abcdef0
+out:      «crates-io-token»0
+
+case:     a body one character short is not a token
+in:       cio0123456789abcdef0123456789abcde
+out:      cio0123456789abcdef0123456789abcde
+
+case:     a hyphen in the body
+in:       cio0123456789abcdef-123456789abcdef
+out:      cio0123456789abcdef-123456789abcdef
+
+case:     an underscore in the body
+in:       cio0123456789abcdef_123456789abcdef
+out:      cio0123456789abcdef_123456789abcdef
+
+case:     a dot in the body
+in:       cio0123456789abcdef.123456789abcdef
+out:      cio0123456789abcdef.123456789abcdef
+
+# What a token may be written against: no boundary on either side of the
+# opening, so a token keeps its span whatever character it abuts and what stands
+# past its last character stays where it was written.
+
+case:     a token after an underscore
+in:       CARGO_REGISTRY_TOKEN_cio0123456789abcdef0123456789abcdef
+out:      CARGO_REGISTRY_TOKEN_«crates-io-token»
+
+case:     a token after a letter
+in:       xcio0123456789abcdef0123456789abcdef
+out:      x«crates-io-token»
+
+case:     a word written against a token
+in:       cio0123456789abcdef0123456789abcdefsuffix
+out:      «crates-io-token»suffix
+
+# Tokens written together, and the token written inside another. The alphabet a
+# body is drawn from holds every character of the opening, so a body may spell it
+# and open a candidate that reads on past the end of the token it stands in. That
+# is why the scan resumes a byte past the start of a candidate rather than past
+# the candidate, and the last two cases are what a scan stepping over what it
+# found would lose: the spans overlap and are redacted as one.
+
+case:     two tokens with nothing between them
+in:       cio0123456789abcdef0123456789abcdefcio0123456789abcdef0123456789abcdef
+out:      «crates-io-token»«crates-io-token»
+
+case:     two tokens separated by a space
+in:       cio0123456789abcdef0123456789abcdef cio0123456789abcdef0123456789abcdef
+out:      «crates-io-token» «crates-io-token»
+
+case:     the two forms written together
+in:       cio0123456789abcdef0123456789abcdef cio_tp_0123456789abcdef0123456789abcdef
+out:      «crates-io-token» «crates-io-token»
+
+case:     an opening in front of a token
+in:       ciocio0123456789abcdef0123456789abcdef
+out:      «crates-io-token»
+
+case:     a token beginning inside a Trusted Publishing token
+in:       cio_tp_0123456789abcdef0123456cio0123456789abcdef0123456789abcdef
+out:      «crates-io-token»
+
+# And what this pattern leaves alone. First the opening: the case crates.io
+# writes it in, and the infix of the longer form written short, hyphenated and
+# left out. Then a body of the right length with no opening in front of it, which
+# is the shape crates.io issued before the prefix existed and the shape of every
+# identifier and content hash besides — its own parser rejects a token carrying
+# no prefix, so nothing is left there to read. Then the prose, the log line and
+# the line cargo writes, which no pattern here has anything to find in.
+
+case:     an uppercase opening
+in:       CIO0123456789abcdef0123456789abcdef
+out:      CIO0123456789abcdef0123456789abcdef
+
+case:     the Trusted Publishing infix without its closing underscore
+in:       cio_tp0123456789abcdef0123456789abcdef
+out:      cio_tp0123456789abcdef0123456789abcdef
+
+case:     a hyphen where the infix opens
+in:       cio-tp-0123456789abcdef0123456789abcdef
+out:      cio-tp-0123456789abcdef0123456789abcdef
+
+case:     an underscore behind the opening that begins no infix
+in:       cio_0123456789abcdef0123456789abcdef
+out:      cio_0123456789abcdef0123456789abcdef
+
+case:     a body of the right length with no opening
+in:       0123456789abcdef0123456789abcdef
+out:      0123456789abcdef0123456789abcdef
+
+case:     a body of the right length behind another word
+in:       token=0123456789abcdef0123456789abcdef
+out:      token=0123456789abcdef0123456789abcdef
+
+case:     a SHA-256 digest
+in:       0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://crates.io/api/v1/crates
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://crates.io/api/v1/crates
+
+case:     the line cargo writes while publishing
+in:       Uploading my-crate v0.1.0 (/home/runner/work/my-crate/my-crate)
+out:      Uploading my-crate v0.1.0 (/home/runner/work/my-crate/my-crate)

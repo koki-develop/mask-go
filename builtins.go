@@ -33,6 +33,7 @@ var builtins = []Pattern{
 	awsSecretAccessKey,
 	cloudflareAPIKey,
 	cloudflareAPIToken,
+	cratesIOToken,
 	githubToken,
 	gitLabToken,
 	googleAPIKey,
