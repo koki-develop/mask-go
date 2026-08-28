@@ -134,23 +134,19 @@ func base64URLRunEnd(src string, i int) int {
 }
 
 // isBase62Byte reports whether c belongs to the base62 alphabet: the letters
-// of both cases and the digits. Why a scan reading it reads it — a vendor's
-// own announcement of the format, the one thing every ruleset behind a prefix
-// agrees on, the alphabet a generator draws from — is that scan's to state,
-// and it says so in its own file. What is shared is the alphabet, and it is
-// one declaration for the reason isBase64URLByte gives.
+// of both cases and the digits. Why a scan reading it reads it is that scan's
+// to state, and it says so in its own file. What is shared is the alphabet,
+// and it is one declaration for the reason isBase64URLByte gives.
 //
 // What it leaves out is what separates it from base64url above: neither the
-// hyphen nor the underscore is admitted. Leaving the underscore out is
-// load-bearing rather than incidental, and every scan reading this alphabet
-// rests on it. A prefix of each of them closes with an underscore, so a run
-// read here stops where the next prefix begins: a scan reading a body to the
-// end of its run cannot read a run a candidate before it already read, which
-// is what rules out the quadratic input a run dense in prefixes would
-// otherwise be, and the Notion scan finds a candidate by that character at
-// all. Admitting it here would cost every one of those at once, and would let
-// a Grafana secret carry the character such a token is divided from its
-// checksum by.
+// hyphen nor the underscore is admitted. Every scan reading a body to the end
+// of its run rests on the underscore being left out: a prefix of each of
+// those closes with one, so a run read here stops where the next prefix
+// begins, and such a scan cannot read a run a candidate before it already
+// read — which is what rules out the quadratic input a run dense in prefixes
+// would otherwise be. The Notion scan rests on it to find a candidate by that
+// character at all. Admitting it would also let a Grafana secret carry the
+// character such a token is divided from its checksum by.
 func isBase62Byte(c byte) bool {
 	return '0' <= c && c <= '9' ||
 		'A' <= c && c <= 'Z' ||
