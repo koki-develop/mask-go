@@ -11,7 +11,6 @@
 package conformance
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -235,6 +234,23 @@ type namedSet struct {
 // The sets a case builds out of substrings and reported spans are not here:
 // they say what they say about the cases they were written for and nothing
 // about text derived from them.
+//
+// A set is also the unit the properties below are run in parallel by: each of
+// them drives the whole corpus through every set, so a set is a subtest of its
+// own with the case loop inside it. Going parallel a case deep instead would
+// divide the same work into as many subtests as there are cases times sets,
+// and a parallel subtest is a goroutine and a testing.T held until the test
+// around it finishes — tens of thousands of each, where the sets on their own
+// already come to more subtests than a runner has cores. The set of every
+// built-in is the longest of them, scanning with what each of the others
+// scans with, and is a fraction of what they come to together rather than a
+// tail the rest wait on.
+//
+// Nothing a subtest is handed is written to by anything. A set is built here
+// and read from then on, WithPatterns copies what it is given into the Masker
+// each subtest makes for itself, and the patterns are held safe for concurrent
+// use by TestConformance_concurrentUse and, in the root package, by
+// Test_builtins_concurrentUse.
 var builtinSets = func() []namedSet {
 	sets := []namedSet{{name: "default", patterns: mask.AllBuiltinPatterns()}}
 	for _, p := range mask.AllBuiltinPatterns() {
@@ -266,6 +282,7 @@ func TestProperties_everyPrefix(t *testing.T) {
 	cases := readableCases(t)
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
+			t.Parallel()
 			for _, c := range cases {
 				for i := range len(c.in) + 1 {
 					checkMasking(t, set.patterns, c.in[:i])
@@ -281,6 +298,7 @@ func TestProperties_everySuffix(t *testing.T) {
 	cases := readableCases(t)
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
+			t.Parallel()
 			for _, c := range cases {
 				for i := range len(c.in) + 1 {
 					checkMasking(t, set.patterns, c.in[i:])
@@ -337,7 +355,14 @@ func TestProperties_aByteInTheMiddle(t *testing.T) {
 	// not. Either way what comes out has to put back together into what went
 	// in, which is what a scan whose cursor runs past a byte it did not consume
 	// stops doing.
-	for _, c := range readableCases(t) {
+	//
+	// Where a byte is pushed into a case is read out of what that case masks
+	// to, which is the same answer for every set it is then driven through. It
+	// is worked out once here rather than inside the set loop below, where the
+	// corpus would be masked again for every set there is.
+	cases := readableCases(t)
+	points := make([][]int, len(cases))
+	for i, c := range cases {
 		c.requireOut(t)
 		m, err := parseMarked(c.out)
 		if err != nil {
@@ -348,16 +373,22 @@ func TestProperties_aByteInTheMiddle(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v; run go test ./conformance -update", c.id(), err)
 		}
-		points := injectionPoints(c.in, bounds)
-		for _, set := range builtinSets {
-			t.Run(set.name+"/"+c.subtest(), func(t *testing.T) {
-				for _, b := range injected {
-					for _, i := range points {
-						checkMasking(t, set.patterns, c.in[:i]+string(b)+c.in[i:])
+		points[i] = injectionPoints(c.in, bounds)
+	}
+
+	for _, set := range builtinSets {
+		t.Run(set.name, func(t *testing.T) {
+			t.Parallel()
+			for i, c := range cases {
+				t.Run(c.subtest(), func(t *testing.T) {
+					for _, b := range injected {
+						for _, at := range points[i] {
+							checkMasking(t, set.patterns, c.in[:at]+string(b)+c.in[at:])
+						}
 					}
-				}
-			})
-		}
+				})
+			}
+		})
 	}
 }
 
@@ -368,6 +399,7 @@ func TestProperties_casesRunTogether(t *testing.T) {
 	cases := readableCases(t)
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
+			t.Parallel()
 			for i, c := range cases {
 				for k := 1; k <= 6; k++ {
 					other := cases[(i+k)%len(cases)]
@@ -385,14 +417,18 @@ func TestProperties_repeatedCases(t *testing.T) {
 	// forward through a run, as several of the built-in scans do, is what this
 	// is aimed at: the second value must not be lost to what the first left
 	// behind.
-	for _, c := range readableCases(t) {
-		for _, set := range builtinSets {
-			t.Run(set.name+"/"+c.subtest(), func(t *testing.T) {
-				for _, sep := range []string{"", "\n", " "} {
-					checkMasking(t, set.patterns, strings.Repeat(c.in+sep, 8))
-				}
-			})
-		}
+	cases := readableCases(t)
+	for _, set := range builtinSets {
+		t.Run(set.name, func(t *testing.T) {
+			t.Parallel()
+			for _, c := range cases {
+				t.Run(c.subtest(), func(t *testing.T) {
+					for _, sep := range []string{"", "\n", " "} {
+						checkMasking(t, set.patterns, strings.Repeat(c.in+sep, 8))
+					}
+				})
+			}
+		})
 	}
 }
 
@@ -488,11 +524,15 @@ func TestProperties_everyCaseThroughEveryBuiltinSet(t *testing.T) {
 	// Every case, whatever it was written for, through every built-in set. A
 	// case written for one pattern says nothing about another, but nothing may
 	// go wrong when it reaches one.
-	for _, c := range corpusCases(t) {
-		for _, set := range builtinSets {
-			t.Run(fmt.Sprintf("%s/%s", set.name, c.subtest()), func(t *testing.T) {
-				checkMasking(t, set.patterns, c.in)
-			})
-		}
+	cases := corpusCases(t)
+	for _, set := range builtinSets {
+		t.Run(set.name, func(t *testing.T) {
+			t.Parallel()
+			for _, c := range cases {
+				t.Run(c.subtest(), func(t *testing.T) {
+					checkMasking(t, set.patterns, c.in)
+				})
+			}
+		})
 	}
 }
