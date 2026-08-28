@@ -130,12 +130,18 @@ func TestProperties_everyCutThroughEveryBuiltinSet(t *testing.T) {
 	// Every case cut in two, through every built-in set. A case written for one
 	// pattern says nothing about another, and a stream is where one pattern
 	// holding text back changes what another one is shown.
-	for _, c := range readableCases(t) {
-		for _, set := range builtinSets {
-			for i := range len(c.in) + 1 {
-				checkStream(t, set.patterns, mask.Fixed("[REDACTED]"), c.in, []string{c.in[:i], c.in[i:]})
+	cases := readableCases(t)
+	for _, set := range builtinSets {
+		t.Run(set.name, func(t *testing.T) {
+			t.Parallel()
+			for _, c := range cases {
+				t.Run(c.subtest(), func(t *testing.T) {
+					for i := range len(c.in) + 1 {
+						checkStream(t, set.patterns, mask.Fixed("[REDACTED]"), c.in, []string{c.in[:i], c.in[i:]})
+					}
+				})
 			}
-		}
+		})
 	}
 }
 

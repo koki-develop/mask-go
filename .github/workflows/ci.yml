@@ -13,6 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The suite is run twice, and the two runs are a job apiece rather than two
+  # steps of one. Neither reads what the other leaves, so as steps the shorter
+  # waits on the longer for nothing, and together they are the longest thing on
+  # this workflow. Apart, the wall clock is the run under the detector alone.
   test:
     timeout-minutes: 10
     permissions:
@@ -23,10 +27,27 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      # Both, deliberately. The race detector allocates on paths that otherwise
-      # do not, so the tests that hold this library to allocating nothing stand
-      # down under it; without a run of its own they would never run at all.
+        with:
+          cache: save
+      # Without the detector, deliberately. The race detector allocates on
+      # paths that otherwise do not, so the tests that hold this library to
+      # allocating nothing stand down under it; without a run of its own they
+      # would never run at all.
       - run: go test ./...
+
+  test-race:
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          cache: save
+          build: race
       - run: go test -race ./...
 
   # A fuzz target is given its own job rather than a turn in a loop on one
@@ -47,11 +68,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Restore only. What a listing job leaves in the build cache is what the
-      # jobs that do save it leave there too.
       - uses: ./.github/actions/setup
-        with:
-          cache: restore
       - name: List every fuzz target
         id: list
         shell: bash
@@ -108,12 +125,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Restore only: these jobs run at once, as many as there are targets, and
-      # would otherwise race to save one key, each carrying its own generated
-      # corpus.
       - uses: ./.github/actions/setup
-        with:
-          cache: restore
       # A plain go test runs a fuzz target over its corpus alone, which is the
       # inputs someone thought of. Every target is given a little time to look
       # for the ones nobody did.

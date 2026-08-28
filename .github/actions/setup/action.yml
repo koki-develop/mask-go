@@ -4,10 +4,28 @@ description: Setup the environment for the runner
 inputs:
   cache:
     description: |
-      Whether the Go caches this job fills are written back at the end of it:
-      "save" for a job whose caches are worth keeping, "restore" for one whose
-      are not.
-    default: save
+      Whether the build cache this job fills is written back at the end of it:
+      "save" for a job whose cache is worth keeping, "restore" for one whose is
+      not.
+
+      Restoring is the default: every saver of one key races the rest for it on
+      the first run after the toolchain moves, and this workflow grows by adding
+      jobs that read a cache rather than jobs worth filling one from. A fuzz job
+      must not save at all — go test -fuzz leaves its generated corpus in
+      GOCACHE/fuzz, which writing the cache back would carry into every job
+      after it.
+    default: restore
+  build:
+    description: |
+      Which build this job's cache holds: "race" for a job building with the
+      race detector, "plain" for one building without it.
+
+      Go keys a compiled package on the flags it was built with, so the two
+      have nothing to share: one cache for both holds whichever job reached it
+      first, and the other builds the standard library from scratch every run.
+      The value goes into the key as it stands, so a job spelling it wrong gets
+      a cache of its own rather than somebody else's.
+    default: plain
 
 runs:
   using: composite
@@ -15,29 +33,52 @@ runs:
     - uses: jdx/mise-action@3c2e0cf82a5b2e5249f0d3635a4d83d0ae861518 # v4.2.5
       with:
         experimental: true
-    # Two steps for one cache, because actions/cache has no input that turns
-    # its saving off: it registers a post step that writes back whatever the
-    # job left behind, and the deprecation on save-always points at the
-    # restore-only action as the way to say no. Every job restores; a job says
-    # cache: restore when what it would write back is worth less than the
-    # contention of writing it. The key is one string for the whole workflow,
-    # so every saver races for it on the first run after the dependencies
-    # change, and the loser of that race logs a failure. Fuzzing is where that
-    # matters: the fuzz job is one job a target, so it is as wide as the list
-    # of targets the job in front of it reports, and go test -fuzz leaves its
-    # generated corpus in GOCACHE/fuzz, so the winner would decide what the
-    # jobs after it restore as a build cache. The width is read from that list
-    # rather than written down here, where a count would be wrong the next time
-    # a pattern is added.
+
+    # The key names the toolchain, not the source. What is worth keeping here is
+    # the standard library compiled under one set of flags: a cold build spends
+    # around twenty-five of its twenty-eight seconds of compilation on it, and it
+    # changes only when the pinned Go version does. Against a cache holding it, a
+    # commit that changes this module costs about three seconds — so a
+    # key carrying the source would buy those seconds back and pay for writing the
+    # whole cache on every job of every run.
+    #
+    # It is read from the installed toolchain rather than from mise.toml, so that
+    # bumping one of the other tools pinned there does not throw the cache away.
+    - id: toolchain
+      shell: bash
+      run: |
+        # Read into variables and checked, rather than substituted into the
+        # argument of an echo: an echo whose substitution failed exits zero, so
+        # errexit does not reach it and the key would name nothing at all while
+        # every job went on sharing it.
+        version="$(go env GOVERSION)"
+        goos="$(go env GOOS)"
+        goarch="$(go env GOARCH)"
+        if [ -z "$version" ] || [ -z "$goos" ] || [ -z "$goarch" ]; then
+          echo "the toolchain reported $version/$goos/$goarch" >&2
+          exit 1
+        fi
+        echo "id=$version-$goos-$goarch" >> "$GITHUB_OUTPUT"
+
+    # ~/go/pkg/mod is not cached, and the key is not built from a go.sum. This
+    # library has no dependencies: go mod download reports nothing to fetch, so
+    # the directory stays empty, and hashFiles answers a go.sum that is not there
+    # with the empty string rather than an error — leaving a key that varies with
+    # nothing and one cache for every job and every set of flags.
+    #
+    # No restore-keys either. A miss means the toolchain moved, and what an
+    # older cache holds was compiled by a compiler this build will not read
+    # from, so falling back to it downloads bytes the build then ignores.
+    #
+    # Two steps for one cache, because actions/cache has no input that turns its
+    # saving off: it registers a post step that writes back whatever the job
+    # left behind, and the deprecation on save-always points at the restore-only
+    # action as the way to say no.
     - if: inputs.cache == 'save'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+        path: ~/.cache/go-build
+        key: ${{ runner.os }}-go-${{ steps.toolchain.outputs.id }}-${{ inputs.build }}
     # Anything that is not "save" restores, rather than the two conditions
     # naming a word each: between them they then cover every value, so a job
     # that spells the input wrong is one that restores, and never one left with
@@ -45,9 +86,5 @@ runs:
     - if: inputs.cache != 'save'
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+        path: ~/.cache/go-build
+        key: ${{ runner.os }}-go-${{ steps.toolchain.outputs.id }}-${{ inputs.build }}

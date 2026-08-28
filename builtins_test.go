@@ -928,12 +928,28 @@ func Test_builtins_scanIsLinear(t *testing.T) {
 	// suggesting a difference. Defeating the run cursor the GitHub scan keeps
 	// takes a sample repeated to this length from twelve milliseconds to
 	// twenty-one seconds, where at a quarter of a mebibyte it takes it only to
-	// a third of a second and passes a bound of any use. The limit is a
-	// hundredfold above a linear scan and a tenth of a quadratic one.
-	const (
-		size  = 2 << 20
-		limit = 2 * time.Second
-	)
+	// a third of a second and passes a bound of any use.
+	//
+	// A deadline, rather than the ratio of two readings Test_MustRegexp_isLinear
+	// asserts and gives its own reasons for. A deadline holds where one number
+	// lands in the middle of that gap for every case under it, which the table
+	// here has and that one has not: no scan in the registry is far from any
+	// other per byte. It buys one reading a case where a ratio takes a dozen,
+	// over a table as wide as the registry.
+	//
+	// The number moves with the race detector, which costs the slowest scan of
+	// the table about six times — fifty milliseconds without it, three hundred
+	// under it — and costs a quadratic one the same. What moves is the limit
+	// rather than the size: halving the size would take three quarters off a
+	// quadratic scan and only half off a linear one, walking the number out of
+	// the middle of the gap it was put in. Either number stands better than
+	// twenty times above a linear scan and better than ten below a quadratic
+	// one.
+	const size = 2 << 20
+	limit := 2 * time.Second
+	if raceEnabled {
+		limit = 8 * time.Second
+	}
 
 	for _, b := range builtinPatterns {
 		t.Run(b.name, func(t *testing.T) {

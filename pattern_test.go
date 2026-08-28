@@ -443,6 +443,48 @@ func Test_MustRegexp_retainIsAFixedPointOfTheRule(t *testing.T) {
 	}
 }
 
+// fastestPair returns the least of several runs of each of a and b, which are
+// the runs carrying least of the machine: a run is slowed by a collection or by
+// whoever else the machine is running, and never sped up by either.
+//
+// Both are run once before any of them is timed, and then alternately, because
+// a ratio of two readings must not carry a difference between when they were
+// taken. The reading taken first pays for a clock that has not risen and for
+// pages nobody has touched, and pays it in every one of its runs, so the least
+// of them does not put it back.
+func fastestPair(a, b func()) (time.Duration, time.Duration) {
+	a()
+	b()
+
+	bestA, bestB := time.Duration(math.MaxInt64), time.Duration(math.MaxInt64)
+	// A deadline read from the clock, not the readings added up: a pair too
+	// quick for the clock to separate would add up to nothing and be sampled
+	// for ever.
+	deadline := time.Now().Add(fastestPairFloor)
+	for i := 0; i < 5 || time.Now().Before(deadline); i++ {
+		start := time.Now()
+		a()
+		bestA = min(bestA, time.Since(start))
+
+		start = time.Now()
+		b()
+		bestB = min(bestB, time.Since(start))
+	}
+	return bestA, bestB
+}
+
+// fastestPairFloor is how long a pair is given before the least of each of its
+// runs is taken, five runs apiece being the fewest whatever that comes to.
+//
+// A reading of a few milliseconds is one a burst of whatever else the machine
+// is running can double, so five of them are five chances to be unlucky. A
+// reading of a hundred is long enough that a burst is a fraction of it rather
+// than a multiple, and sampling it more often buys accuracy already there. The
+// floor tells the two apart without either being written down: it leaves a pair
+// under the race detector at five runs and gives the same pair without it as
+// many as it takes.
+const fastestPairFloor = 250 * time.Millisecond
+
 func Test_MustRegexp_findIsLinear(t *testing.T) {
 	// What Find does after matching is settle an offset by walking the spans,
 	// and there are two ways for that walk to cost more than the text. Walked
@@ -493,23 +535,9 @@ func Test_MustRegexp_findIsLinear(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := MustRegexp("p", tt.expr)
 
-			// The fastest of several runs, not one run and not their mean: a
-			// run is slowed by a collection or by whoever else the machine is
-			// running, and never sped up by either, so the least of them is the
-			// one carrying least of the machine. The first run of each is
-			// thrown away with them, which is what leaves the ratio comparing
-			// two warm reads rather than a cold one against a warm one.
-			took := func(n int) time.Duration {
-				src := strings.Repeat(tt.unit, n/len(tt.unit))
-				best := time.Duration(math.MaxInt64)
-				for range 5 {
-					start := time.Now()
-					p.Find(src)
-					best = min(best, time.Since(start))
-				}
-				return best
-			}
-			a, b := took(small), took(large)
+			text := func(n int) string { return strings.Repeat(tt.unit, n/len(tt.unit)) }
+			short, long := text(small), text(large)
+			a, b := fastestPair(func() { p.Find(short) }, func() { p.Find(long) })
 			if a <= 0 {
 				a = time.Nanosecond
 			}
@@ -735,35 +763,58 @@ func Test_MustRegexp_isLinear(t *testing.T) {
 	// an expression settles nothing and so is never handed a window, which is
 	// what lets the candidates inside a match go untried.
 	//
-	// Two seconds is a bound of use rather than one that merely passes: a
-	// linear scan reads this in single-figure milliseconds, and a quadratic one
-	// would read a mebibyte a million times.
-	size := 1 << 20
+	// A deadline, and not the ratio of two readings that
+	// Test_MustRegexp_findIsLinear asserts: three orders of magnitude separate
+	// the two costs here, so one number lands in the middle of them and a
+	// machine would have to be an order out to move the answer. A ratio buys
+	// nothing for that and costs the asymmetry of the two readings it is built
+	// from — an allocation of one size against an allocation of another, one
+	// call against two — which is a difference a linear scan carries as
+	// readily as a quadratic one.
+	//
+	// The number moves with the race detector, which costs these scans about
+	// ten times and costs a quadratic one the same. What moves is the number
+	// rather than the sizes, for the reason Test_builtins_scanIsLinear gives:
+	// halving a size takes three quarters off a quadratic scan and only half
+	// off a linear one, walking the number out of the middle of the gap.
+	//
+	// The size is the expression's own. What needs the length is an expression
+	// with no ceiling on its width, since that is the one a quadratic scan
+	// would read to the end of a run from every character of: at the width
+	// below such a scan reads gigabytes and takes tens of seconds, where the
+	// linear one it has to be told from takes single-figure milliseconds. An
+	// expression with a ceiling tries the candidates inside its matches by
+	// design, which costs an order more a byte and buys no more of that
+	// signal, so the dearest of them is read at a sixteenth of the width.
+	const wide = 1 << 16
+	limit := 2 * time.Second
 	if raceEnabled {
-		size = 1 << 17
+		limit = 8 * time.Second
 	}
-	const limit = 2 * time.Second
 
 	// The inputs are what each expression matches densely, with a byte behind
 	// them that no match reaches: a run reaching the end of the text is one no
 	// candidate inside can carry further, and the skip that rests on that would
 	// otherwise hide what is being measured.
-	for _, tt := range []struct{ expr, unit string }{
-		{`[A-Za-z0-9]+`, "a"},
-		{`a+`, "a"},
-		{`(?:ab)+`, "ab"},
-		{`sk-[A-Za-z0-9]+`, "sk-"},
-		{`[0-9a-f]{40}`, "0123456789abcdef"},
-		{`INT-(?P<mask>[0-9a-f]{8})`, "INT-0123456789abcdef"},
+	for _, tt := range []struct {
+		expr, unit string
+		size       int
+	}{
+		{`[A-Za-z0-9]+`, "a", wide},
+		{`a+`, "a", wide},
+		{`(?:ab)+`, "ab", wide},
+		{`sk-[A-Za-z0-9]+`, "sk-", wide},
+		{`[0-9a-f]{40}`, "0123456789abcdef", wide / 16},
+		{`INT-(?P<mask>[0-9a-f]{8})`, "INT-0123456789abcdef", wide},
 	} {
 		t.Run(tt.expr, func(t *testing.T) {
 			m := New(WithPatterns(MustRegexp("p", tt.expr)))
-			src := strings.Repeat(tt.unit, size/len(tt.unit)) + " Z"
+			src := strings.Repeat(tt.unit, tt.size/len(tt.unit)) + " Z"
 
 			start := time.Now()
-			_ = m.Mask(src)
+			m.Mask(src)
 			if d := time.Since(start); d > limit {
-				t.Errorf("masking %d bytes took %v", len(src), d)
+				t.Errorf("Mask() of %d bytes took %v", len(src), d)
 			}
 		})
 	}
