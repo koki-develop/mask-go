@@ -171,6 +171,12 @@ func SentryPatterns() []Pattern { return []Pattern{sentryAuthToken} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func SlackPatterns() []Pattern { return []Pattern{slackToken} }
 
+// SourcegraphPatterns returns every built-in pattern that locates a credential
+// Sourcegraph issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func SourcegraphPatterns() []Pattern { return []Pattern{sourcegraphAccessToken} }
+
 // StripePatterns returns every built-in pattern that locates a credential
 // Stripe issues.
 //

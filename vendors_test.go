@@ -53,6 +53,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"SendGridPatterns":     SendGridPatterns,
 	"SentryPatterns":       SentryPatterns,
 	"SlackPatterns":        SlackPatterns,
+	"SourcegraphPatterns":  SourcegraphPatterns,
 	"StripePatterns":       StripePatterns,
 	"SupabasePatterns":     SupabasePatterns,
 }

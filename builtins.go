@@ -58,6 +58,7 @@ var builtins = []Pattern{
 	sendGridAPIKey,
 	sentryAuthToken,
 	slackToken,
+	sourcegraphAccessToken,
 	stripePublishableKey,
 	stripeSecretKey,
 	stripeWebhookSigningSecret,
