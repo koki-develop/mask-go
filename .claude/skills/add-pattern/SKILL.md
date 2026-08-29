@@ -3,12 +3,13 @@ name: add-pattern
 description: Workflow for adding a new built-in credential pattern to mask-go. Use when asked to add, implement, or register a built-in pattern for a new kind of token or credential.
 ---
 
-The decision to add the pattern has already been made before this skill is
-invoked. What to touch and how it must behave is stated in
+The decision to implement the pattern has already been made before this skill
+is invoked. Whether the format can be one is step 1's to settle, and one that
+cannot stops there. What to touch and how it must behave is stated in
 `.claude/rules/builtin-patterns.md` — **read that first**, since it loads on
 opening a `builtin_*.go` and this skill starts before there is one — together
-with the root `CLAUDE.md` and `conformance/CLAUDE.md`. This skill only fixes the
-order of work and the steps easiest to lose.
+with the root `CLAUDE.md` and `conformance/CLAUDE.md`. This skill only fixes
+the order of work and the steps easiest to lose.
 
 ## 1. Pin down the grammar
 
@@ -16,6 +17,20 @@ Verify the token's exact format against current official sources: prefix,
 alphabet, length, checksum, and every variant sharing the prefix. Do not work
 from memory — formats change, and the scanner rationale comment in
 `builtin_<name>.go` is written from what this step establishes.
+
+Then put what this step established through the rules file's "Weighing one
+before adding it". The gate is asked of the grammar as established here, not of
+what was assumed of it beforehand. Where it does not survive, stop and report
+what was checked and what it turned out to be: nothing is written yet, which
+makes this the cheapest place to stop. Three other answers end the work here
+rather than starting it.
+
+- No source of the vendor's states the prefix. Being wrong about a prefix is a
+  pattern that never fires, which nothing downstream reports.
+- A built-in already locates the value, which "Where one pattern ends and the
+  next begins" answers with a name widened rather than with a second pattern.
+- Deciding whether a value stands somewhere means reading further in front of it
+  than `LookBehind` can bound.
 
 ## 2. Implement, with the pattern's own tests
 
