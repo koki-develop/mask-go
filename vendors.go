@@ -19,6 +19,12 @@ package mask
 // may reach the next caller — which is what AllBuiltinPatterns promises as well
 // and what Test_vendorAccessors_freshEachCall holds these to.
 
+// AirtablePatterns returns every built-in pattern that locates a credential
+// Airtable issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func AirtablePatterns() []Pattern { return []Pattern{airtablePersonalAccessToken} }
+
 // AnthropicPatterns returns every built-in pattern that locates a credential
 // Anthropic issues.
 //

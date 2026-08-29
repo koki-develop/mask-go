@@ -57,6 +57,41 @@ description = "the armor the private key pattern is written about, which is neve
 targetRules = ["private-key"]
 paths = ['''_test\.go$''', '''conformance/testdata/[^/]+\.txt$''', '''(^|/)builtin_[a-z0-9_]+\.go$''']
 
+# The rule for Airtable's user API key reads the vendor's name and then any
+# seventeen letters and digits standing behind a separator, and one line of
+# vendors_test.go is exactly that by accident: the accessor "AirtablePatterns"
+# carries the vendor's name, and the entry written under it in the same table
+# names "AnthropicPatterns", which is seventeen characters. Neither can be
+# spelled differently — one is a vendor's name and so is the other — and the two
+# stand together because the table is in alphabetical order.
+#
+# So this is a different kind of thing from the three above, and the difference
+# is worth naming. Those allow a value — a string shaped like a credential,
+# written from the ordered run so that a reader can see it is not one. Here
+# there is no value at all. What was reported is the name of a function standing
+# beside the name of another, and the two of them happened to fall inside the
+# window this rule is written with.
+#
+# What it gives up is correspondingly narrow: a genuine user API key of that
+# retired shape, written into vendors_test.go, on a line that also carries the
+# string AnthropicPatterns. Narrower still for what the credential is — it
+# stopped authenticating on 1 February 2024, when Airtable finished a
+# deprecation it began in January 2023.
+#
+# The third condition is what makes it that narrow, and it is worth knowing how
+# it ends. Insert a vendor between Airtable and Anthropic and the match no
+# longer carries AnthropicPatterns; this entry stops applying, and it stops
+# applying silently — no test holds it, and nothing here fails. What happens
+# instead is that the collision is reported again, wherever it has moved to, for
+# whoever moved it to read.
+[[allowlists]]
+description = "one accessor's name beside another's in vendors_test.go, which the rule for a credential Airtable retired reads as a key"
+condition = "AND"
+targetRules = ["airtable-api-key"]
+paths = ['''(^|/)vendors_test\.go$''']
+regexTarget = "match"
+regexes = ['''AnthropicPatterns''']
+
 # A fuzz corpus cannot be asked for the ordered run either. What is
 # under testdata/fuzz is written by the fuzzer, not by anyone: an input that
 # found a failure is kept so that it is checked from then on, and it is whatever

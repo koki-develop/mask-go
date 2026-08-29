@@ -44,6 +44,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 | Accessor | Locates |
 | --- | --- |
+| `AirtablePatterns() []Pattern` | Airtable personal access tokens |
 | `AnthropicPatterns() []Pattern` | Anthropic API keys, Anthropic Admin API keys, Anthropic OAuth tokens, Anthropic session keys |
 | `AWSPatterns() []Pattern` | AWS access key IDs, AWS secret access keys |
 | `CloudflarePatterns() []Pattern` | Cloudflare API tokens, Cloudflare API keys |
