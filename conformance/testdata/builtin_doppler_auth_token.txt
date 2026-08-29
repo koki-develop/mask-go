@@ -1,0 +1,241 @@
+# What Doppler auth tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is. A body is forty to forty-four letters and digits, so the run
+# twice over and eleven more is the forty-three characters Doppler's own
+# examples run to, and the run cut shorter or longer is a body at either end of
+# the range.
+
+patterns: doppler-auth-token
+
+# The seven kinds Doppler names a format for, each with a prefix of its own.
+# They are one pattern rather than seven, so every one of them is redacted under
+# the same name.
+
+case:     a cli token
+in:       dp.ct.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»
+
+case:     a personal token in an environment assignment
+in:       DOPPLER_TOKEN=dp.pt.0123456789abcdef0123456789abcdef0123456789a
+out:      DOPPLER_TOKEN=«doppler-auth-token»
+
+case:     a service token
+in:       dp.st.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»
+
+case:     a service account token
+in:       dp.sa.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»
+
+case:     a service account identity token
+in:       dp.said.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»
+
+case:     a scim token
+in:       dp.scim.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»
+
+case:     an audit token
+in:       dp.audit.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»
+
+# The places a token is written: the header the API takes it in, the environment
+# variable every integration reads one from, the file the CLI stores one in and
+# the command lines that pass it along.
+
+case:     a token in the header the api reads it from
+in:       Authorization: Bearer dp.pt.0123456789abcdef0123456789abcdef0123456789a
+out:      Authorization: Bearer «doppler-auth-token»
+
+case:     a token on a curl command line
+in:       curl -H "Authorization: Bearer dp.pt.0123456789abcdef0123456789abcdef0123456789a" https://api.doppler.com/v3/configs
+out:      curl -H "Authorization: Bearer «doppler-auth-token»" https://api.doppler.com/v3/configs
+
+case:     a token in the yaml the cli stores one in
+in:       scoped:\n  /:\n    token: dp.st.dev.0123456789abcdef0123456789abcdef0123456789a
+out:      scoped:\n  /:\n    token: «doppler-auth-token»
+
+case:     a token on the command line a run takes one on
+in:       doppler run --token dp.st.dev.0123456789abcdef0123456789abcdef0123456789a -- ./deploy.sh
+out:      doppler run --token «doppler-auth-token» -- ./deploy.sh
+
+# The environment segment, which Doppler gives to the service token and to no
+# other kind. It is lowercase letters, digits, the hyphen and the underscore,
+# two to thirty-five characters, closed by a separator — and it cannot be
+# confused with a body, which opens on forty characters of a wider alphabet.
+
+case:     a service token carrying the environment it was cut for
+in:       dp.st.dev.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»
+
+case:     a segment carrying the hyphen and the underscore its alphabet adds
+in:       dp.st.acme-web_prd.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»
+
+case:     a segment at the widest there is
+in:       dp.st.0123456789abcdef0123456789abcdef012.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»
+
+case:     a segment one character wider
+in:       dp.st.0123456789abcdef0123456789abcdef0123.0123456789abcdef0123456789abcdef0123456789a
+out:      dp.st.0123456789abcdef0123456789abcdef0123.0123456789abcdef0123456789abcdef0123456789a
+
+case:     a segment of one character
+in:       dp.st.a.0123456789abcdef0123456789abcdef0123456789a
+out:      dp.st.a.0123456789abcdef0123456789abcdef0123456789a
+
+case:     a segment carrying an uppercase letter
+in:       dp.st.Dev.0123456789abcdef0123456789abcdef0123456789a
+out:      dp.st.Dev.0123456789abcdef0123456789abcdef0123456789a
+
+case:     a segment written on a kind that carries none
+in:       dp.pt.dev.0123456789abcdef0123456789abcdef0123456789a
+out:      dp.pt.dev.0123456789abcdef0123456789abcdef0123456789a
+
+# The range a body is read as. Doppler writes forty to forty-four, and the
+# examples it prints are forty-three, so a body at either end of the range is a
+# token where a rule reading the length of an example locates nothing. The upper
+# end is a cut rather than a demand: a run longer than it is a token and
+# something written after it, which is the price of having no boundary behind
+# the match.
+
+case:     a body at the shortest the vendor admits
+in:       dp.pt.0123456789abcdef0123456789abcdef01234567
+out:      «doppler-auth-token»
+
+case:     a body at the longest the vendor admits
+in:       dp.pt.0123456789abcdef0123456789abcdef0123456789ab
+out:      «doppler-auth-token»
+
+case:     a body one character short of the shortest
+in:       dp.pt.0123456789abcdef0123456789abcdef0123456
+out:      dp.pt.0123456789abcdef0123456789abcdef0123456
+
+case:     a run longer than the widest body
+in:       dp.pt.0123456789abcdef0123456789abcdef0123456789abc
+out:      «doppler-auth-token»c
+
+# The alphabet a body is written in: letters of either case and digits, and
+# nothing else. The hyphen and the underscore a segment admits are not body
+# characters, which is what tells the two parts apart.
+
+case:     a body in uppercase
+in:       dp.pt.0123456789ABCDEF0123456789ABCDEF0123456789A
+out:      «doppler-auth-token»
+
+case:     a body carrying a hyphen
+in:       dp.pt.0123456789abcdef-123456789abcdef0123456789a
+out:      dp.pt.0123456789abcdef-123456789abcdef0123456789a
+
+case:     a body carrying an underscore
+in:       dp.pt.0123456789abcdef_123456789abcdef0123456789a
+out:      dp.pt.0123456789abcdef_123456789abcdef0123456789a
+
+case:     a body carrying a separator
+in:       dp.pt.0123456789abcdef.123456789abcdef0123456789a
+out:      dp.pt.0123456789abcdef.123456789abcdef0123456789a
+
+case:     a body carrying a space
+in:       dp.pt.0123456789abcdef 123456789abcdef0123456789a
+out:      dp.pt.0123456789abcdef 123456789abcdef0123456789a
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       DOPPLER_TOKEN_dp.pt.0123456789abcdef0123456789abcdef0123456789a
+out:      DOPPLER_TOKEN_«doppler-auth-token»
+
+case:     a token after a letter
+in:       xdp.pt.0123456789abcdef0123456789abcdef0123456789a
+out:      x«doppler-auth-token»
+
+case:     a hyphenated word written against a token
+in:       dp.pt.0123456789abcdef0123456789abcdef0123456789a-suffix
+out:      «doppler-auth-token»-suffix
+
+case:     a token at the end of a sentence
+in:       the token is dp.pt.0123456789abcdef0123456789abcdef0123456789a.
+out:      the token is «doppler-auth-token».
+
+# Two tokens written together, and a prefix written inside one. A candidate
+# opens on the two letters and the separator behind them, and inside a token a
+# separator stands only where a kind or a segment closes — so a candidate opens
+# inside one exactly where a segment closes with those two letters. What it
+# would read as a kind there is the body behind the segment, which is forty
+# characters at least where a kind is five at most, so nothing comes of it.
+
+case:     two tokens with nothing between them
+in:       dp.pt.0123456789abcdef0123456789abcdef0123456789abdp.audit.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»«doppler-auth-token»
+
+case:     a segment closing with the two letters a prefix opens with
+in:       dp.st.mydp.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»
+
+case:     a prefix written in front of another token
+in:       dp.st.dp.pt.0123456789abcdef0123456789abcdef0123456789a
+out:      dp.st.«doppler-auth-token»
+
+# What this pattern redacts that nobody issued. Forty lowercase hexadecimal
+# characters are a SHA-1 and a body exactly, so a prefix and a digest is a token
+# to this scan, and there is nothing left in the text to tell the two apart — a
+# scan declining this would decline every token Doppler issues. A digest with no
+# prefix in front of it is turned away, which is what the prefix is for.
+
+case:     a digest behind a prefix
+in:       dp.pt.0123456789abcdef0123456789abcdef01234567
+out:      «doppler-auth-token»
+
+case:     a digest on its own
+in:       0123456789abcdef0123456789abcdef01234567
+out:      0123456789abcdef0123456789abcdef01234567
+
+# And what this pattern leaves alone: the openings that are not, and the kinds
+# Doppler names no format for.
+
+case:     a kind Doppler names no format for
+in:       dp.xx.0123456789abcdef0123456789abcdef0123456789a
+out:      dp.xx.0123456789abcdef0123456789abcdef0123456789a
+
+case:     a kind with no separator closing it
+in:       dp.pt0123456789abcdef0123456789abcdef0123456789a
+out:      dp.pt0123456789abcdef0123456789abcdef0123456789a
+
+case:     an empty kind
+in:       dp..0123456789abcdef0123456789abcdef0123456789a
+out:      dp..0123456789abcdef0123456789abcdef0123456789a
+
+case:     an uppercase prefix
+in:       DP.PT.0123456789abcdef0123456789abcdef0123456789a
+out:      DP.PT.0123456789abcdef0123456789abcdef0123456789a
+
+case:     the opening without the separator behind it
+in:       dppt.0123456789abcdef0123456789abcdef0123456789a
+out:      dppt.0123456789abcdef0123456789abcdef0123456789a
+
+case:     a body of the right length opening with no prefix
+in:       xxxxxx0123456789abcdef0123456789abcdef0123456789a
+out:      xxxxxx0123456789abcdef0123456789abcdef0123456789a
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And the text a token is written among, which this pattern has nothing to say
+# about. The byte the scan searches for is the separator, so what stops it on
+# such a line is the vendor's own host name and the paths beside it.
+
+case:     a log line naming the api a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="fetching secrets" project=acme-api config=prd url=https://api.doppler.com/v3/configs
+out:      time=2026-08-17T00:00:00Z level=info msg="fetching secrets" project=acme-api config=prd url=https://api.doppler.com/v3/configs
+
+case:     the command line a token is created from
+in:       doppler configs tokens create ci --plain --project acme --config prd
+out:      doppler configs tokens create ci --plain --project acme --config prd
+
+case:     the config a secret is read into
+in:       doppler secrets download --no-file --format env > .env
+out:      doppler secrets download --no-file --format env > .env

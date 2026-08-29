@@ -63,6 +63,12 @@ func DatabricksPatterns() []Pattern {
 // The returned slice is freshly allocated and may be modified by the caller.
 func DigitalOceanPatterns() []Pattern { return []Pattern{digitalOceanToken} }
 
+// DopplerPatterns returns every built-in pattern that locates a credential
+// Doppler issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func DopplerPatterns() []Pattern { return []Pattern{dopplerAuthToken} }
+
 // GitHubPatterns returns every built-in pattern that locates a credential
 // GitHub issues.
 //

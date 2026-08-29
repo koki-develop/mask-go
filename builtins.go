@@ -38,6 +38,7 @@ var builtins = []Pattern{
 	databricksOAuthClientSecret,
 	databricksPersonalAccessToken,
 	digitalOceanToken,
+	dopplerAuthToken,
 	githubToken,
 	gitLabToken,
 	googleAPIKey,
