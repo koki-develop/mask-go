@@ -93,6 +93,12 @@ func GrafanaPatterns() []Pattern { return []Pattern{grafanaServiceAccountToken} 
 // The returned slice is freshly allocated and may be modified by the caller.
 func HashiCorpPatterns() []Pattern { return []Pattern{hashiCorpVaultToken} }
 
+// HerokuPatterns returns every built-in pattern that locates a credential
+// Heroku issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func HerokuPatterns() []Pattern { return []Pattern{herokuAPIToken} }
+
 // HuggingFacePatterns returns every built-in pattern that locates a credential
 // Hugging Face issues.
 //

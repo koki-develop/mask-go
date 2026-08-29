@@ -56,6 +56,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `GooglePatterns() []Pattern` | Google API keys |
 | `GrafanaPatterns() []Pattern` | Grafana service account tokens |
 | `HashiCorpPatterns() []Pattern` | HashiCorp Vault service tokens, batch tokens, recovery tokens |
+| `HerokuPatterns() []Pattern` | Heroku API tokens |
 | `HuggingFacePatterns() []Pattern` | Hugging Face user access tokens |
 | `JWT() Pattern` | JSON Web Tokens, signed and encrypted |
 | `LinearPatterns() []Pattern` | Linear personal API keys |
