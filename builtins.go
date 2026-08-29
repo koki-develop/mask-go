@@ -28,6 +28,7 @@ func AllBuiltinPatterns() []Pattern {
 // different lines rather than two rewrites of one. A list written on a single
 // line is one every addition conflicts with.
 var builtins = []Pattern{
+	ageSecretKey,
 	airtablePersonalAccessToken,
 	anthropicAPIKey,
 	awsAccessKeyID,

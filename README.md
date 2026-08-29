@@ -40,6 +40,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 | Accessor | Locates |
 | --- | --- |
+| `AgePatterns() []Pattern` | age secret keys (X25519 and MLKEM768-X25519 hybrid identities) |
 | `AirtablePatterns() []Pattern` | Airtable personal access tokens |
 | `AnthropicPatterns() []Pattern` | Anthropic API keys, Anthropic Admin API keys, Anthropic OAuth tokens, Anthropic session keys |
 | `AWSPatterns() []Pattern` | AWS access key IDs, AWS secret access keys |

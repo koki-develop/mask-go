@@ -43,7 +43,10 @@ out:  GITHUB_TOKEN=«github-token»
   the kind of credential is written in: `0123456789ABCDEF` where its alphabet
   is uppercase, as an AWS access key ID's is. The betterleaks allowlist covers
   `conformance/testdata/*.txt` on that condition alone, so a value written any
-  other way fails the secret scan.
+  other way fails the secret scan. Where the credential's own alphabet cannot
+  carry the run — an age secret key is written in Bech32, which holds neither
+  `1` nor `B` — the value is built from the run with the characters that
+  alphabet leaves out taken away, and the file writes out which run that left.
 
 ## What a comment may say
 

@@ -19,6 +19,12 @@ package mask
 // may reach the next caller — which is what AllBuiltinPatterns promises as well
 // and what Test_vendorAccessors_freshEachCall holds these to.
 
+// AgePatterns returns every built-in pattern that locates a credential age
+// generates.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func AgePatterns() []Pattern { return []Pattern{ageSecretKey} }
+
 // AirtablePatterns returns every built-in pattern that locates a credential
 // Airtable issues.
 //
