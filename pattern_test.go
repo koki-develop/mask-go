@@ -2,7 +2,6 @@ package mask
 
 import (
 	"cmp"
-	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -452,38 +451,85 @@ func Test_MustRegexp_retainIsAFixedPointOfTheRule(t *testing.T) {
 // taken. The reading taken first pays for a clock that has not risen and for
 // pages nobody has touched, and pays it in every one of its runs, so the least
 // of them does not put it back.
+//
+// Sampling stops once each least reading has been met by a run of another
+// round, rather than after a fixed number of rounds. A least reading no other
+// round came near is one round that happened to get the machine to itself, and
+// a ratio of two such readings is whatever the bursts either side of them came
+// to; a least reading two rounds agree on is what the work costs. On a machine
+// with nothing else on it the agreement is there in the first rounds and this
+// costs the floor and nothing more, and on a runner shared with somebody else
+// it keeps sampling until it has been given a quiet round of each.
 func fastestPair(a, b func()) (time.Duration, time.Duration) {
 	a()
 	b()
 
-	bestA, bestB := time.Duration(math.MaxInt64), time.Duration(math.MaxInt64)
-	// A deadline read from the clock, not the readings added up: a pair too
+	var bestA, bestB reading
+	// Deadlines read from the clock, not the readings added up: a pair too
 	// quick for the clock to separate would add up to nothing and be sampled
 	// for ever.
-	deadline := time.Now().Add(fastestPairFloor)
-	for i := 0; i < 5 || time.Now().Before(deadline); i++ {
+	floor := time.Now().Add(fastestPairFloor)
+	ceiling := time.Now().Add(fastestPairCeiling)
+	for round := 0; ; round++ {
 		start := time.Now()
 		a()
-		bestA = min(bestA, time.Since(start))
+		bestA.take(time.Since(start))
 
 		start = time.Now()
 		b()
-		bestB = min(bestB, time.Since(start))
+		bestB.take(time.Since(start))
+
+		// Two rounds are the fewest a reading can be agreed on in, so three are
+		// the fewest that can leave a round out as the burst it may have been.
+		if round < 2 || time.Now().Before(floor) {
+			continue
+		}
+		if bestA.settled() && bestB.settled() || !time.Now().Before(ceiling) {
+			return bestA.best, bestB.best
+		}
 	}
-	return bestA, bestB
 }
 
-// fastestPairFloor is how long a pair is given before the least of each of its
-// runs is taken, five runs apiece being the fewest whatever that comes to.
+// reading is the least of the runs of one function, and how many of those runs
+// came within an eighth of it.
+type reading struct {
+	best time.Duration
+	near int
+}
+
+// take records a run costing d. A run below the least so far is the new least
+// and is agreed on by nothing: what the runs before it came within was a
+// reading this one says was never the cost of the work.
+func (r *reading) take(d time.Duration) {
+	if r.near == 0 || d < r.best {
+		r.best, r.near = d, 1
+		return
+	}
+	if d <= r.best+r.best/8 {
+		r.near++
+	}
+}
+
+// settled reports whether the least reading was met by a run of another round.
+func (r *reading) settled() bool { return r.near >= 2 }
+
+// fastestPairFloor is how long a pair is sampled for before its least readings
+// are looked at, three rounds apiece being the fewest whatever that comes to.
 //
 // A reading of a few milliseconds is one a burst of whatever else the machine
-// is running can double, so five of them are five chances to be unlucky. A
-// reading of a hundred is long enough that a burst is a fraction of it rather
-// than a multiple, and sampling it more often buys accuracy already there. The
-// floor tells the two apart without either being written down: it leaves a pair
-// under the race detector at five runs and gives the same pair without it as
-// many as it takes.
+// is running can double, so a handful of them are a handful of chances to be
+// unlucky. A reading of a hundred is long enough that a burst is a fraction of
+// it rather than a multiple, and sampling it more often buys accuracy already
+// there. The floor tells the two apart without either being written down: it
+// leaves a pair under the race detector at three rounds and gives the same pair
+// without it as many as it takes.
 const fastestPairFloor = 250 * time.Millisecond
+
+// fastestPairCeiling is how long a pair is sampled for at the outside, where
+// the machine is busy enough that no round of it is ever agreed on. What is
+// asserted then is the readings as they stand: a bound reporting nothing on a
+// loaded machine is a bound reporting nothing on the runner it was written for.
+const fastestPairCeiling = 8 * time.Second
 
 func Test_MustRegexp_findIsLinear(t *testing.T) {
 	// What Find does after matching is settle an offset by walking the spans,
@@ -502,10 +548,12 @@ func Test_MustRegexp_findIsLinear(t *testing.T) {
 	const (
 		small = 1 << 15
 		large = small * 2
-		// Four is the quadratic answer and two the linear one. Three parts them
-		// with room for the constant factors either side, which is what a walk
-		// costing the text spends on the sort in front of it.
-		limit = 3.0
+		// Two is the quadratic answer and one the linear one, the readings
+		// below being the short text read twice against the long text read
+		// once. Halfway parts them, with the same room either side for the
+		// constant factors — what a walk costing the text spends on the sort in
+		// front of it — as three leaves between two and four.
+		limit = 1.5
 	)
 
 	for _, tt := range []struct{ name, expr, unit string }{
@@ -537,12 +585,24 @@ func Test_MustRegexp_findIsLinear(t *testing.T) {
 
 			text := func(n int) string { return strings.Repeat(tt.unit, n/len(tt.unit)) }
 			short, long := text(small), text(large)
-			a, b := fastestPair(func() { p.Find(short) }, func() { p.Find(long) })
+			// The short text is read twice against the long text read once, so
+			// that the two readings are windows of the same length on the same
+			// clock. Whatever else the machine is running lands in a window in
+			// proportion to how long that window is open, and the reading
+			// carrying it is the one that decides the ratio: readings taken
+			// over one length and over twice it are two different exposures to
+			// the same burst, which moves the ratio for a reason that is not
+			// the walk. Twice the short text costs a linear walk what the long
+			// text costs it, and costs a quadratic one half of it.
+			a, b := fastestPair(
+				func() { p.Find(short); p.Find(short) },
+				func() { p.Find(long) },
+			)
 			if a <= 0 {
 				a = time.Nanosecond
 			}
 			if got := float64(b) / float64(a); got > limit {
-				t.Errorf("Find() of %d bytes took %v and of %d bytes took %v, %.1fx for twice the text",
+				t.Errorf("Find() of %d bytes took %v twice over and of %d bytes took %v, %.1fx where a linear walk gives 1x",
 					small, a, large, b, got)
 			}
 		})
@@ -570,11 +630,24 @@ func Test_MustRegexp_findIsLinear(t *testing.T) {
 func checkLookBehind(t testing.TB, p Pattern, src string, cut int) {
 	t.Helper()
 
+	spans, retain := p.Find(src)
+	checkLookBehindAt(t, New(WithPatterns(p)), src, spans, retain, cut)
+}
+
+// checkLookBehindAt is checkLookBehind over one cut of src, given a Masker over
+// the pattern and what that pattern reports for the whole of src.
+//
+// Neither depends on where the cut falls, and a text is cut at every one of its
+// positions: taken inside that loop they are a scan of the whole text and a
+// Masker built for every byte of it, which is the greater part of what holding
+// a pattern to LookBehind costs.
+func checkLookBehindAt(t testing.TB, m *Masker, src string, spans []Span, retain, cut int) {
+	t.Helper()
+
 	from := cut + LookBehind
 	if cut < 0 || from > len(src) {
 		return
 	}
-	spans, retain := p.Find(src)
 	if from > retain {
 		return
 	}
@@ -584,7 +657,6 @@ func checkLookBehind(t testing.TB, p Pattern, src string, cut int) {
 		}
 	}
 
-	m := New(WithPatterns(p))
 	want := make([]Span, 0, 8)
 	for _, f := range m.locate(src, from).found {
 		want = append(want, f.Span)
@@ -654,15 +726,24 @@ func Test_patterns_readNoFurtherBackThanLookBehind(t *testing.T) {
 		patterns = append(patterns, b.pattern())
 	}
 
+	// A subtest a pattern, run in parallel with the rest: what a pattern is
+	// held to here is read out of that pattern alone, and the cuts of one text
+	// come to as many scans as the text has bytes. The pattern is the coarsest
+	// division of that there is, which is what keeps the goroutines and the
+	// testing.T holding them to what the runner can take at once.
 	for _, p := range patterns {
 		t.Run(p.Name(), func(t *testing.T) {
+			t.Parallel()
+
 			inputs := lookBehindInputs()
 			for _, b := range builtinPatterns {
 				inputs = append(inputs, builtinInputs(b.samples)...)
 			}
+			m := New(WithPatterns(p))
 			for _, src := range inputs {
+				spans, retain := p.Find(src)
 				for cut := range len(src) + 1 {
-					checkLookBehind(t, p, src, cut)
+					checkLookBehindAt(t, m, src, spans, retain, cut)
 				}
 			}
 		})

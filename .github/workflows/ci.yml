@@ -13,10 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The suite is run twice, and the two runs are a job apiece rather than two
-  # steps of one. Neither reads what the other leaves, so as steps the shorter
-  # waits on the longer for nothing, and together they are the longest thing on
-  # this workflow. Apart, the wall clock is the run under the detector alone.
+  # The suite is run twice, and the two runs are jobs rather than two steps of
+  # one. Neither reads what the other leaves, so as steps the shorter waits on
+  # the longer for nothing, and together they are the longest thing on this
+  # workflow.
   test:
     timeout-minutes: 10
     permissions:
@@ -35,20 +35,113 @@ jobs:
       # would never run at all.
       - run: go test ./...
 
-  test-race:
+  # The run under the detector is a job a package rather than one job over them
+  # all. The detector costs this suite about five times what it costs without,
+  # and a runner has four cores: the wall clock is then what the work comes to
+  # divided by four, which one job reaches only where every test in it is a
+  # parallel one. A package apiece divides it where the division needs nothing
+  # of the tests, and the two packages here are within a third of each other in
+  # what they cost.
+  #
+  # What is listed is what runs, so a package added to the module is run under
+  # the detector without this file being touched — which is the whole of why the
+  # list is not written out here. A job that ran a package this listing missed
+  # would report green over tests nobody ran.
+  test-race-list:
     timeout-minutes: 10
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.list.outputs.packages }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
+      - name: List every package
+        id: list
+        shell: bash
+        run: |
+          # Assigned and its status checked rather than substituted into the
+          # loop below: a loop iterating over what a command substitution
+          # produced is where errexit does not reach, and a listing that failed
+          # would be a matrix of no packages and a run of no tests.
+          if ! packages=$(go list ./...); then
+            echo "listing the packages failed" >&2
+            exit 1
+          fi
+          entries=()
+          for pkg in $packages; do
+            # dir is the package's last element, carried so that the job below
+            # can name itself by it: the import path in full is too long to read
+            # in a list of checks.
+            if ! entry=$(jq -nc --arg pkg "$pkg" '{pkg: $pkg, dir: ($pkg | split("/") | last)}'); then
+              echo "describing $pkg failed" >&2
+              exit 1
+            fi
+            entries+=("$entry")
+          done
+          if ! matrix=$(printf '%s\n' "${entries[@]}" | jq -sc .); then
+            echo "building the matrix failed" >&2
+            exit 1
+          fi
+          echo "found ${#entries[@]} package(s): $matrix"
+          echo "packages=$matrix" >> "$GITHUB_OUTPUT"
+
+  test-race-package:
+    name: test-race (${{ matrix.dir }})
+    needs: test-race-list
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    strategy:
+      # One package failing says nothing about whether the other does, and
+      # which of them also failed is what a failure is read by.
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.test-race-list.outputs.packages) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Every job of this matrix reads and fills one cache, the standard library
+      # compiled under the detector being the same bytes for all of them. They
+      # race for the key on the first run after the toolchain moves and none of
+      # them after: actions/cache writes nothing back where it restored an exact
+      # hit, so once one of them has filled it the rest only read it.
+      - uses: ./.github/actions/setup
         with:
           cache: save
           build: race
-      - run: go test -race ./...
+      - env:
+          PKG: ${{ matrix.pkg }}
+        run: go test -race "$PKG"
+
+  # The name the run under the detector is read by from outside, kept to one row
+  # now that the packages are a job apiece. It reads the two results itself for
+  # the reasons the fuzz row below gives.
+  test-race:
+    needs:
+      - test-race-list
+      - test-race-package
+    if: ${{ !cancelled() }}
+    timeout-minutes: 10
+    permissions: {}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check that every package was tested
+        shell: bash
+        env:
+          LIST_RESULT: ${{ needs.test-race-list.result }}
+          PACKAGE_RESULT: ${{ needs.test-race-package.result }}
+        run: |
+          echo "test-race-list: $LIST_RESULT"
+          echo "test-race-package: $PACKAGE_RESULT"
+          if [ "$LIST_RESULT" != "success" ] || [ "$PACKAGE_RESULT" != "success" ]; then
+            exit 1
+          fi
 
   # A fuzz target is given its own job rather than a turn in a loop on one
   # runner. A loop is thirty seconds per target one after another, and this
