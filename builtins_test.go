@@ -56,6 +56,22 @@ var builtinPatterns = []struct {
 	benchmarks func() []benchmarkCase // what the scan is timed on
 }{
 	{
+		name:    "age-secret-key",
+		pattern: AgeSecretKey,
+		ref:     referenceAgeSecretKeyFind,
+		samples: []string{
+			"AGE_SECRET_KEY=AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02",
+			"AGE-SECRET-KEY-PQ-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02",
+			"AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02AGE-SECRET-KEY-PQ-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02",
+			"AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF0234",
+		},
+		anchors: []string{
+			"AGE-SECRET-KEY-1023456789ACDEF",
+			"AGE-SECRET-KEY-PQ-1023456789ACDEF",
+		},
+		benchmarks: ageSecretKeyFindBenchmarks,
+	},
+	{
 		name:    "airtable-personal-access-token",
 		pattern: AirtablePersonalAccessToken,
 		ref:     referenceAirtablePersonalAccessTokenFind,

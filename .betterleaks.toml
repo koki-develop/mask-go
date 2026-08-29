@@ -46,6 +46,23 @@ regexes = [
   '''01234567-89AB-CDEF-0123-456789ABCDEF''',
 ]
 
+# An age secret key cannot carry the run either, and the reason is the alphabet
+# it is written in rather than anything about where it is written. Bech32 leaves
+# 1 and B out of its character set — the first is the separator that closes the
+# human-readable part, the second is one of the letters the set is chosen
+# without — so the run
+# stops being ordered characters the moment it reaches either. What is asked for
+# instead is the run those two are taken out of, which is as much of it as the
+# format admits, under the same paths and the same case as above: a key written
+# any other way is reported as before.
+[[allowlists]]
+description = "age secret keys made of the ordered characters Bech32 admits, written into a test or a pattern's rationale"
+condition = "AND"
+targetRules = ["age-secret-key"]
+paths = ['''_test\.go$''', '''conformance/testdata/[^/]+\.txt$''', '''(^|/)builtin_[a-z0-9_]+\.go$''']
+regexTarget = "secret"
+regexes = ['''023456789ACDEF''']
+
 # The private key pattern is a place the ordered run cannot be asked for, and
 # the reason is what the rule reports rather than what the tests hold. The
 # private-key rule matches a region and not a value: it opens on a BEGIN

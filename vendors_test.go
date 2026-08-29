@@ -28,6 +28,7 @@ import (
 // coverage below would still pass wherever the pattern it returns is returned
 // by some other accessor too.
 var vendorAccessors = map[string]func() []Pattern{
+	"AgePatterns":          AgePatterns,
 	"AirtablePatterns":     AirtablePatterns,
 	"AnthropicPatterns":    AnthropicPatterns,
 	"AWSPatterns":          AWSPatterns,
