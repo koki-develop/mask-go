@@ -532,6 +532,20 @@ var builtinPatterns = []struct {
 		benchmarks: pypiAPITokenFindBenchmarks,
 	},
 	{
+		name:    "replicate-api-token",
+		pattern: ReplicateAPIToken,
+		ref:     referenceReplicateAPITokenFind,
+		samples: []string{
+			"REPLICATE_API_TOKEN=r8_0123456789abcdef0123456789abcdef01234",
+			"r8_0123456789ABCDEF0123456789ABCDEF01234",
+			"r8_0123456789abcdef0123456789abcdef012r8_0123456789abcdef0123456789abcdef01234",
+			"r8_0123456789abcr8_0123456789abcdef0123456789abcdef01234",
+			"r8_0123456789abcdef0123456789abcdef01234r8_0123456789abcdef0123456789abcdef01234",
+		},
+		anchors:    []string{"r8_0123"},
+		benchmarks: replicateAPITokenFindBenchmarks,
+	},
+	{
 		name:    "rubygems-api-key",
 		pattern: RubyGemsAPIKey,
 		ref:     referenceRubyGemsAPIKeyFind,
