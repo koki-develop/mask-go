@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.1.0](https://github.com/koki-develop/mask-go/compare/v0.0.1...v0.1.0) (2026-08-29)
+
+
+### Features
+
+* Locate a 1Password service account token ([#47](https://github.com/koki-develop/mask-go/issues/47)) ([#55](https://github.com/koki-develop/mask-go/issues/55)) ([daf4cdc](https://github.com/koki-develop/mask-go/commit/daf4cdc8e08c05e33d68de944c1f94ce80992694))
+* Locate a CircleCI personal API token and a project API token ([#43](https://github.com/koki-develop/mask-go/issues/43)) ([308ccfb](https://github.com/koki-develop/mask-go/commit/308ccfbf44735d6bdeb294b500b71d4f7f181c29))
+* Locate a crates.io API token and a Trusted Publishing token ([#25](https://github.com/koki-develop/mask-go/issues/25)) ([f1bf787](https://github.com/koki-develop/mask-go/commit/f1bf7873d8e8b2e0b94e5969317776c1dbe7ff90))
+* Locate a Databricks OAuth client secret ([#30](https://github.com/koki-develop/mask-go/issues/30)) ([011abc4](https://github.com/koki-develop/mask-go/commit/011abc48309de02c83c0f17e20b3a9423576df7c))
+* Locate a Databricks personal access token ([#28](https://github.com/koki-develop/mask-go/issues/28)) ([332c813](https://github.com/koki-develop/mask-go/commit/332c8132fd395e951b0434d76b7813db092be751))
+* Locate a DigitalOcean personal access token, an OAuth token and a refresh token ([#26](https://github.com/koki-develop/mask-go/issues/26)) ([d2ba57e](https://github.com/koki-develop/mask-go/commit/d2ba57ebcf0109fdf3ee20c21af99804e8abfedc))
+* Locate a Docker personal access token ([#52](https://github.com/koki-develop/mask-go/issues/52)) ([#56](https://github.com/koki-develop/mask-go/issues/56)) ([f631bb8](https://github.com/koki-develop/mask-go/commit/f631bb864727ec3d3f29d344a03e9d04e93e5dcf))
+* Locate a Doppler auth token ([#40](https://github.com/koki-develop/mask-go/issues/40)) ([a572fb9](https://github.com/koki-develop/mask-go/commit/a572fb9f6785084bc7b9792d26033b987ab4fd84))
+* Locate a Heroku API token ([#36](https://github.com/koki-develop/mask-go/issues/36)) ([a54575d](https://github.com/koki-develop/mask-go/commit/a54575d727f909becbf8a7a435a484c5fa2455e8))
+* Locate a Hugging Face user access token ([#24](https://github.com/koki-develop/mask-go/issues/24)) ([2ae9c6a](https://github.com/koki-develop/mask-go/commit/2ae9c6a907206be54a4ef49685d4788395e54ca8))
+* Locate a PlanetScale service token, an OAuth access token and a refresh token ([#32](https://github.com/koki-develop/mask-go/issues/32)) ([2d1dfb7](https://github.com/koki-develop/mask-go/commit/2d1dfb709aba2430429b655e4e54c17cc40f7945))
+* Locate a Postman API key ([#27](https://github.com/koki-develop/mask-go/issues/27)) ([c0e7329](https://github.com/koki-develop/mask-go/commit/c0e7329f179dc374d2bdd899d0472376872c63cc))
+* Locate a Pulumi access token ([#31](https://github.com/koki-develop/mask-go/issues/31)) ([1a64308](https://github.com/koki-develop/mask-go/commit/1a64308753f4a3bf23a8f22cd496fc2add2f24cf))
+* Locate a Shopify access token and an app secret key ([#41](https://github.com/koki-develop/mask-go/issues/41)) ([9d9211f](https://github.com/koki-develop/mask-go/commit/9d9211f98a34d53629f5a326a1fb37618bf42683))
+* Locate a Sourcegraph access token ([#34](https://github.com/koki-develop/mask-go/issues/34)) ([b29300a](https://github.com/koki-develop/mask-go/commit/b29300a74a2344479c0162e228ccf723c79d95df))
+* Locate a Supabase publishable key and a Supabase secret key ([#22](https://github.com/koki-develop/mask-go/issues/22)) ([4f10b3e](https://github.com/koki-develop/mask-go/commit/4f10b3ebbfdbb03fe06fbc1ded5755a11733d83b))
+* Locate an age secret key and a post-quantum hybrid one ([#54](https://github.com/koki-develop/mask-go/issues/54)) ([fea8089](https://github.com/koki-develop/mask-go/commit/fea80893fdc5b706ef52b618baafcd2e8ea52b6e))
+* Locate an Airtable personal access token ([#35](https://github.com/koki-develop/mask-go/issues/35)) ([e38299d](https://github.com/koki-develop/mask-go/commit/e38299df6882cf8abf1eff5dc66049e4007e211b))
+
+
+### Performance Improvements
+
+* **ci:** divide the run under the race detector and take the repeated work out of it ([#53](https://github.com/koki-develop/mask-go/issues/53)) ([2cb26b3](https://github.com/koki-develop/mask-go/commit/2cb26b31d3438d1a30850fb9bb876a6ef026c0d3))
+
 ## 0.0.1 (2026-08-26)
 
 
