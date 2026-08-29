@@ -68,6 +68,7 @@ var builtins = []Pattern{
 	shopifyAccessToken,
 	shopifyAppSecretKey,
 	slackToken,
+	sonarQubeToken,
 	sourcegraphAccessToken,
 	stripePublishableKey,
 	stripeSecretKey,

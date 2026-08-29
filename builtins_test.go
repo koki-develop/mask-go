@@ -633,6 +633,20 @@ var builtinPatterns = []struct {
 		benchmarks: slackTokenFindBenchmarks,
 	},
 	{
+		name:    "sonarqube-token",
+		pattern: SonarQubeToken,
+		ref:     referenceSonarQubeTokenFind,
+		samples: []string{
+			"SONAR_TOKEN=squ_0123456789abcdef0123456789abcdef01234567",
+			"sqa_0123456789abcdef0123456789abcdef01234567",
+			"sqp_0123456789abcdef0123456789abcdef01234567",
+			"sqb_0123456789abcdef0123456789abcdef01234567",
+			"squ_0123456789abcdef0123456789abcdef01234567sqa_0123456789abcdef0123456789abcdef01234567",
+		},
+		anchors:    []string{"squ_0123456789abcdef"},
+		benchmarks: sonarQubeTokenFindBenchmarks,
+	},
+	{
 		name:    "sourcegraph-access-token",
 		pattern: SourcegraphAccessToken,
 		ref:     referenceSourcegraphAccessTokenFind,
