@@ -30,8 +30,18 @@ a vendor that introduced a prefix recently is in some and in none of the rest.
 That a ruleset carries a format is evidence it exists, not evidence of what it
 is. **Find the vendor stating the prefix, or open no issue** — ruleset
 agreement does not substitute, and being wrong about a prefix means the pattern
-never fires. Lengths and alphabets are usually absent from vendor docs; that is
-normal and disqualifies nothing.
+never fires.
+
+Stating it means the vendor's own page, fetched and quoted from. A search
+result describing that page is not that page: the claim is about characters,
+and one character off fails silently — every test in the repository passes.
+Where a docs site is built in the browser and comes back as an empty shell,
+the vendor's own plaintext of the same docs (`llms.txt`, `llms-full.txt`) is
+still the vendor stating it, so a failed fetch is not reason to drop a
+candidate.
+
+Lengths and alphabets are usually absent from vendor docs; that is normal and
+disqualifies nothing.
 
 ## 3. The gate
 
