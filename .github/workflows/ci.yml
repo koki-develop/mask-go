@@ -37,9 +37,10 @@ jobs:
 
   # The run under the detector is a job a package rather than one job over them
   # all. The detector costs this suite about five times what it costs without,
-  # and a runner has four cores: the wall clock is then what the work comes to
-  # divided by four, which one job reaches only where every test in it is a
-  # parallel one. A package apiece divides it where the division needs nothing
+  # and a runner has four cores. go test runs the package binaries together
+  # already, so what a job apiece buys is not that the packages run at once: it
+  # is four cores each rather than four cores between them, for as long as both
+  # are running. A package apiece divides that where the division needs nothing
   # of the tests.
   #
   # What is listed is what runs, so a package added to the module is run under
