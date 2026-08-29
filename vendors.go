@@ -141,6 +141,12 @@ func NotionPatterns() []Pattern { return []Pattern{notionAPIToken} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func NPMPatterns() []Pattern { return []Pattern{npmAccessToken} }
 
+// OnePasswordPatterns returns every built-in pattern that locates a credential
+// 1Password issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func OnePasswordPatterns() []Pattern { return []Pattern{onePasswordServiceAccountToken} }
+
 // OpenAIPatterns returns every built-in pattern that locates a credential
 // OpenAI issues.
 //

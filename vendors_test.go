@@ -48,6 +48,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"LinearPatterns":       LinearPatterns,
 	"NotionPatterns":       NotionPatterns,
 	"NPMPatterns":          NPMPatterns,
+	"OnePasswordPatterns":  OnePasswordPatterns,
 	"OpenAIPatterns":       OpenAIPatterns,
 	"OpenRouterPatterns":   OpenRouterPatterns,
 	"PlanetScalePatterns":  PlanetScalePatterns,
