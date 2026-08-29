@@ -1,0 +1,169 @@
+# What Docker personal access tokens the library redacts, and what it leaves
+# alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: a body is twenty-seven base64url characters, so the run and
+# eleven more of it are one, and the nine character prefix in front brings a
+# token to thirty-six.
+
+patterns: docker-personal-access-token
+
+# The prefix Docker writes a personal access token with, in the places a token
+# is written: the environment a build reads it from, the command it logs in
+# with, and the request that exchanges it for a bearer token.
+
+case:     a token in an environment assignment
+in:       DOCKER_TOKEN=dckr_pat_0123456789abcdef0123456789a
+out:      DOCKER_TOKEN=«docker-personal-access-token»
+
+case:     a token in the command a user logs in with
+in:       docker login -u myusername -p dckr_pat_0123456789abcdef0123456789a
+out:      docker login -u myusername -p «docker-personal-access-token»
+
+case:     a token in the body a request exchanges it in
+in:       {"identifier":"myusername","secret":"dckr_pat_0123456789abcdef0123456789a"}
+out:      {"identifier":"myusername","secret":"«docker-personal-access-token»"}
+
+case:     a token in the file a workflow writes it into
+in:       registry-password: dckr_pat_0123456789abcdef0123456789a
+out:      registry-password: «docker-personal-access-token»
+
+# The alphabet the twenty-seven characters are written in: base64url, which is
+# the letters of both cases, the digits, the hyphen and the underscore. What it
+# leaves out is the two characters standard base64 writes in place of the last
+# of those, so a payload carrying either is no body. The prefix is read in
+# lowercase alone, since the uppercase spelling is the shape an environment
+# variable's name is written in.
+
+case:     a body carrying a hyphen and an underscore
+in:       dckr_pat_0123456789abcdef-123456789_
+out:      «docker-personal-access-token»
+
+case:     a plus in the body
+in:       dckr_pat_0123456789abcdef+123456789a
+out:      dckr_pat_0123456789abcdef+123456789a
+
+case:     a slash in the body
+in:       dckr_pat_0123456789abcdef/123456789a
+out:      dckr_pat_0123456789abcdef/123456789a
+
+case:     an uppercase prefix
+in:       DCKR_PAT_0123456789abcdef0123456789a
+out:      DCKR_PAT_0123456789abcdef0123456789a
+
+case:     hyphens where the prefix carries its underscores
+in:       dckr-pat-0123456789abcdef0123456789a
+out:      dckr-pat-0123456789abcdef0123456789a
+
+# The lengths either side of twenty-seven. Docker states no length, so the count
+# is read off the published tokens and the rulesets that agree on them, and it
+# is used as a count rather than a floor: twenty-six characters are not a token,
+# and twenty-eight are a token and one character that belongs to no credential.
+# The second of those is the price of having no boundary behind the match — a
+# boundary there would drop this token rather than trim it, and a real token
+# written against a character of the alphabet would come through whole.
+
+case:     a body of twenty-seven characters is a token
+in:       dckr_pat_0123456789abcdef0123456789a
+out:      «docker-personal-access-token»
+
+case:     a body of twenty-six characters is not
+in:       dckr_pat_0123456789abcdef0123456789
+out:      dckr_pat_0123456789abcdef0123456789
+
+case:     an alphabet run longer than a token is a token and what follows it
+in:       dckr_pat_0123456789abcdef0123456789ab
+out:      «docker-personal-access-token»b
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       DOCKER_TOKEN_dckr_pat_0123456789abcdef0123456789a
+out:      DOCKER_TOKEN_«docker-personal-access-token»
+
+case:     a token after a letter
+in:       xdckr_pat_0123456789abcdef0123456789a
+out:      x«docker-personal-access-token»
+
+case:     a token before a hyphenated word
+in:       dckr_pat_0123456789abcdef0123456789a-suffix
+out:      «docker-personal-access-token»-suffix
+
+case:     a token at the end of a sentence
+in:       the token is dckr_pat_0123456789abcdef0123456789a.
+out:      the token is «docker-personal-access-token».
+
+# Two tokens written together. Every character of the prefix belongs to the
+# alphabet a body is written in, so a token can begin anywhere inside the one
+# before it: the prefix written twice with a body behind the second is a token
+# from either prefix, the two spans overlap and the whole of it is redacted as
+# one. Written without that overlap the two are separate values and both go.
+
+case:     two tokens with nothing between them
+in:       dckr_pat_0123456789abcdef0123456789adckr_pat_0123456789abcdef0123456789a
+out:      «docker-personal-access-token»«docker-personal-access-token»
+
+case:     a prefix written where a body would stand
+in:       dckr_pat_dckr_pat_0123456789abcdef0123456789a
+out:      «docker-personal-access-token»
+
+# What this pattern redacts that nobody issued. The prefix is nine characters of
+# an alphabet of sixty-four, so a base64url payload long enough to spell it
+# carries a candidate, and the twenty-seven behind it are in the alphabet by
+# construction. That is the answer rather than a fault in it, because sparing it
+# would spare a real token: the vendor's format is that prefix and that many of
+# those characters, and no part of it is left for such a run to fail. Standard
+# base64 and hexadecimal write no underscore at all, so neither carries a
+# candidate at however long it runs.
+
+case:     the prefix inside a longer base64url run
+in:       payload=zzzzdckr_pat_0123456789abcdef0123456789azzzz
+out:      payload=zzzz«docker-personal-access-token»zzzz
+
+case:     a standard base64 payload, which carries no underscore
+in:       payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAdckrpat0123456789abcdef
+out:      payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAdckrpat0123456789abcdef
+
+# And what this pattern leaves alone. The first two are the second prefix
+# Docker's credential table names, the organization access token's, written to
+# each of the two widths that have been claimed for it: the width Docker's own
+# API reference prints and the width the rulesets reading that format ask for.
+# Then a body a space has broken, and two inputs carrying no prefix at all: a
+# run of the right length opening with something else, and a line of prose,
+# which holds nothing as long as a body and no run unbroken by a space.
+
+case:     an organization access token at the width the reference prints
+in:       dckr_oat_0123456789abcdef0123456789a
+out:      dckr_oat_0123456789abcdef0123456789a
+
+case:     an organization access token at the width the rulesets ask for
+in:       dckr_oat_0123456789abcdef0123456789abcdef
+out:      dckr_oat_0123456789abcdef0123456789abcdef
+
+case:     a body broken by a space
+in:       dckr_pat_0123456789abcdef 123456789a
+out:      dckr_pat_0123456789abcdef 123456789a
+
+case:     a run of the right length opening with no prefix
+in:       xxxx_xxx_0123456789abcdef0123456789a
+out:      xxxx_xxx_0123456789abcdef0123456789a
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And the shape Docker Hub's login endpoint took before a prefix was written in
+# front of one, which the pattern's own file weighs: a UUID carrying nothing to
+# be recognised by but the vendor's word beside it. Such a token reaching a log
+# stays in the output whole, because a pattern reading it would redact every
+# UUID a caller passes through.
+
+case:     the shape a token took before a prefix was written in front of one
+in:       DOCKER_TOKEN=01234567-89ab-cdef-0123-456789abcdef
+out:      DOCKER_TOKEN=01234567-89ab-cdef-0123-456789abcdef
+
+case:     a log line naming the registry a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="pushing an image" url=https://hub.docker.com/v2/repositories/library/nginx/tags
+out:      time=2026-08-17T00:00:00Z level=info msg="pushing an image" url=https://hub.docker.com/v2/repositories/library/nginx/tags
