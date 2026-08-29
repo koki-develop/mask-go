@@ -56,6 +56,20 @@ var builtinPatterns = []struct {
 	benchmarks func() []benchmarkCase // what the scan is timed on
 }{
 	{
+		name:    "airtable-personal-access-token",
+		pattern: AirtablePersonalAccessToken,
+		ref:     referenceAirtablePersonalAccessTokenFind,
+		samples: []string{
+			"AIRTABLE_API_KEY=pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"patABCDEFghij0123.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"patpat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"patpat0123456789a.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefpat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"pat0123456789abcd.0123456789abcdef"},
+		benchmarks: airtablePersonalAccessTokenFindBenchmarks,
+	},
+	{
 		name:    "anthropic-api-key",
 		pattern: AnthropicAPIKey,
 		ref:     referenceAnthropicAPIKeyFind,

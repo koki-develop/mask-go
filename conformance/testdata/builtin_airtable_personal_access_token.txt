@@ -1,0 +1,217 @@
+# What Airtable personal access tokens the library redacts, and what it leaves
+# alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: the identifier is the front of that run behind the three
+# letters pat, which brings it to the seventeen characters an Airtable ID is,
+# and the secret behind the dot is the run four times over, which is
+# sixty-four hexadecimal characters. A token comes to eighty-two.
+
+patterns: airtable-personal-access-token
+
+# The one shape Airtable writes a token in. There is a single kind of string here
+# rather than a table of them: a token carries no mark saying what it was scoped
+# to or which bases it reaches, so the cases below are that one shape in the
+# places a token is written. The first two are Airtable's own — its JavaScript
+# client reads a token out of AIRTABLE_API_KEY and sends it as a bearer token.
+
+case:     a token in the environment assignment the client reads
+in:       AIRTABLE_API_KEY=pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      AIRTABLE_API_KEY=«airtable-personal-access-token»
+
+case:     a token in the header a request carries it in
+in:       Authorization: Bearer pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      Authorization: Bearer «airtable-personal-access-token»
+
+case:     a token on a command line
+in:       curl -H 'Authorization: Bearer pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' https://api.airtable.com/v0/meta/whoami
+out:      curl -H 'Authorization: Bearer «airtable-personal-access-token»' https://api.airtable.com/v0/meta/whoami
+
+case:     a token in json
+in:       {"personalAccessToken":"pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}
+out:      {"personalAccessToken":"«airtable-personal-access-token»"}
+
+case:     a token in a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" token=pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" token=«airtable-personal-access-token»
+
+# The dot between the identifier and the secret. It belongs to neither alphabet,
+# which is what ends the identifier where it stands and what makes the count on
+# either side of it readable at all. Written as anything else, or written twice,
+# there is no token to find.
+
+case:     a hyphen where the dot belongs
+in:       pat0123456789abcd-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pat0123456789abcd-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     no separator at all
+in:       pat0123456789abcd00123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pat0123456789abcd00123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a second dot written inside the secret
+in:       pat0123456789abcd.0123456789abcdef0123456789abcdef.123456789abcdef0123456789abcdef
+out:      pat0123456789abcd.0123456789abcdef0123456789abcdef.123456789abcdef0123456789abcdef
+
+# The two counts either side of it. Fourteen characters finish the identifier
+# and sixty-four are the secret, and both are read as counts rather than as
+# floors. The identifier answers for either length by the dot moving: written
+# shorter or longer, the dot no longer stands where a token's does and there is
+# nothing to find. The secret has no such mark behind it, so a run longer than
+# the count is a token and the characters written after it — which is the price
+# of having no boundary behind the match, since a boundary there would drop this
+# token rather than trim it and a real token written against a letter would come
+# through whole.
+
+case:     an identifier one character short
+in:       pat0123456789abc.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pat0123456789abc.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     an identifier one character long
+in:       pat0123456789abcde.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pat0123456789abcde.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a secret one character short
+in:       pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     a secret longer than the count is a token and what follows it
+in:       pat0123456789abcd.01234567890123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «airtable-personal-access-token»6789abcdef
+
+# The alphabets the two halves are read in. The identifier is an Airtable ID, so
+# it is letters and digits in either case; the secret is thirty-two bytes written
+# in lowercase hexadecimal, and the other case is the widening the pattern's own
+# file declines.
+
+case:     an identifier written in both cases
+in:       pat0123456789ABCD.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «airtable-personal-access-token»
+
+case:     an underscore in the identifier
+in:       pat0123456789_bcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pat0123456789_bcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     an uppercase secret
+in:       pat0123456789abcd.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      pat0123456789abcd.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+case:     one uppercase character in a secret
+in:       pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeF
+out:      pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeF
+
+case:     a letter outside hexadecimal in the secret
+in:       pat0123456789abcd.0123456789abcdefg123456789abcdef0123456789abcdef0123456789abcdef
+out:      pat0123456789abcd.0123456789abcdefg123456789abcdef0123456789abcdef0123456789abcdef
+
+# What a token may be written against. The three letters and the dot are the
+# whole of the anchor and there is no boundary on either side of it, so a token
+# keeps its span whatever word character it abuts.
+
+case:     a token after an underscore
+in:       AIRTABLE_PERSONAL_ACCESS_TOKEN_pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      AIRTABLE_PERSONAL_ACCESS_TOKEN_«airtable-personal-access-token»
+
+case:     a token after a letter
+in:       xpat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      x«airtable-personal-access-token»
+
+case:     a word written against a token
+in:       pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsuffix
+out:      «airtable-personal-access-token»suffix
+
+case:     a token at the end of a sentence
+in:       the token is pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.
+out:      the token is «airtable-personal-access-token».
+
+# Two tokens written together. No token can begin inside another: a token holds
+# one dot, at its eighteenth character, and everything behind that dot is
+# hexadecimal, which the p and the t of the prefix are not — so a token written
+# inside one would want a dot where a secret stands, or would have to open on a
+# p a secret cannot hold. The prefix written in front of a token, and an
+# identifier carrying the prefix, are the two places a candidate does open
+# inside a span, and neither becomes a token.
+
+case:     two tokens with nothing between them
+in:       pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefpat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «airtable-personal-access-token»«airtable-personal-access-token»
+
+case:     the prefix written in front of a token
+in:       patpat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pat«airtable-personal-access-token»
+
+case:     an identifier opening on the prefix
+in:       patpat0123456789a.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «airtable-personal-access-token»
+
+case:     an identifier closing on the prefix
+in:       pat0123456789apat.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «airtable-personal-access-token»
+
+# What this pattern redacts that nobody issued. Sixty-four lowercase hexadecimal
+# characters behind a seventeen character word and a dot is the vendor's format
+# exactly, and a SHA-256 is sixty-four of them, so a word of that length in front
+# of one is a token character for character and the whole of it goes. That is the
+# answer rather than a fault in it, because nothing in the text tells such a run
+# from a token: sparing it would spare a real token written the same way. The
+# shorter digests are not secrets at any length, and neither is a UUID, whose
+# hyphens are no character a secret may hold.
+
+case:     a seventeen character word in front of a sha-256
+in:       patchnotes1234567.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «airtable-personal-access-token»
+
+case:     a sixteen character word in front of a sha-256
+in:       patchnotes123456.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      patchnotes123456.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a seventeen character word in front of a sha-1
+in:       patchnotes1234567.0123456789abcdef0123456789abcdef01234567
+out:      patchnotes1234567.0123456789abcdef0123456789abcdef01234567
+
+case:     a seventeen character word in front of a uuid
+in:       patchnotes1234567.01234567-89ab-cdef-0123-456789abcdef
+out:      patchnotes1234567.01234567-89ab-cdef-0123-456789abcdef
+
+# And what this pattern leaves alone. The prefix is read in the case Airtable
+# writes it and with every letter of it; an identifier of another kind is another
+# thing Airtable numbers rather than a token; and a digest carries no dot, so
+# none of them holds a candidate to be found at however long it runs.
+
+case:     an uppercase prefix
+in:       PAT0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      PAT0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     the prefix without its closing letter
+in:       pa0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pa0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     an identifier of another kind
+in:       usr0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      usr0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a sha-256 with no identifier in front of it
+in:       sha256=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      sha256=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     prose opening on the prefix
+in:       the patch is on the path to the patient pattern
+out:      the patch is on the path to the patient pattern
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line naming the api a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.airtable.com/v0/meta/whoami
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.airtable.com/v0/meta/whoami
+
+# And the other access token Airtable issues, which this pattern has nothing to
+# say about. An OAuth access token is written in four parts with .v1. between the
+# first two, so its identifier is followed by a dot and a version rather than by
+# a secret; Airtable calls it an OAuth access token where this is a personal
+# access token, and it is a credential this pattern's name does not cover rather
+# than one the scan happens to miss.
+
+case:     an oauth access token
+in:       oaa0123456789abcd.v1.0123456789abcdef0123456789abcdef.0123456789abcdef0123456789abcdef
+out:      oaa0123456789abcd.v1.0123456789abcdef0123456789abcdef.0123456789abcdef0123456789abcdef
