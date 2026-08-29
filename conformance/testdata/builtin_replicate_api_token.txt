@@ -1,0 +1,195 @@
+# What Replicate API tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: a body is thirty-seven characters, so the run twice over with
+# 01234 behind it is one, and the same run in uppercase is another. Where a case
+# turns on what a body may close on, it closes one on r8 instead. The prefix in
+# front brings a token to the forty characters Replicate states one is.
+
+patterns: replicate-api-token
+
+# The one prefix Replicate writes a token with. There is a single kind of string
+# here rather than a table of them: an owner holds a token per environment and
+# per project, and each of them is the same string with no mark on it to tell
+# one from another, so the cases below are that one shape in the places a token
+# is written.
+
+case:     a token in an environment assignment
+in:       REPLICATE_API_TOKEN=r8_0123456789abcdef0123456789abcdef01234
+out:      REPLICATE_API_TOKEN=«replicate-api-token»
+
+case:     a token in the argument a python client takes it as
+in:       replicate.Client(api_token="r8_0123456789abcdef0123456789abcdef01234")
+out:      replicate.Client(api_token="«replicate-api-token»")
+
+case:     a token in the header a request carries it in
+in:       Authorization: Bearer r8_0123456789abcdef0123456789abcdef01234
+out:      Authorization: Bearer «replicate-api-token»
+
+case:     a token on the command line a curl example writes that header on
+in:       curl -H "Authorization: Bearer r8_0123456789abcdef0123456789abcdef01234" https://api.replicate.com/v1/account
+out:      curl -H "Authorization: Bearer «replicate-api-token»" https://api.replicate.com/v1/account
+
+case:     a token in a json body
+in:       {"api_token":"r8_0123456789abcdef0123456789abcdef01234"}
+out:      {"api_token":"«replicate-api-token»"}
+
+# The alphabet the thirty-seven characters are written in: the letters of both
+# cases with the digits, which is what the tokens kingfisher publishes as its
+# examples are spelled in. Replicate states the length and not the alphabet, so
+# the one reading that differs — trufflehog admits the hyphen and the underscore
+# besides — is what the pattern's own file weighs. What the alphabet leaves out
+# is everything else, those two among them, so a run carrying either is no
+# token.
+
+case:     an uppercase body
+in:       r8_0123456789ABCDEF0123456789ABCDEF01234
+out:      «replicate-api-token»
+
+case:     a body carrying a hyphen
+in:       r8_0123456789abcdef-123456789abcdef01234
+out:      r8_0123456789abcdef-123456789abcdef01234
+
+case:     a body carrying an underscore
+in:       r8_0123456789abcdef_123456789abcdef01234
+out:      r8_0123456789abcdef_123456789abcdef01234
+
+# The lengths either side of thirty-seven. Replicate states that a token is
+# forty characters, which is thirty-seven behind the prefix, and that count is
+# used as a count rather than a floor: thirty-six characters are not a token,
+# and thirty-eight are a token and one character that belongs to no credential.
+# The second of those is the price of having no boundary behind the match — a
+# boundary there would drop this token rather than trim it, and a real token
+# written against a letter would come through whole.
+
+case:     a body of thirty-seven characters is a token
+in:       r8_0123456789abcdef0123456789abcdef01234
+out:      «replicate-api-token»
+
+case:     a body of thirty-six characters is not
+in:       r8_0123456789abcdef0123456789abcdef0123
+out:      r8_0123456789abcdef0123456789abcdef0123
+
+case:     an alphabet run longer than a token is a token and what follows it
+in:       r8_0123456789abcdef0123456789abcdef012345
+out:      «replicate-api-token»5
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       REPLICATE_API_TOKEN_r8_0123456789abcdef0123456789abcdef01234
+out:      REPLICATE_API_TOKEN_«replicate-api-token»
+
+case:     a token after a letter
+in:       xr8_0123456789abcdef0123456789abcdef01234
+out:      x«replicate-api-token»
+
+case:     a token before a hyphenated word
+in:       r8_0123456789abcdef0123456789abcdef01234-suffix
+out:      «replicate-api-token»-suffix
+
+case:     a token at the end of a sentence
+in:       the token is r8_0123456789abcdef0123456789abcdef01234.
+out:      the token is «replicate-api-token».
+
+# Two tokens written together. A token can begin inside another, and the
+# underscore is what bounds where: a candidate opens at an underscore two
+# characters behind its start, and the one underscore a token holds is the one
+# its own prefix closes with, so a token beginning inside another begins at the
+# last two characters of the body, with that underscore standing past the end of
+# the span. The two spans overlap there and are redacted as one. Written without
+# that overlap the two are separate values and both go, and a prefix standing
+# where a body would have to hold it ends the candidate in front of it and opens
+# the token itself.
+
+case:     two tokens with nothing between them
+in:       r8_0123456789abcdef0123456789abcdef01234r8_0123456789abcdef0123456789abcdef01234
+out:      «replicate-api-token»«replicate-api-token»
+
+case:     a token beginning at the end of the token before it
+in:       r8_0123456789abcdef0123456789abcdef012r8_0123456789abcdef0123456789abcdef01234
+out:      «replicate-api-token»
+
+case:     a prefix written where a body would stand
+in:       r8_0123456789abcr8_0123456789abcdef0123456789abcdef01234
+out:      r8_0123456789abc«replicate-api-token»
+
+# What this pattern redacts that nobody issued. Thirty-seven letters and digits
+# behind the prefix is the vendor's format exactly, so a digest written there is
+# redacted for thirty-seven of its characters with the rest left in the text,
+# and so is a stretch of base64url text that happens to hold the prefix — that
+# alphabet carries the underscore where hexadecimal and standard base64 do not,
+# which is why a payload written in it can hold one at all and the base64 case
+# below holds none. That is the answer rather than a fault in it, because
+# nothing in the text tells such a run from a token: sparing these would spare a
+# real token written the same way. What is taken is a stretch of a value that
+# was already opaque.
+
+case:     the prefix in front of a sha-1
+in:       r8_0123456789abcdef0123456789abcdef01234567
+out:      «replicate-api-token»567
+
+case:     the prefix in front of a sha-256
+in:       r8_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «replicate-api-token»56789abcdef0123456789abcdef
+
+case:     the prefix inside a longer base64url run
+in:       payload=zzzzr8_0123456789abcdef0123456789abcdef01234zzzz
+out:      payload=zzzz«replicate-api-token»zzzz
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.r8_0123456789abcdef0123456789abcdef01234
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.«replicate-api-token»
+
+case:     a standard base64 payload, which carries no underscore
+in:       payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr80123456789abcdef
+out:      payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr80123456789abcdef
+
+# And what this pattern leaves alone. The first two are the prefix, which is
+# read in the case Replicate writes it and with the underscore it closes on; the
+# two after them are a body a space has broken and a character the alphabet has
+# not got. The last three carry no prefix at all: a body holds no space and no
+# punctuation, and the prefix closes on an underscore, so a word cannot run into
+# one.
+
+case:     an uppercase prefix
+in:       R8_0123456789abcdef0123456789abcdef01234
+out:      R8_0123456789abcdef0123456789abcdef01234
+
+case:     a hyphen where the prefix closes
+in:       r8-0123456789abcdef0123456789abcdef01234
+out:      r8-0123456789abcdef0123456789abcdef01234
+
+case:     a body broken by a space
+in:       r8_0123456789abcdef 123456789abcdef01234
+out:      r8_0123456789abcdef 123456789abcdef01234
+
+case:     a character outside the alphabet in the body
+in:       r8_0123456789abcdef.123456789abcdef01234
+out:      r8_0123456789abcdef.123456789abcdef01234
+
+case:     a run of the right length opening with no prefix
+in:       xxx0123456789abcdef0123456789abcdef01234
+out:      xxx0123456789abcdef0123456789abcdef01234
+
+case:     a digest with no prefix
+in:       md5=0123456789abcdef0123456789abcdef
+out:      md5=0123456789abcdef0123456789abcdef
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And the other credential Replicate hands out, which this pattern has nothing
+# to say about. The secret a handler verifies a webhook signature with is
+# written whsec_ and a base64 body, and carries no r8_ to be found at.
+
+case:     a webhook signing secret
+in:       whsec_0123456789abcdef0123456789abcdef
+out:      whsec_0123456789abcdef0123456789abcdef
+
+case:     a log line naming the api a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="creating prediction" url=https://api.replicate.com/v1/predictions
+out:      time=2026-08-17T00:00:00Z level=info msg="creating prediction" url=https://api.replicate.com/v1/predictions
