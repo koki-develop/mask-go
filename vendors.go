@@ -225,6 +225,12 @@ func ShopifyPatterns() []Pattern { return []Pattern{shopifyAccessToken, shopifyA
 // The returned slice is freshly allocated and may be modified by the caller.
 func SlackPatterns() []Pattern { return []Pattern{slackToken} }
 
+// SonarQubePatterns returns every built-in pattern that locates a credential
+// SonarQube issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func SonarQubePatterns() []Pattern { return []Pattern{sonarQubeToken} }
+
 // SourcegraphPatterns returns every built-in pattern that locates a credential
 // Sourcegraph issues.
 //

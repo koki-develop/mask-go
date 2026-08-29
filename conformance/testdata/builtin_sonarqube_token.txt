@@ -1,0 +1,161 @@
+# What SonarQube tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: a body is forty hexadecimal characters, so the run twice over
+# and eight more of it are one, and the four character prefix in front brings a
+# token to forty-four.
+
+patterns: sonarqube-token
+
+# The four prefixes SonarQube writes a token with, in the places a token is
+# written: the environment a build reads it from, the property an analysis is
+# handed it in, the request that authenticates with it, and the URL a badge is
+# rendered from.
+
+case:     a user token in an environment assignment
+in:       SONAR_TOKEN=squ_0123456789abcdef0123456789abcdef01234567
+out:      SONAR_TOKEN=«sonarqube-token»
+
+case:     a project analysis token in the property an analysis reads
+in:       sonar-scanner -Dsonar.token=sqp_0123456789abcdef0123456789abcdef01234567
+out:      sonar-scanner -Dsonar.token=«sonarqube-token»
+
+case:     a global analysis token in a json body
+in:       {"token":"sqa_0123456789abcdef0123456789abcdef01234567"}
+out:      {"token":"«sonarqube-token»"}
+
+case:     a project badge token in the url a badge is rendered from
+in:       https://sonarqube.example.com/api/project_badges/measure?project=my-project&metric=alert_status&token=sqb_0123456789abcdef0123456789abcdef01234567
+out:      https://sonarqube.example.com/api/project_badges/measure?project=my-project&metric=alert_status&token=«sonarqube-token»
+
+# The alphabet the forty characters behind a prefix are written in: lowercase
+# hexadecimal, which is what the generator's hexadecimal encoder writes. A
+# letter outside it or a character of either case above it ends the body, and
+# the prefix is read in the one case SonarQube writes it.
+
+case:     a letter outside hexadecimal in the body
+in:       squ_0123456789abcdefg123456789abcdef01234567
+out:      squ_0123456789abcdefg123456789abcdef01234567
+
+case:     an uppercase body
+in:       squ_0123456789ABCDEF0123456789abcdef01234567
+out:      squ_0123456789ABCDEF0123456789abcdef01234567
+
+case:     an uppercase prefix
+in:       SQU_0123456789abcdef0123456789abcdef01234567
+out:      SQU_0123456789abcdef0123456789abcdef01234567
+
+case:     a hyphen where the prefix carries its underscore
+in:       squ-0123456789abcdef0123456789abcdef01234567
+out:      squ-0123456789abcdef0123456789abcdef01234567
+
+case:     a character naming no kind SonarQube writes
+in:       sqx_0123456789abcdef0123456789abcdef01234567
+out:      sqx_0123456789abcdef0123456789abcdef01234567
+
+# The lengths either side of forty. The count is what twenty random bytes come
+# to in hexadecimal, and it is read as a count rather than a floor:
+# thirty-nine characters are not a token, and forty-one are a token and one
+# character that belongs to no credential. The second of those is the price of
+# having no boundary behind the match — a boundary there would drop this token
+# rather than trim it, and a real token written against a hexadecimal character
+# would come through whole.
+
+case:     a body of forty characters is a token
+in:       squ_0123456789abcdef0123456789abcdef01234567
+out:      «sonarqube-token»
+
+case:     a body of thirty-nine characters is not
+in:       squ_0123456789abcdef0123456789abcdef0123456
+out:      squ_0123456789abcdef0123456789abcdef0123456
+
+case:     a hexadecimal run longer than a token is a token and what follows it
+in:       squ_0123456789abcdef0123456789abcdef012345678
+out:      «sonarqube-token»8
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       SONAR_TOKEN_squ_0123456789abcdef0123456789abcdef01234567
+out:      SONAR_TOKEN_«sonarqube-token»
+
+case:     a token after a letter
+in:       xsqu_0123456789abcdef0123456789abcdef01234567
+out:      x«sonarqube-token»
+
+case:     a token before a hyphenated word
+in:       squ_0123456789abcdef0123456789abcdef01234567-suffix
+out:      «sonarqube-token»-suffix
+
+case:     a token at the end of a sentence
+in:       the token is squ_0123456789abcdef0123456789abcdef01234567.
+out:      the token is «sonarqube-token».
+
+# Two tokens written together, and a prefix written where a body would stand.
+# A body carries no character a prefix opens with, so the second of these is one
+# token standing where a candidate failed rather than two tokens overlapping.
+
+case:     two tokens with nothing between them
+in:       squ_0123456789abcdef0123456789abcdef01234567sqa_0123456789abcdef0123456789abcdef01234567
+out:      «sonarqube-token»«sonarqube-token»
+
+case:     a prefix written where a body would stand
+in:       squ_squ_0123456789abcdef0123456789abcdef01234567
+out:      squ_«sonarqube-token»
+
+# What this pattern redacts that nobody issued. Every character of a prefix
+# belongs to base64url, so a payload written in that alphabet can spell one, and
+# where forty hexadecimal characters follow it those forty-four are redacted.
+# That is the answer rather than a fault in it, because sparing it would spare a
+# real token: the vendor's format is that prefix and those forty characters, and
+# no part of it is left for such a run to fail. Standard base64 and hexadecimal
+# write no underscore at all, so neither carries a candidate at however long it
+# runs.
+
+case:     a prefix inside a longer base64url run
+in:       payload=zzzzsqu_0123456789abcdef0123456789abcdef01234567zzzz
+out:      payload=zzzz«sonarqube-token»zzzz
+
+case:     a standard base64 payload, which carries no underscore
+in:       payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsqu0123456789abcdef
+out:      payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsqu0123456789abcdef
+
+# And what this pattern leaves alone. First the prefix SonarQube Cloud
+# identifies a scoped organization token by, written to the width the one
+# ruleset reading that format asks for and to the width the other kinds are
+# written to: the pattern's own file says what is missing, which is a width
+# SonarQube states. Then the shape a token took before these prefixes, forty
+# hexadecimal characters carrying nothing to be recognised by but the property
+# name beside them — the same run a commit hash is written as, which is why such
+# a token reaching a log stays in the output whole. Then a body a space has
+# broken, a run of the right length opening with no prefix, and a line of prose.
+
+case:     a scoped organization token at the width the ruleset asks for
+in:       sqco_0123456789abcdef0123456789abcdef0123456789abcdef0123456789a
+out:      sqco_0123456789abcdef0123456789abcdef0123456789abcdef0123456789a
+
+case:     a scoped organization token at the width the other kinds are written to
+in:       sqco_0123456789abcdef0123456789abcdef01234567
+out:      sqco_0123456789abcdef0123456789abcdef01234567
+
+case:     the shape a token took before a prefix was written in front of one
+in:       sonar.login=0123456789abcdef0123456789abcdef01234567
+out:      sonar.login=0123456789abcdef0123456789abcdef01234567
+
+case:     a body broken by a space
+in:       squ_0123456789abcdef 123456789abcdef01234567
+out:      squ_0123456789abcdef 123456789abcdef01234567
+
+case:     a run of the right length opening with no prefix
+in:       xxx_0123456789abcdef0123456789abcdef01234567
+out:      xxx_0123456789abcdef0123456789abcdef01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line naming the server a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="analysis finished" url=https://sonarqube.example.com/dashboard?id=my-project
+out:      time=2026-08-17T00:00:00Z level=info msg="analysis finished" url=https://sonarqube.example.com/dashboard?id=my-project
