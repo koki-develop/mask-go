@@ -82,12 +82,14 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `StripePatterns() []Pattern` | Stripe publishable API keys, restricted API keys, secret API keys, organization API keys, webhook signing secrets |
 | `SupabasePatterns() []Pattern` | Supabase personal access tokens, Supabase OAuth access tokens, Supabase publishable API keys, Supabase secret API keys |
 
-`MustRegexp` builds a pattern from a regular expression:
+`MustRegexp` builds a pattern from a regular expression, and `Regexp` the same
+for one that arrives at run time:
 
 ```go
-m := mask.New(mask.WithPatterns(
-	mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`),
-))
+p := mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`)
+// or p, err := mask.Regexp("internal-token", expr)
+
+m := mask.New(mask.WithPatterns(p))
 
 fmt.Println(m.Mask("token: INT-0123456789abcdef0123456789abcdef"))
 // token: ************************************

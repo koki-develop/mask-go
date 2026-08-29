@@ -4,18 +4,21 @@ import (
 	"regexp"
 	"regexp/syntax"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 )
 
-// MustRegexp returns a Pattern backed by expr, and panics if expr is invalid.
+// Regexp returns a Pattern backed by expr, and an error where expr is not one
+// regexp.Compile accepts. The syntax is Go's, and the error is the one
+// regexp.Compile reports, handed back as it stands.
 //
 // The whole match is redacted, unless expr contains a capture group named
 // "mask", in which case only that group is:
 //
 //	// "Authorization: Bearer abc123" -> "Authorization: Bearer ******"
-//	mask.MustRegexp("bearer-token", `Bearer (?P<mask>[\w.~+/-]+=*)`)
+//	mask.Regexp("bearer-token", `Bearer (?P<mask>[\w.~+/-]+=*)`)
 //
 // Go admits the name more than once, which is what a marker written in
 // variants asks for — one branch of an alternation apiece — and every group
@@ -46,8 +49,12 @@ import (
 // or not a match was ever written there. Write a counted repetition for a
 // pattern a stream is to mask with: INT-[0-9a-f]{32} rather than
 // INT-[0-9a-f]+.
-func MustRegexp(name, expr string) Pattern {
-	re := regexp.MustCompile(expr)
+func Regexp(name, expr string) (Pattern, error) {
+	re, err := regexp.Compile(expr)
+	if err != nil {
+		return nil, err
+	}
+
 	var mask []int
 	for i, sub := range re.SubexpNames() {
 		if sub == "mask" {
@@ -66,10 +73,10 @@ func MustRegexp(name, expr string) Pattern {
 	//
 	// Wrapping is what an expression already at the size a regexp may compile
 	// to can fail on, and nothing else: the syntax around expr is closed, so an
-	// expression MustCompile accepted stays syntactically whole inside it. Such
-	// a pattern locates what the walk alone finds, and settles nothing, since
-	// what it locates then depends on the text in front of it and a stream must
-	// not let go of any of that.
+	// expression Compile accepted stays syntactically whole inside it. Such a
+	// pattern locates what the walk alone finds, and settles nothing, since what
+	// it locates then depends on the text in front of it and a stream must not
+	// let go of any of that.
 	after, wrapped := regexp.Compile(`\A(?s:.)(?:` + expr + `)`)
 	if wrapped != nil {
 		after = nil
@@ -77,8 +84,8 @@ func MustRegexp(name, expr string) Pattern {
 
 	// regexp.Compile parses with syntax.Perl, so the tree walked here is the
 	// tree the matcher was built from. The error is dropped rather than
-	// reported because MustCompile above has already accepted expr: reaching
-	// this line at all means the parse succeeds.
+	// reported because the Compile above has already accepted expr: reaching this
+	// line at all means the parse succeeds.
 	parsed, err := syntax.Parse(expr, syntax.Perl)
 	width := regexpUnbounded
 	if err == nil && after != nil {
@@ -128,7 +135,27 @@ func MustRegexp(name, expr string) Pattern {
 		streams:     streams,
 		coalesces:   err == nil && !regexpReadsBehind(parsed),
 		probes:      streams && width != regexpUnbounded,
+	}, nil
+}
+
+// MustRegexp returns what Regexp returns for name and expr, and panics where
+// Regexp reports an error:
+//
+//	var internal = mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`)
+//
+// It is what an expression written into the source is built with, where an
+// invalid one is a bug in the program rather than something a caller could act
+// on. Regexp is what an expression that arrives at run time — out of a
+// configuration file, or off a flag — is built with.
+func MustRegexp(name, expr string) Pattern {
+	p, err := Regexp(name, expr)
+	if err != nil {
+		// The expression is in the error already, which is what regexp writes
+		// its complaint against. The name is not, and is what says which of
+		// the patterns a caller registers the invalid one is.
+		panic("mask: MustRegexp(" + strconv.Quote(name) + "): " + err.Error())
 	}
+	return p
 }
 
 type regexpPattern struct {

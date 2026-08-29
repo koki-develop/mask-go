@@ -13,8 +13,8 @@
 //
 // A Masker scans only with the patterns given to it; nothing is enabled
 // implicitly. AllBuiltinPatterns returns the built-in ones, and a custom
-// pattern comes from NewPattern, MustRegexp or any implementation of the
-// Pattern interface.
+// pattern comes from NewPattern, Regexp, MustRegexp or any implementation of
+// the Pattern interface.
 package mask
 
 import (
@@ -129,7 +129,7 @@ type locations struct {
 // one span where two values overlap would have the second dropped with the
 // first and written out as it stands, so a pattern that joins what it reports
 // leaves out of the joining anything the text in front of it decides. That is
-// what LookBehind asks of a Find, and what MustRegexp does with an expression
+// what LookBehind asks of a Find, and what Regexp does with an expression
 // carrying \b or an anchor.
 func (m *Masker) locate(src string, from int) locations {
 	var all []located

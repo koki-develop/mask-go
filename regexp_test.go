@@ -1,6 +1,8 @@
 package mask
 
 import (
+	"errors"
+	"regexp/syntax"
 	"slices"
 	"strconv"
 	"strings"
@@ -129,11 +131,56 @@ func Test_MustRegexp_name(t *testing.T) {
 
 func Test_MustRegexp_invalidExpression(t *testing.T) {
 	defer func() {
-		if recover() == nil {
-			t.Error("MustRegexp did not panic on an invalid expression")
+		r := recover()
+		if r == nil {
+			t.Fatal("MustRegexp did not panic on an invalid expression")
+		}
+		// A caller building several patterns at init reads the panic to find
+		// which of them is the invalid one, and the name is the one thing the
+		// error out of regexp does not carry: what it writes its complaint
+		// against is the expression.
+		msg, ok := r.(string)
+		if !ok || !strings.Contains(msg, `"my-pattern"`) {
+			t.Errorf("panic = %v, want a message naming my-pattern", r)
 		}
 	}()
-	MustRegexp("p", `(`)
+	MustRegexp("my-pattern", `(`)
+}
+
+// Test_Regexp holds the pattern Regexp returns for an expression that
+// compiles. Regexp is what MustRegexp is built out of, so everything the tests
+// around this one hold MustRegexp to holds Regexp as well; what is left over is
+// the pair it returns, and the other half of that pair is below.
+func Test_Regexp(t *testing.T) {
+	p, err := Regexp("my-pattern", `INT-[0-9a-f]{4}`)
+	if err != nil {
+		t.Fatalf("Regexp() error = %v, want no error", err)
+	}
+	if got := p.Name(); got != "my-pattern" {
+		t.Errorf("Name() = %q, want %q", got, "my-pattern")
+	}
+	got, _ := p.Find("token: INT-dead here")
+	if want := []Span{{Start: 7, End: 15}}; !slices.Equal(got, want) {
+		t.Errorf("Find() = %v, want %v", got, want)
+	}
+}
+
+func Test_Regexp_invalidExpression(t *testing.T) {
+	p, err := Regexp("my-pattern", `(`)
+	if err == nil {
+		t.Fatal("Regexp returned no error for an invalid expression")
+	}
+	if p != nil {
+		t.Errorf("Regexp() pattern = %v, want nil beside the error", p)
+	}
+
+	// The error regexp.Compile reports rather than one written over the top of
+	// it: a caller reading the code and the expression out of it is reading
+	// what regexp put there.
+	var serr *syntax.Error
+	if !errors.As(err, &serr) {
+		t.Errorf("Regexp() error = %T, want %T", err, serr)
+	}
 }
 
 func Test_MustRegexp_maskGroup(t *testing.T) {

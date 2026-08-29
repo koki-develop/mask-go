@@ -30,7 +30,7 @@ type Span struct {
 // whether a value stands there at all. Where that is the one character a prefix
 // may not stand behind there is no count to state; a scan reading further than
 // that character states in its own file how far, and holds it to this limit. A
-// pattern built by MustRegexp reads one rune, which is what \b, \B and ^ are
+// pattern built by Regexp reads one rune, which is what \b, \B and ^ are
 // decided by. The limit is far above either so that a Pattern written by hand
 // has room to read a keyword or an assignment in front of what it locates. A
 // Find that cannot be held to it, where a value is decided by more text in
@@ -57,7 +57,7 @@ type Pattern interface {
 	// rune in half is neither ignored nor repaired: the bytes either side of
 	// it are written back as they were found, so what is left of that rune
 	// stands beside the redaction and the output is not valid UTF-8. The
-	// built-in patterns and MustRegexp cannot report such a span — every
+	// built-in patterns and Regexp cannot report such a span — every
 	// built-in decides its ends on an ASCII alphabet, and Go's regexp
 	// matches runes — so this is a demand on a Find written by hand.
 	//

@@ -123,6 +123,20 @@ func ExampleWithPatterns() {
 	// Output: github=**************************************** internal=************************************
 }
 
+func ExampleRegexp() {
+	// An expression that arrives at run time — off a flag, or out of a
+	// configuration file — is where the error is worth having.
+	p, err := mask.Regexp("internal-token", `INT-[0-9a-f]{32}`)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	m := mask.New(mask.WithPatterns(p))
+
+	fmt.Println(m.Mask("token: INT-0123456789abcdef0123456789abcdef"))
+	// Output: token: ************************************
+}
+
 func ExampleMustRegexp() {
 	m := mask.New(mask.WithPatterns(
 		mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`),

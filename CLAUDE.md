@@ -1,10 +1,10 @@
 # mask-go
 
 A Go library that redacts credentials (API keys, access tokens) from text.
-Public surface: `Masker` (`mask.go`), `Pattern` (`pattern.go`), `MustRegexp`
-(`regexp.go`), `Redactor` (`redactor.go`), `Option` (`option.go`), `Reader` and
-`Writer` (`stream.go`), built-in patterns (`builtins.go` and the `builtin_*.go`
-beside it) and the vendor accessors (`vendors.go`).
+Public surface: `Masker` (`mask.go`), `Pattern` (`pattern.go`), `Regexp` and
+`MustRegexp` (`regexp.go`), `Redactor` (`redactor.go`), `Option` (`option.go`),
+`Reader` and `Writer` (`stream.go`), built-in patterns (`builtins.go` and the
+`builtin_*.go` beside it) and the vendor accessors (`vendors.go`).
 
 What every built-in pattern is held to is in `.claude/rules/builtin-patterns.md`.
 It loads on opening any of the files it governs — the `builtin_*.go`, the tables
@@ -28,11 +28,11 @@ package is written rather than about what it computes, read out of the syntax
 tree. `stream.go` and `stream_test.go` are the masking of text arriving a piece
 at a time, which is a `Reader` and a `Writer` over a `Masker` and belongs to
 none of the patterns. `pattern.go` is what a caller implements — `Span`,
-`LookBehind`, `Pattern` and `NewPattern` — and `regexp.go` is `MustRegexp` and
-the machinery behind it, which reads none of the rest. Adding a pattern should
-touch the registry, the vendor accessor, the property table, two new files and
-the conformance corpus — nothing else. Keep it that way rather than letting a
-shared `builtin.go` grow back.
+`LookBehind`, `Pattern` and `NewPattern` — and `regexp.go` is `Regexp`,
+`MustRegexp` and the machinery behind them, which reads none of the rest.
+Adding a pattern should touch the registry, the vendor accessor, the property
+table, two new files and the conformance corpus — nothing else. Keep it that
+way rather than letting a shared `builtin.go` grow back.
 
 `vendors.go` is the vendor accessors alone, one `<Vendor>Patterns` apiece, with
 `vendors_test.go` holding them and the registry to naming the same patterns.
