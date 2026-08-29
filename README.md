@@ -51,6 +51,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `DigitalOceanPatterns() []Pattern` | DigitalOcean personal access tokens, OAuth access tokens, OAuth refresh tokens |
 | `DockerPatterns() []Pattern` | Docker personal access tokens |
 | `DopplerPatterns() []Pattern` | Doppler CLI tokens, personal tokens, service tokens, service account tokens, service account identity tokens, SCIM tokens, audit tokens |
+| `DynatracePatterns() []Pattern` | Dynatrace tokens of every type written in the published format — access tokens, personal access tokens, account API tokens, OAuth2 refresh tokens and platform tokens among them |
 | `GitHubPatterns() []Pattern` | GitHub personal access tokens (classic and fine-grained), GitHub OAuth app access tokens, GitHub App user access tokens, GitHub App installation access tokens, GitHub App refresh tokens |
 | `GitLabPatterns() []Pattern` | GitLab personal access tokens, project access tokens, group access tokens, impersonation tokens, OAuth application secrets, deploy tokens, runner authentication tokens, CI/CD job tokens, pipeline trigger tokens, feed tokens, incoming mail tokens, GitLab agent for Kubernetes tokens, SCIM OAuth tokens, feature flags client tokens |
 | `GooglePatterns() []Pattern` | Google API keys |

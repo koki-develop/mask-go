@@ -1,0 +1,210 @@
+# What Dynatrace tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789ABCDEF, which no real
+# credential is. Both portions are written in uppercase letters and digits, so
+# the run serves for both: once and a half over for the twenty-four characters of
+# the public identifier, four times over for the sixty-four of the secret. With
+# the six character prefix and the two full stops in front, a token comes to
+# ninety-six.
+
+patterns: dynatrace-token
+
+# The prefix names the token type, and Dynatrace reads it as three characters,
+# one letter and two digits rather than as a list. dt0c01 is what its API pages
+# print, dt0s01 the token that authorizes account changes over SCIM, dt0s16 a
+# platform token; dt0s17 opens a client identifier its OAuth page prints and its
+# table of prefixes does not list, which is why the letter and the digits are
+# read as classes. They are one pattern because every kind carries a sixty-four
+# character secret the vendor says to treat like a password, so a caller with
+# reason to redact any of them has the same reason for the rest.
+
+case:     an api token in an environment assignment
+in:       DT_API_TOKEN=dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      DT_API_TOKEN=«dynatrace-token»
+
+case:     a token in the header a request carries it in
+in:       Authorization: Api-Token dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      Authorization: Api-Token «dynatrace-token»
+
+case:     an account api token
+in:       dt0s01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «dynatrace-token»
+
+case:     a platform token
+in:       dt0s16.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «dynatrace-token»
+
+case:     a prefix the published table does not list
+in:       dt0s17.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «dynatrace-token»
+
+case:     a token in the command line a request is made from
+in:       curl -H 'Authorization: Api-Token dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF' https://abc12345.live.dynatrace.com/api/v2/metrics
+out:      curl -H 'Authorization: Api-Token «dynatrace-token»' https://abc12345.live.dynatrace.com/api/v2/metrics
+
+case:     the two tokens a deployment is configured with
+in:       {"apiToken":"dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF","paasToken":"dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"}
+out:      {"apiToken":"«dynatrace-token»","paasToken":"«dynatrace-token»"}
+
+# The alphabet both portions are written in: the uppercase letters and the
+# digits, which is the class Dynatrace spells for each of them in the expression
+# it publishes. The opening is read in lowercase, which is the case every prefix
+# the vendor prints is written in, and the letter naming the type in either case,
+# which is what the same expression admits. What the alphabet leaves out is
+# everything else, so a run carrying a lowercase letter, a hyphen or a space is
+# no token.
+
+case:     a lowercase public portion
+in:       dt0c01.0123456789abcdef01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      dt0c01.0123456789abcdef01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+case:     a lowercase secret
+in:       dt0c01.0123456789ABCDEF01234567.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      dt0c01.0123456789ABCDEF01234567.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     an uppercase opening
+in:       DT0C01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      DT0C01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+case:     an uppercase letter naming the type
+in:       dt0C01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «dynatrace-token»
+
+case:     a secret carrying a hyphen
+in:       dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF-123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF-123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+case:     a secret broken by a space
+in:       dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF 123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF 123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+# The lengths either side of each count. Both are numbers Dynatrace states in
+# prose and again in the expression it publishes, and both are used as counts
+# rather than floors: a portion one character short is no token, and a secret one
+# character long is a token and one character that belongs to no credential. The
+# second of those is the price of having no boundary behind the match — a
+# boundary there would drop this token rather than trim it, and a real token
+# written against a character of the same class would come through whole.
+
+case:     a public portion of twenty-four characters and a secret of sixty-four is a token
+in:       dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «dynatrace-token»
+
+case:     a public portion of twenty-three characters is not
+in:       dt0c01.0123456789ABCDEF0123456.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      dt0c01.0123456789ABCDEF0123456.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+case:     a secret of sixty-three characters is not
+in:       dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDE
+out:      dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDE
+
+case:     a run longer than a token is a token and what follows it
+in:       dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0
+out:      «dynatrace-token»0
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       DT_API_TOKEN_dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      DT_API_TOKEN_«dynatrace-token»
+
+case:     a token after a letter
+in:       xdt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      x«dynatrace-token»
+
+case:     a token before a hyphenated word
+in:       dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF-suffix
+out:      «dynatrace-token»-suffix
+
+case:     a token at the end of a sentence
+in:       the token is dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF.
+out:      the token is «dynatrace-token».
+
+# Two tokens written together. No token begins inside another: the two letters an
+# opening starts with are lowercase and neither portion is written in lowercase
+# at all, so no position inside a token opens a candidate, and inside a prefix
+# the letter naming the type could be a d but a digit stands where the t would
+# have to. So two tokens written with nothing between them are two values and
+# both go, and an opening standing where a public portion would have to stand
+# ends the candidate in front of it and opens the token itself.
+
+case:     two tokens with nothing between them
+in:       dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEFdt0s16.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «dynatrace-token»«dynatrace-token»
+
+case:     an opening written where a public portion would stand
+in:       dt0c01.dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      dt0c01.«dynatrace-token»
+
+# The token identifier, which is the prefix and the public portion together.
+# Dynatrace states that it can be safely displayed in the UI and used for logging
+# purposes, so it is not a value and nothing here redacts one — redacting it
+# would take away the one part of a token a caller is meant to keep a log by.
+# What the pattern asks for past it is the separator and the sixty-four
+# characters of the secret.
+
+case:     a token identifier on its own
+in:       dt0c01.0123456789ABCDEF01234567
+out:      dt0c01.0123456789ABCDEF01234567
+
+case:     a token identifier in a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="token used" token=dt0c01.0123456789ABCDEF01234567
+out:      time=2026-08-17T00:00:00Z level=info msg="token used" token=dt0c01.0123456789ABCDEF01234567
+
+# And what this pattern leaves alone besides. A digest is written in lowercase
+# hexadecimal and carries no full stop, so neither it nor its uppercase form is
+# read behind the prefix. The OAuth client secret is not read either: the client
+# identifier Dynatrace prints carries an eight character public portion where a
+# token's is twenty-four, and no source of the vendor's states a length for the
+# credential built on one.
+
+case:     a sha-256 behind the prefix
+in:       dt0c01.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      dt0c01.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     an uppercase sha-256 behind the prefix
+in:       dt0c01.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      dt0c01.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+case:     an oauth client secret, whose public portion is eight characters
+in:       dt0s02.0123ABCD.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      dt0s02.0123ABCD.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+case:     the client identifier the oauth page prints
+in:       client_id=dt0s17.0123ABCD
+out:      client_id=dt0s17.0123ABCD
+
+# The token format this one replaced, which Dynatrace says remains valid and
+# publishes no shape for. There is no prefix to search for and no count to read,
+# so the two cases here carry a value with no prefix at all, standing for that
+# class rather than for anything published.
+
+case:     a value with no prefix in an environment assignment
+in:       DT_API_TOKEN=0123456789ABCDEF0123456789ABCDEF
+out:      DT_API_TOKEN=0123456789ABCDEF0123456789ABCDEF
+
+case:     a value with no prefix in the header a request carries it in
+in:       Authorization: Api-Token 0123456789ABCDEF0123456789ABCDEF
+out:      Authorization: Api-Token 0123456789ABCDEF0123456789ABCDEF
+
+# And the shapes that miss the grammar somewhere else: the separators written as
+# hyphens, an opening that is not this vendor's, and text nothing in this format
+# reaches.
+
+case:     hyphens where the separators stand
+in:       dt0c01-0123456789ABCDEF01234567-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      dt0c01-0123456789ABCDEF01234567-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+case:     a run of the right lengths opening with no prefix
+in:       xx0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      xx0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line naming the api a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://abc12345.live.dynatrace.com/api/v2/metrics
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://abc12345.live.dynatrace.com/api/v2/metrics
