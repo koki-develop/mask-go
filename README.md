@@ -26,11 +26,7 @@ fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
 ## Patterns
 
 A `Masker` scans only with the patterns it is given. `AllBuiltinPatterns()`
-returns every built-in pattern, and grows as patterns are added:
-
-```go
-m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
-```
+returns every built-in pattern, and grows as patterns are added.
 
 Each vendor also has an accessor of its own, for a caller who wants some of them
 and not all:

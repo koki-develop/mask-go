@@ -689,9 +689,9 @@ func privateKeyBase64LineEnd(src string, i int) int {
 //
 // It is declared here rather than in builtin_scan.go because this is the one
 // scan that reads it. What is shared there is what a second pattern came to
-// need, and no other built-in reads standard base64 — the two characters this
-// admits that base64url does not are exactly the two base64url exists to keep
-// out of a URL, and a credential written into one carries neither.
+// need. The two characters this admits that base64url does not are exactly the
+// two base64url exists to keep out of a URL, and a credential written into one
+// carries neither.
 func isPrivateKeyBase64Byte(c byte) bool {
 	return '0' <= c && c <= '9' ||
 		'A' <= c && c <= 'Z' ||

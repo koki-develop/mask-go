@@ -203,11 +203,6 @@ reported as itself.
   otherwise time a scan finding nothing and report it as a speedup.
   `Test_maskerMaskBenchmarks` does the same for `maskerMaskBenchmarks`.
 
-The conformance corpus needs no `patternSets` entry: the set holding one
-built-in alone is derived from `AllBuiltinPatterns` and named as the pattern
-names itself. What it does need is cases, and `conformance/CLAUDE.md` says how
-many and of what kind.
-
 ## References
 
 Every built-in scanner is checked against a reference kept beside it in

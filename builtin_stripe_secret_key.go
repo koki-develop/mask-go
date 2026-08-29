@@ -37,8 +37,7 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // other Stripe API keys, including restricted API keys. So secret is the word
 // Stripe reaches for whenever it means these three and not the fourth, and it
 // is the word this pattern is named for. StripePublishableKey
-// (builtin_stripe_publishable_key.go) is the fourth, and the two files together
-// read what one pattern read before them.
+// (builtin_stripe_publishable_key.go) is the fourth.
 //
 // The organization key cannot be sorted into the other two and is not tried:
 // Stripe says an organization key is the same as an account level restricted or

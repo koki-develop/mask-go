@@ -70,18 +70,17 @@ func RubyGemsAPIKey() Pattern { return rubyGemsAPIKey }
 // more than the generator writes.
 //
 // The alphabet is read as lowercase alone, which is where this scan parts
-// company with the Grafana one beside it — the only other hexadecimal run any
-// pattern here reads, and one read in either case. The two decisions are not in
-// tension, because what they are decisions about is not the same. There the
-// eight characters are a checksum standing behind a prefix and a thirty-two
-// character secret that have already decided the match, so widening the class
-// draws in nothing further and guards against one call to encoding/hex having
-// changed. Here the class is the whole of the body, and the guard it would be
-// bought against does not exist: were RubyGems.org to stop calling
-// SecureRandom.hex, the count would move with the alphabet and a scan reading
-// forty-eight of a wider class would locate nothing either. So the wider class
-// costs over-matching and buys no case that a narrower one loses, and every
-// published rule reads the narrower one.
+// company with the Grafana one beside it — a hexadecimal run read in either
+// case. The two decisions are not in tension, because what they are decisions
+// about is not the same. There the eight characters are a checksum standing
+// behind a prefix and a thirty-two character secret that have already decided
+// the match, so widening the class draws in nothing further and guards against
+// one call to encoding/hex having changed. Here the class is the whole of the
+// body, and the guard it would be bought against does not exist: were
+// RubyGems.org to stop calling SecureRandom.hex, the count would move with the
+// alphabet and a scan reading forty-eight of a wider class would locate nothing
+// either. So the wider class costs over-matching and buys no case that a
+// narrower one loses, and every published rule reads the narrower one.
 //
 // The count is therefore read exactly rather than as a floor. A scan reads a
 // floor instead for one reason: its vendor states no length, so a count would

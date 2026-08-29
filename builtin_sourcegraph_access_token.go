@@ -153,7 +153,6 @@ func SourcegraphAccessToken() Pattern { return sourcegraphAccessToken }
 // apart, and declining the run would decline every token Sourcegraph ever
 // issued. Test_SourcegraphAccessToken_aDigestBehindThePrefix pins all of it.
 //
-
 // The prefix sgph_ is not read. Sourcegraph's parser accepts it in place of
 // sgp_, but it appears in no format the secret formats page documents and
 // nothing in the repository mints one: it is a prefix the vendor will strip

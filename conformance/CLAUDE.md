@@ -114,8 +114,7 @@ any other way is read and its cases run — nothing about the suite would fail.
   every pattern added to that set would inherit it. The set holding it alone
   needs no writing: it is derived from `AllBuiltinPatterns` in `patterns_test.go`
   and named as the pattern names itself, as `builtinSets`
-  (`properties_test.go`) already was. What a new built-in owes `patterns_test.go`
-  is nothing at all; what it owes this directory is the cases.
+  (`properties_test.go`) already was.
 - A case name that claims something about the whole registry is counted rather
   than trusted: `TestCorpus_everyKindCaseHoldsEveryBuiltin` holds the case named
   "every kind of credential this library knows" to naming every built-in, since
@@ -140,5 +139,4 @@ any other way is read and its cases run — nothing about the suite would fail.
   twice gives what masking once gave puts a promise back that the library does
   not make.
 - The fuzz corpus under `testdata/fuzz` is keyed on the name of its target, so
-  never rename `FuzzMask`, `FuzzMask_customPatterns` or `FuzzText` without
-  moving the directory beside it.
+  never rename one without moving the directory beside it.

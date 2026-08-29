@@ -123,8 +123,6 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   of it. The two tests divide that between them: the first follows every prefix
   with prose, so its inputs end inside no candidate, and the second ends the
   input inside one.
-- Adding a built-in pattern is `.claude/rules/builtin-patterns.md` and
-  `conformance/CLAUDE.md`.
 
 ## Style
 
@@ -140,9 +138,7 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
 - The comment above a function of this package opens with the name of that
   function, and `Test_docComments_nameWhatTheyDocument` (`source_test.go`)
   holds it there. Of this package alone: the check reads the directory it
-  stands in, so `conformance` is not held to it, where the one comment that
-  would fail — the one on `decodeText` — opens on what the notation is and
-  names itself in the paragraph that follows.
+  stands in, so `conformance` is not held to it.
 
   staticcheck states the same rule and reaches only exported declarations
   outside `_test.go`, which leaves out every fuzz target, every reference and
