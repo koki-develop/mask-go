@@ -235,6 +235,19 @@ var builtinPatterns = []struct {
 		benchmarks: digitalOceanTokenFindBenchmarks,
 	},
 	{
+		name:    "docker-personal-access-token",
+		pattern: DockerPersonalAccessToken,
+		ref:     referenceDockerPersonalAccessTokenFind,
+		samples: []string{
+			"DOCKER_TOKEN=dckr_pat_0123456789abcdef0123456789a",
+			"dckr_pat_0123456789abcdef-123456789_",
+			"dckr_pat_dckr_pat_0123456789abcdef0123456789a",
+			"dckr_pat_0123456789abcdef0123456789adckr_pat_0123456789abcdef0123456789a",
+		},
+		anchors:    []string{"dckr_pat_0123456789abcdef"},
+		benchmarks: dockerPersonalAccessTokenFindBenchmarks,
+	},
+	{
 		name:    "doppler-auth-token",
 		pattern: DopplerAuthToken,
 		ref:     referenceDopplerAuthTokenFind,
