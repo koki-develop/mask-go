@@ -491,6 +491,21 @@ var builtinPatterns = []struct {
 		benchmarks: slackTokenFindBenchmarks,
 	},
 	{
+		name:    "sourcegraph-access-token",
+		pattern: SourcegraphAccessToken,
+		ref:     referenceSourcegraphAccessTokenFind,
+		samples: []string{
+			"SRC_ACCESS_TOKEN=sgp_0123456789abcdef0123456789abcdef01234567",
+			"sgp_0123456789abcdef_0123456789abcdef0123456789abcdef01234567",
+			"sgp_local_0123456789abcdef0123456789abcdef01234567",
+			"sgp_0123456789ABCDEF0123456789ABCDEF01234567",
+			"sgp_sgp_0123456789abcdef0123456789abcdef01234567",
+			"sgp_0123456789abcdef0123456789abcdef01234567sgp_local_0123456789abcdef0123456789abcdef01234567",
+		},
+		anchors:    []string{"sgp_0123", "sgp_local_0123", "sgp_0123456789abcdef_0123"},
+		benchmarks: sourcegraphAccessTokenFindBenchmarks,
+	},
+	{
 		name:    "stripe-publishable-key",
 		pattern: StripePublishableKey,
 		ref:     referenceStripePublishableKeyFind,

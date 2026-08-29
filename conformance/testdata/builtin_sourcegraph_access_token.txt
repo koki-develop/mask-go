@@ -1,0 +1,261 @@
+# What Sourcegraph access tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: a value is forty hexadecimal characters, so the run twice over
+# and eight more is one, and the instance identifier a licensed instance writes
+# is the run once. With the prefix in front that makes a token forty-four
+# characters, fifty where it carries the word a development instance writes and
+# sixty-one where it carries a hexadecimal identifier. Where a case turns on the
+# alphabet, it carries the same run spelled uppercase or carried on past f
+# instead.
+
+patterns: sourcegraph-access-token
+
+# The three forms Sourcegraph's own secret formats page gives an expression for,
+# in the places a token is written. They are one credential to a caller: the
+# instance identifier says which instance issued a token rather than what the
+# token may do, and the vendor's own parser strips whichever prefix and
+# identifier it is handed and looks the same forty characters up.
+
+case:     a token in an environment assignment
+in:       SRC_ACCESS_TOKEN=sgp_0123456789abcdef0123456789abcdef01234567
+out:      SRC_ACCESS_TOKEN=«sourcegraph-access-token»
+
+case:     a token carrying the identifier a licensed instance writes
+in:       SRC_ACCESS_TOKEN=sgp_0123456789abcdef_0123456789abcdef0123456789abcdef01234567
+out:      SRC_ACCESS_TOKEN=«sourcegraph-access-token»
+
+case:     a token carrying the identifier a development instance writes
+in:       SRC_ACCESS_TOKEN=sgp_local_0123456789abcdef0123456789abcdef01234567
+out:      SRC_ACCESS_TOKEN=«sourcegraph-access-token»
+
+case:     a token in the header the graphql api reads it from
+in:       Authorization: token sgp_0123456789abcdef0123456789abcdef01234567
+out:      Authorization: token «sourcegraph-access-token»
+
+case:     a token in the configuration file the cli reads
+in:       {"endpoint":"https://sourcegraph.example.com","accessToken":"sgp_0123456789abcdef0123456789abcdef01234567"}
+out:      {"endpoint":"https://sourcegraph.example.com","accessToken":"«sourcegraph-access-token»"}
+
+case:     a token on a curl command line
+in:       curl -H "Authorization: token sgp_0123456789abcdef0123456789abcdef01234567" https://sourcegraph.example.com/.api/graphql
+out:      curl -H "Authorization: token «sourcegraph-access-token»" https://sourcegraph.example.com/.api/graphql
+
+case:     a token on a command line the cli reads its environment from
+in:       SRC_ENDPOINT=https://sourcegraph.example.com SRC_ACCESS_TOKEN=sgp_local_0123456789abcdef0123456789abcdef01234567 src search foo
+out:      SRC_ENDPOINT=https://sourcegraph.example.com SRC_ACCESS_TOKEN=«sourcegraph-access-token» src search foo
+
+# The alphabet an identifier and a value are written in: hexadecimal in either
+# case. Sourcegraph writes the expression on its secret formats page and the
+# parser its API authenticates with both as [a-fA-F0-9], so an uppercased token
+# is one the vendor accepts, and the generator writes lowercase — which makes an
+# uppercase value a string nothing mints and everything authenticates. A
+# character outside the alphabet is no part of either.
+
+case:     an uppercase value
+in:       sgp_0123456789ABCDEF0123456789ABCDEF01234567
+out:      «sourcegraph-access-token»
+
+case:     one uppercase character in a value
+in:       sgp_0123456789abcdef0123456789abcdef0123456F
+out:      «sourcegraph-access-token»
+
+case:     an uppercase identifier
+in:       sgp_0123456789ABCDEF_0123456789abcdef0123456789abcdef01234567
+out:      «sourcegraph-access-token»
+
+case:     a value carrying letters past f
+in:       sgp_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      sgp_0123456789abcdefghijklmnopqrstuvwxyz0123
+
+case:     a value carrying a hyphen
+in:       sgp_0123456789abcdef-123456789abcdef01234567
+out:      sgp_0123456789abcdef-123456789abcdef01234567
+
+# The lengths either side of forty. The count is the vendor's own and is read as
+# a count rather than a floor: thirty-nine characters are not a value, and
+# forty-one are a value and one character that belongs to no credential. The
+# second of those is the price of having no boundary behind the match — a
+# boundary there would drop this token rather than trim it, and a real token
+# written against a digit would come through whole.
+
+case:     a value of forty characters is a token
+in:       sgp_0123456789abcdef0123456789abcdef01234567
+out:      «sourcegraph-access-token»
+
+case:     a value of thirty-nine characters is not
+in:       sgp_0123456789abcdef0123456789abcdef0123456
+out:      sgp_0123456789abcdef0123456789abcdef0123456
+
+case:     an alphabet run longer than a token is a token and what follows it
+in:       sgp_0123456789abcdef0123456789abcdef012345678
+out:      «sourcegraph-access-token»8
+
+# Which of the three forms a candidate is read as, which is settled by what
+# stands behind the prefix and never by trying one reading after another. The
+# word opens with a letter no hexadecimal identifier and no value is written
+# with; the character sixteen along divides the other two, being the separator
+# where a token carries an identifier and a seventeenth character of the value
+# where it does not. An identifier of seventeen characters is neither, and a
+# value with a separator behind it is the form carrying no identifier.
+
+case:     a separator seventeen characters along is neither reading
+in:       sgp_0123456789abcdef0_0123456789abcdef0123456789abcdef01234567
+out:      sgp_0123456789abcdef0_0123456789abcdef0123456789abcdef01234567
+
+case:     an identifier a character short
+in:       sgp_0123456789abcde_0123456789abcdef0123456789abcdef01234567
+out:      sgp_0123456789abcde_0123456789abcdef0123456789abcdef01234567
+
+case:     a value with a separator behind it is the form carrying no identifier
+in:       sgp_0123456789abcdef0123456789abcdef01234567_0123456789abcdef0123456789abcdef01234567
+out:      «sourcegraph-access-token»_0123456789abcdef0123456789abcdef01234567
+
+case:     the word of the local identifier written uppercase
+in:       sgp_LOCAL_0123456789abcdef0123456789abcdef01234567
+out:      sgp_LOCAL_0123456789abcdef0123456789abcdef01234567
+
+case:     the word of the local identifier with no separator behind it
+in:       sgp_local0123456789abcdef0123456789abcdef01234567
+out:      sgp_local0123456789abcdef0123456789abcdef01234567
+
+# An identifier Sourcegraph never writes. It states that the identifier is not
+# verified when a token is used, so a token whose identifier was edited still
+# authenticates — and what is read here is the grammar the vendor gives its own
+# scanners, which names two identifiers and no others. This is what that costs.
+
+case:     an identifier of neither shape
+in:       SRC_ACCESS_TOKEN=sgp_instance_0123456789abcdef0123456789abcdef01234567
+out:      SRC_ACCESS_TOKEN=sgp_instance_0123456789abcdef0123456789abcdef01234567
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       SRC_ACCESS_TOKEN_sgp_0123456789abcdef0123456789abcdef01234567
+out:      SRC_ACCESS_TOKEN_«sourcegraph-access-token»
+
+case:     a token after a letter
+in:       xsgp_0123456789abcdef0123456789abcdef01234567
+out:      x«sourcegraph-access-token»
+
+case:     a word written against a token
+in:       sgp_0123456789abcdef0123456789abcdef01234567suffix
+out:      «sourcegraph-access-token»suffix
+
+case:     a token at the end of a sentence
+in:       the token is sgp_0123456789abcdef0123456789abcdef01234567.
+out:      the token is «sourcegraph-access-token».
+
+# Tokens written together. No token can begin inside another here: everything a
+# span covers past the prefix is a hexadecimal character, a separator or a
+# letter of the word local, and the s the prefix opens with is none of those and
+# neither of the two characters behind it in the prefix. So tokens written with
+# nothing between them are separate values and all of them go, and a prefix
+# standing where an identifier would have to hold it ends the candidate in front
+# of it and opens the token itself.
+
+case:     two tokens with nothing between them
+in:       sgp_0123456789abcdef0123456789abcdef01234567sgp_0123456789abcdef0123456789abcdef01234567
+out:      «sourcegraph-access-token»«sourcegraph-access-token»
+
+case:     a token of each form written together
+in:       sgp_0123456789abcdef0123456789abcdef01234567sgp_local_0123456789abcdef0123456789abcdef01234567sgp_0123456789abcdef_0123456789abcdef0123456789abcdef01234567
+out:      «sourcegraph-access-token»«sourcegraph-access-token»«sourcegraph-access-token»
+
+case:     a prefix written in front of a token
+in:       sgp_sgp_0123456789abcdef0123456789abcdef01234567
+out:      sgp_«sourcegraph-access-token»
+
+# What this pattern redacts that nobody issued. Forty hexadecimal characters
+# behind the prefix are the vendor's format exactly, and a SHA-1 is forty of
+# them, so the prefix written straight in front of one is a token character for
+# character and the whole of it goes. A SHA-256 is longer and is redacted for
+# forty-four characters with the rest left in the text. Sparing these would mean
+# declining every token Sourcegraph ever issued, since there is nothing left in
+# the text to tell the two apart.
+
+case:     the prefix in front of a sha-1
+in:       sgp_0123456789abcdef0123456789abcdef01234567
+out:      «sourcegraph-access-token»
+
+case:     the prefix in front of a sha-256
+in:       sgp_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «sourcegraph-access-token»89abcdef0123456789abcdef
+
+case:     the prefix in front of a digest in a path
+in:       assets/sgp_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.png
+out:      assets/«sourcegraph-access-token»89abcdef0123456789abcdef.png
+
+case:     the prefix in front of an md5
+in:       sgp_0123456789abcdef0123456789abcdef
+out:      sgp_0123456789abcdef0123456789abcdef
+
+case:     a uuid behind the prefix
+in:       sgp_01234567-89ab-cdef-0123-456789abcdef
+out:      sgp_01234567-89ab-cdef-0123-456789abcdef
+
+# The version of this token that carries no prefix. Sourcegraph documents it,
+# still authenticates it, and it is forty hexadecimal characters with nothing in
+# front of them — a git commit name, a SHA-1 of anything, the digest half of a
+# lock file line. Reading it would take meaning out of text rather than a
+# secret, so the prefix is required and these pass through whole.
+
+case:     a bare value
+in:       0123456789abcdef0123456789abcdef01234567
+out:      0123456789abcdef0123456789abcdef01234567
+
+case:     a commit written into a log line
+in:       checked out 0123456789abcdef0123456789abcdef01234567
+out:      checked out 0123456789abcdef0123456789abcdef01234567
+
+case:     a value assigned to the name the cli reads a token from
+in:       SRC_ACCESS_TOKEN=0123456789abcdef0123456789abcdef01234567
+out:      SRC_ACCESS_TOKEN=0123456789abcdef0123456789abcdef01234567
+
+# And what else this pattern leaves alone: the prefix, which is read in the case
+# Sourcegraph writes it and with every character of it, then a run of the right
+# length with no prefix in front of it and the prefix the vendor's parser
+# accepts but nothing the vendor runs writes.
+
+case:     an uppercase prefix
+in:       SGP_0123456789abcdef0123456789abcdef01234567
+out:      SGP_0123456789abcdef0123456789abcdef01234567
+
+case:     the prefix without the underscore closing it
+in:       sgp0123456789abcdef0123456789abcdef012345678
+out:      sgp0123456789abcdef0123456789abcdef012345678
+
+case:     a hyphen where the prefix closes
+in:       sgp-0123456789abcdef0123456789abcdef01234567
+out:      sgp-0123456789abcdef0123456789abcdef01234567
+
+case:     the prefix with an h behind it
+in:       sgph_0123456789abcdef0123456789abcdef01234567
+out:      sgph_0123456789abcdef0123456789abcdef01234567
+
+case:     a run of the right length opening with no prefix
+in:       xxxx0123456789abcdef0123456789abcdef01234567
+out:      xxxx0123456789abcdef0123456789abcdef01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And the text a token is written among, which this pattern has nothing to say
+# about. The word Sourcegraph's own name, host names and paths are spelled with
+# opens with the letters of the prefix and runs on past the underscore closing
+# it, which is what turns each of them away.
+
+case:     a log line naming the instance a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="fetching repository" host=sourcegraph.example.com repo_name=github.com/acme/website
+out:      time=2026-08-17T00:00:00Z level=info msg="fetching repository" host=sourcegraph.example.com repo_name=github.com/acme/website
+
+case:     the command line a search is run from
+in:       src search -json 'repo:acme/website mask'
+out:      src search -json 'repo:acme/website mask'
+
+case:     the endpoint a token authenticates against
+in:       SRC_ENDPOINT=https://sourcegraph.example.com
+out:      SRC_ENDPOINT=https://sourcegraph.example.com
