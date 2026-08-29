@@ -1,0 +1,154 @@
+# What CircleCI API tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: the middle is twenty-two letters and digits, so the run with
+# 012345 behind it is one, and the tail is forty hexadecimal characters, so the
+# run twice over with 01234567 behind it is one. A prefix in front and the
+# separator between bring a token to seventy.
+
+patterns: circleci-api-token
+
+# The two prefixes CircleCI writes a token with. They are one pattern rather
+# than two because the string behind them is the same and neither of the two
+# credentials is published where the other authenticates — the scope a project
+# token carries is not written in it, so a caller told CCIPRJ_ from CCIPAT_ is
+# still not told whether that token could write.
+
+case:     a personal api token in an environment assignment
+in:       CIRCLE_TOKEN=CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      CIRCLE_TOKEN=«circleci-api-token»
+
+case:     a project api token on its own
+in:       CCIPRJ_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      «circleci-api-token»
+
+case:     a token in the header the api authenticates with
+in:       Circle-Token: CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      Circle-Token: «circleci-api-token»
+
+case:     a token on the curl command line the documentation writes
+in:       curl -H "Circle-Token: CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567" https://circleci.com/api/v2/me
+out:      curl -H "Circle-Token: «circleci-api-token»" https://circleci.com/api/v2/me
+
+case:     a project token in the query a status badge carries
+in:       https://circleci.com/gh/acme/web.svg?style=svg&circle-token=CCIPRJ_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      https://circleci.com/gh/acme/web.svg?style=svg&circle-token=«circleci-api-token»
+
+case:     both kinds on one line
+in:       CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567 CCIPRJ_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      «circleci-api-token» «circleci-api-token»
+
+# The alphabets either side of the separator. The middle is the letters of both
+# cases with the digits, which is wider than the base58 CircleCI names and
+# admits the O, the I and the l that base58 leaves out; the tail is hexadecimal
+# of either case. Neither admits anything else, the hyphen and a second
+# underscore among them.
+
+case:     a middle carrying the letters base58 leaves out
+in:       CCIPAT_0123456789abcdefOIl012_0123456789abcdef0123456789abcdef01234567
+out:      «circleci-api-token»
+
+case:     an uppercase tail
+in:       CCIPAT_0123456789abcdef012345_0123456789ABCDEF0123456789ABCDEF01234567
+out:      «circleci-api-token»
+
+case:     a middle carrying an underscore
+in:       CCIPAT_0123456789abcdef_12345_0123456789abcdef0123456789abcdef01234567
+out:      CCIPAT_0123456789abcdef_12345_0123456789abcdef0123456789abcdef01234567
+
+case:     a middle carrying a hyphen
+in:       CCIPAT_0123456789abcdef-12345_0123456789abcdef0123456789abcdef01234567
+out:      CCIPAT_0123456789abcdef-12345_0123456789abcdef0123456789abcdef01234567
+
+case:     a tail carrying a hyphen
+in:       CCIPAT_0123456789abcdef012345_0123456789abcdef-123456789abcdef01234567
+out:      CCIPAT_0123456789abcdef012345_0123456789abcdef-123456789abcdef01234567
+
+case:     a tail carrying a letter outside hexadecimal
+in:       CCIPAT_0123456789abcdef012345_0123456789abcdeg0123456789abcdef01234567
+out:      CCIPAT_0123456789abcdef012345_0123456789abcdeg0123456789abcdef01234567
+
+# The lengths either side of each count. Both counts are read exactly rather
+# than as floors: a middle of twenty-one characters is no token, and a tail of
+# forty-two is a token and two characters that belong to no credential. The
+# second of those is the price of having no boundary behind the match — a
+# boundary there would drop this token rather than trim it, and a real token
+# written against a digit would come through whole.
+
+case:     a middle of twenty-two characters and a tail of forty is a token
+in:       CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      «circleci-api-token»
+
+case:     a middle of twenty-one characters is not
+in:       CCIPAT_0123456789abcdef01234_0123456789abcdef0123456789abcdef01234567
+out:      CCIPAT_0123456789abcdef01234_0123456789abcdef0123456789abcdef01234567
+
+case:     a tail of thirty-nine characters is not
+in:       CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef0123456
+out:      CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef0123456
+
+case:     a hexadecimal run longer than a tail is a token and what follows it
+in:       CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef0123456789
+out:      «circleci-api-token»89
+
+# What opens a token and what does not. The prefixes are read in the one case
+# CircleCI writes them, and the kind is read as one of the two the vendor
+# issues.
+
+case:     a lowercase prefix
+in:       ccipat_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      ccipat_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+
+case:     a kind the vendor writes no token with
+in:       CCIORG_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      CCIORG_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+
+case:     the prefix without its closing underscore
+in:       CCIPAT0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      CCIPAT0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+
+# The token CircleCI issued before it put a prefix on one, which is forty
+# hexadecimal characters and nothing else. The changelog announcing the prefixes
+# left those working, and this pattern locates none of them: the value says
+# nothing about itself, so what would locate it is the name it is assigned to,
+# which is a grammar this pattern's name does not cover.
+
+case:     the older format in an environment assignment
+in:       CIRCLE_TOKEN=0123456789abcdef0123456789abcdef01234567
+out:      CIRCLE_TOKEN=0123456789abcdef0123456789abcdef01234567
+
+case:     the body of a token without the prefix in front of it
+in:       0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+
+# The environment a job runs with, which is the text this scan most often runs
+# over. Every variable of it is written CIRCLE_ something, and CIRCLE_ is seven
+# characters closing on an underscore with a C six characters in front — a
+# prefix's shape exactly — so the scan reads a prefix back at each of them and
+# finds none.
+
+case:     the environment a job runs with
+in:       CIRCLE_PROJECT_REPONAME=web CIRCLE_BRANCH=main CIRCLE_BUILD_NUM=4213
+out:      CIRCLE_PROJECT_REPONAME=web CIRCLE_BRANCH=main CIRCLE_BUILD_NUM=4213
+
+case:     a log line naming the api a token is sent to
+in:       time=2026-08-29T00:00:00Z level=info msg="calling api" url=https://circleci.com/api/v2/me
+out:      time=2026-08-29T00:00:00Z level=info msg="calling api" url=https://circleci.com/api/v2/me
+
+# Where a token may be written against a word character, and where one may begin
+# inside another. There is no boundary on either side of a match, so a token
+# keeps its span whatever it abuts; and a tail may close on the C a prefix opens
+# with, so the last two characters of one can begin the token written after it.
+# The two spans overlap there and are redacted as one.
+
+case:     a token written straight after an underscore
+in:       CIRCLE_TOKEN_CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      CIRCLE_TOKEN_«circleci-api-token»
+
+case:     a word written against a token
+in:       CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567suffix
+out:      «circleci-api-token»suffix
+
+case:     a token beginning at the last character of another
+in:       CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef0123456CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567
+out:      «circleci-api-token»

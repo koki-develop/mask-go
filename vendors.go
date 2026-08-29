@@ -37,6 +37,12 @@ func AnthropicPatterns() []Pattern { return []Pattern{anthropicAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func AWSPatterns() []Pattern { return []Pattern{awsAccessKeyID, awsSecretAccessKey} }
 
+// CircleCIPatterns returns every built-in pattern that locates a credential
+// CircleCI issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func CircleCIPatterns() []Pattern { return []Pattern{circleCIAPIToken} }
+
 // CloudflarePatterns returns every built-in pattern that locates a credential
 // Cloudflare issues.
 //

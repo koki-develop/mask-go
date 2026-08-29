@@ -117,6 +117,21 @@ var builtinPatterns = []struct {
 		benchmarks: awsSecretAccessKeyFindBenchmarks,
 	},
 	{
+		name:    "circleci-api-token",
+		pattern: CircleCIAPIToken,
+		ref:     referenceCircleCIAPITokenFind,
+		samples: []string{
+			"CIRCLE_TOKEN=CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567",
+			"CCIPRJ_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567",
+			"CCIPAT_0123456789abcdef012345_0123456789ABCDEF0123456789ABCDEF01234567",
+			"CCIPAT_0123456789abcdefCCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567",
+			"CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef012345CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567",
+			"CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567CCIPRJ_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567",
+		},
+		anchors:    []string{"CCIPAT_0123456789abcdef012345_0123", "CCIPRJ_0123456789abcdef012345_0123"},
+		benchmarks: circleCIAPITokenFindBenchmarks,
+	},
+	{
 		name:    "cloudflare-api-key",
 		pattern: CloudflareAPIKey,
 		ref:     referenceCloudflareAPIKeyFind,
