@@ -52,6 +52,7 @@ var builtins = []Pattern{
 	linearAPIKey,
 	notionAPIToken,
 	npmAccessToken,
+	onePasswordServiceAccountToken,
 	openAIAPIKey,
 	openRouterAPIKey,
 	planetScaleToken,

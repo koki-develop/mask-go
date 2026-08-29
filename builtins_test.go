@@ -406,6 +406,19 @@ var builtinPatterns = []struct {
 		benchmarks: npmAccessTokenFindBenchmarks,
 	},
 	{
+		name:    "1password-service-account-token",
+		pattern: OnePasswordServiceAccountToken,
+		ref:     referenceOnePasswordServiceAccountTokenFind,
+		samples: []string{
+			"OP_SERVICE_ACCOUNT_TOKEN=ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc",
+			"ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab_0123456789abcdef0123456789abcdef012",
+			"ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc",
+			"ops_eyJops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc",
+		},
+		anchors:    []string{"ops_eyJ0123456789abcdef"},
+		benchmarks: onePasswordServiceAccountTokenFindBenchmarks,
+	},
+	{
 		name:    "openai-api-key",
 		pattern: OpenAIAPIKey,
 		ref:     referenceOpenAIAPIKeyFind,

@@ -61,6 +61,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `LinearPatterns() []Pattern` | Linear personal API keys |
 | `NotionPatterns() []Pattern` | Notion internal integration tokens, Notion OAuth access tokens, Notion personal access tokens |
 | `NPMPatterns() []Pattern` | npm granular access tokens, npm classic tokens (read-only, automation, publish) |
+| `OnePasswordPatterns() []Pattern` | 1Password service account tokens |
 | `OpenAIPatterns() []Pattern` | OpenAI project API keys, service account keys, Admin API keys, user API keys |
 | `OpenRouterPatterns() []Pattern` | OpenRouter API keys |
 | `PlanetScalePatterns() []Pattern` | PlanetScale service tokens, OAuth access tokens, OAuth refresh tokens |
