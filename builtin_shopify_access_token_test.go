@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 )
 
 // The Shopify access token pattern: what it locates and what it leaves alone,
@@ -486,16 +485,7 @@ func Test_ShopifyAccessToken_scanIsLinear(t *testing.T) {
 		"a hexadecimal run with no prefix": strings.Repeat("a", 2000000),
 	}
 
-	m := New(WithPatterns(ShopifyAccessToken()))
-	for name, src := range sources {
-		t.Run(name, func(t *testing.T) {
-			start := time.Now()
-			_ = m.Mask(src)
-			if d := time.Since(start); d > 2*time.Second {
-				t.Errorf("Mask() of %d bytes took %v", len(src), d)
-			}
-		})
-	}
+	checkScanIsLinear(t, ShopifyAccessToken(), sources)
 }
 
 // Test_shopifyCredentialOpening holds what both Shopify scans need of the

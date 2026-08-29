@@ -98,11 +98,9 @@ var supabasePublishableKey = NewPattern("supabase-publishable-key", func(src str
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a key or not. A
-		// body may spell the prefix, so a key can begin inside another and a
-		// scan stepping over what it declined would step over the one behind
-		// it. Stepping one byte past the anchor is what leaves the next
-		// candidate one byte past this one, which builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a key or not. A body
+		// may spell the prefix, so a key can begin inside another and a scan stepping
+		// over what it declined would step over the one behind it.
 		offset = anchor + 1
 
 		if anchor < supabasePublishableKeyAnchorIndex {

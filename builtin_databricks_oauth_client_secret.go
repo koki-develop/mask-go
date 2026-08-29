@@ -178,12 +178,10 @@ var databricksOAuthClientSecret = NewPattern("databricks-oauth-client-secret", f
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a secret or not,
-		// for the reason the rationale above gives: a body closing on d can
-		// open a secret at the last character of the one it stands in, and a
-		// scan stepping over what it took would leave that one whole. Stepping
-		// one byte past the anchor is what leaves the next candidate one byte
-		// past this one, which builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a secret or not, for
+		// the reason the rationale above gives: a body closing on d can open a secret
+		// at the last character of the one it stands in, and a scan stepping over
+		// what it took would leave that one whole.
 		offset = anchor + 1
 
 		if anchor < databricksOAuthClientSecretAnchorIndex {

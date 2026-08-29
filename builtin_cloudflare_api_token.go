@@ -225,12 +225,10 @@ var cloudflareAPIToken = NewPattern("cloudflare-api-token", func(src string) ([]
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not, for
-		// the reason the rationale above gives: a checksum is hexadecimal, so it
-		// carries the opening of a prefix and a token can begin as far as three
-		// characters before the one in front of it ends. Stepping one byte past the
-		// anchor is what leaves the next candidate one byte past this one, which
-		// builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a token or not, for the
+		// reason the rationale above gives: a checksum is hexadecimal, so it carries
+		// the opening of a prefix and a token can begin as far as three characters
+		// before the one in front of it ends.
 		offset = anchor + 1
 
 		if anchor < cloudflareAPITokenAnchorIndex {

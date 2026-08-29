@@ -212,11 +212,9 @@ var supabaseAccessToken = NewPattern("supabase-access-token", func(src string) (
 		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a token or not. No
-		// token is written inside another, so for one that did the byte buys
-		// nothing; for one that did not it is what keeps sbp_sbp_ from stepping over
-		// the prefix standing four characters in. Stepping one byte past the anchor
-		// is what leaves the next candidate one byte past this one, which
-		// builtin_scan.go sets out.
+		// token is written inside another, so for one that did the byte buys nothing;
+		// for one that did not it is what keeps sbp_sbp_ from stepping over the
+		// prefix standing four characters in.
 		offset = anchor + 1
 
 		if anchor < supabaseAccessTokenAnchorIndex {

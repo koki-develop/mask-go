@@ -216,15 +216,12 @@ var gitLabToken = NewPattern("gitlab-token", func(src string) ([]Span, int) {
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not.
-		// The body alphabet holds the letters the prefixes are written in, so a
-		// token can begin inside the span of the one before it, as the one
-		// twenty-two characters into
-		// glpat-0123456789abcdefglpat-0123456789abcdefghij does, and consuming
-		// a match would step over that token and leave it in the output whole.
-		// The two spans then overlap, which a Masker resolves into one. Stepping one
-		// byte past the anchor is what leaves the next candidate of every
-		// length one byte past this one, which builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a token or not. The
+		// body alphabet holds the letters the prefixes are written in, so a token can
+		// begin inside the span of the one before it, as the one twenty-two
+		// characters into glpat-0123456789abcdefglpat-0123456789abcdefghij does, and
+		// consuming a match would step over that token and leave it in the output
+		// whole. The two spans then overlap, which a Masker resolves into one.
 		offset = anchor + 1
 
 		kind := gitLabTokenKindEndingAt(src, anchor)

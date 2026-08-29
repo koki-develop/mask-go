@@ -714,14 +714,10 @@ func Test_privateKey_scanIsLinear(t *testing.T) {
 	// crafted here is the input that would find the claim wrong — candidates
 	// that are not values, sharing the runs a candidate walks.
 	//
-	// Two mebibytes and two seconds for the reason that test gives. The number
-	// needs no second one under the race detector as that test's does: what is
-	// crafted here costs a scan a fraction of what the dearest of the samples
-	// repeated costs, so it stands well inside the limit either way.
-	const (
-		size  = 2 << 20
-		limit = 2 * time.Second
-	)
+	// Two mebibytes for the reason that test gives, and scanIsLinearLimit for
+	// how long that may take: what is crafted here costs a scan a fraction of
+	// what the dearest of the samples repeated costs.
+	const size = 2 << 20
 
 	units := map[string]string{
 		// Boundaries crowded against one another, each opening a candidate
@@ -766,7 +762,7 @@ func Test_privateKey_scanIsLinear(t *testing.T) {
 			src := strings.Repeat(unit, size/len(unit)+1)
 			start := time.Now()
 			_ = m.Mask(src)
-			if d := time.Since(start); d > limit {
+			if d := time.Since(start); d > scanIsLinearLimit {
 				t.Errorf("Mask() of %d bytes of %q took %v", len(src), unit, d)
 			}
 		})

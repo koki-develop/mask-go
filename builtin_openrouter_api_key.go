@@ -191,9 +191,10 @@ var openRouterAPIKey = NewPattern("openrouter-api-key", func(src string) ([]Span
 			anchor += i + 1
 		}
 
-		// A candidate that is not one steps one byte past the anchor, which
-		// leaves the next candidate one byte past where this one would have
-		// begun.
+		// A candidate that is not one takes the default step, which is all
+		// that is owed here: nothing has been read back from the anchor yet,
+		// so there is no width to step over and no claim about the grammar to
+		// rest a longer step on.
 		offset = anchor + 1
 
 		if anchor < openRouterAPIKeyAnchorIndex {

@@ -176,13 +176,11 @@ var postmanAPIKey = NewPattern("postman-api-key", func(src string) ([]Span, int)
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a key or not,
-		// for the reason the rationale above gives: a body may close on the
-		// letters the prefix opens with, so a key can begin at any of the last
-		// four characters of the one in front of it, and a scan stepping over
-		// what it took would leave that one whole. Stepping one byte past the
-		// anchor is what leaves the next candidate one byte past this one,
-		// which builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a key or not, for the
+		// reason the rationale above gives: a body may close on the letters the
+		// prefix opens with, so a key can begin at any of the last four characters of
+		// the one in front of it, and a scan stepping over what it took would leave
+		// that one whole.
 		offset = anchor + 1
 
 		if anchor < postmanAPIKeyAnchorIndex {

@@ -220,12 +220,10 @@ var cratesIOToken = NewPattern("crates-io-token", func(src string) ([]Span, int)
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not,
-		// for the reason the rationale above gives: the body is written in an
-		// alphabet holding every character of the opening, so a token can begin
-		// inside the body of the one before it. Stepping one byte past the
-		// anchor is what leaves the next candidate one byte past this one,
-		// which builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a token or not, for the
+		// reason the rationale above gives: the body is written in an alphabet
+		// holding every character of the opening, so a token can begin inside the
+		// body of the one before it.
 		offset = anchor + 1
 
 		// The guard stands although the index below is zero, so that the byte

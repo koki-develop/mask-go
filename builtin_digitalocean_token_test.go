@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 )
 
 // The DigitalOcean token pattern: what it locates and what it leaves alone,
@@ -548,16 +547,7 @@ func Test_DigitalOceanToken_scanIsLinear(t *testing.T) {
 		"a hexadecimal run with no prefix": strings.Repeat("a", 2000000),
 	}
 
-	m := New(WithPatterns(DigitalOceanToken()))
-	for name, src := range sources {
-		t.Run(name, func(t *testing.T) {
-			start := time.Now()
-			_ = m.Mask(src)
-			if d := time.Since(start); d > 2*time.Second {
-				t.Errorf("Mask() of %d bytes took %v", len(src), d)
-			}
-		})
-	}
+	checkScanIsLinear(t, DigitalOceanToken(), sources)
 }
 
 func Test_digitalOceanTokenOpening(t *testing.T) {

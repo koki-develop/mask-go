@@ -75,17 +75,14 @@ var githubToken = NewPattern("github-token", func(src string) ([]Span, int) {
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate becomes a token or
-		// not: only the starting point is settled by what follows, never the
-		// stretch of text it reaches over, and a token can begin anywhere
-		// inside that stretch. Consuming a match would step over such a token
-		// and leave it in the output whole — GitHub documents no length, so
-		// the body is read as far as its alphabet runs and swallows the
-		// prefix of a token written straight after it, ghp_ and gho_ with
-		// nothing between them among them. The two spans then overlap, which
-		// a Masker resolves into one. Stepping one byte past the anchor is
-		// what leaves the next candidate of either form one byte past this
-		// one, which builtin_scan.go sets out.
+		// The scan resumes here whether this candidate becomes a token or not: only
+		// the starting point is settled by what follows, never the stretch of text it
+		// reaches over, and a token can begin anywhere inside that stretch. Consuming
+		// a match would step over such a token and leave it in the output whole —
+		// GitHub documents no length, so the body is read as far as its alphabet runs
+		// and swallows the prefix of a token written straight after it, ghp_ and gho_
+		// with nothing between them among them. The two spans then overlap, which a
+		// Masker resolves into one.
 		offset = anchor + 1
 
 		// The fine grained form first, whose prefix carries the anchor at

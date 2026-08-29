@@ -190,8 +190,7 @@ var linearAPIKey = NewPattern("linear-api-key", func(src string) ([]Span, int) {
 		// The scan resumes here whether this candidate became a key or not, for the
 		// reason the rationale above gives: a body may close with the three letters
 		// the prefix opens with, so a key can begin three characters before the end
-		// of the one before it. Stepping one byte past the anchor is what leaves the
-		// next candidate one byte past this one, which builtin_scan.go sets out.
+		// of the one before it.
 		offset = anchor + 1
 
 		if anchor < linearAPIKeyAnchorIndex {

@@ -172,11 +172,9 @@ var sendGridAPIKey = NewPattern("sendgrid-api-key", func(src string) ([]Span, in
 		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a key or not, for the
-		// reason the rationale above gives: the prefix is two characters a segment
-		// is written with and the separator a key already carries, so a key can
-		// begin two characters before the end of the one before it. Stepping one
-		// byte past the anchor is what leaves the next candidate one byte past this
-		// one, which builtin_scan.go sets out.
+		// reason the rationale above gives: the prefix is two characters a segment is
+		// written with and the separator a key already carries, so a key can begin
+		// two characters before the end of the one before it.
 		offset = anchor + 1
 
 		if anchor < sendGridAPIKeyAnchorIndex {

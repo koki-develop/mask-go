@@ -222,13 +222,10 @@ var herokuAPIToken = NewPattern("heroku-api-token", func(src string) ([]Span, in
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not,
-		// for the reason the rationale above gives: every character of the
-		// prefix is written in the body's alphabet, so a token can begin
-		// anywhere inside another and a scan stepping over what it took would
-		// leave that one whole. Stepping one byte past the anchor is what
-		// leaves the next candidate one byte past this one, which
-		// builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a token or not, for the
+		// reason the rationale above gives: every character of the prefix is written
+		// in the body's alphabet, so a token can begin anywhere inside another and a
+		// scan stepping over what it took would leave that one whole.
 		offset = anchor + 1
 
 		if anchor < herokuAPITokenAnchorIndex {

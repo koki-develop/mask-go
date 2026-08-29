@@ -4,7 +4,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 )
 
 // The 1Password service account token pattern: what it locates and what it
@@ -530,16 +529,7 @@ func Test_OnePasswordServiceAccountToken_scanIsLinear(t *testing.T) {
 		"a body that runs the length of the line": "ops_eyJ" + strings.Repeat("a", 1800000),
 	}
 
-	m := New(WithPatterns(OnePasswordServiceAccountToken()))
-	for name, src := range sources {
-		t.Run(name, func(t *testing.T) {
-			start := time.Now()
-			_ = m.Mask(src)
-			if d := time.Since(start); d > 2*time.Second {
-				t.Errorf("Mask() of %d bytes took %v", len(src), d)
-			}
-		})
-	}
+	checkScanIsLinear(t, OnePasswordServiceAccountToken(), sources)
 }
 
 // referenceOnePasswordServiceAccountTokenFind is the statement of what a

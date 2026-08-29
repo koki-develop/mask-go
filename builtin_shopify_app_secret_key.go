@@ -102,8 +102,6 @@ var shopifyAppSecretKey = NewPattern("shopify-app-secret-key", func(src string) 
 		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a key or not.
-		// Stepping one byte past the anchor is what leaves the next candidate
-		// one byte past this one, which builtin_scan.go sets out.
 		offset = anchor + 1
 
 		if anchor < shopifyCredentialAnchorIndex {

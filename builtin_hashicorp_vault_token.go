@@ -323,12 +323,10 @@ var hashiCorpVaultToken = NewPattern("hashicorp-vault-token", func(src string) (
 		}
 		at := offset + i
 
-		// The scan resumes here whether this candidate became a token or not, for
-		// the reason the rationale above gives: a body may close with the three
+		// The scan resumes here whether this candidate became a token or not, for the
+		// reason the rationale above gives: a body may close with the three
 		// characters a prefix opens with, so a token can begin three characters
-		// before the end of the one before it. Stepping one byte past the separator
-		// is what leaves the next candidate one byte past this one, which
-		// builtin_scan.go sets out.
+		// before the end of the one before it.
 		offset = at + 1
 
 		body := at + 1

@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 )
 
 // The OpenAI API key pattern: what it locates and what it leaves alone, written
@@ -492,16 +491,7 @@ func Test_OpenAIAPIKey_scanIsLinear(t *testing.T) {
 		"a key at every candidate": strings.Repeat("sk-T3BlbkFJ", 100000),
 	}
 
-	m := New(WithPatterns(OpenAIAPIKey()))
-	for name, src := range sources {
-		t.Run(name, func(t *testing.T) {
-			start := time.Now()
-			_ = m.Mask(src)
-			if d := time.Since(start); d > 2*time.Second {
-				t.Errorf("Mask() of %d bytes took %v", len(src), d)
-			}
-		})
-	}
+	checkScanIsLinear(t, OpenAIAPIKey(), sources)
 }
 
 // referenceOpenAIAPIKey is the expression the scan in

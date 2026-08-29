@@ -123,10 +123,9 @@ var awsAccessKeyID = NewPattern("aws-access-key-id", func(src string) ([]Span, i
 		// The scan resumes here whether this candidate became a key or not. The two
 		// prefixes overlap one another: ASIAKIA0123456789ABCDEF holds an AKIA three
 		// characters into an ASIA candidate, so a key can begin inside the span of
-		// the key before it, and consuming a match would step over that key and
-		// leave it in the output whole. The two spans then overlap, which a Masker
-		// resolves into one. Stepping one byte past the anchor is what leaves the
-		// next candidate one byte past this one, which builtin_scan.go sets out.
+		// the key before it, and consuming a match would step over that key and leave
+		// it in the output whole. The two spans then overlap, which a Masker resolves
+		// into one.
 		offset = anchor + 1
 
 		if anchor < awsAccessKeyIDAnchorIndex {

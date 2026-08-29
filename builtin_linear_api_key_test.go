@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 )
 
 // The Linear API key pattern: what it locates and what it leaves alone, written
@@ -637,16 +636,7 @@ func Test_LinearAPIKey_scanIsLinear(t *testing.T) {
 		"the letters of the prefix with no anchor": strings.Repeat("linapi", 300000),
 	}
 
-	m := New(WithPatterns(LinearAPIKey()))
-	for name, src := range sources {
-		t.Run(name, func(t *testing.T) {
-			start := time.Now()
-			_ = m.Mask(src)
-			if d := time.Since(start); d > 2*time.Second {
-				t.Errorf("Mask() of %d bytes took %v", len(src), d)
-			}
-		})
-	}
+	checkScanIsLinear(t, LinearAPIKey(), sources)
 }
 
 // referenceLinearAPIKey is the expression the scan in

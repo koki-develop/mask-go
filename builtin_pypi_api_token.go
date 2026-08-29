@@ -189,12 +189,10 @@ var pypiAPIToken = NewPattern("pypi-api-token", func(src string) ([]Span, int) {
 		}
 		at := offset + i
 
-		// The scan resumes here whether this candidate became a token or not, for
-		// the reason the rationale above gives: every character of the anchor
-		// belongs to the alphabet a body is written in, so a token can begin inside
-		// the body of the one before it. Stepping one byte past where the anchor
-		// byte stood is what leaves the next candidate one byte past this one, which
-		// builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a token or not, for the
+		// reason the rationale above gives: every character of the anchor belongs to
+		// the alphabet a body is written in, so a token can begin inside the body of
+		// the one before it.
 		offset = at + 1
 
 		if at < pypiAPITokenAnchorIndex {

@@ -76,10 +76,8 @@ var ageSecretKey = NewPattern("age-secret-key", func(src string) ([]Span, int) {
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a key or not,
-		// which is the default step builtin_scan.go sets out: one byte past
-		// the start of the candidate, so that a candidate opening inside this
-		// one is reached rather than stepped over.
+		// The scan resumes here whether this candidate became a key or not, which is
+		// the default step builtin_scan.go sets out.
 		offset = anchor + 1
 
 		if anchor < ageSecretKeyAnchorIndex {

@@ -132,17 +132,14 @@ var jsonWebToken = NewPattern("jwt", func(src string) ([]Span, int) {
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate becomes a token or
-		// not: only the starting point is settled by what follows, never the
-		// stretch of text it reaches over, and a token can begin anywhere
-		// inside that stretch. Consuming a match would step over such a
-		// token and leave it in the output whole — the signature of a signed
-		// token is a run of base64url characters, so a second token written
-		// straight after the first has its header swallowed by that run and
-		// begins inside the match. The two spans then overlap, which a Masker
-		// resolves into one. Stepping one byte past the anchor is
-		// what leaves the next candidate one byte past this one, which
-		// builtin_scan.go sets out.
+		// The scan resumes here whether this candidate becomes a token or not: only
+		// the starting point is settled by what follows, never the stretch of text it
+		// reaches over, and a token can begin anywhere inside that stretch. Consuming
+		// a match would step over such a token and leave it in the output whole — the
+		// signature of a signed token is a run of base64url characters, so a second
+		// token written straight after the first has its header swallowed by that run
+		// and begins inside the match. The two spans then overlap, which a Masker
+		// resolves into one.
 		offset = anchor + 1
 
 		if anchor < jwtHeaderAnchorIndex {

@@ -167,12 +167,10 @@ var npmAccessToken = NewPattern("npm-access-token", func(src string) ([]Span, in
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not, for
-		// the reason the rationale above gives: a body may close with the three
-		// letters the prefix opens with, so a token can begin three characters
-		// before the end of the one before it. Stepping one byte past the anchor is
-		// what leaves the next candidate one byte past this one, which
-		// builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a token or not, for the
+		// reason the rationale above gives: a body may close with the three letters
+		// the prefix opens with, so a token can begin three characters before the end
+		// of the one before it.
 		offset = anchor + 1
 
 		if anchor < npmAccessTokenAnchorIndex {

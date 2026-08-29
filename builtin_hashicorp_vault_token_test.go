@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 )
 
 // The HashiCorp Vault token pattern: what it locates and what it leaves alone,
@@ -767,16 +766,7 @@ func Test_HashiCorpVaultToken_scanIsLinear(t *testing.T) {
 		"a separator that opens no prefix": strings.Repeat("ab.", 700000),
 	}
 
-	m := New(WithPatterns(HashiCorpVaultToken()))
-	for name, src := range sources {
-		t.Run(name, func(t *testing.T) {
-			start := time.Now()
-			_ = m.Mask(src)
-			if d := time.Since(start); d > 2*time.Second {
-				t.Errorf("Mask() of %d bytes took %v", len(src), d)
-			}
-		})
-	}
+	checkScanIsLinear(t, HashiCorpVaultToken(), sources)
 }
 
 // referenceHashiCorpVaultToken is the expression the scan in

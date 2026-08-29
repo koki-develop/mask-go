@@ -185,12 +185,10 @@ var sentryAuthToken = NewPattern("sentry-auth-token", func(src string) ([]Span, 
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not, for
-		// the reason the rationale above gives: the alphabet an organization token's
+		// The scan resumes here whether this candidate became a token or not, for the
+		// reason the rationale above gives: the alphabet an organization token's
 		// segments are written in holds the letters of the opening, so a token can
-		// begin inside the one before it. Stepping one byte past the anchor is what
-		// leaves the next candidate one byte past this one, which builtin_scan.go
-		// sets out.
+		// begin inside the one before it.
 		offset = anchor + 1
 
 		if anchor < sentryAuthTokenAnchorIndex {

@@ -176,8 +176,7 @@ var cloudflareAPIKey = NewPattern("cloudflare-api-key", func(src string) ([]Span
 		// The scan resumes here whether this candidate became a key or not, for the
 		// reason the rationale above gives: a checksum closing on cf carries the
 		// opening of the prefix, so a key can begin one or two characters before the
-		// one in front of it ends. Stepping one byte past the anchor is what leaves
-		// the next candidate one byte past this one, which builtin_scan.go sets out.
+		// one in front of it ends.
 		offset = anchor + 1
 
 		if anchor < cloudflareAPIKeyAnchorIndex {

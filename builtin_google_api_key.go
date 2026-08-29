@@ -131,12 +131,9 @@ var googleAPIKey = NewPattern("google-api-key", func(src string) ([]Span, int) {
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a key or not, for
-		// the reason the rationale above gives: the prefix is written in the
-		// alphabet a body is, so a key can begin inside the body of the one
-		// before it. Stepping one byte past the anchor is
-		// what leaves the next candidate one byte past this one, which
-		// builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a key or not, for the
+		// reason the rationale above gives: the prefix is written in the alphabet a
+		// body is, so a key can begin inside the body of the one before it.
 		offset = anchor + 1
 
 		if anchor < googleAPIKeyAnchorIndex {

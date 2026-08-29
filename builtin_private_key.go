@@ -263,10 +263,8 @@ var privateKey = NewPattern("private-key", func(src string) ([]Span, int) {
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a block or not,
-		// which builtin_scan.go sets out: the search moving on by one byte
-		// from the anchor is what leaves the next candidate one byte past the
-		// start of this one.
+		// The scan resumes here whether this candidate became a block or not, which
+		// builtin_scan.go sets out.
 		offset = anchor + 1
 
 		if anchor < privateKeyAnchorIndex {

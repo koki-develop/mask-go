@@ -279,12 +279,16 @@ How far it advances, and what from, is the scan's own to decide and to justify
 in its own file:
 
 - A byte past the start of the candidate is the default, and needs no argument.
-- Anything else — a byte past the anchor rather than the candidate, or the whole
-  width of a prefix — is an optimisation resting on a claim about the grammar,
-  and the file makes the claim, names the test that drives it, and says why the
-  default would not do. A pattern whose values provably cannot nest is held to
-  that by a test of its own naming the claim, as
-  `Test_RubyGemsAPIKey_noKeyBeginsInsideAnother` does.
+  A byte past the anchor is that same step reached from where the search stops
+  rather than from where the candidate begins, which `builtin_scan.go` argues
+  once: a scan taking it need say no more than that it resumes there, with
+  whatever its own grammar makes worth saying about why consuming would not
+  do.
+- Anything else — the whole width of a prefix, or a resumption at a body — is an
+  optimisation resting on a claim about the grammar, and the file makes the
+  claim, names the test that drives it, and says why the default would not do. A
+  pattern whose values provably cannot nest is held to that by a test of its own
+  naming the claim, as `Test_RubyGemsAPIKey_noKeyBeginsInsideAnother` does.
 
 The cost of advancing rather than consuming is that a value nested in another —
 a JWT payload that is itself a header — is located too; the spans overlap and
@@ -381,6 +385,14 @@ has for a reason its file gives:
   length without remembering where the last one ended. A pattern resting on it
   is held to it by a test naming the character the guarantee rests on, as
   `Test_npmAccessTokenPrefix_runsDoNotOverlap` does.
+
+A `Test_<Pattern>_scanIsLinear` is the input crafted against one scan and
+nothing else, and it keeps its own name and its own sources. One handing over
+finished text shares its body through `checkScanIsLinear` (`builtins_test.go`),
+the way the targets above share `fuzzAgainstReference`; one whose inputs are
+built rather than written out drives them itself, as
+`Test_privateKey_scanIsLinear` does with a unit repeated to a length. Either
+way, `scanIsLinearLimit` is how long a scan may take over such an input.
 
 Compare benchmarks before and after touching any scan — that scan's cases under
 `BenchmarkBuiltins` as well as `BenchmarkMasker_Mask`.

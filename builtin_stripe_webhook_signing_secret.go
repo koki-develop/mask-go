@@ -208,12 +208,10 @@ var stripeWebhookSigningSecret = NewPattern("stripe-webhook-signing-secret", fun
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a secret or not,
-		// for the reason the rationale above gives: a body may close with the five
-		// letters the prefix opens with, so a secret can begin five characters
-		// before the end of the one before it. Stepping one byte past the anchor is
-		// what leaves the next candidate one byte past this one, which
-		// builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a secret or not, for
+		// the reason the rationale above gives: a body may close with the five
+		// letters the prefix opens with, so a secret can begin five characters before
+		// the end of the one before it.
 		offset = anchor + 1
 
 		if anchor < stripeWebhookSigningSecretAnchorIndex {

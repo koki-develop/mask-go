@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 )
 
 // The OpenRouter API key pattern: what it locates and what it leaves alone,
@@ -441,16 +440,7 @@ func Test_OpenRouterAPIKey_scanIsLinear(t *testing.T) {
 		"a hexadecimal run with no prefix": strings.Repeat("a", 2000000),
 	}
 
-	m := New(WithPatterns(OpenRouterAPIKey()))
-	for name, src := range sources {
-		t.Run(name, func(t *testing.T) {
-			start := time.Now()
-			_ = m.Mask(src)
-			if d := time.Since(start); d > 2*time.Second {
-				t.Errorf("Mask() of %d bytes took %v", len(src), d)
-			}
-		})
-	}
+	checkScanIsLinear(t, OpenRouterAPIKey(), sources)
 }
 
 func Test_openRouterAPIKeyPrefix(t *testing.T) {

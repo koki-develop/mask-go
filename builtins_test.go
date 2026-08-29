@@ -1125,6 +1125,39 @@ func Test_builtins_scanIsLinear(t *testing.T) {
 	}
 }
 
+// scanIsLinearLimit is how long a scan may take over an input crafted against
+// it.
+//
+// Those inputs run to a mebibyte or two apiece, which a linear scan walks in
+// tens of milliseconds and a quadratic one cannot finish. It needs no second
+// value under the race detector as the limit above does, because the room
+// either side of it is wider: the detector costs a scan about six times, and
+// six times the dearest of these inputs is still well inside it.
+const scanIsLinearLimit = 2 * time.Second
+
+// checkScanIsLinear drives p over each of the sources, a subtest apiece, and
+// holds it to scanIsLinearLimit.
+//
+// A per-pattern linearity test handing over finished text shares this body and
+// keeps its own name and its own sources, the way the fuzz targets share
+// fuzzAgainstReference: what is crafted against a scan is what such a test is,
+// and it stays in that scan's own file. One whose inputs are built rather than
+// written out drives them itself, against the same limit.
+func checkScanIsLinear(t *testing.T, p Pattern, sources map[string]string) {
+	t.Helper()
+
+	m := New(WithPatterns(p))
+	for name, src := range sources {
+		t.Run(name, func(t *testing.T) {
+			start := time.Now()
+			_ = m.Mask(src)
+			if d := time.Since(start); d > scanIsLinearLimit {
+				t.Errorf("Mask() of %d bytes took %v", len(src), d)
+			}
+		})
+	}
+}
+
 func Test_builtins_retainSettles(t *testing.T) {
 	// What every built-in owes Pattern.Find about the offset it reports: the
 	// values in front of it are the values the whole text holds there. A scan

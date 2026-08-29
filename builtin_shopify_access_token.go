@@ -209,8 +209,6 @@ var shopifyAccessToken = NewPattern("shopify-access-token", func(src string) ([]
 		anchor := offset + i
 
 		// The scan resumes here whether this candidate became a token or not.
-		// Stepping one byte past the anchor is what leaves the next candidate
-		// one byte past this one, which builtin_scan.go sets out.
 		offset = anchor + 1
 
 		if anchor < shopifyCredentialAnchorIndex {

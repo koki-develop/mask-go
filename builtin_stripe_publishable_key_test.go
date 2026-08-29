@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 )
 
 // The Stripe publishable key pattern: what it locates and what it leaves alone,
@@ -711,16 +710,7 @@ func Test_StripePublishableKey_scanIsLinear(t *testing.T) {
 		"a run that runs the length of the line": "pk_" + strings.Repeat("a", 2000000),
 	}
 
-	m := New(WithPatterns(StripePublishableKey()))
-	for name, src := range sources {
-		t.Run(name, func(t *testing.T) {
-			start := time.Now()
-			_ = m.Mask(src)
-			if d := time.Since(start); d > 2*time.Second {
-				t.Errorf("Mask() of %d bytes took %v", len(src), d)
-			}
-		})
-	}
+	checkScanIsLinear(t, StripePublishableKey(), sources)
 }
 
 // referenceStripePublishableKeyFind locates keys the plain way: every position

@@ -194,10 +194,8 @@ var circleCIAPIToken = NewPattern("circleci-api-token", func(src string) ([]Span
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not,
-		// which is the default step and needs no claim about the grammar to
-		// rest on. Stepping one byte past the anchor is what leaves the next
-		// candidate one byte past this one, which builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a token or not, which
+		// is the default step and needs no claim about the grammar to rest on.
 		offset = anchor + 1
 
 		if anchor < circleCIAPITokenAnchorIndex {

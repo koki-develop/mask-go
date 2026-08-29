@@ -232,15 +232,12 @@ var slackToken = NewPattern("slack-token", func(src string) ([]Span, int) {
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not.
-		// A body is read as far as its alphabet runs and that alphabet holds
-		// the prefixes, so a body swallows the opening of a token written
-		// straight after it — xoxb-xoxb-... is a token beginning inside the
-		// span of the one before it — and consuming a match would step over
-		// that token and leave it in the output whole. The two spans then
-		// overlap, which a Masker resolves into one. Stepping one byte past the
-		// separator is what leaves the next candidate of every length one byte
-		// past this one, which builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a token or not. A body
+		// is read as far as its alphabet runs and that alphabet holds the prefixes,
+		// so a body swallows the opening of a token written straight after it —
+		// xoxb-xoxb-... is a token beginning inside the span of the one before it —
+		// and consuming a match would step over that token and leave it in the output
+		// whole. The two spans then overlap, which a Masker resolves into one.
 		offset = anchor + 1
 
 		// Every prefix closing at this separator opens a candidate of its own,

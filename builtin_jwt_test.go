@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 )
 
 // The JWT pattern: what it locates and what it leaves alone, written out case
@@ -373,16 +372,7 @@ func Test_JWT_scanIsLinear(t *testing.T) {
 		"crafted headers that look closed": strings.Repeat("eyJ", 200000) + "aad9.a.b",
 	}
 
-	m := New(WithPatterns(JWT()))
-	for name, src := range sources {
-		t.Run(name, func(t *testing.T) {
-			start := time.Now()
-			_ = m.Mask(src)
-			if d := time.Since(start); d > 2*time.Second {
-				t.Errorf("Mask() of %d bytes took %v", len(src), d)
-			}
-		})
-	}
+	checkScanIsLinear(t, JWT(), sources)
 }
 
 func Test_headerDecoder_decode(t *testing.T) {

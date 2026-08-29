@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 )
 
 // The Stripe webhook signing secret pattern: what it locates and what it leaves
@@ -559,16 +558,7 @@ func Test_StripeWebhookSigningSecret_scanIsLinear(t *testing.T) {
 		"the letters of the prefix with no anchor": strings.Repeat("whsec", 360000),
 	}
 
-	m := New(WithPatterns(StripeWebhookSigningSecret()))
-	for name, src := range sources {
-		t.Run(name, func(t *testing.T) {
-			start := time.Now()
-			_ = m.Mask(src)
-			if d := time.Since(start); d > 2*time.Second {
-				t.Errorf("Mask() of %d bytes took %v", len(src), d)
-			}
-		})
-	}
+	checkScanIsLinear(t, StripeWebhookSigningSecret(), sources)
 }
 
 // referenceStripeWebhookSigningSecret is the expression the scan in

@@ -205,13 +205,11 @@ var airtablePersonalAccessToken = NewPattern("airtable-personal-access-token", f
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a token or not.
-		// No token can be written inside another, which the rationale above
-		// argues, so what this is for is the candidate that failed: patpat and
-		// an identifier carries a whole token at its second prefix, and
-		// resuming past the length this candidate hoped for would step over it.
-		// Stepping one byte past the anchor is what leaves the next candidate
-		// one byte past this one, which builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a token or not. No
+		// token can be written inside another, which the rationale above argues, so
+		// what this is for is the candidate that failed: patpat and an identifier
+		// carries a whole token at its second prefix, and resuming past the length
+		// this candidate hoped for would step over it.
 		offset = anchor + 1
 
 		if anchor < airtablePersonalAccessTokenAnchorIndex {

@@ -220,14 +220,11 @@ var rubyGemsAPIKey = NewPattern("rubygems-api-key", func(src string) ([]Span, in
 		}
 		anchor := offset + i
 
-		// The scan resumes here whether this candidate became a key or not.
-		// No key can be written inside another, which the rationale above
-		// argues, so what this is for is the candidate that failed:
-		// rubygems_rubygems_ and a body carries a whole key at its second
-		// prefix, and resuming past the length this candidate hoped for would
-		// step over it. Stepping one byte past the anchor is
-		// what leaves the next candidate one byte past this one, which
-		// builtin_scan.go sets out.
+		// The scan resumes here whether this candidate became a key or not. No key
+		// can be written inside another, which the rationale above argues, so what
+		// this is for is the candidate that failed: rubygems_rubygems_ and a body
+		// carries a whole key at its second prefix, and resuming past the length this
+		// candidate hoped for would step over it.
 		offset = anchor + 1
 
 		if anchor < rubyGemsAPIKeyAnchorIndex {
