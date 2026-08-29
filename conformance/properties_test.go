@@ -66,9 +66,12 @@ func checkMasking(t testing.TB, patterns []mask.Pattern, src string) {
 // they are there to check. A caller building one and handing it everything is
 // also what TestProperties_maskerIsReusable holds a Masker to.
 //
-// One is used by the goroutine that built it and by no other: the redactors
-// read the call in progress off it, and two texts marked at once would be two
-// calls with one place to put them.
+// One masks one text at a time, and never two at once: the redactors read the
+// call in progress off it, and two texts marked together would be two calls
+// with one place to put them. A property below builds one in the subtest a
+// pattern set gets, and drives it from there and from the subtests that
+// subtest runs in turn — which are subtests it waits for one after another,
+// and which adding t.Parallel to would be the two calls this cannot have.
 type masking struct {
 	known map[mask.Pattern]bool
 

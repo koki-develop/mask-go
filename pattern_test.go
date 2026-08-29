@@ -479,9 +479,11 @@ func fastestPair(a, b func()) (time.Duration, time.Duration) {
 		b()
 		bestB.take(time.Since(start))
 
-		// Two rounds are the fewest a reading can be agreed on in, so three are
-		// the fewest that can leave a round out as the burst it may have been.
-		if round < 2 || time.Now().Before(floor) {
+		// Two rounds are the fewest a reading can be agreed on in, and the
+		// agreement is what says the readings are the cost of the work, so
+		// there is nothing for a third mandatory round to add: where the two
+		// agree it decides, and where they do not the sampling goes on anyway.
+		if round < 1 || time.Now().Before(floor) {
 			continue
 		}
 		if bestA.settled() && bestB.settled() || !time.Now().Before(ceiling) {
@@ -491,7 +493,14 @@ func fastestPair(a, b func()) (time.Duration, time.Duration) {
 }
 
 // reading is the least of the runs of one function, and how many of those runs
-// came within an eighth of it.
+// came within a quarter of it.
+//
+// A quarter rather than a hair: what a second run near the least says is that
+// the least was not one round with the machine to itself, and a run that lost a
+// quarter of its time to a burst says that as well as an exact repeat would. A
+// band tight enough to turn away the ordinary spread of a run under the race
+// detector, which allocates on the paths this measures, is one no round ever
+// meets and one that leaves the least reading corroborated by nothing.
 type reading struct {
 	best time.Duration
 	near int
@@ -505,7 +514,7 @@ func (r *reading) take(d time.Duration) {
 		r.best, r.near = d, 1
 		return
 	}
-	if d <= r.best+r.best/8 {
+	if d <= r.best+r.best/4 {
 		r.near++
 	}
 }
@@ -514,22 +523,28 @@ func (r *reading) take(d time.Duration) {
 func (r *reading) settled() bool { return r.near >= 2 }
 
 // fastestPairFloor is how long a pair is sampled for before its least readings
-// are looked at, three rounds apiece being the fewest whatever that comes to.
+// are looked at, two rounds apiece being the fewest whatever that comes to.
 //
 // A reading of a few milliseconds is one a burst of whatever else the machine
 // is running can double, so a handful of them are a handful of chances to be
 // unlucky. A reading of a hundred is long enough that a burst is a fraction of
 // it rather than a multiple, and sampling it more often buys accuracy already
 // there. The floor tells the two apart without either being written down: it
-// leaves a pair under the race detector at three rounds and gives the same pair
-// without it as many as it takes.
+// leaves a pair under the race detector at the two rounds the agreement needs
+// and gives the same pair without it as many as it takes.
 const fastestPairFloor = 250 * time.Millisecond
 
 // fastestPairCeiling is how long a pair is sampled for at the outside, where
 // the machine is busy enough that no round of it is ever agreed on. What is
 // asserted then is the readings as they stand: a bound reporting nothing on a
 // loaded machine is a bound reporting nothing on the runner it was written for.
-const fastestPairCeiling = 8 * time.Second
+//
+// It stands above the rounds the agreement needs and their untimed run in
+// front, which under the race detector — the dearest a round here gets — is
+// most of what a pair costs at all. A ceiling those alone reach is one that
+// decides every run on its own, leaving the agreement above to decide none of
+// them and a reading nothing corroborated to be asserted on an idle machine.
+const fastestPairCeiling = 12 * time.Second
 
 func Test_MustRegexp_findIsLinear(t *testing.T) {
 	// What Find does after matching is settle an offset by walking the spans,

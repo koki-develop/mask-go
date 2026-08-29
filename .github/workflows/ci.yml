@@ -13,10 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The suite is run twice, and the two runs are jobs rather than two steps of
-  # one. Neither reads what the other leaves, so as steps the shorter waits on
-  # the longer for nothing, and together they are the longest thing on this
-  # workflow.
+  # The suite is run twice, under the race detector and without it, and neither
+  # run is a step of the other's job. Neither reads what the other leaves, so as
+  # steps the shorter waits on the longer for nothing, and together they are the
+  # longest thing on this workflow.
   test:
     timeout-minutes: 10
     permissions:
@@ -40,8 +40,7 @@ jobs:
   # and a runner has four cores: the wall clock is then what the work comes to
   # divided by four, which one job reaches only where every test in it is a
   # parallel one. A package apiece divides it where the division needs nothing
-  # of the tests, and the two packages here are within a third of each other in
-  # what they cost.
+  # of the tests.
   #
   # What is listed is what runs, so a package added to the module is run under
   # the detector without this file being touched — which is the whole of why the
