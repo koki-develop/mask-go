@@ -32,6 +32,7 @@ var builtins = []Pattern{
 	anthropicAPIKey,
 	awsAccessKeyID,
 	awsSecretAccessKey,
+	circleCIAPIToken,
 	cloudflareAPIKey,
 	cloudflareAPIToken,
 	cratesIOToken,
