@@ -2,6 +2,7 @@ package mask
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"slices"
 	"strings"
@@ -167,8 +168,13 @@ func TestWriter_matchesMask(t *testing.T) {
 	// comes out is what Mask returns for the text uncut. Everything else about
 	// a stream — how much it holds, when it rescans, where it discards — is
 	// only ever a way of getting this right.
+	// A subtest a redactor, run in parallel with the rest. Each builds a Masker
+	// of its own and shares nothing with the others but the inputs, which
+	// nothing here writes to.
 	for name, r := range streamRedactors() {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			m := New(WithPatterns(AllBuiltinPatterns()...), WithRedactor(r))
 			for _, src := range streamInputs() {
 				want := m.Mask(src)
@@ -189,16 +195,27 @@ func TestReader_matchesMask(t *testing.T) {
 	// but it is what says a partial read leaves the rest where the next one
 	// finds it.
 	m := New(WithPatterns(AllBuiltinPatterns()...), WithRedactor(Fixed("[REDACTED]")))
+
+	// A subtest an input, run in parallel with the rest: the cuts of one input
+	// are as many as it has bytes, and the three read sizes are not the same
+	// work as one another — a byte at a time is where most of this is spent, so
+	// dividing by read size would leave one subtest carrying the test. A Masker
+	// is safe for concurrent use and the one here is shared as a caller shares
+	// it.
 	for _, src := range streamInputs() {
-		want := m.Mask(src)
-		for _, pieces := range splits(src) {
-			for _, into := range []int{1, 7, 4096} {
-				if got := throughReader(t, m, pieces, into); got != want {
-					t.Errorf("reading %q in %d piece(s) into %d bytes gave %q, Mask gives %q",
-						src, len(pieces), into, got, want)
+		t.Run(fmt.Sprintf("%q", src), func(t *testing.T) {
+			t.Parallel()
+
+			want := m.Mask(src)
+			for _, pieces := range splits(src) {
+				for _, into := range []int{1, 7, 4096} {
+					if got := throughReader(t, m, pieces, into); got != want {
+						t.Errorf("reading %q in %d piece(s) into %d bytes gave %q, Mask gives %q",
+							src, len(pieces), into, got, want)
+					}
 				}
 			}
-		}
+		})
 	}
 }
 
@@ -228,6 +245,8 @@ func TestWriter_matchesMaskForRegexpPatterns(t *testing.T) {
 		`\b-x` + strings.Repeat("A", LookBehind-2) + `(?P<mask>[0-9]{3})`,
 	} {
 		t.Run(expr, func(t *testing.T) {
+			t.Parallel()
+
 			m := New(WithPatterns(MustRegexp("p", expr)), WithRedactor(Fixed("[REDACTED]")))
 			for _, src := range []string{
 				"sha=" + strings.Repeat("abcdef0123", 30),

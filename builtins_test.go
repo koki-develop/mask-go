@@ -1094,8 +1094,15 @@ func Test_builtins_scanIsLinear(t *testing.T) {
 		limit = 8 * time.Second
 	}
 
+	// A subtest a pattern, run in parallel with the rest. The limit above has
+	// better than twenty times the room a linear scan needs, so the share of a
+	// runner a scan is left with when the others are running alongside it does
+	// not reach the number; what it would reach is a limit set close enough to
+	// tell one linear scan from another, which this is not.
 	for _, b := range builtinPatterns {
 		t.Run(b.name, func(t *testing.T) {
+			t.Parallel()
+
 			m := New(WithPatterns(b.pattern()))
 			for _, sample := range b.samples {
 				// Beside the sample repeated whole, a sample cut in half is

@@ -13,10 +13,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The suite is run twice, and the two runs are a job apiece rather than two
-  # steps of one. Neither reads what the other leaves, so as steps the shorter
-  # waits on the longer for nothing, and together they are the longest thing on
-  # this workflow. Apart, the wall clock is the run under the detector alone.
+  # The suite is run twice, under the race detector and without it, and neither
+  # run is a step of the other's job. Neither reads what the other leaves, so as
+  # steps the shorter waits on the longer for nothing, and together they are the
+  # longest thing on this workflow.
   test:
     timeout-minutes: 10
     permissions:
@@ -35,20 +35,87 @@ jobs:
       # would never run at all.
       - run: go test ./...
 
+  # The run under the detector is a job a package rather than one job over them
+  # all. The detector costs this suite about five times what it costs without,
+  # and a runner has four cores. go test runs the package binaries together
+  # already, so what a job apiece buys is not that the packages run at once: it
+  # is four cores each rather than four cores between them, for as long as both
+  # are running. A package apiece divides that where the division needs nothing
+  # of the tests.
+  #
+  # The packages are written out here rather than listed by a job of their own,
+  # and the fuzz targets below are not. A matrix reads its rows from a job that
+  # has finished, so a listing costs a runner booted, a toolchain installed and
+  # a checkout done in front of every job of the matrix — most of a minute
+  # ahead of a run of two and a half, which is the wall clock this split is for.
+  # The fuzzing pays that once for fifty-odd jobs it could not name by hand and
+  # which no wall clock waits on; two rows would pay it for two.
+  #
+  # What the listing buys is that a package added to the module cannot go
+  # untested, and the step below buys the same thing inside a job that is
+  # running anyway: every row names a package of this module, and there are as
+  # many rows as the module has packages. A package added without a row here
+  # then fails the run rather than being quietly left out of it.
   test-race:
+    name: test-race (${{ matrix.dir }})
     timeout-minutes: 10
     permissions:
       contents: read
     runs-on: ubuntu-latest
+    strategy:
+      # One package failing says nothing about whether the other does, and
+      # which of them also failed is what a failure is read by.
+      fail-fast: false
+      matrix:
+        include:
+          # dir is what the job names itself by: the import path in full is too
+          # long to read in a list of checks.
+          - pkg: .
+            dir: mask-go
+          - pkg: ./conformance
+            dir: conformance
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # Every job of this matrix reads and fills one cache, the standard library
+      # compiled under the detector being the same bytes for all of them. They
+      # race for the key on the first run after the toolchain moves and none of
+      # them after: actions/cache writes nothing back where it restored an exact
+      # hit, so once one of them has filled it the rest only read it.
       - uses: ./.github/actions/setup
         with:
           cache: save
           build: race
-      - run: go test -race ./...
+      - name: Check that the matrix names every package
+        shell: bash
+        env:
+          PKG: ${{ matrix.pkg }}
+          ROWS: ${{ strategy.job-total }}
+        run: |
+          # Assigned and their status checked rather than substituted into the
+          # comparisons: a substitution that failed leaves the empty string, and
+          # two empty strings are equal.
+          if ! packages=$(go list ./...); then
+            echo "listing the packages failed" >&2
+            exit 1
+          fi
+          if ! mine=$(go list "$PKG"); then
+            echo "listing $PKG failed" >&2
+            exit 1
+          fi
+          count=$(printf '%s\n' "$packages" | grep -c .)
+          if [ "$count" -ne "$ROWS" ]; then
+            echo "go list reports $count package(s) and this matrix holds $ROWS row(s)" >&2
+            exit 1
+          fi
+          if ! printf '%s\n' "$packages" | grep -qxF "$mine"; then
+            echo "$mine is not a package of this module" >&2
+            exit 1
+          fi
+      - env:
+          PKG: ${{ matrix.pkg }}
+        run: go test -race "$PKG"
 
   # A fuzz target is given its own job rather than a turn in a loop on one
   # runner. A loop is thirty seconds per target one after another, and this

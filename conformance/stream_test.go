@@ -79,12 +79,16 @@ func throughStream(t testing.TB, m *mask.Masker, pieces []string) (written, read
 }
 
 // checkStream holds a stream carrying src in pieces to Mask over the whole of
-// it.
-func checkStream(t testing.TB, patterns []mask.Pattern, redactor mask.Redactor, src string, pieces []string) {
+// it, want being what m makes of src uncut.
+//
+// The Masker and what it makes of the whole text are handed in rather than
+// worked out here. A case is cut at every one of its offsets and both are the
+// same for every one of those cuts, so worked out here they are a Masker and a
+// masking of the whole case per byte of it — several times what driving the
+// stream costs.
+func checkStream(t testing.TB, m *mask.Masker, src, want string, pieces []string) {
 	t.Helper()
 
-	m := maskerWith(patterns, redactor)
-	want := m.Mask(src)
 	written, read := throughStream(t, m, pieces)
 	if written != want {
 		t.Errorf("writing %q in %d piece(s) gave %q, Mask gives %q", src, len(pieces), written, want)
@@ -119,8 +123,10 @@ func TestProperties_everyCut(t *testing.T) {
 	// redacts once, differs from Mask here and nowhere else.
 	for _, c := range readableCases(t) {
 		for _, r := range streamRedactors {
+			m := maskerWith(c.patterns(), r.redactor)
+			want := m.Mask(c.in)
 			for _, pieces := range cutsOf(c.in) {
-				checkStream(t, c.patterns(), r.redactor, c.in, pieces)
+				checkStream(t, m, c.in, want, pieces)
 			}
 		}
 	}
@@ -134,10 +140,12 @@ func TestProperties_everyCutThroughEveryBuiltinSet(t *testing.T) {
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
 			t.Parallel()
+			m := maskerWith(set.patterns, mask.Fixed("[REDACTED]"))
 			for _, c := range cases {
 				t.Run(c.subtest(), func(t *testing.T) {
+					want := m.Mask(c.in)
 					for i := range len(c.in) + 1 {
-						checkStream(t, set.patterns, mask.Fixed("[REDACTED]"), c.in, []string{c.in[:i], c.in[i:]})
+						checkStream(t, m, c.in, want, []string{c.in[:i], c.in[i:]})
 					}
 				})
 			}
@@ -151,6 +159,10 @@ func FuzzStream(f *testing.F) {
 	}
 
 	patterns := mask.AllBuiltinPatterns()
+	maskers := make([]*mask.Masker, len(streamRedactors))
+	for i, r := range streamRedactors {
+		maskers[i] = maskerWith(patterns, r.redactor)
+	}
 	f.Fuzz(func(t *testing.T, src string, cut int) {
 		// A cut is a place in src, and a fuzzer reaching this with any int at
 		// all would otherwise spend its run on the panic rather than on the
@@ -160,8 +172,8 @@ func FuzzStream(f *testing.F) {
 		} else {
 			cut = ((cut % (len(src) + 1)) + len(src) + 1) % (len(src) + 1)
 		}
-		for _, r := range streamRedactors {
-			checkStream(t, patterns, r.redactor, src, []string{src[:cut], src[cut:]})
+		for _, m := range maskers {
+			checkStream(t, m, src, m.Mask(src), []string{src[:cut], src[cut:]})
 		}
 	})
 }

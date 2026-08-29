@@ -53,30 +53,88 @@ func separatorFor(src string) (string, bool) {
 func checkMasking(t testing.TB, patterns []mask.Pattern, src string) {
 	t.Helper()
 
+	newMasking(patterns).check(t, src)
+}
+
+// masking is checkMasking with what depends on the patterns alone worked out
+// once: the Maskers it drives and the set it holds an attribution against.
+//
+// A property drives one set of patterns over all the text it derives from the
+// corpus, and where that is a byte pushed into every position of every case it
+// comes to over a million texts. Built inside such a loop, three Maskers and a
+// map holding every pattern of the set are more of the work than the masking
+// they are there to check. A caller building one and handing it everything is
+// also what TestProperties_maskerIsReusable holds a Masker to.
+//
+// One masks one text at a time, and never two at once: the redactors read the
+// call in progress off it, and two texts marked together would be two calls
+// with one place to put them. A property below builds one in the subtest a
+// pattern set gets, and drives it from there and from the subtests that
+// subtest runs in turn — which are subtests it waits for one after another,
+// and which adding t.Parallel to would be the two calls this cannot have.
+type masking struct {
+	known map[mask.Pattern]bool
+
+	marked   *mask.Masker
+	fill     *mask.Masker
+	remarked *mask.Masker
+
+	// The call in progress. t and src are what a failure is reported against,
+	// and the rest is what the redactors are given and what they leave behind.
+	t         testing.TB
+	src       string
+	sep       string
+	values    []string
+	secondSep string
+	found     []string
+}
+
+// newMasking returns a masking over patterns.
+func newMasking(patterns []mask.Pattern) *masking {
+	ms := &masking{known: make(map[mask.Pattern]bool, len(patterns))}
+	for _, p := range patterns {
+		ms.known[p] = true
+	}
+	ms.marked = mask.New(mask.WithPatterns(patterns...), mask.WithRedactor(mask.NewRedactor(ms.mark)))
+	ms.fill = maskerWith(patterns, mask.Fill('*'))
+	ms.remarked = mask.New(mask.WithPatterns(patterns...), mask.WithRedactor(mask.NewRedactor(ms.remark)))
+	return ms
+}
+
+// mark records what the first pass located and writes the separator where it
+// stood.
+func (ms *masking) mark(m mask.Match) string {
+	ms.values = append(ms.values, m.Value)
+	if m.Value == "" {
+		ms.t.Fatalf("masking %q redacted nothing at all in one region", ms.src)
+	}
+	if !ms.known[m.Pattern] {
+		ms.t.Fatalf("masking %q attributed a value to a pattern the masker was not given", ms.src)
+	}
+	return ms.sep
+}
+
+// remark records what the second pass located and writes the separator where it
+// stood.
+func (ms *masking) remark(m mask.Match) string {
+	ms.found = append(ms.found, m.Value)
+	return ms.secondSep
+}
+
+// check holds masking src to what must hold of masking anything, as
+// checkMasking states it.
+func (ms *masking) check(t testing.TB, src string) {
+	t.Helper()
+
 	sep, ok := separatorFor(src)
 	if !ok {
 		return // text holding every byte there is; nothing can mark it
 	}
 
-	known := make(map[mask.Pattern]bool, len(patterns))
-	for _, p := range patterns {
-		known[p] = true
-	}
-
-	var values []string
-	marked := mask.New(
-		mask.WithPatterns(patterns...),
-		mask.WithRedactor(mask.NewRedactor(func(m mask.Match) string {
-			values = append(values, m.Value)
-			if m.Value == "" {
-				t.Fatalf("masking %q redacted nothing at all in one region", src)
-			}
-			if !known[m.Pattern] {
-				t.Fatalf("masking %q attributed a value to a pattern the masker was not given", src)
-			}
-			return sep
-		})),
-	).Mask(src)
+	ms.t, ms.src, ms.sep = t, src, sep
+	ms.values = ms.values[:0]
+	marked := ms.marked.Mask(src)
+	values := ms.values
 
 	kept := strings.Split(marked, sep)
 	if len(kept) != len(values)+1 {
@@ -101,12 +159,11 @@ func checkMasking(t testing.TB, patterns []mask.Pattern, src string) {
 	}
 	want.WriteString(kept[len(kept)-1])
 
-	m := maskerWith(patterns, mask.Fill('*'))
-	masked := m.Mask(src)
+	masked := ms.fill.Mask(src)
 	if masked != want.String() {
 		t.Fatalf("masking %q gave %q, want %q", src, masked, want.String())
 	}
-	checkSecondPass(t, patterns, src, masked, kept, values)
+	ms.checkSecondPass(src, masked, kept, values)
 	// A value that was in the text once and has been redacted is not in the
 	// output at all. Where it was there more than once, some of them may have
 	// been left on purpose — a pattern locating a single letter says nothing
@@ -165,7 +222,8 @@ func checkMasking(t testing.TB, patterns []mask.Pattern, src string) {
 // was written with, so nothing about it had changed when the first pass read
 // over it and declined to locate it: a scan whose cursor carried past a value,
 // or one that stopped at the first of two.
-func checkSecondPass(t testing.TB, patterns []mask.Pattern, src, masked string, kept, values []string) {
+func (ms *masking) checkSecondPass(src, masked string, kept, values []string) {
+	t := ms.t
 	t.Helper()
 
 	// Where the first pass wrote, in the offsets of masked. Fill writes one
@@ -184,14 +242,10 @@ func checkSecondPass(t testing.TB, patterns []mask.Pattern, src, masked string, 
 	if !ok {
 		return // text holding every byte there is; nothing can mark it
 	}
-	var found []string
-	remarked := mask.New(
-		mask.WithPatterns(patterns...),
-		mask.WithRedactor(mask.NewRedactor(func(match mask.Match) string {
-			found = append(found, match.Value)
-			return sep
-		})),
-	).Mask(masked)
+	ms.secondSep = sep
+	ms.found = ms.found[:0]
+	remarked := ms.remarked.Mask(masked)
+	found := ms.found
 	if len(found) == 0 {
 		return
 	}
@@ -283,9 +337,10 @@ func TestProperties_everyPrefix(t *testing.T) {
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
 			t.Parallel()
+			ms := newMasking(set.patterns)
 			for _, c := range cases {
 				for i := range len(c.in) + 1 {
-					checkMasking(t, set.patterns, c.in[:i])
+					ms.check(t, c.in[:i])
 				}
 			}
 		})
@@ -299,9 +354,10 @@ func TestProperties_everySuffix(t *testing.T) {
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
 			t.Parallel()
+			ms := newMasking(set.patterns)
 			for _, c := range cases {
 				for i := range len(c.in) + 1 {
-					checkMasking(t, set.patterns, c.in[i:])
+					ms.check(t, c.in[i:])
 				}
 			}
 		})
@@ -379,11 +435,12 @@ func TestProperties_aByteInTheMiddle(t *testing.T) {
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
 			t.Parallel()
+			ms := newMasking(set.patterns)
 			for i, c := range cases {
 				t.Run(c.subtest(), func(t *testing.T) {
 					for _, b := range injected {
 						for _, at := range points[i] {
-							checkMasking(t, set.patterns, c.in[:at]+string(b)+c.in[at:])
+							ms.check(t, c.in[:at]+string(b)+c.in[at:])
 						}
 					}
 				})
@@ -400,11 +457,12 @@ func TestProperties_casesRunTogether(t *testing.T) {
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
 			t.Parallel()
+			ms := newMasking(set.patterns)
 			for i, c := range cases {
 				for k := 1; k <= 6; k++ {
 					other := cases[(i+k)%len(cases)]
 					for _, sep := range []string{"", "\n", " ", "."} {
-						checkMasking(t, set.patterns, c.in+sep+other.in)
+						ms.check(t, c.in+sep+other.in)
 					}
 				}
 			}
@@ -421,10 +479,11 @@ func TestProperties_repeatedCases(t *testing.T) {
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
 			t.Parallel()
+			ms := newMasking(set.patterns)
 			for _, c := range cases {
 				t.Run(c.subtest(), func(t *testing.T) {
 					for _, sep := range []string{"", "\n", " "} {
-						checkMasking(t, set.patterns, strings.Repeat(c.in+sep, 8))
+						ms.check(t, strings.Repeat(c.in+sep, 8))
 					}
 				})
 			}
@@ -528,9 +587,10 @@ func TestProperties_everyCaseThroughEveryBuiltinSet(t *testing.T) {
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
 			t.Parallel()
+			ms := newMasking(set.patterns)
 			for _, c := range cases {
 				t.Run(c.subtest(), func(t *testing.T) {
-					checkMasking(t, set.patterns, c.in)
+					ms.check(t, c.in)
 				})
 			}
 		})
