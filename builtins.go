@@ -43,6 +43,7 @@ var builtins = []Pattern{
 	googleAPIKey,
 	grafanaServiceAccountToken,
 	hashiCorpVaultToken,
+	herokuAPIToken,
 	huggingFaceUserAccessToken,
 	jsonWebToken,
 	linearAPIKey,

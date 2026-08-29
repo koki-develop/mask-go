@@ -1,0 +1,249 @@
+# What Heroku API tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is. A body in the shape Heroku writes a token in now is sixty
+# base64url characters, so the run three times over and twelve more is one, and
+# the prefix in front brings a token to sixty-five. A body in the shape it wrote
+# one in until 23 April 2025 is a UUID, the same run cut into the groups
+# 8-4-4-4-12, so such a token is forty-one.
+
+patterns: heroku-api-token
+
+# The one prefix Heroku writes a token with, in the places a token is written.
+# There is a single kind of string here rather than a table of them: an
+# authorization created from the CLI, an access token minted by the OAuth flow
+# and the key the dashboard prints are the same credential in the same Bearer
+# header, and nothing on one says which of them it came from.
+
+case:     a token in an environment assignment
+in:       HEROKU_API_KEY=HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      HEROKU_API_KEY=«heroku-api-token»
+
+case:     a token in the header the platform api reads it from
+in:       Authorization: Bearer HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      Authorization: Bearer «heroku-api-token»
+
+case:     a token in the netrc entry the cli writes
+in:       machine api.heroku.com\n  login me@example.com\n  password HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      machine api.heroku.com\n  login me@example.com\n  password «heroku-api-token»
+
+case:     a token in the json an authorization returns
+in:       {"access_token":"HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab","expires_in":28799,"token_type":"Bearer"}
+out:      {"access_token":"«heroku-api-token»","expires_in":28799,"token_type":"Bearer"}
+
+case:     a token on a curl command line
+in:       curl -H "Authorization: Bearer HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab" https://api.heroku.com/apps
+out:      curl -H "Authorization: Bearer «heroku-api-token»" https://api.heroku.com/apps
+
+case:     a token in what the cli prints on creating an authorization
+in:       Token:       HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      Token:       «heroku-api-token»
+
+# The shape Heroku wrote a token in until the length changed, which is the
+# prefix in front of a UUID. Those tokens were never revoked — Heroku said at
+# each change that current tokens keep working until they are regenerated, and
+# an authorization created from the CLI does not expire — so both shapes are
+# read. What tells a UUID from any other thirty-six characters written behind
+# the prefix is that its four separators stand at fixed places, and its
+# hexadecimal is read in either case.
+
+case:     a token in the shape written until the length changed
+in:       HRKU-01234567-89ab-cdef-0123-456789abcdef
+out:      «heroku-api-token»
+
+case:     the same token with its hexadecimal in uppercase
+in:       HRKU-01234567-89AB-CDEF-0123-456789ABCDEF
+out:      «heroku-api-token»
+
+case:     a uuid whose separators stand elsewhere
+in:       HRKU-0123456-789ab-cdef-0123-456789abcdef
+out:      HRKU-0123456-789ab-cdef-0123-456789abcdef
+
+case:     a uuid with a group past hexadecimal
+in:       HRKU-0123456g-89ab-cdef-0123-456789abcdef
+out:      HRKU-0123456g-89ab-cdef-0123-456789abcdef
+
+# A UUID is written in base64url, so a token of the shorter shape stands at the
+# front of any longer one whose first thirty-six characters fall that way, and
+# both readings are true of the same text. The longer one is walked first, so
+# such a token is redacted once at sixty-five characters rather than as the
+# forty-one inside it with twenty-four characters of a live token left beside
+# them. Where the longer reading fails the shorter is taken all the same.
+
+case:     a token whose body opens on a uuid is one value and not two
+in:       HRKU-01234567-89ab-cdef-0123-456789abcdef0123456789abcdef01234567
+out:      «heroku-api-token»
+
+case:     a uuid with too few characters behind it for the longer reading
+in:       HRKU-01234567-89ab-cdef-0123-456789abcdef0123
+out:      «heroku-api-token»0123
+
+# The alphabet the sixty characters are written in: the whole of base64url, which
+# is what both rules reading this format admit. Heroku states the prefix and the
+# length and states no alphabet, so a body carrying either character base64url
+# adds is a body, and one carrying anything outside it is no body at all.
+
+case:     a body carrying an underscore
+in:       HRKU-0123456789abcdef_123456789abcdef0123456789abcdef0123456789ab
+out:      «heroku-api-token»
+
+case:     a body carrying a hyphen
+in:       HRKU-0123456789abcdef-123456789abcdef0123456789abcdef0123456789ab
+out:      «heroku-api-token»
+
+case:     a body carrying a dot
+in:       HRKU-0123456789abcdef.123456789abcdef0123456789abcdef0123456789ab
+out:      HRKU-0123456789abcdef.123456789abcdef0123456789abcdef0123456789ab
+
+case:     a body carrying an equals sign
+in:       HRKU-0123456789abcdef=123456789abcdef0123456789abcdef0123456789ab
+out:      HRKU-0123456789abcdef=123456789abcdef0123456789abcdef0123456789ab
+
+case:     a body carrying a space
+in:       HRKU-0123456789abcdef 123456789abcdef0123456789abcdef0123456789ab
+out:      HRKU-0123456789abcdef 123456789abcdef0123456789abcdef0123456789ab
+
+# The two characters both rules reading this format ask for at the front of a
+# body, which this pattern does not. Heroku states the prefix and the length and
+# does not state them, so a body opening on them and a body opening on anything
+# else are both read: being wrong about two characters nobody wrote down would
+# locate no token at all.
+
+case:     a body opening on the two characters the rules ask for
+in:       HRKU-AA0123456789abcdef0123456789abcdef0123456789abcdef0123456789
+out:      «heroku-api-token»
+
+case:     a body opening on anything else
+in:       HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      «heroku-api-token»
+
+# The lengths either side of sixty. That count is Heroku's own, stated as a
+# sentence on its OAuth page, and it is used as a count rather than a floor:
+# fifty-nine characters are not a token, and sixty-one are a token and one
+# character that belongs to no credential. The second of those is the price of
+# having no boundary behind the match — a boundary there would drop this token
+# rather than trim it, and a real token written against a digit would come
+# through whole.
+
+case:     a body of sixty characters is a token
+in:       HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      «heroku-api-token»
+
+case:     a body of fifty-nine characters is not
+in:       HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789a
+out:      HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789a
+
+case:     an alphabet run longer than a token is a token and what follows it
+in:       HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd
+out:      «heroku-api-token»cd
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts.
+
+case:     a token after an underscore
+in:       HEROKU_API_KEY_HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      HEROKU_API_KEY_«heroku-api-token»
+
+case:     a token after a letter
+in:       xHRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      x«heroku-api-token»
+
+case:     a hyphenated word written against a token
+in:       HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab-suffix
+out:      «heroku-api-token»-suffix
+
+case:     a token at the end of a sentence
+in:       the token is HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab.
+out:      the token is «heroku-api-token».
+
+# Two tokens written together, and a token written inside one. Every character
+# of the prefix is written in the body's own alphabet, so a whole prefix can
+# stand anywhere inside a body: the scan advances a byte at a time rather than
+# stepping over what it took, and where the two values overlap the redaction
+# reaches from the first character of the outer one to the last of the inner.
+
+case:     two tokens with nothing between them
+in:       HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abHRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      «heroku-api-token»«heroku-api-token»
+
+case:     a token opening at the first character of another body
+in:       HRKU-HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      «heroku-api-token»
+
+case:     a token of each shape on one line
+in:       new=HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab old=HRKU-01234567-89ab-cdef-0123-456789abcdef
+out:      new=«heroku-api-token» old=«heroku-api-token»
+
+# What this pattern redacts that nobody issued. The alphabet holds the hyphen,
+# so an unbroken run of hyphenated words is a body and sixty of them behind the
+# prefix are redacted; no count of unbroken letters rules that out, because a
+# hyphen never ends the run. What holds it back is the four capitals in front,
+# which spell no word and which no kebab-case name written by a tool begins
+# with. Sparing these would mean narrowing the alphabet, and that would decline
+# every token whose body fell with a hyphen in it.
+
+case:     a hyphenated run long enough to be a body
+in:       HRKU-alpha-bravo-charlie-delta-echo-foxtrot-golf-hotel-india-juliet
+out:      «heroku-api-token»et
+
+case:     a hyphenated run the count stops short of
+in:       HRKU-alpha-bravo-charlie-delta-echo-foxtrot-golf
+out:      HRKU-alpha-bravo-charlie-delta-echo-foxtrot-golf
+
+# And what this pattern leaves alone. The first three are the prefix, which is
+# read in the case Heroku writes it and with every character of it. Then the two
+# shapes Heroku's own pages print with nothing in front of them, both left in
+# the output whole: the refresh token handed out beside an access token is a
+# bare UUID, and the example the authentication page writes its netrc entry with
+# is forty hexadecimal characters, which is neither shape on record — what the
+# CLI stores in that field today is the OAuth token the changelogs prefixed, and
+# the netrc case at the top of this file is one. Neither carries the prefix the
+# whole of this pattern rests on, and what is left of each is a shape this
+# library may not read: a UUID is an identifier written in URLs and dashboards
+# by design, and forty hexadecimal characters are a SHA-1.
+
+case:     a lowercase prefix
+in:       hrku-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      hrku-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+
+case:     the prefix without the hyphen closing it
+in:       HRKU0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc
+out:      HRKU0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc
+
+case:     an underscore where the prefix closes
+in:       HRKU_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      HRKU_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+
+case:     a refresh token beside an access token
+in:       {"refresh_token":"01234567-89ab-cdef-0123-456789abcdef"}
+out:      {"refresh_token":"01234567-89ab-cdef-0123-456789abcdef"}
+
+case:     the older shape the netrc example is written in
+in:       0123456789abcdef0123456789abcdef01234567
+out:      0123456789abcdef0123456789abcdef01234567
+
+case:     a run of the right length opening with no prefix
+in:       xxxxx0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      xxxxx0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And the text a token is written among, which this pattern has nothing to say
+# about. The prefix is four capitals and a hyphen, so what reaches the byte the
+# scan searches for is uppercase text, and the vendor's own host name and CLI
+# are written in lowercase throughout.
+
+case:     a log line naming the api a token authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="deploying release" app=acme-web url=https://api.heroku.com/apps/acme-web/dynos
+out:      time=2026-08-17T00:00:00Z level=info msg="deploying release" app=acme-web url=https://api.heroku.com/apps/acme-web/dynos
+
+case:     the command line an authorization is created from
+in:       heroku authorizations:create --description "ci deploy"
+out:      heroku authorizations:create --description "ci deploy"
+
+case:     the config a token is set into
+in:       heroku config:set --app acme-web DEPLOY_TARGET=production
+out:      heroku config:set --app acme-web DEPLOY_TARGET=production

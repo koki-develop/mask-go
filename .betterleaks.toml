@@ -10,6 +10,14 @@
 # carry the other. Both spellings are the same sixteen ordered characters, and
 # a value built from neither is reported as before.
 #
+# A credential whose format is a UUID cannot carry the run unbroken, for the
+# same reason and one step further: its four separators fall inside the
+# characters rather than beside them, so the run written in that layout is
+# 01234567-89ab-cdef-0123-456789abcdef, which is the same sixteen ordered
+# characters twice over with the hyphens a UUID puts through them. Both cases of
+# that spelling are allowed as well, and a UUID written from anything but the
+# run is reported as before.
+#
 # The conformance corpus carries them too. It is a test in every sense but the
 # file extension — the cases under conformance/testdata are what the package
 # beside them is driven with — so the same rule covers it, and covers nothing
@@ -31,7 +39,12 @@ description = "credentials made of ordered characters, written into a test or a 
 condition = "AND"
 paths = ['''_test\.go$''', '''conformance/testdata/[^/]+\.txt$''', '''(^|/)builtin_[a-z0-9_]+\.go$''']
 regexTarget = "secret"
-regexes = ['''0123456789abcdef''', '''0123456789ABCDEF''']
+regexes = [
+  '''0123456789abcdef''',
+  '''0123456789ABCDEF''',
+  '''01234567-89ab-cdef-0123-456789abcdef''',
+  '''01234567-89AB-CDEF-0123-456789ABCDEF''',
+]
 
 # The private key pattern is a place the ordered run cannot be asked for, and
 # the reason is what the rule reports rather than what the tests hold. The

@@ -279,6 +279,20 @@ var builtinPatterns = []struct {
 		benchmarks: hashiCorpVaultTokenFindBenchmarks,
 	},
 	{
+		name:    "heroku-api-token",
+		pattern: HerokuAPIToken,
+		ref:     referenceHerokuAPITokenFind,
+		samples: []string{
+			"HEROKU_API_KEY=HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+			"HRKU-01234567-89ab-cdef-0123-456789abcdef",
+			"HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd",
+			"HRKU-HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+			"HRKU-01234567-89ab-cdef-0123-456789abcdef0123456789abcdef01234567",
+		},
+		anchors:    []string{"HRKU-0123456789"},
+		benchmarks: herokuAPITokenFindBenchmarks,
+	},
+	{
 		name:    "huggingface-user-access-token",
 		pattern: HuggingFaceUserAccessToken,
 		ref:     referenceHuggingFaceUserAccessTokenFind,
