@@ -204,6 +204,21 @@ var builtinPatterns = []struct {
 		benchmarks: digitalOceanTokenFindBenchmarks,
 	},
 	{
+		name:    "doppler-auth-token",
+		pattern: DopplerAuthToken,
+		ref:     referenceDopplerAuthTokenFind,
+		samples: []string{
+			"DOPPLER_TOKEN=dp.pt.0123456789abcdef0123456789abcdef0123456789a",
+			"dp.st.dev.0123456789abcdef0123456789abcdef0123456789a",
+			"dp.said.0123456789abcdef0123456789abcdef0123456789a",
+			"dp.ct.0123456789abcdef0123456789abcdef0123456789abc",
+			"dp.st.dp.st.dev.0123456789abcdef0123456789abcdef0123456789a",
+			"dp.pt.0123456789abcdef0123456789abcdef0123456789adp.audit.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		anchors:    []string{"dp.pt.0123456789abcdef", "dp.st.dev.0123456789abcdef"},
+		benchmarks: dopplerAuthTokenFindBenchmarks,
+	},
+	{
 		name:    "github-token",
 		pattern: GitHubToken,
 		ref:     referenceGitHubTokenFind,
