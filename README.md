@@ -69,6 +69,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `RubyGemsPatterns() []Pattern` | RubyGems.org API keys |
 | `SendGridPatterns() []Pattern` | Twilio SendGrid API keys |
 | `SentryPatterns() []Pattern` | Sentry user auth tokens, organization auth tokens, user application tokens, internal integration tokens |
+| `ShopifyPatterns() []Pattern` | Shopify access tokens (public app, custom app, private app and delegate), Shopify app secret keys |
 | `SlackPatterns() []Pattern` | Slack bot tokens, user tokens, app-level tokens, workflow tokens, refresh tokens, rotatable bot and user access tokens |
 | `SourcegraphPatterns() []Pattern` | Sourcegraph access tokens |
 | `StripePatterns() []Pattern` | Stripe publishable API keys, restricted API keys, secret API keys, organization API keys, webhook signing secrets |

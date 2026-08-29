@@ -1,0 +1,112 @@
+# What Shopify access tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is: a body is thirty-two hexadecimal characters, so the run twice
+# over is one, and the six character prefix in front brings a token to
+# thirty-eight. Where a case turns on the case a body is written in, the same run
+# is written as 0123456789ABCDEF instead.
+
+patterns: shopify-access-token
+
+# The three prefixes Shopify writes an access token with, one to a kind: shpat_
+# for the token a public app receives for a shop, shpca_ for the token a custom
+# app is given, shppa_ for the token its changelog assigns to a legacy private
+# app and its reference page to a delegate token. They are one pattern because a
+# caller with reason to redact any of them has the same reason for the rest, and
+# the cases below are the three of them in the places a token is written.
+
+case:     a public app access token in an environment assignment
+in:       SHOPIFY_ACCESS_TOKEN=shpat_0123456789abcdef0123456789abcdef
+out:      SHOPIFY_ACCESS_TOKEN=«shopify-access-token»
+
+case:     a token in the header the admin api reads it from
+in:       X-Shopify-Access-Token: shpat_0123456789abcdef0123456789abcdef
+out:      X-Shopify-Access-Token: «shopify-access-token»
+
+case:     a custom app access token in a json body
+in:       {"access_token":"shpca_0123456789abcdef0123456789abcdef","scope":"read_products"}
+out:      {"access_token":"«shopify-access-token»","scope":"read_products"}
+
+case:     a delegate access token beside the token it was minted from
+in:       {"parent":"shpat_0123456789abcdef0123456789abcdef","delegate":"shppa_0123456789abcdef0123456789abcdef"}
+out:      {"parent":"«shopify-access-token»","delegate":"«shopify-access-token»"}
+
+case:     a token in the command line a request is made from
+in:       curl -H 'X-Shopify-Access-Token: shpat_0123456789abcdef0123456789abcdef' https://example.myshopify.com/admin/api/2026-07/shop.json
+out:      curl -H 'X-Shopify-Access-Token: «shopify-access-token»' https://example.myshopify.com/admin/api/2026-07/shop.json
+
+# The alphabet the thirty-two characters are written in: hexadecimal in either
+# case, which is what all four published rulesets reading this format ask for and
+# what a body trufflehog ships in its own tests carries both of. The prefix is
+# read in lowercase alone, and the pattern's own file weighs what reading the
+# uppercase shape would cost. What the alphabet leaves out is everything else,
+# the letters past f and the two characters base64url adds among them, so a run
+# carrying any of those is no token.
+
+case:     a body written in uppercase
+in:       shpat_0123456789ABCDEF0123456789ABCDEF
+out:      «shopify-access-token»
+
+case:     a body written in both cases at once
+in:       shpat_0123456789abcdef0123456789ABCDEF
+out:      «shopify-access-token»
+
+case:     a letter past f in the body is no token
+in:       shpat_0123456789abcdefg123456789abcdef
+out:      shpat_0123456789abcdefg123456789abcdef
+
+case:     an uppercase prefix is the shape a variable's name is written in
+in:       SHPAT_0123456789abcdef0123456789abcdef
+out:      SHPAT_0123456789abcdef0123456789abcdef
+
+# The count is exact. A body one character short is no token at all, and a run
+# longer than the count is a token with something written after it — only the
+# token is redacted.
+
+case:     a body one character short is no token
+in:       shpat_0123456789abcdef0123456789abcde
+out:      shpat_0123456789abcdef0123456789abcde
+
+case:     a run longer than the count is a token and what follows it
+in:       shpat_0123456789abcdef0123456789abcdef0
+out:      «shopify-access-token»0
+
+# The token format this one replaced, which Shopify's changelog says existing
+# tokens go on working in: thirty-two characters with no prefix in front of
+# them. That is a bare digest's shape, so it is left in the output whole rather
+# than every hexadecimal identifier a caller passes through being redacted with
+# it.
+
+case:     the token format this one replaced
+in:       SHOPIFY_ACCESS_TOKEN=0123456789abcdef0123456789abcdef
+out:      SHOPIFY_ACCESS_TOKEN=0123456789abcdef0123456789abcdef
+
+case:     a kind shopify names no prefix for
+in:       shpua_0123456789abcdef0123456789abcdef
+out:      shpua_0123456789abcdef0123456789abcdef
+
+# There is no word boundary either side of a match, so a token written straight
+# against a name or a letter is redacted rather than left whole.
+
+case:     a token written straight against a name
+in:       TOKEN_shpat_0123456789abcdef0123456789abcdef
+out:      TOKEN_«shopify-access-token»
+
+case:     two tokens with nothing between them
+in:       shpat_0123456789abcdef0123456789abcdefshppa_0123456789abcdef0123456789abcdef
+out:      «shopify-access-token»«shopify-access-token»
+
+case:     a candidate whose body opens with a prefix
+in:       shpat_shpat_0123456789abcdef0123456789abcdef
+out:      shpat_«shopify-access-token»
+
+# Prose, and the shapes an ordinary line carries that open a candidate and close
+# it again.
+
+case:     prose naming a shop and an app
+in:       the shop app posted an update to the storefront this morning
+out:      the shop app posted an update to the storefront this morning
+
+case:     a log line carrying the shop's host name and no token
+in:       time=2026-08-17T00:00:00Z level=info msg="calling admin api" url=https://example.myshopify.com/admin/api/2026-07/shop.json
+out:      time=2026-08-17T00:00:00Z level=info msg="calling admin api" url=https://example.myshopify.com/admin/api/2026-07/shop.json
