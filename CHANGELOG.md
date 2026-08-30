@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.2.0](https://github.com/koki-develop/mask-go/compare/v0.1.0...v0.2.0) (2026-08-30)
+
+
+### Features
+
+* Add Regexp, which returns an error where MustRegexp panics ([6ec677f](https://github.com/koki-develop/mask-go/commit/6ec677f759b7bd9f350a2aba3c4ce8dab631f4ab))
+* Locate a Buildkite token ([#70](https://github.com/koki-develop/mask-go/issues/70)) ([#107](https://github.com/koki-develop/mask-go/issues/107)) ([92f2d19](https://github.com/koki-develop/mask-go/commit/92f2d1954d2c4b97aae187defa93a2ec4ab6eb56))
+* Locate a Dynatrace token ([#45](https://github.com/koki-develop/mask-go/issues/45)) ([#61](https://github.com/koki-develop/mask-go/issues/61)) ([59e32a5](https://github.com/koki-develop/mask-go/commit/59e32a59249aaf0deb1e5693391e4c551f298c99))
+* Locate a Fly.io access token ([#76](https://github.com/koki-develop/mask-go/issues/76)) ([#100](https://github.com/koki-develop/mask-go/issues/100)) ([be16192](https://github.com/koki-develop/mask-go/commit/be1619203da33c5f87819b295ebe7f5bcfc529e7))
+* Locate a Groq API key ([#62](https://github.com/koki-develop/mask-go/issues/62)) ([#71](https://github.com/koki-develop/mask-go/issues/71)) ([2e366d5](https://github.com/koki-develop/mask-go/commit/2e366d598e10f05cac4bfb13a28636e086bcc1ee))
+* Locate a New Relic user key ([#74](https://github.com/koki-develop/mask-go/issues/74)) ([#94](https://github.com/koki-develop/mask-go/issues/94)) ([5a97261](https://github.com/koki-develop/mask-go/commit/5a97261eda0166973547d58a07c130706358eedf))
+* Locate a Paddle API key ([#86](https://github.com/koki-develop/mask-go/issues/86)) ([#92](https://github.com/koki-develop/mask-go/issues/92)) ([5dc1172](https://github.com/koki-develop/mask-go/commit/5dc1172e1e508a7132f10ef9db227e1a78078f5b))
+* Locate a PostHog personal API key ([#81](https://github.com/koki-develop/mask-go/issues/81)) ([#93](https://github.com/koki-develop/mask-go/issues/93)) ([6576392](https://github.com/koki-develop/mask-go/commit/6576392a9230810a6cf21e544fb1e6a38bde59a3))
+* Locate a Replicate API token ([#46](https://github.com/koki-develop/mask-go/issues/46)) ([#58](https://github.com/koki-develop/mask-go/issues/58)) ([b428339](https://github.com/koki-develop/mask-go/commit/b428339cef7e63953a619aec975579698892be67))
+* Locate a Resend API key ([#68](https://github.com/koki-develop/mask-go/issues/68)) ([#72](https://github.com/koki-develop/mask-go/issues/72)) ([5f46c15](https://github.com/koki-develop/mask-go/commit/5f46c158b4996814647f8b161a7aee842e3e56fd))
+* Locate a SonarQube user token, analysis token and project badge token ([#50](https://github.com/koki-develop/mask-go/issues/50)) ([#59](https://github.com/koki-develop/mask-go/issues/59)) ([eee4a61](https://github.com/koki-develop/mask-go/commit/eee4a6102dca1d2ca021b9b02f71dc3ee1e23d1c))
+* Locate an HCP Terraform API token ([#75](https://github.com/koki-develop/mask-go/issues/75)) ([#108](https://github.com/koki-develop/mask-go/issues/108)) ([c1f0ab9](https://github.com/koki-develop/mask-go/commit/c1f0ab9ee99309ea4a73b88b85d9f42d11435770))
+* Locate an xAI API key and a management API key ([#63](https://github.com/koki-develop/mask-go/issues/63)) ([#73](https://github.com/koki-develop/mask-go/issues/73)) ([2f9cc6f](https://github.com/koki-develop/mask-go/commit/2f9cc6ff4d4dbb9d809a11b4143fdb699af7480f))
+
+
+### Bug Fixes
+
+* Release a rune whole or not at all, and state what giving up owes ([#110](https://github.com/koki-develop/mask-go/issues/110)) ([ac7e93d](https://github.com/koki-develop/mask-go/commit/ac7e93d85797dc77eaba398b6a60a7c8bb1fa2c6))
+
 ## [0.1.0](https://github.com/koki-develop/mask-go/compare/v0.0.1...v0.1.0) (2026-08-29)
 
 
