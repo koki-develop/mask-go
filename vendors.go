@@ -270,3 +270,9 @@ func StripePatterns() []Pattern {
 func SupabasePatterns() []Pattern {
 	return []Pattern{supabaseAccessToken, supabasePublishableKey, supabaseSecretKey}
 }
+
+// XAIPatterns returns every built-in pattern that locates a credential xAI
+// issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func XAIPatterns() []Pattern { return []Pattern{xaiAPIKey} }

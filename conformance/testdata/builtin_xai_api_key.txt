@@ -1,0 +1,226 @@
+# What xAI API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is: a body is at least eighty characters, so the run five times
+# over is one, and the same run in uppercase is another. Where a case turns on
+# what a body may close on, it closes one on xai instead. The prefix in front
+# brings a key to the eighty-four characters the key xAI prints whole is, and
+# the management infix behind that prefix to the ninety osv-scalibr reads a
+# management key at.
+
+patterns: xai-api-key
+
+# The prefix xAI writes a key with, in the places a key is written. The kind a
+# request to the API carries is this prefix and a body, with nothing on it to
+# say what it may be spent on or which of an account's keys it is.
+
+case:     a key in an environment assignment
+in:       XAI_API_KEY=xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      XAI_API_KEY=«xai-api-key»
+
+case:     a key in the argument a python client takes it as
+in:       Client(api_key="xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+out:      Client(api_key="«xai-api-key»")
+
+case:     a key in the header a request carries it in
+in:       Authorization: Bearer xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      Authorization: Bearer «xai-api-key»
+
+case:     a key on the command line a curl example writes that header on
+in:       curl -H "Authorization: Bearer xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" https://api.x.ai/v1/chat/completions
+out:      curl -H "Authorization: Bearer «xai-api-key»" https://api.x.ai/v1/chat/completions
+
+case:     a key in the json field the management api hands it back in
+in:       {"apiKey":"xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}
+out:      {"apiKey":"«xai-api-key»"}
+
+# The key an account manages its other keys with, which xAI prints only
+# redacted and osv-scalibr reads as xai-token- and a body of the same shape. The
+# infix closes on the hyphen a body ends at, so it is read where it stands and
+# the body begins past it; where the hyphen is missing there is no infix and the
+# characters spelling it open a body of the ordinary kind, and where the case is
+# not the one it is written in there is no infix and no body long enough either.
+
+case:     a management key in an environment assignment
+in:       XAI_MANAGEMENT_KEY=xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      XAI_MANAGEMENT_KEY=«xai-api-key»
+
+case:     a management key in the header the management api carries it in
+in:       Authorization: Bearer xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      Authorization: Bearer «xai-api-key»
+
+case:     the infix without its hyphen is a body
+in:       xai-token0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789a
+out:      «xai-api-key»
+
+case:     an uppercase infix
+in:       xai-TOKEN-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      xai-TOKEN-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     the infix written twice
+in:       xai-token-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      xai-token-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# The alphabet the eighty characters are written in: the letters of both cases
+# with the digits, which is what every whole key that has been published is
+# spelled in and what osv-scalibr reads. The two characters the others admit
+# besides are what the pattern's own file weighs — trufflehog the underscore,
+# kingfisher and betterleaks the hyphen as well — and a run carrying either is
+# no key here.
+
+case:     an uppercase body
+in:       xai-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «xai-api-key»
+
+case:     a body carrying a hyphen
+in:       xai-0123456789abcdef0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcdef
+out:      xai-0123456789abcdef0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a body carrying an underscore
+in:       xai-0123456789abcdef0123456789abcdef_123456789abcdef0123456789abcdef0123456789abcdef
+out:      xai-0123456789abcdef0123456789abcdef_123456789abcdef0123456789abcdef0123456789abcdef
+
+# The lengths either side of eighty. xAI states no length in prose and prints a
+# key of eighty characters, so the count is used as a floor rather than as a
+# count: seventy-nine characters are not a key, and eighty-one are one key read
+# to the end of its run. What the floor costs is at both ends — the key a column
+# limit cut short is left in the output, and the character written against the
+# end of a key is redacted with it. The floor is the body's, so it falls the
+# same way behind either opening.
+
+case:     a body of eighty characters is a key
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «xai-api-key»
+
+case:     a body of seventy-nine characters is not
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     a management body of seventy-nine characters is not
+in:       xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     an alphabet run longer than the floor is one key to the end of it
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0
+out:      «xai-api-key»
+
+# What a key may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a key keeps its span whatever
+# word character stands in front of it, and takes with it whatever word
+# character stands behind.
+
+case:     a key after an underscore
+in:       XAI_API_KEY_xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      XAI_API_KEY_«xai-api-key»
+
+case:     a key after a letter
+in:       xxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      x«xai-api-key»
+
+case:     a word written against a key
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsuffix
+out:      «xai-api-key»
+
+case:     a key before a hyphenated word
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef-suffix
+out:      «xai-api-key»-suffix
+
+case:     a key at the end of a sentence
+in:       the key is xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.
+out:      the key is «xai-api-key».
+
+# Two keys written together. A key can begin inside another, and the hyphen is
+# what bounds where: a body is read to the end of its run and the three
+# characters a prefix opens with belong to that run, so a key written straight
+# against another reaches through the second key's xai to the hyphen that closes
+# it. The two spans overlap there and are redacted as one. Written apart the two
+# are separate values and both go, and a prefix standing where a body would have
+# to hold it ends the candidate in front of it far short of the floor.
+
+case:     two keys with nothing between them
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «xai-api-key»
+
+case:     two keys with a space between them
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «xai-api-key» «xai-api-key»
+
+case:     a body closing on xai that opens no key
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcxai-0123456789
+out:      «xai-api-key»-0123456789
+
+case:     a prefix written where a body would stand
+in:       xai-0123456789abcxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      xai-0123456789abc«xai-api-key»
+
+# What this pattern redacts that nobody issued. Eighty letters and digits behind
+# the prefix is the shape every published key is, so a run of hexadecimal that
+# long written there is redacted to the end of its run. That is the answer
+# rather than a fault in it, because nothing in the text tells such a run from a
+# key: sparing these would spare a real key written the same way. What is taken
+# is a stretch of a value that was already opaque. A SHA-256 is sixteen
+# characters short of the floor and is left alone; two of them written together
+# are past it.
+
+case:     the prefix in front of a sha-256
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     the prefix in front of two sha-256s
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «xai-api-key»
+
+# And the demands beyond the grammar that two of the rulesets make and this
+# pattern declines: an entropy floor apiece, and two digits in the body besides.
+# A body is random, so what such a floor turns away is the key whose characters
+# happened to fall in a way that reads as ordinary.
+
+case:     a body of eighty zeros
+in:       xai-00000000000000000000000000000000000000000000000000000000000000000000000000000000
+out:      «xai-api-key»
+
+case:     a body carrying no digit at all
+in:       xai-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+out:      «xai-api-key»
+
+# And what this pattern leaves alone. The first two are the prefix, which is
+# read in the case xAI writes it and with the hyphen it closes on; the two after
+# them are a body a space has broken and a character the alphabet has not got.
+# The rest carry a prefix nothing long enough stands behind, which is what the
+# repositories xAI publishes under its own name are, or no prefix at all.
+
+case:     an uppercase prefix
+in:       XAI-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      XAI-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     an underscore where the prefix closes
+in:       xai_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      xai_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a body broken by a space
+in:       xai-0123456789abcdef0123456789abcdef 123456789abcdef0123456789abcdef0123456789abcdef
+out:      xai-0123456789abcdef0123456789abcdef 123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a character outside the alphabet in the body
+in:       xai-0123456789abcdef0123456789abcdef.123456789abcdef0123456789abcdef0123456789abcdef
+out:      xai-0123456789abcdef0123456789abcdef.123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a run of the right length opening with no prefix
+in:       zzz-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      zzz-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     the prefix in a repository name
+in:       https://github.com/xai-org/xai-cookbook
+out:      https://github.com/xai-org/xai-cookbook
+
+case:     a digest with no prefix
+in:       md5=0123456789abcdef0123456789abcdef
+out:      md5=0123456789abcdef0123456789abcdef
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line naming the api a key authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="creating chat completion" url=https://api.x.ai/v1/chat/completions
+out:      time=2026-08-17T00:00:00Z level=info msg="creating chat completion" url=https://api.x.ai/v1/chat/completions
