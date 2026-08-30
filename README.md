@@ -67,6 +67,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `OnePasswordPatterns() []Pattern` | 1Password service account tokens |
 | `OpenAIPatterns() []Pattern` | OpenAI project API keys, service account keys, Admin API keys, user API keys |
 | `OpenRouterPatterns() []Pattern` | OpenRouter API keys |
+| `PaddlePatterns() []Pattern` | Paddle API keys (live and sandbox) |
 | `PlanetScalePatterns() []Pattern` | PlanetScale service tokens, OAuth access tokens, OAuth refresh tokens |
 | `PostmanPatterns() []Pattern` | Postman API keys |
 | `PrivateKey() Pattern` | PKCS#8 private keys, encrypted PKCS#8 private keys, PKCS#1 RSA private keys, EC private keys, DSA private keys, OpenSSH private keys, PGP private key blocks |

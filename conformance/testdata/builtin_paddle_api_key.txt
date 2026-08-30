@@ -1,0 +1,183 @@
+# What Paddle API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is. The run serves for all three segments — once and ten characters
+# over for the twenty-six of the first, once and six over for the twenty-two of
+# the second, and three characters of it for the third — and with the sixteen
+# character prefix in front and the two separators between, a key comes to
+# sixty-nine. It is written in capitals in the two segments whose alphabet holds
+# both cases, where the case is what a case is about.
+
+patterns: paddle-api-key
+
+# The two environments Paddle issues a key for, live and sandbox, which are one
+# pattern rather than two: a key of either authenticates the same API and is
+# written the same way, so a caller with reason to redact one has the same
+# reason for the other. The cases below are those two shapes in the places a key
+# is written.
+
+case:     a key in an environment assignment
+in:       PADDLE_API_KEY=pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      PADDLE_API_KEY=«paddle-api-key»
+
+case:     a key in the bearer authorization header Paddle's endpoints are called with
+in:       Authorization: Bearer pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      Authorization: Bearer «paddle-api-key»
+
+case:     a sandbox key
+in:       pdl_sdbx_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      «paddle-api-key»
+
+case:     a key in json
+in:       {"apiKey":"pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012"}
+out:      {"apiKey":"«paddle-api-key»"}
+
+case:     a key on a command line
+in:       curl -H "Authorization: Bearer pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012" https://api.paddle.com/transactions
+out:      curl -H "Authorization: Bearer «paddle-api-key»" https://api.paddle.com/transactions
+
+case:     the keys of both environments in one configuration
+in:       PADDLE_API_KEY=pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012 PADDLE_SANDBOX_API_KEY=pdl_sdbx_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      PADDLE_API_KEY=«paddle-api-key» PADDLE_SANDBOX_API_KEY=«paddle-api-key»
+
+# The alphabets the three segments are written in, which are the classes
+# Paddle's own expression spells for each of them: the lowercase letters and the
+# digits for the first, and base62 — the letters of both cases and the digits —
+# for the two behind it. So capitals stand in the last two segments and nowhere
+# else, and a hyphen or a space ends the reading wherever it falls.
+
+case:     capitals in the last two segments
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789ABCDEF012345_01A
+out:      «paddle-api-key»
+
+case:     a capital in the first segment
+in:       pdl_live_apikey_0123456789ABCDEF0123456789_0123456789abcdef012345_012
+out:      pdl_live_apikey_0123456789ABCDEF0123456789_0123456789abcdef012345_012
+
+case:     a hyphen inside the second segment
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef-12345_012
+out:      pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef-12345_012
+
+case:     a first segment broken by a space
+in:       pdl_live_apikey_0123456789abcdef 123456789_0123456789abcdef012345_012
+out:      pdl_live_apikey_0123456789abcdef 123456789_0123456789abcdef012345_012
+
+# A first segment carrying i, l, o and u, which Crockford's base32 leaves out
+# and a ULID is therefore never written with. The first segment of the key
+# Paddle publishes carries none of the four, and the expression it publishes
+# admits the whole of the lowercase alphabet, so the wider class is what the
+# library reads and this is a key.
+
+case:     a first segment outside crockford's alphabet
+in:       pdl_live_apikey_0123456789abcdefilou012345_0123456789abcdef012345_012
+out:      «paddle-api-key»
+
+# The lengths either side of each count. All three are numbers Paddle states in
+# the expression it publishes, and all three are read as counts rather than
+# floors: a segment one character short is no key, and a run one character
+# longer than the last segment is a key and one character that belongs to no
+# credential. The second of those is the price of having no boundary behind the
+# match — a boundary there would drop the key rather than trim it, and a real
+# key written against a character of the same class would come through whole.
+
+case:     segments of twenty-six, twenty-two and three characters are a key
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      «paddle-api-key»
+
+case:     a first segment of twenty-five characters is not
+in:       pdl_live_apikey_0123456789abcdef012345678_0123456789abcdef012345_012
+out:      pdl_live_apikey_0123456789abcdef012345678_0123456789abcdef012345_012
+
+case:     a second segment of twenty-one characters is not
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef01234_012
+out:      pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef01234_012
+
+case:     a third segment of two characters is not
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_01
+out:      pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_01
+
+case:     a run longer than a key is a key and what follows it
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_0123
+out:      «paddle-api-key»3
+
+# What a key may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a key keeps its span whatever
+# word character it abuts.
+
+case:     a key after an underscore
+in:       PADDLE_API_KEY_pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      PADDLE_API_KEY_«paddle-api-key»
+
+case:     a key after a letter
+in:       xpdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      x«paddle-api-key»
+
+case:     a key before a hyphenated word
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012-suffix
+out:      «paddle-api-key»-suffix
+
+case:     a key at the end of a sentence
+in:       the key is pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012.
+out:      the key is «paddle-api-key».
+
+# Two keys written together. A key can begin inside another: its opening starts
+# on three lowercase characters, which a second segment may close on, and where
+# the separator in front of the third segment stands behind them and the text
+# carrying on from the key writes the rest of a prefix, a whole key begins
+# sixty-two characters into the one in front of it. The two spans overlap and
+# are redacted as one. Written with nothing at all between them the two are
+# separate values, and both go.
+
+case:     two keys with nothing between them
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012pdl_sdbx_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      «paddle-api-key»«paddle-api-key»
+
+case:     a key beginning inside the key before it
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      «paddle-api-key»
+
+# The prefix, which is what tells this format from text: the opening pdl_, an
+# environment Paddle writes, and the marker apikey_ its own component list says
+# is there to differentiate a key from anything else written with that opening.
+# Each of the three below misses one of them.
+
+case:     an uppercase prefix
+in:       PDL_LIVE_APIKEY_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      PDL_LIVE_APIKEY_0123456789abcdef0123456789_0123456789abcdef012345_012
+
+case:     an environment paddle does not publish
+in:       pdl_test_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      pdl_test_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+
+case:     a run of the right lengths opening with no prefix
+in:       xxx_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      xxx_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+
+# The other credentials Paddle issues, none of which this pattern reaches. The
+# webhook secret key carries the same opening and the marker ntfset_ instead,
+# and Paddle publishes one example of it and no grammar. The client-side token
+# carries no pdl_ opening at all. And the keys issued before 6 May 2025, which
+# Paddle calls legacy keys and states continue to work, are fifty lowercase
+# letters and digits with no prefix to be found at.
+
+case:     a webhook secret key
+in:       PADDLE_WEBHOOK_SECRET_KEY=pdl_ntfset_0123456789abcdef0123456789_0123456789abcdef0123456789abcdef
+out:      PADDLE_WEBHOOK_SECRET_KEY=pdl_ntfset_0123456789abcdef0123456789_0123456789abcdef0123456789abcdef
+
+case:     a client-side token
+in:       live_0123456789abcdef0123456789a
+out:      live_0123456789abcdef0123456789a
+
+case:     a legacy key in an environment assignment
+in:       PADDLE_API_KEY=0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      PADDLE_API_KEY=0123456789abcdef0123456789abcdef0123456789abcdef01
+
+# And the text this pattern leaves alone besides.
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line naming the api a key authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.paddle.com/transactions status=200
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.paddle.com/transactions status=200
