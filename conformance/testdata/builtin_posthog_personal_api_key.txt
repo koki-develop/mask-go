@@ -1,0 +1,237 @@
+# What PostHog personal API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run
+# 0123456789abcdefghijklmnopqrstuvwxyz, which no real credential is. That run is
+# thirty-six characters, so a body carries it and five characters more — the
+# shortest body the pattern reads, since the count is a floor. It is spelled in
+# lowercase where the case does not matter and in uppercase where the case is
+# what a case is about: base62 holds the letters of both, so either spelling is
+# a body.
+
+patterns: posthog-personal-api-key
+
+# The prefix PostHog writes a personal API key with. There is a single kind of
+# string here rather than a table of them: one key reads and writes the projects
+# and organizations its owner can reach, within the scopes and the teams it was
+# cut for, and nothing in the value says which those are. The cases below are
+# that one shape in the places a key is written.
+
+case:     a key in an environment assignment
+in:       POSTHOG_PERSONAL_API_KEY=phx_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      POSTHOG_PERSONAL_API_KEY=«posthog-personal-api-key»
+
+case:     a key in the bearer authorization header PostHog's private endpoints are called with
+in:       Authorization: Bearer phx_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      Authorization: Bearer «posthog-personal-api-key»
+
+case:     a key in json
+in:       {"personal_api_key":"phx_0123456789abcdefghijklmnopqrstuvwxyz01234"}
+out:      {"personal_api_key":"«posthog-personal-api-key»"}
+
+case:     a key on a command line
+in:       curl -H "Authorization: Bearer phx_0123456789abcdefghijklmnopqrstuvwxyz01234" https://us.i.posthog.com/api/projects/1/query/
+out:      curl -H "Authorization: Bearer «posthog-personal-api-key»" https://us.i.posthog.com/api/projects/1/query/
+
+case:     a key in a configuration environment block
+in:       "env": {"POSTHOG_PERSONAL_API_KEY": "phx_0123456789abcdefghijklmnopqrstuvwxyz01234"}
+out:      "env": {"POSTHOG_PERSONAL_API_KEY": "«posthog-personal-api-key»"}
+
+# The four other prefixes PostHog writes with the same two letters. Each is a
+# credential of its own and none of them is this one, so what separates them
+# here is the single character behind the ph. The project API token is the one
+# whose separation a caller acts on: it is published by design, written into the
+# page source of every site PostHog is installed on, so it is a value a caller
+# has reason to leave in a log while redacting the key beside it.
+
+case:     a project api token
+in:       phc_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      phc_0123456789abcdefghijklmnopqrstuvwxyz01234
+
+case:     a project secret api key
+in:       phs_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      phs_0123456789abcdefghijklmnopqrstuvwxyz01234
+
+case:     an oauth access token
+in:       pha_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      pha_0123456789abcdefghijklmnopqrstuvwxyz01234
+
+case:     an oauth refresh token
+in:       phr_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      phr_0123456789abcdefghijklmnopqrstuvwxyz01234
+
+# The alphabet the body is written in. It is base62 — the letters of both cases
+# and the digits — which is the wider of the two PostHog has minted a body in: a
+# key minted today is base57, base62 with the five characters a reader confuses
+# taken out of it, and every key minted before that is base62 and may carry any
+# of the five. The two characters base64url adds, the hyphen and the underscore,
+# are in neither, and either of them ends a body.
+
+case:     a body written in capitals
+in:       phx_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01234
+out:      «posthog-personal-api-key»
+
+case:     a body carrying the five characters base57 leaves out
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz01OIl
+out:      «posthog-personal-api-key»
+
+case:     a body carrying a hyphen
+in:       phx_0123456789abcdefghij-lmnopqrstuvwxyz01234
+out:      phx_0123456789abcdefghij-lmnopqrstuvwxyz01234
+
+case:     a body carrying an underscore
+in:       phx_0123456789abcdefghij_lmnopqrstuvwxyz01234
+out:      phx_0123456789abcdefghij_lmnopqrstuvwxyz01234
+
+# The lengths either side of forty-one. PostHog states no length for a key and
+# has minted a body three ways — thirty-two random bytes in base62, then
+# thirty-five, then thirty-five in base57 — each of them longer than the last, so
+# the count is read as a floor rather than exactly. The floor sits below the
+# shortest of the three, where what falls under it stops being something a caller
+# would meet, and one character past the forty of a git SHA. What it costs is the
+# second case below: a key cut short of forty-one keeps every random character
+# written in front of the cut, and none of them is redacted.
+
+case:     a body of forty-one characters is a key
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      «posthog-personal-api-key»
+
+case:     a body of forty characters is not
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      phx_0123456789abcdefghijklmnopqrstuvwxyz0123
+
+case:     a body of the length a key is minted at today
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      «posthog-personal-api-key»
+
+# What a key may be written against. There is no boundary on either side of the
+# prefix, so a key keeps its span whatever word character it abuts — and where
+# the run of its alphabet carries on past the floor, what carries it on is
+# redacted with the key. A hyphen and an underscore end the run instead.
+
+case:     a key after an underscore
+in:       POSTHOG_PERSONAL_API_KEY_phx_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      POSTHOG_PERSONAL_API_KEY_«posthog-personal-api-key»
+
+case:     a key after a letter
+in:       xphx_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      x«posthog-personal-api-key»
+
+case:     a word written against a key
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz01234suffix
+out:      «posthog-personal-api-key»
+
+case:     a hyphenated word written against a key
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz01234-suffix
+out:      «posthog-personal-api-key»-suffix
+
+case:     an underscored word written against a key
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz01234_suffix
+out:      «posthog-personal-api-key»_suffix
+
+case:     a key at the end of a sentence
+in:       the key is phx_0123456789abcdefghijklmnopqrstuvwxyz01234.
+out:      the key is «posthog-personal-api-key».
+
+# Two keys written together. The three letters the prefix opens with belong to
+# the alphabet a body is written in, so a body may close with phx and the
+# underscore of the next key stand directly behind it; the second key begins
+# three characters before the first one ends, the two spans overlap and are
+# redacted as one. Written with nothing at all between them the first body
+# reaches three characters into the second prefix and stops at the underscore
+# behind them, so those two overlap as well. Written with a space between them
+# the two are separate values, and both go.
+
+case:     a key beginning inside the key before it
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz01phx_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      «posthog-personal-api-key»
+
+case:     two keys with nothing between them
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz01234phx_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01234
+out:      «posthog-personal-api-key»
+
+case:     two keys separated by a space
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz01234 phx_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01234
+out:      «posthog-personal-api-key» «posthog-personal-api-key»
+
+# What this pattern redacts that nobody issued. The prefix closes with an
+# underscore, which standard base64 writes nowhere, so only a base64url encoding
+# can hold one — and where forty-one base62 characters follow, the run from the
+# prefix to the end of them is redacted whether or not PostHog issued it. That is
+# the answer rather than a fault in it, because such a run is a key's format
+# exactly and nothing in the text tells the two apart: sparing these would spare
+# a real key written the same way. What is taken is a stretch of a value that was
+# already opaque to a reader.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzzphx_0123456789abcdefghijklmnopqrstuvwxyz01234zzzz
+out:      payload=zzzz«posthog-personal-api-key»
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzphx_0123456789abcdefghijklmnopqrstuvwxyz01234zzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«posthog-personal-api-key»
+
+# A digest written behind the prefix, which is the one over-match here that takes
+# a value a reader had a use for. Hexadecimal digits are base62 and a digest
+# carries nothing that ends a run, so phx_ and the sixty-four characters of a
+# SHA-256 are a key's format exactly, and both are redacted. Declining them would
+# mean declining every key PostHog happened to write in the digits alone, which
+# is a whole credential against a cache key. What holds either side of it is the
+# floor and the prefix: a git SHA is forty characters, one short of a body, an
+# MD5 is thirty-two, and a hyphen is no character the prefix carries.
+
+case:     a sha256 behind the prefix
+in:       phx_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «posthog-personal-api-key»
+
+case:     a sha256 in a cache key
+in:       key: phx_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      key: «posthog-personal-api-key»
+
+case:     a git sha behind the prefix, one character short of a body
+in:       phx_0123456789abcdef0123456789abcdef01234567
+out:      phx_0123456789abcdef0123456789abcdef01234567
+
+case:     an md5 behind the prefix
+in:       phx_0123456789abcdef0123456789abcdef
+out:      phx_0123456789abcdef0123456789abcdef
+
+case:     a sha256 behind a hyphen rather than the prefix
+in:       phx-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      phx-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# And what this pattern leaves alone. The first three are the prefix, read in the
+# case PostHog writes it, in the underscore it closes with and in that underscore
+# being there at all. The two after them are the alphabet and the anchor: a body
+# a space has broken, and a run of the right length with no prefix in front of
+# it. That last one is also the shape of the keys PostHog issued before it wrote
+# a prefix on any of them, which its authentication still accepts and this
+# pattern cannot locate: a bare run of base62 with nothing in the text to tell it
+# from an identifier.
+
+case:     an uppercase prefix
+in:       PHX_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      PHX_0123456789abcdefghijklmnopqrstuvwxyz01234
+
+case:     a hyphen where the prefix carries an underscore
+in:       phx-0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      phx-0123456789abcdefghijklmnopqrstuvwxyz01234
+
+case:     the prefix without its closing underscore
+in:       phx0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      phx0123456789abcdefghijklmnopqrstuvwxyz01234
+
+case:     a body broken by a space
+in:       phx_0123456789abcdefghij lmnopqrstuvwxyz01234
+out:      phx_0123456789abcdefghij lmnopqrstuvwxyz01234
+
+case:     a key of the shape PostHog issued before it wrote a prefix
+in:       0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      0123456789abcdefghijklmnopqrstuvwxyz01234
+
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence

@@ -515,6 +515,19 @@ var builtinPatterns = []struct {
 		benchmarks: planetScaleTokenFindBenchmarks,
 	},
 	{
+		name:    "posthog-personal-api-key",
+		pattern: PostHogPersonalAPIKey,
+		ref:     referencePostHogPersonalAPIKeyFind,
+		samples: []string{
+			"POSTHOG_PERSONAL_API_KEY=phx_0123456789abcdefghijklmnopqrstuvwxyz01234",
+			"phx_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01234",
+			"phx_0123456789abcdefghijklmnopqrstuvwxyz0123456789ab",
+			"phx_0123456789abcdefghijklmnopqrstuvwxyz01phx_0123456789abcdefghijklmnopqrstuvwxyz01234",
+		},
+		anchors:    []string{"phx_0"},
+		benchmarks: postHogPersonalAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "postman-api-key",
 		pattern: PostmanAPIKey,
 		ref:     referencePostmanAPIKeyFind,
