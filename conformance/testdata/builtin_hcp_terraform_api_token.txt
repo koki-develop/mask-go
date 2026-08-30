@@ -1,0 +1,166 @@
+# What HCP Terraform API tokens the library redacts, and what it leaves alone.
+#
+# Four kinds fall under one name, and it is HashiCorp that puts them there: the
+# user token a person authenticates with, the team token a pipeline runs plans
+# and applies under, the organization token that manages teams and workspaces
+# and the token an agent pool authenticates with are one format, printed the
+# same way by the four endpoints that issue them. Terraform Enterprise is the
+# same application self-hosted and issues the same token.
+#
+# Every token here is built from the ordered run 0123456789abcdef. An identifier
+# is fourteen letters and digits, which is 0123456789abcd; a secret is
+# sixty-seven, which is that run four times over with 012 behind it. No real
+# token is either.
+
+patterns: hcp-terraform-api-token
+
+# The places a token is written, which are the places HashiCorp's own
+# documentation puts one: the environment variable the CLI reads it from, the
+# credentials block of a CLI configuration file, the credentials file terraform
+# login writes, the bearer header an API request carries it in and the command
+# line a curl example writes that header on.
+
+case:     a token in an environment assignment
+in:       TF_TOKEN_app_terraform_io=0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      TF_TOKEN_app_terraform_io=«hcp-terraform-api-token»
+
+case:     a token in a cli credentials block
+in:       credentials "app.terraform.io" {\n  token = "0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012"\n}
+out:      credentials "app.terraform.io" {\n  token = "«hcp-terraform-api-token»"\n}
+
+case:     a token in the credentials file terraform login writes
+in:       {"credentials":{"app.terraform.io":{"token":"0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012"}}}
+out:      {"credentials":{"app.terraform.io":{"token":"«hcp-terraform-api-token»"}}}
+
+case:     a token in a bearer token header
+in:       Authorization: Bearer 0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      Authorization: Bearer «hcp-terraform-api-token»
+
+case:     a token on a command line
+in:       curl -H "Authorization: Bearer 0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012" https://app.terraform.io/api/v2/account/details
+out:      curl -H "Authorization: Bearer «hcp-terraform-api-token»" https://app.terraform.io/api/v2/account/details
+
+# The alphabet, which is the letters of both cases with the digits. gitleaks and
+# betterleaks admit the hyphen, the underscore and the equals sign in the
+# secret; no token any source publishes carries one, and what those three
+# characters would let a match run over is the hyphenated slug and the
+# snake-cased identifier a log line is full of.
+
+case:     portions written in uppercase
+in:       0123456789ABCD.atlasv1.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF012
+out:      «hcp-terraform-api-token»
+
+case:     a hyphen in the secret
+in:       0123456789abcd.atlasv1.0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcdef012
+out:      0123456789abcd.atlasv1.0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcdef012
+
+case:     an underscore in the identifier
+in:       0123456789abc_.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      0123456789abc_.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+
+case:     an equals sign in the secret
+in:       0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01=
+out:      0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01=
+
+# The counts either side of the separator, which are fourteen and sixty-seven.
+# HashiCorp states no grammar; what it publishes is one token apiece on the four
+# endpoints that issue them, and all four are those two counts. They are read
+# exactly rather than as floors, and there is no boundary either side, so a
+# longer run is a token with characters written against its ends and those
+# characters stay in the text.
+
+case:     an identifier one character short
+in:       0123456789abc.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      0123456789abc.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+
+case:     a secret one character short
+in:       0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+
+case:     runs longer than the counts either side
+in:       xy0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123
+out:      xy«hcp-terraform-api-token»3
+
+# The separator, which is the whole of what tells this format from text. It is
+# read in the one case HashiCorp writes it, both full stops are asked for, and
+# the version behind the name is not the API's, which is v2 in every path a
+# token is spent on.
+
+case:     an uppercase separator
+in:       0123456789abcd.ATLASV1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      0123456789abcd.ATLASV1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+
+case:     the separator without the full stop it opens with
+in:       0123456789abcdatlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      0123456789abcdatlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+
+case:     the separator without the full stop it closes with
+in:       0123456789abcd.atlasv10123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      0123456789abcd.atlasv10123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+
+case:     a hyphen where the separator opens
+in:       0123456789abcd-atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      0123456789abcd-atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+
+case:     the version the token format does not carry
+in:       0123456789abcd.atlasv2.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      0123456789abcd.atlasv2.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+
+# What a token may be written against. There is no boundary on either side, so a
+# token keeps its span whatever word character abuts it — and what abuts it
+# stays in the text, since both counts are read exactly.
+
+case:     a token after an underscore
+in:       TF_TOKEN_0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      TF_TOKEN_«hcp-terraform-api-token»
+
+case:     a token after a letter
+in:       x0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      x«hcp-terraform-api-token»
+
+case:     a word written against a token
+in:       0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012suffix
+out:      «hcp-terraform-api-token»suffix
+
+case:     a token at the end of a sentence
+in:       the token is 0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012.
+out:      the token is «hcp-terraform-api-token».
+
+# Two tokens written together. A separator carries two full stops and neither
+# portion may hold one, so the tokens below are two values and are redacted
+# apart whether or not anything is written between them.
+
+case:     two tokens with nothing between them
+in:       0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0120123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      «hcp-terraform-api-token»«hcp-terraform-api-token»
+
+case:     two tokens separated by a space
+in:       0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012 0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      «hcp-terraform-api-token» «hcp-terraform-api-token»
+
+# What this pattern redacts that HCP Terraform did not issue. Vagrant Cloud
+# writes its personal tokens in the same separator, the same two counts and the
+# same alphabet, which is what trufflehog carrying a second detector on one
+# expression records. Nothing in either string reads the two apart, so such a
+# token is redacted under this name rather than left in the text — declining it
+# would mean declining every HCP Terraform token there is.
+
+case:     a vagrant cloud token
+in:       VAGRANT_CLOUD_TOKEN=0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
+out:      VAGRANT_CLOUD_TOKEN=«hcp-terraform-api-token»
+
+# The other HashiCorp credential this library reads, which this pattern locates
+# nothing in, and the text an HCP Terraform log line is written from, which
+# carries the host name a token is spent against without carrying a separator.
+
+case:     a vault token
+in:       VAULT_TOKEN=hvs.0123456789abcdef01234567
+out:      VAULT_TOKEN=hvs.0123456789abcdef01234567
+
+case:     a log line naming the api a token is spent on
+in:       time=2026-08-17T00:00:00Z level=info msg="applied run" url=https://app.terraform.io/api/v2/runs
+out:      time=2026-08-17T00:00:00Z level=info msg="applied run" url=https://app.terraform.io/api/v2/runs
+
+case:     an environment variable holding a host name
+in:       TF_CLOUD_HOSTNAME=app.terraform.io
+out:      TF_CLOUD_HOSTNAME=app.terraform.io
