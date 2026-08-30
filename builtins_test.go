@@ -276,6 +276,23 @@ var builtinPatterns = []struct {
 		benchmarks: dynatraceTokenFindBenchmarks,
 	},
 	{
+		name:    "fly-io-access-token",
+		pattern: FlyIOAccessToken,
+		ref:     referenceFlyIOAccessTokenFind,
+		samples: []string{
+			"FLY_API_TOKEN=fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"Authorization: FlyV1 fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"fm1r_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"fm1a_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"fm2_0123456789abcde+0123456789abcde/0123456789abcdef0123456789abcdef",
+			"fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd==",
+			"fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef,fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeffm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"fm2_0123456789abcdef", "fm1r_0123456789abcdef", "fm1a_0123456789abcdef"},
+		benchmarks: flyIOAccessTokenFindBenchmarks,
+	},
+	{
 		name:    "github-token",
 		pattern: GitHubToken,
 		ref:     referenceGitHubTokenFind,

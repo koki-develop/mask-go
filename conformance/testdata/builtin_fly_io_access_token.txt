@@ -1,0 +1,246 @@
+# What Fly.io access tokens the library redacts, and what it leaves alone.
+#
+# Three labels and one alphabet: fm2_ is what superfly/macaroon writes a token
+# under today, fm1r_ and fm1a_ are the two its Parse decodes alongside it, and
+# behind any of them stands the standard base64 of an encoded macaroon. Every
+# scope Fly.io issues a token for — a personal access token, a deploy token cut
+# for one app, an org token, an SSH token, a machine-exec token — is that same
+# string, so they are one pattern and the vendor's own term for the whole of
+# them is access token.
+#
+# Every body here is the ordered run 0123456789abcdef written four times over,
+# which is the sixty-four characters the floor asks for and no real credential
+# is. A real body is longer: it carries the MessagePack encoding of a macaroon,
+# and the floor is read off the sixteen-byte nonce and thirty-two-byte tail one
+# cannot be written without.
+
+patterns: fly-io-access-token
+
+# The places a token is written: the environment flyctl and the Machines API
+# clients read one from, the Authorization header it is sent in under the FlyV1
+# scheme Fly.io defines for it, the Bearer header flyctl auth token's output
+# goes in, a GitHub Actions secret and a command line.
+
+case:     a token in an environment assignment
+in:       FLY_API_TOKEN=fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      FLY_API_TOKEN=«fly-io-access-token»
+
+case:     a token in the flyv1 authorization header
+in:       Authorization: FlyV1 fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      Authorization: FlyV1 «fly-io-access-token»
+
+case:     a token in a bearer authorization header
+in:       Authorization: Bearer fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      Authorization: Bearer «fly-io-access-token»
+
+case:     a token in an actions secret
+in:       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+out:      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+case:     a token on a command line
+in:       fly deploy --access-token fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      fly deploy --access-token «fly-io-access-token»
+
+case:     a token in json
+in:       {"access_token":"fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}
+out:      {"access_token":"«fly-io-access-token»"}
+
+# The two labels Parse decodes alongside fm2. Each falls in the same arm of its
+# switch, is decoded with the same base64.StdEncoding.DecodeString and is handed
+# to the same macaroon.Decode, so the alphabet and the count are stated for all
+# three by one source. Nothing mints a v1 label today, but a token carrying one
+# is a token the vendor's own parser still accepts.
+
+case:     a v1 permission token
+in:       fm1r_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «fly-io-access-token»
+
+case:     a v1 discharge token
+in:       fm1a_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «fly-io-access-token»
+
+# The header carries more than one token where a third-party caveat has been
+# discharged: superfly/macaroon joins them with commas, each carrying its own
+# label. The comma belongs to neither the alphabet nor the padding, so each body
+# ends where the next token begins and both are redacted. That whole value is
+# what Fly.io hands a user as one access token.
+
+case:     two tokens joined by a comma
+in:       FlyV1 fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef,fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      FlyV1 «fly-io-access-token»,«fly-io-access-token»
+
+case:     a permission token and the discharge answering its caveat
+in:       FlyV1 fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef,fm1a_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      FlyV1 «fly-io-access-token»,«fly-io-access-token»
+
+# The alphabet, which is the standard one of RFC 4648 because that is what
+# superfly/macaroon writes a body with and reads it back with. The two
+# characters that tell it from the base64url alphabet the rest of this library
+# reads are the plus and the slash, and the underscore standing in the place of
+# one of them is what closes the prefix — so it ends a body wherever it is
+# written.
+
+case:     a body carrying a plus and a slash
+in:       fm2_0123456789abcde+0123456789abcde/0123456789abcdef0123456789abcdef
+out:      «fly-io-access-token»
+
+case:     a body broken by a hyphen
+in:       fm2_0123456789abcde-0123456789abcdef0123456789abcdef0123456789abcdef
+out:      fm2_0123456789abcde-0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a body broken by an underscore
+in:       fm2_0123456789abcde_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      fm2_0123456789abcde_0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a body broken by a space
+in:       fm2_0123456789abcde 0123456789abcdef0123456789abcdef0123456789abcdef
+out:      fm2_0123456789abcde 0123456789abcdef0123456789abcdef0123456789abcdef
+
+# The padding, which base64 writes where a body's bytes do not fill the last
+# group and never more than two characters of. Fly.io's encoder writes it and
+# the decoder on the other side demands it, so a body closing on one or two is a
+# body Fly.io could have written and one closing on three is not. Padding counts
+# toward the floor, and it stands where a body ends rather than inside one.
+
+case:     a body closing with one padding character
+in:       fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde=
+out:      «fly-io-access-token»
+
+case:     a body closing with two
+in:       fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd==
+out:      «fly-io-access-token»
+
+case:     a body padded past what base64 asks for
+in:       fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc===
+out:      fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc===
+
+case:     padding inside a body
+in:       fm2_0123456789abcdef0123456789abcd==0123456789abcdef0123456789abcdef
+out:      fm2_0123456789abcdef0123456789abcd==0123456789abcdef0123456789abcdef
+
+# The count either side of sixty-four. Fly.io publishes no length, and there is
+# none to publish: a body is a MessagePack encoding whose size moves with the
+# caveats attenuating the token. What every one of them carries is the
+# sixteen-byte random nonce and the thirty-two-byte HMAC-SHA256 tail, which come
+# to sixty-four base64 characters, and that is the floor. It is read as a floor
+# rather than exactly, so a run carrying on past it is redacted to its end —
+# what an exact count would leave in the output is the rest of a token. What the
+# floor costs is the middle case: a token cut short of sixty-four characters
+# keeps every character written before the cut.
+
+case:     a body of sixty-four characters is a token
+in:       fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «fly-io-access-token»
+
+case:     a body of sixty-three characters is not
+in:       fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     an alphabet run longer than the floor is a token to the end of it
+in:       fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123
+out:      «fly-io-access-token»
+
+# The prefix, which is four characters and is the whole of what tells this
+# format from text. It is read in the one case Fly.io writes it, and the
+# underscore it closes with is asked for.
+
+case:     an uppercase label
+in:       FM2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      FM2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     the label with no separator
+in:       fm20123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      fm20123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a hyphen where the prefix closes
+in:       fm2-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      fm2-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# The label superfly/macaroon's format.go names that this pattern does not read.
+# fo1 is the OAuth token Fly.io issued before macaroons, and it is the arm of
+# Parse that skips: the parser goes on to the next token without decoding
+# anything, so no source of the vendor's states what alphabet or what length
+# stands behind it, and a label read without a body's grammar is a pattern
+# firing on the label. A character no label names, and a v1 label with nothing
+# naming its kind, are read no further either.
+
+case:     a legacy oauth token label
+in:       fo1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      fo1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a kind no v1 label names
+in:       fm1x_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      fm1x_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a v1 label with no character naming its kind
+in:       fm1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      fm1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# What a token may be written against. There is no boundary on either side of
+# it, so a token keeps its span whatever word character abuts it — and where the
+# run of its alphabet carries on past the floor, what carries it on is redacted
+# with the token. A character outside the alphabet ends the run instead.
+
+case:     a token after an underscore
+in:       FLY_API_TOKEN_fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      FLY_API_TOKEN_«fly-io-access-token»
+
+case:     a token after a letter
+in:       xfm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      x«fly-io-access-token»
+
+case:     a word written against a token
+in:       fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsuffix
+out:      «fly-io-access-token»
+
+case:     a token at the end of a sentence
+in:       the token is fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.
+out:      the token is «fly-io-access-token».
+
+# Two tokens written together. Every character of every label belongs to the
+# alphabet a body is written in, so a body may close with one and the underscore
+# of the next token stand directly behind it: the second token begins a label's
+# width before the first one ends, the two spans overlap and are redacted as
+# one. Written with nothing at all between them the first body reaches into the
+# second label and stops at that underscore, so those two overlap as well.
+
+case:     a token beginning inside the token before it
+in:       fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcfm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «fly-io-access-token»
+
+case:     two tokens with nothing between them
+in:       fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeffm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «fly-io-access-token»
+
+case:     two tokens separated by a space
+in:       fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «fly-io-access-token» «fly-io-access-token»
+
+# What this pattern redacts that nobody issued. base64url is the one encoding in
+# ordinary use carrying the underscore, so a payload written in it can hold a
+# whole prefix — and where sixty-four characters of the sixty-two its alphabet
+# shares with this one follow, the run from the prefix to the end of them is
+# redacted whether or not Fly.io issued it. That is the answer rather than a
+# fault in it: such a run is a token's format exactly, nothing in the text tells
+# the two apart, and what is taken is a stretch of a value already opaque to a
+# reader. A payload carrying a hyphen or an underscore among those characters
+# ends the body where it stands and is left alone.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=eyJzdWIiOiJhYmNfm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      payload=eyJzdWIiOiJhYmN«fly-io-access-token»
+
+case:     a base64url run carrying a hyphen behind the prefix
+in:       payload=eyJzdWIiOiJhYmNfm2_0123456789abcde-0123456789abcdef0123456789abcdef0123456789abcdef
+out:      payload=eyJzdWIiOiJhYmNfm2_0123456789abcde-0123456789abcdef0123456789abcdef0123456789abcdef
+
+# The text a Fly.io log line is written from, which carries the words a prefix
+# is spelled from without carrying a prefix.
+
+case:     a log line naming the api a token is spent on
+in:       time=2026-08-17T00:00:00Z level=info msg="deploying app" url=https://api.machines.dev/v1/apps/acme/machines
+out:      time=2026-08-17T00:00:00Z level=info msg="deploying app" url=https://api.machines.dev/v1/apps/acme/machines
+
+case:     an environment variable holding a host name
+in:       FLY_API_HOSTNAME=https://api.machines.dev
+out:      FLY_API_HOSTNAME=https://api.machines.dev
