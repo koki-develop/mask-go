@@ -38,7 +38,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 )...))
 ```
 
-The 60 built-in patterns cover 49 vendors and locate 150 kinds of credential:
+The 61 built-in patterns cover 50 vendors and locate 155 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -67,6 +67,7 @@ The 60 built-in patterns cover 49 vendors and locate 150 kinds of credential:
 | `JWT() Pattern` | signed JSON Web Tokens, encrypted JSON Web Tokens |
 | `LinearPatterns() []Pattern` | Linear personal API keys |
 | `NeonPatterns() []Pattern` | Neon personal API keys, organization API keys, project-scoped API keys |
+| `NetlifyPatterns() []Pattern` | Netlify personal access tokens, Netlify CLI tokens, OAuth access tokens, app.netlify.com tokens, build tokens |
 | `NewRelicPatterns() []Pattern` | New Relic user keys |
 | `NotionPatterns() []Pattern` | Notion internal connection tokens, Notion OAuth access tokens, Notion personal access tokens |
 | `NPMPatterns() []Pattern` | npm granular access tokens, npm legacy read-only tokens, npm legacy automation tokens, npm legacy publish tokens |

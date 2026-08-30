@@ -1,0 +1,251 @@
+# What Netlify authentication tokens the library redacts, and what it leaves
+# alone.
+#
+# Every token here is built from the ordered run
+# 0123456789abcdefghijklmnopqrstuvwxyz, which no real credential is. That run is
+# thirty-six characters and so is a whole token body — the shortest one the
+# pattern reads, since the count is a floor. It is spelled in lowercase where
+# the case does not matter and in uppercase where the case is what a case is
+# about: base62 holds the letters of both, so either spelling is a body.
+
+patterns: netlify-auth-token
+
+# The five kinds Netlify issues in this format. Each is nf, one character naming
+# the kind and an underscore, and behind that the same body, so what the
+# character says is which kind a token is and not what the token may reach.
+
+case:     a personal access token
+in:       nfp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «netlify-auth-token»
+
+case:     a netlify cli token
+in:       nfc_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «netlify-auth-token»
+
+case:     an oauth access token
+in:       nfo_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «netlify-auth-token»
+
+case:     an app.netlify.com token
+in:       nfu_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «netlify-auth-token»
+
+case:     a build token
+in:       nfb_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «netlify-auth-token»
+
+# The places a token is written.
+
+case:     a token in an environment assignment
+in:       NETLIFY_AUTH_TOKEN=nfp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      NETLIFY_AUTH_TOKEN=«netlify-auth-token»
+
+case:     a token in the config file the netlify cli logs in to
+in:       {"users":{"0123":{"auth":{"token":"nfc_0123456789abcdefghijklmnopqrstuvwxyz"}}}}
+out:      {"users":{"0123":{"auth":{"token":"«netlify-auth-token»"}}}}
+
+case:     a token in the authorization header a request to the api carries
+in:       Authorization: Bearer nfp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      Authorization: Bearer «netlify-auth-token»
+
+case:     a token on a command line
+in:       netlify deploy --prod --auth nfp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      netlify deploy --prod --auth «netlify-auth-token»
+
+case:     a token in a workflow environment block
+in:       env:\n  NETLIFY_AUTH_TOKEN: nfb_0123456789abcdefghijklmnopqrstuvwxyz
+out:      env:\n  NETLIFY_AUTH_TOKEN: «netlify-auth-token»
+
+# The alphabet the thirty-six characters are written in. Netlify names none, and
+# base62 — the letters of both cases and the digits — is what the format's own
+# shape asks for: the alphabet that adds the underscore to base62 is base64url,
+# which adds the hyphen with it, and a body admitting the underscore would carry
+# the character the prefix is read off by. Either of the two ends a body here.
+
+case:     a body written in capitals
+in:       nfp_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      «netlify-auth-token»
+
+case:     a body carrying a hyphen
+in:       nfp_0123456789abcdef-ghijklmnopqrstuvwxyz
+out:      nfp_0123456789abcdef-ghijklmnopqrstuvwxyz
+
+case:     a body carrying an underscore
+in:       nfp_0123456789abcdef_ghijklmnopqrstuvwxyz
+out:      nfp_0123456789abcdef_ghijklmnopqrstuvwxyz
+
+# The lengths either side of thirty-six. Netlify states one number, that a field
+# holding a token needs room for forty characters, and writes its prefixes with
+# no underscore in them; the thirty-six behind a four-character prefix is read
+# off the tokens instead, and comes to that forty. Like the npm and GitHub
+# bodies and unlike the AWS access key ID, it is read as a floor rather than a
+# count: thirty-five characters are not a token, and thirty-seven are one token
+# to the end of its run rather than a token and a character left over. What the
+# floor costs is the middle case below — a token cut short of thirty-six keeps
+# every random character written in front of the cut, and none of them is
+# redacted.
+
+case:     a body of thirty-six characters is a token
+in:       nfp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «netlify-auth-token»
+
+case:     a body of thirty-five characters is not
+in:       nfp_0123456789abcdefghijklmnopqrstuvwxy
+out:      nfp_0123456789abcdefghijklmnopqrstuvwxy
+
+case:     an alphabet run longer than the floor is a token to the end of it
+in:       nfp_0123456789abcdefghijklmnopqrstuvwxyz0
+out:      «netlify-auth-token»
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts — and where the run of its alphabet carries on past
+# the floor, what carries it on is redacted with the token. A hyphen and an
+# underscore end the run instead.
+
+case:     a token after an underscore
+in:       NETLIFY_TOKEN_nfp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      NETLIFY_TOKEN_«netlify-auth-token»
+
+case:     a token after a letter
+in:       xnfp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      x«netlify-auth-token»
+
+case:     a word written against a token
+in:       nfp_0123456789abcdefghijklmnopqrstuvwxyzsuffix
+out:      «netlify-auth-token»
+
+case:     a hyphenated word written against a token
+in:       nfp_0123456789abcdefghijklmnopqrstuvwxyz-suffix
+out:      «netlify-auth-token»-suffix
+
+case:     an underscored word written against a token
+in:       nfp_0123456789abcdefghijklmnopqrstuvwxyz_suffix
+out:      «netlify-auth-token»_suffix
+
+case:     a token at the end of a sentence
+in:       the token is nfp_0123456789abcdefghijklmnopqrstuvwxyz.
+out:      the token is «netlify-auth-token».
+
+# Two tokens written together, which merge for two different reasons. The three
+# characters in front of the underscore belong to the alphabet a body is written
+# in, so a body may close with nf and a kind character and the underscore of the
+# next token stand directly behind it; the second token then begins three
+# characters before the first one ends, and the two spans overlap. Two tokens
+# written straight against each other merge as well, and the reason there is
+# that a span reaches the end of its run: the first token's run carries on
+# through the nf and the kind character of the second prefix and stops at that
+# prefix's underscore, so the first span already covers where the second one
+# begins. Parted by anything a run does not admit, they are two values and both
+# go.
+
+case:     a token beginning inside the token before it
+in:       nfp_0123456789abcdefghijklmnopqrstuvwnfp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «netlify-auth-token»
+
+case:     two tokens with nothing between them
+in:       nfp_0123456789abcdefghijklmnopqrstuvwxyznfo_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      «netlify-auth-token»
+
+case:     two tokens of different kinds separated by a space
+in:       nfp_0123456789abcdefghijklmnopqrstuvwxyz nfb_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      «netlify-auth-token» «netlify-auth-token»
+
+# What this pattern redacts that nobody issued. The prefix carries an
+# underscore, which standard base64 writes nowhere, so only a base64url encoding
+# can hold one — and there the four characters of a prefix stand about once in
+# three million characters. Where thirty-six base62 characters follow, the run
+# from the prefix to the end of them is redacted whether or not Netlify issued
+# it. That is the answer rather than a fault in it, because such a run is a
+# token's format exactly and nothing in the text tells the two apart: sparing
+# these would spare a real token written the same way. What is taken is a
+# stretch of a value that was already opaque to a reader.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzznfp_0123456789abcdefghijklmnopqrstuvwxyzzzzz
+out:      payload=zzzz«netlify-auth-token»
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzznfp_0123456789abcdefghijklmnopqrstuvwxyzzzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«netlify-auth-token»
+
+# A digest written behind the prefix. Hexadecimal digits are base62 and a digest
+# carries nothing that ends a run, so a prefix and the forty characters of a
+# SHA-1 are a token's format exactly, as a prefix and the sixty-four of a
+# SHA-256 are. Both are redacted. Declining them would mean declining every
+# token Netlify happened to write in the digits alone, which is a whole
+# credential against a cache key. What holds either side of it is the floor and
+# the prefix: an MD5 is thirty-two characters, four short of a body, and a
+# hyphen is no character a prefix carries.
+
+case:     a sha1 behind the prefix
+in:       nfp_0123456789abcdef0123456789abcdef01234567
+out:      «netlify-auth-token»
+
+case:     a sha256 in a cache key
+in:       key: nfp_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      key: «netlify-auth-token»
+
+case:     an md5 behind the prefix, four characters short of a body
+in:       nfp_0123456789abcdef0123456789abcdef
+out:      nfp_0123456789abcdef0123456789abcdef
+
+case:     a sha1 behind a hyphen rather than the prefix
+in:       nfp-0123456789abcdef0123456789abcdef01234567
+out:      nfp-0123456789abcdef0123456789abcdef01234567
+
+# And what this pattern leaves alone. The first three are the prefix, read in
+# the case Netlify writes it and in all four of its characters — the third of
+# them a character naming no kind, which is what a name opening nfs_ rests on.
+# The two after them are the alphabet and the anchor: a body a space has broken,
+# and a run of the right length with no prefix in front of it. Of the three
+# after those, a digest and a sentence hold no underscore where a prefix wants
+# one and so hold no position to be found at however long they run; the names
+# Unicode normalization code is written with do carry a prefix, and what turns
+# them away is the next underscore of the name, which ends the run long before
+# thirty-six characters of it have been read.
+
+case:     an uppercase prefix
+in:       NFP_0123456789abcdefghijklmnopqrstuvwxyz
+out:      NFP_0123456789abcdefghijklmnopqrstuvwxyz
+
+case:     a hyphen where the prefix carries an underscore
+in:       nfp-0123456789abcdefghijklmnopqrstuvwxyz
+out:      nfp-0123456789abcdefghijklmnopqrstuvwxyz
+
+case:     a character naming no kind
+in:       nfs_0123456789abcdefghijklmnopqrstuvwxyz
+out:      nfs_0123456789abcdefghijklmnopqrstuvwxyz
+
+case:     a body broken by a space
+in:       nfp_0123456789abcdef ghijklmnopqrstuvwxyz
+out:      nfp_0123456789abcdef ghijklmnopqrstuvwxyz
+
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdefghijklmnopqrstuvwxyz
+out:      0123456789abcdefghijklmnopqrstuvwxyz
+
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     the names unicode normalization code is written with
+in:       nfc_normalized = nfc_normalize(nfc_quick_check(input_string))
+out:      nfc_normalized = nfc_normalize(nfc_quick_check(input_string))
+
+# And a Netlify credential this pattern has nothing to say about. The format
+# this one replaced carried no prefix and nothing of its own to be recognised
+# by, so the only thing left to locate one by is the word Netlify standing near
+# it — a rule about the text around a value rather than about the value — and
+# the run such a rule admits is a run of forty-odd letters, digits, underscores
+# and hyphens, which a digest and an ordinary snake_case name both fit. Netlify
+# has left those tokens working, so what stands here is a live credential the
+# library does not redact.
+
+case:     a token of the format netlify issued before this one
+in:       NETLIFY_AUTH_TOKEN=0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      NETLIFY_AUTH_TOKEN=0123456789abcdefghijklmnopqrstuvwxyz0123456789ab

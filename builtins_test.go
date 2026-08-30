@@ -482,6 +482,19 @@ var builtinPatterns = []struct {
 		benchmarks: neonAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "netlify-auth-token",
+		pattern: NetlifyAuthToken,
+		ref:     referenceNetlifyAuthTokenFind,
+		samples: []string{
+			"NETLIFY_AUTH_TOKEN=nfp_0123456789abcdefghijklmnopqrstuvwxyz",
+			"nfc_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+			"nfb_0123456789abcdefghijklmnopqrstuvwxyz0",
+			"nfp_0123456789abcdefghijklmnopqrstuvwnfp_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		anchors:    []string{"nfp_0123", "nfb_0123"},
+		benchmarks: netlifyAuthTokenFindBenchmarks,
+	},
+	{
 		name:    "newrelic-user-key",
 		pattern: NewRelicUserKey,
 		ref:     referenceNewRelicUserKeyFind,

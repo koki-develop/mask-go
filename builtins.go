@@ -57,6 +57,7 @@ var builtins = []Pattern{
 	jsonWebToken,
 	linearAPIKey,
 	neonAPIKey,
+	netlifyAuthToken,
 	newRelicUserKey,
 	notionAPIToken,
 	npmAccessToken,
