@@ -740,8 +740,6 @@ func Test_PineconeAPIKey_scanIsLinear(t *testing.T) {
 // can be written inside. That is the price of a reference with nothing
 // remembered between candidates to be wrong about, and the reason the seeds
 // below keep such a run short rather than inviting the mutator to grow it.
-// Test_builtins_scanIsLinear and Test_PineconeAPIKey_scanIsLinear are where the
-// cost the scan pays is held down.
 func referencePineconeAPIKeyFind(src string) []Span {
 	const (
 		separator   = '_'

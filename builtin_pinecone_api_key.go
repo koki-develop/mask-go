@@ -13,8 +13,7 @@ import "strings"
 // So text of that shape is redacted whether or not Pinecone issued it. A space,
 // a hyphen, anything but an underscore where the separator belongs, or a run
 // too short to be a label or a secret ends the reading, so text as it is
-// ordinarily written is not affected. Where the secret's run carries on past
-// the sixty-third character, it is redacted to its end.
+// ordinarily written is not affected.
 //
 // Its name is "pinecone-api-key".
 func PineconeAPIKey() Pattern { return pineconeAPIKey }
@@ -67,10 +66,9 @@ func PineconeAPIKey() Pattern { return pineconeAPIKey }
 //
 // The pckey_ prefix is read with the same body grammar as pcsk_, and that is a
 // wager worth naming: no published rule reads pckey_, and no key carrying it
-// has been published for its parts to be measured. What Pinecone states is one
-// shape for the value — a prefix, a public label and a unique key, divided by
-// underscores — and the parts are read at the lengths and in the alphabet the
-// keys of the other prefix carry. A wager on a floor is bounded in the
+// has been published for its parts to be measured. Pinecone states one shape
+// for both, so the parts are read at the lengths and in the alphabet the keys
+// of the other prefix carry. A wager on a floor is bounded in the
 // direction that matters: if a pckey_ key's parts are longer, the floors still
 // locate it whole, and only a shorter one is missed, which is what leaving the
 // prefix out would do to every one of them. Against that stands the format
@@ -78,18 +76,16 @@ func PineconeAPIKey() Pattern { return pineconeAPIKey }
 // Test_PineconeAPIKey_theNewPrefix drives both prefixes through the same body.
 //
 // What the label is made of is the part of that wager the floors do not bound,
-// and it is worth separating out, because Pinecone states nothing about it at
-// all: not a length, not an alphabet, and not where the characters come from.
-// A label read too narrowly locates no key rather than part of one. The reading
-// here is that a label is a value Pinecone generates, which is what the keys
-// published unaltered show — theirs are six mixed-case letters and digits
-// apiece, the shape of an identifier rather than of anything a person typed —
-// and it is how the one published rule reads them, surfacing the label as a key
-// id. The alternative the vendor's own word leaves open is a label derived from
-// the name a key was created under, and the names Pinecone's guides write are
-// hyphenated: were that the derivation, every key whose name carried a hyphen
-// or an underscore would be located nowhere, since the run in front of the
-// separator would end at that character.
+// since Pinecone states nothing about it at all: not a length, not an alphabet,
+// and not where the characters come from. A label read too narrowly locates no
+// key rather than part of one. The reading here is that a label is a value
+// Pinecone generates — the published ones have the shape of an identifier
+// rather than of anything a person typed, and the one published rule surfaces
+// the part as a key id. The alternative the vendor's own word leaves open is a
+// label derived from the name a key was created under, and the names Pinecone's
+// guides write are hyphenated: were that the derivation, every key whose name
+// carried a hyphen or an underscore would be located nowhere, since the run in
+// front of the separator would end at that character.
 // Test_PineconeAPIKey_aLabelOutsideTheAlphabet pins what that would cost, so
 // that widening the label is a change somebody argues for rather than one
 // somebody notices afterwards.
@@ -132,9 +128,7 @@ func PineconeAPIKey() Pattern { return pineconeAPIKey }
 // on the p stands four times against the c's twice. The underscore each prefix
 // closes with is rarer still on that line and is passed over, because it stands
 // at a different depth in the two: a search for it would read two candidates
-// back from every underscore of a snake_case name where the c reads one, and
-// the p in front of the c turns away every occurrence that opens no prefix with
-// a single comparison.
+// back from every underscore of a snake_case name where the c reads one.
 //
 // The scan advances one byte past the start of a candidate whether that
 // candidate became a key or not, which is the default. It is what a key
@@ -146,10 +140,9 @@ func PineconeAPIKey() Pattern { return pineconeAPIKey }
 // would step over that key and leave it in the output whole. The two spans
 // overlap where it happens, and Masker.locate resolves them.
 //
-// The scan keeps no cursor and needs none, and what makes that so is a weaker
-// guarantee than the one a scan whose body is a single run rests on. Each
-// candidate walks two runs — the label's and the secret's — and it is the
-// separator that bounds how many candidates can walk any one of them. A run is
+// The scan keeps no cursor and needs none. Each candidate walks two runs — the
+// label's and the secret's — and it is the separator that bounds how many
+// candidates can walk any one of them. A run is
 // walked as a label only by a candidate whose prefix closes on the character in
 // front of that run, and as a secret only by a candidate whose label is the run
 // ending at that character; each of those is at most one candidate, since two
@@ -160,8 +153,8 @@ func PineconeAPIKey() Pattern { return pineconeAPIKey }
 // Test_PineconeAPIKey_scanIsLinear drives the line that would find it wrong.
 //
 // What this pattern over-matches on is a label and sixty-three letters and
-// digits written behind one of the prefixes, and two shapes are worth naming.
-// One is base64url text: that alphabet holds the underscore where hexadecimal
+// digits written behind one of the prefixes. One shape that reaches it is
+// base64url text: that alphabet holds the underscore where hexadecimal
 // and standard base64 do not, so a payload written in it — a JWT signature, the
 // routable body some other vendor encodes a credential as — can carry a whole
 // prefix and both separators inside itself, and where the runs between them are
@@ -176,11 +169,10 @@ func PineconeAPIKey() Pattern { return pineconeAPIKey }
 // Test_PineconeAPIKey_aDigestWhereTheSecretBelongs pin them.
 //
 // What reaches a span is never prose, a git SHA or an MD5. A prefix closes on
-// an underscore, which no word runs into; behind it must stand five unbroken
-// letters and digits, a second underscore, and sixty-three more. A digest
-// standing on its own carries no underscore to hold a prefix at however long it
-// runs, and a SHA-1 at forty characters and an MD5 at thirty-two are both short
-// of the secret's floor written straight behind a label.
+// an underscore, which no word runs into, and a digest standing on its own
+// carries none to hold a prefix at however long it runs; written behind a label
+// instead, a SHA-1 at forty characters and an MD5 at thirty-two are both short
+// of the secret's floor.
 //
 // The other credential Pinecone issues is a service account's client secret,
 // which the Admin API is authenticated with by exchanging it for an access
