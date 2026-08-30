@@ -381,6 +381,22 @@ var builtinPatterns = []struct {
 		benchmarks: hashiCorpVaultTokenFindBenchmarks,
 	},
 	{
+		name:    "hcp-terraform-api-token",
+		pattern: HCPTerraformAPIToken,
+		ref:     referenceHCPTerraformAPITokenFind,
+		samples: []string{
+			"TF_TOKEN_app_terraform_io=0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+			"0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+			"0123456789ABCD.atlasv1.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF012",
+			"0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0120123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+		},
+		anchors: []string{
+			"0123456789abcd.atlasv1.",
+			"0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef",
+		},
+		benchmarks: hcpTerraformAPITokenFindBenchmarks,
+	},
+	{
 		name:    "heroku-api-token",
 		pattern: HerokuAPIToken,
 		ref:     referenceHerokuAPITokenFind,

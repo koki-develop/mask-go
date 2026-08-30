@@ -133,7 +133,7 @@ func GroqPatterns() []Pattern { return []Pattern{groqAPIKey} }
 // HashiCorp issues.
 //
 // The returned slice is freshly allocated and may be modified by the caller.
-func HashiCorpPatterns() []Pattern { return []Pattern{hashiCorpVaultToken} }
+func HashiCorpPatterns() []Pattern { return []Pattern{hashiCorpVaultToken, hcpTerraformAPIToken} }
 
 // HerokuPatterns returns every built-in pattern that locates a credential
 // Heroku issues.
