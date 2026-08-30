@@ -103,6 +103,12 @@ would.
   scan's shared declarations moved.
 - `golangci-lint run` and `betterleaks git`.
 - `README.md` is in step with the change: its table is one row a vendor, so a
-  pattern for a vendor already there may only widen that row's description,
-  while a new vendor adds one. A vendor whose patterns a caller now has to
-  choose between wants a sentence saying what the choice is.
+  pattern for a vendor already there may only widen that row's list, while a new
+  vendor adds one. A vendor whose patterns a caller now has to choose between
+  wants a sentence saying what the choice is.
+- A Locates column is names alone: one comma separated item a kind, and no
+  prose about them. A kind is named as its vendor names it — a phrase shortened
+  to fit that shape is how the table comes to name a credential nobody issues.
+- The sentence above that table counts the built-in patterns, those kinds and
+  the vendors, and nothing checks it: correct all three here. The vendor count
+  moves only where the vendor is new.

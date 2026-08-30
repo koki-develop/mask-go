@@ -38,13 +38,15 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 )...))
 ```
 
+The 58 built-in patterns cover 47 vendors and locate 146 kinds of credential:
+
 | Accessor | Locates |
 | --- | --- |
-| `AgePatterns() []Pattern` | age secret keys (X25519 and MLKEM768-X25519 hybrid identities) |
+| `AgePatterns() []Pattern` | age X25519 secret keys, age post-quantum hybrid ML-KEM-768 + X25519 secret keys |
 | `AirtablePatterns() []Pattern` | Airtable personal access tokens |
 | `AnthropicPatterns() []Pattern` | Anthropic API keys, Anthropic Admin API keys, Anthropic OAuth tokens, Anthropic session keys |
 | `AWSPatterns() []Pattern` | AWS access key IDs, AWS secret access keys |
-| `BuildkitePatterns() []Pattern` | Buildkite API access tokens, agent session tokens, agent job tokens, unclustered agent tokens, agent (cluster) tokens, registry tokens, Package Registries temporary tokens, portal tokens, portal secrets, job acquisition tokens, token exchange tokens |
+| `BuildkitePatterns() []Pattern` | Buildkite API access tokens, agent session tokens, agent job tokens, unclustered agent tokens, agent tokens, registry tokens, Package Registries temporary tokens, portal tokens, portal secrets, job acquisition tokens, token exchange tokens |
 | `CircleCIPatterns() []Pattern` | CircleCI personal API tokens, project API tokens |
 | `CloudflarePatterns() []Pattern` | Cloudflare API tokens, Cloudflare API keys |
 | `CratesIOPatterns() []Pattern` | crates.io API tokens, Trusted Publishing access tokens |
@@ -52,9 +54,9 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `DigitalOceanPatterns() []Pattern` | DigitalOcean personal access tokens, OAuth access tokens, OAuth refresh tokens |
 | `DockerPatterns() []Pattern` | Docker personal access tokens |
 | `DopplerPatterns() []Pattern` | Doppler CLI tokens, personal tokens, service tokens, service account tokens, service account identity tokens, SCIM tokens, audit tokens |
-| `DynatracePatterns() []Pattern` | Dynatrace tokens of every type written in the published format — access tokens, personal access tokens, account API tokens, OAuth2 refresh tokens and platform tokens among them |
-| `FlyIOPatterns() []Pattern` | Fly.io access tokens (personal access tokens, deploy tokens, org tokens, SSH tokens, machine-exec tokens), and the v1 permission and discharge tokens Fly.io still accepts |
-| `GitHubPatterns() []Pattern` | GitHub personal access tokens (classic and fine-grained), GitHub OAuth app access tokens, GitHub App user access tokens, GitHub App installation access tokens, GitHub App refresh tokens |
+| `DynatracePatterns() []Pattern` | Dynatrace access tokens classic, Dynatrace personal access tokens, Dynatrace OAuth2 refresh tokens, Dynatrace platform tokens |
+| `FlyIOPatterns() []Pattern` | Fly.io access tokens, Fly.io v1 permission tokens, Fly.io v1 discharge tokens |
+| `GitHubPatterns() []Pattern` | GitHub personal access tokens (classic), GitHub fine-grained personal access tokens, GitHub OAuth app access tokens, GitHub App user access tokens, GitHub App installation access tokens, GitHub App refresh tokens |
 | `GitLabPatterns() []Pattern` | GitLab personal access tokens, project access tokens, group access tokens, impersonation tokens, OAuth application secrets, deploy tokens, runner authentication tokens, CI/CD job tokens, pipeline trigger tokens, feed tokens, incoming mail tokens, GitLab agent for Kubernetes tokens, SCIM OAuth tokens, feature flags client tokens |
 | `GooglePatterns() []Pattern` | Google API keys |
 | `GrafanaPatterns() []Pattern` | Grafana service account tokens |
@@ -62,28 +64,28 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `HashiCorpPatterns() []Pattern` | HashiCorp Vault service tokens, batch tokens, recovery tokens, HCP Terraform API tokens |
 | `HerokuPatterns() []Pattern` | Heroku API tokens |
 | `HuggingFacePatterns() []Pattern` | Hugging Face user access tokens |
-| `JWT() Pattern` | JSON Web Tokens, signed and encrypted |
+| `JWT() Pattern` | signed JSON Web Tokens, encrypted JSON Web Tokens |
 | `LinearPatterns() []Pattern` | Linear personal API keys |
-| `NewRelicPatterns() []Pattern` | New Relic user keys, including the admin keys New Relic migrated into user keys |
-| `NotionPatterns() []Pattern` | Notion internal integration tokens, Notion OAuth access tokens, Notion personal access tokens |
-| `NPMPatterns() []Pattern` | npm granular access tokens, npm classic tokens (read-only, automation, publish) |
+| `NewRelicPatterns() []Pattern` | New Relic user keys |
+| `NotionPatterns() []Pattern` | Notion internal connection tokens, Notion OAuth access tokens, Notion personal access tokens |
+| `NPMPatterns() []Pattern` | npm granular access tokens, npm legacy read-only tokens, npm legacy automation tokens, npm legacy publish tokens |
 | `OnePasswordPatterns() []Pattern` | 1Password service account tokens |
-| `OpenAIPatterns() []Pattern` | OpenAI project API keys, service account keys, Admin API keys, user API keys |
+| `OpenAIPatterns() []Pattern` | OpenAI project API keys, service account keys, Admin API keys, legacy user API keys |
 | `OpenRouterPatterns() []Pattern` | OpenRouter API keys |
-| `PaddlePatterns() []Pattern` | Paddle API keys (live and sandbox) |
+| `PaddlePatterns() []Pattern` | Paddle API keys |
 | `PlanetScalePatterns() []Pattern` | PlanetScale service tokens, OAuth access tokens, OAuth refresh tokens |
 | `PostHogPatterns() []Pattern` | PostHog personal API keys |
 | `PostmanPatterns() []Pattern` | Postman API keys |
 | `PrivateKey() Pattern` | PKCS#8 private keys, encrypted PKCS#8 private keys, PKCS#1 RSA private keys, EC private keys, DSA private keys, OpenSSH private keys, PGP private key blocks |
 | `PulumiPatterns() []Pattern` | Pulumi personal access tokens, organization access tokens, team access tokens |
-| `PyPIPatterns() []Pattern` | PyPI API tokens, TestPyPI API tokens, Trusted Publisher tokens |
+| `PyPIPatterns() []Pattern` | PyPI API tokens, TestPyPI API tokens, Trusted Publishing short-lived API tokens |
 | `ReplicatePatterns() []Pattern` | Replicate API tokens |
 | `ResendPatterns() []Pattern` | Resend API keys |
 | `RubyGemsPatterns() []Pattern` | RubyGems.org API keys |
 | `SendGridPatterns() []Pattern` | Twilio SendGrid API keys |
-| `SentryPatterns() []Pattern` | Sentry user auth tokens, organization auth tokens, user application tokens, internal integration tokens |
-| `ShopifyPatterns() []Pattern` | Shopify access tokens (public app, custom app, private app and delegate), Shopify app secret keys |
-| `SlackPatterns() []Pattern` | Slack bot tokens, user tokens, app-level tokens, workflow tokens, refresh tokens, rotatable bot and user access tokens |
+| `SentryPatterns() []Pattern` | Sentry personal tokens, organization auth tokens, user application tokens, internal integration tokens |
+| `ShopifyPatterns() []Pattern` | Shopify public app access tokens, Shopify custom app access tokens, Shopify private app access tokens, Shopify delegate access tokens, Shopify app secret keys |
+| `SlackPatterns() []Pattern` | Slack bot tokens, user tokens, app-level tokens, workflow tokens, refresh tokens, expiring access tokens |
 | `SonarQubePatterns() []Pattern` | SonarQube user tokens, global analysis tokens, project analysis tokens, project badge tokens |
 | `SourcegraphPatterns() []Pattern` | Sourcegraph access tokens |
 | `StripePatterns() []Pattern` | Stripe publishable API keys, restricted API keys, secret API keys, organization API keys, webhook signing secrets |
