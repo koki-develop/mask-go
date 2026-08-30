@@ -784,6 +784,21 @@ var builtinPatterns = []struct {
 		anchors:    []string{"sb_secret_0123"},
 		benchmarks: supabaseSecretKeyFindBenchmarks,
 	},
+	{
+		name:    "xai-api-key",
+		pattern: XAIAPIKey,
+		ref:     referenceXAIAPIKeyFind,
+		samples: []string{
+			"XAI_API_KEY=xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"xai-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+			"xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+			"xai-0123456789abcxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"xai-0123", "xai-token-0123"},
+		benchmarks: xaiAPIKeyFindBenchmarks,
+	},
 }
 
 // noValueInputs is text no built-in pattern has anything to find in: ordinary

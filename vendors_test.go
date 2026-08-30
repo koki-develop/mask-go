@@ -69,6 +69,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"SourcegraphPatterns":  SourcegraphPatterns,
 	"StripePatterns":       StripePatterns,
 	"SupabasePatterns":     SupabasePatterns,
+	"XAIPatterns":          XAIPatterns,
 }
 
 // patternsWithNoVendor is every built-in that names a format rather than a

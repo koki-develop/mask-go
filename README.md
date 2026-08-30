@@ -83,6 +83,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `SourcegraphPatterns() []Pattern` | Sourcegraph access tokens |
 | `StripePatterns() []Pattern` | Stripe publishable API keys, restricted API keys, secret API keys, organization API keys, webhook signing secrets |
 | `SupabasePatterns() []Pattern` | Supabase personal access tokens, Supabase OAuth access tokens, Supabase publishable API keys, Supabase secret API keys |
+| `XAIPatterns() []Pattern` | xAI API keys, xAI management API keys |
 
 `MustRegexp` builds a pattern from a regular expression, and `Regexp` the same
 for one that arrives at run time:
