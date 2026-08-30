@@ -117,6 +117,12 @@ func GooglePatterns() []Pattern { return []Pattern{googleAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func GrafanaPatterns() []Pattern { return []Pattern{grafanaServiceAccountToken} }
 
+// GroqPatterns returns every built-in pattern that locates a credential Groq
+// issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func GroqPatterns() []Pattern { return []Pattern{groqAPIKey} }
+
 // HashiCorpPatterns returns every built-in pattern that locates a credential
 // HashiCorp issues.
 //
