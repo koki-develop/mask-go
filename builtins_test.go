@@ -337,6 +337,19 @@ var builtinPatterns = []struct {
 		benchmarks: grafanaServiceAccountTokenFindBenchmarks,
 	},
 	{
+		name:    "groq-api-key",
+		pattern: GroqAPIKey,
+		ref:     referenceGroqAPIKeyFind,
+		samples: []string{
+			"GROQ_API_KEY=gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd",
+			"gsk_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCD",
+			"gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcde",
+			"gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789agsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd",
+		},
+		anchors:    []string{"gsk_0"},
+		benchmarks: groqAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "hashicorp-vault-token",
 		pattern: HashiCorpVaultToken,
 		ref:     referenceHashiCorpVaultTokenFind,

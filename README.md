@@ -56,6 +56,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `GitLabPatterns() []Pattern` | GitLab personal access tokens, project access tokens, group access tokens, impersonation tokens, OAuth application secrets, deploy tokens, runner authentication tokens, CI/CD job tokens, pipeline trigger tokens, feed tokens, incoming mail tokens, GitLab agent for Kubernetes tokens, SCIM OAuth tokens, feature flags client tokens |
 | `GooglePatterns() []Pattern` | Google API keys |
 | `GrafanaPatterns() []Pattern` | Grafana service account tokens |
+| `GroqPatterns() []Pattern` | Groq API keys |
 | `HashiCorpPatterns() []Pattern` | HashiCorp Vault service tokens, batch tokens, recovery tokens |
 | `HerokuPatterns() []Pattern` | Heroku API tokens |
 | `HuggingFacePatterns() []Pattern` | Hugging Face user access tokens |

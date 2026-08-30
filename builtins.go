@@ -47,6 +47,7 @@ var builtins = []Pattern{
 	gitLabToken,
 	googleAPIKey,
 	grafanaServiceAccountToken,
+	groqAPIKey,
 	hashiCorpVaultToken,
 	herokuAPIToken,
 	huggingFaceUserAccessToken,
