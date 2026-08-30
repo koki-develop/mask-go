@@ -1,0 +1,220 @@
+# What Resend API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is: the first segment is eight characters, written as 01234567, and
+# the second is twenty-four, written as the run with 01234567 behind it. Where a
+# case turns on what a segment may close on, it closes one on re instead. The
+# prefix and the separator between the segments bring a key to the thirty-six
+# characters the key Resend publishes is.
+
+patterns: resend-api-key
+
+# The one prefix Resend writes a key with. There is a single kind of string here
+# rather than a table of them: an account holds a key per environment and a key
+# scoped to a domain, and each of them is the same string with no mark on it to
+# tell one from another, so the cases below are that one shape in the places a
+# key is written. The SMTP endpoint takes the same string as its password, which
+# is one more of those places.
+
+case:     a key in an environment assignment
+in:       RESEND_API_KEY=re_01234567_0123456789abcdef01234567
+out:      RESEND_API_KEY=«resend-api-key»
+
+case:     a key in the argument a node client takes it as
+in:       const resend = new Resend("re_01234567_0123456789abcdef01234567");
+out:      const resend = new Resend("«resend-api-key»");
+
+case:     a key in the header a request carries it in
+in:       Authorization: Bearer re_01234567_0123456789abcdef01234567
+out:      Authorization: Bearer «resend-api-key»
+
+case:     a key on the command line a curl example writes that header on
+in:       curl -H "Authorization: Bearer re_01234567_0123456789abcdef01234567" https://api.resend.com/emails
+out:      curl -H "Authorization: Bearer «resend-api-key»" https://api.resend.com/emails
+
+case:     a key in the json body creating one returns
+in:       {"id":"0123456789abcdef","object":"api_key","token":"re_01234567_0123456789abcdef01234567"}
+out:      {"id":"0123456789abcdef","object":"api_key","token":"«resend-api-key»"}
+
+# The alphabet both segments are written in: the letters of both cases with the
+# digits, which is what the expression Resend redacts its own recorded fixtures
+# with spells out. What that alphabet leaves out is everything else, the hyphen
+# and the underscore among them, so a segment carrying either is no segment.
+
+case:     an uppercase second segment
+in:       re_01234567_0123456789ABCDEF01234567
+out:      «resend-api-key»
+
+case:     a second segment carrying a hyphen
+in:       re_01234567_0123456789abcdef-1234567
+out:      re_01234567_0123456789abcdef-1234567
+
+case:     a second segment carrying an underscore
+in:       re_01234567_0123456789abcdef_1234567
+out:      re_01234567_0123456789abcdef_1234567
+
+# The lengths either side of the two counts. Resend states that a key is a
+# segment of eight and a segment of twenty-four, and both are used as counts
+# rather than floors: a segment one character short is no key, and one character
+# long is no key either, since the separator then stands where that segment's
+# ninth character is. A run longer than the second segment is a key and what
+# follows it, which is the price of having no boundary behind the match — a
+# boundary there would drop this key rather than trim it, and a real key written
+# against a letter would come through whole.
+
+case:     segments of eight and twenty-four are a key
+in:       re_01234567_0123456789abcdef01234567
+out:      «resend-api-key»
+
+case:     a first segment of seven is not
+in:       re_0123456_0123456789abcdef01234567
+out:      re_0123456_0123456789abcdef01234567
+
+case:     a first segment of nine is not
+in:       re_012345678_0123456789abcdef01234567
+out:      re_012345678_0123456789abcdef01234567
+
+case:     a second segment of twenty-three is not
+in:       re_01234567_0123456789abcdef0123456
+out:      re_01234567_0123456789abcdef0123456
+
+case:     an alphabet run longer than a key is a key and what follows it
+in:       re_01234567_0123456789abcdef012345678
+out:      «resend-api-key»8
+
+# What a key may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a key keeps its span whatever
+# word character it abuts.
+
+case:     a key after an underscore
+in:       RESEND_API_KEY_re_01234567_0123456789abcdef01234567
+out:      RESEND_API_KEY_«resend-api-key»
+
+case:     a key after a letter
+in:       xre_01234567_0123456789abcdef01234567
+out:      x«resend-api-key»
+
+case:     a key before a hyphenated word
+in:       re_01234567_0123456789abcdef01234567-suffix
+out:      «resend-api-key»-suffix
+
+case:     a key at the end of a sentence
+in:       the key is re_01234567_0123456789abcdef01234567.
+out:      the key is «resend-api-key».
+
+# Two keys written together. A key can begin inside another, and the underscore
+# is what bounds where: a candidate opens two characters in front of one, and
+# the two underscores a key holds are its prefix's and its separator's. Reading
+# a candidate back from a separator puts that candidate's own separator inside
+# the second segment of the key it begins in, where no underscore may stand, so
+# a key beginning inside another begins at the last two characters of that
+# second segment with the underscore standing past the end of the span. The two
+# spans overlap there and are redacted as one. Written without that overlap the
+# two are separate values and both go, and a prefix standing where a first
+# segment would have to hold it ends the candidate in front of it and opens the
+# key itself.
+
+case:     two keys with nothing between them
+in:       re_01234567_0123456789abcdef01234567re_01234567_0123456789abcdef01234567
+out:      «resend-api-key»«resend-api-key»
+
+case:     a key beginning at the end of the key before it
+in:       re_01234567_0123456789abcdef012345re_01234567_0123456789abcdef01234567
+out:      «resend-api-key»
+
+case:     a candidate opening at the separator of another key
+in:       re_012345re_0123456789abcdef01234567 and more text
+out:      «resend-api-key» and more text
+
+case:     a prefix written where a first segment would stand
+in:       re_01234re_01234567_0123456789abcdef01234567
+out:      re_01234«resend-api-key»
+
+# What this pattern redacts that nobody issued. Segments of eight and twenty-four
+# behind the prefix are the vendor's format exactly, so anything written that way
+# is redacted: a stretch of base64url text that happens to hold both underscores
+# — that alphabet carries the underscore where hexadecimal and standard base64 do
+# not, which is why a payload written in it can hold them at all and the base64
+# case below holds none — and a snake-cased identifier whose two segments happen
+# to be those lengths, re_ being a prefix a name can open with. That is the
+# answer rather than a fault in it, because nothing in the text tells such a run
+# from a key: sparing these would
+# spare a real key written the same way. What keeps the identifier rare is the
+# counts, which a word of another length misses. A digest carries no underscore,
+# so one written straight behind the prefix reaches nothing, and what it can do
+# instead is stand where the second segment does.
+
+case:     the prefix inside a longer base64url run
+in:       payload=zzzzre_01234567_0123456789abcdef01234567zzzz
+out:      payload=zzzz«resend-api-key»zzzz
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.re_01234567_0123456789abcdef01234567
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.«resend-api-key»
+
+case:     a standard base64 payload, which carries no underscore
+in:       payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAre0123456789abcdef
+out:      payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAre0123456789abcdef
+
+case:     a snake cased identifier of the two counts
+in:       re_compiled_0123456789abcdef01234567
+out:      «resend-api-key»
+
+case:     a snake cased identifier of other counts
+in:       re_compile_0123456789abcdef01234567
+out:      re_compile_0123456789abcdef01234567
+
+case:     a sha-1 straight behind the prefix
+in:       re_0123456789abcdef0123456789abcdef01234567
+out:      re_0123456789abcdef0123456789abcdef01234567
+
+case:     a sha-1 where the second segment stands
+in:       re_01234567_0123456789abcdef0123456789abcdef01234567
+out:      «resend-api-key»89abcdef01234567
+
+# And what this pattern leaves alone. The first three are the prefix and the
+# separator, which are read in the case Resend writes them and with the
+# underscore they are; the two after them are a segment a space has broken and a
+# character the alphabet has not got. The last two carry no prefix at all: a
+# segment holds no space and no punctuation, and the prefix closes on an
+# underscore, so a word cannot run into one.
+
+case:     an uppercase prefix
+in:       RE_01234567_0123456789abcdef01234567
+out:      RE_01234567_0123456789abcdef01234567
+
+case:     a hyphen where the prefix closes
+in:       re-01234567_0123456789abcdef01234567
+out:      re-01234567_0123456789abcdef01234567
+
+case:     a hyphen where the segments divide
+in:       re_01234567-0123456789abcdef01234567
+out:      re_01234567-0123456789abcdef01234567
+
+case:     a second segment broken by a space
+in:       re_01234567_0123456789abcdef 1234567
+out:      re_01234567_0123456789abcdef 1234567
+
+case:     a character outside the alphabet in the second segment
+in:       re_01234567_0123456789abcdef.1234567
+out:      re_01234567_0123456789abcdef.1234567
+
+case:     a run of the right shape opening with no prefix
+in:       xxx01234567_0123456789abcdef01234567
+out:      xxx01234567_0123456789abcdef01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And the other credential Resend hands out, which this pattern has nothing to
+# say about. The secret a handler verifies a webhook signature with is written
+# whsec_ and a base64 body, and carries no re_ to be found at.
+
+case:     a webhook signing secret
+in:       whsec_0123456789abcdef0123456789abcdef
+out:      whsec_0123456789abcdef0123456789abcdef
+
+case:     a log line naming the api a key authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="sending email" url=https://api.resend.com/emails
+out:      time=2026-08-17T00:00:00Z level=info msg="sending email" url=https://api.resend.com/emails
