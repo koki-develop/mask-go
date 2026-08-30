@@ -348,9 +348,7 @@ func Test_NetlifyAuthToken_cutShortOfTheFloor(t *testing.T) {
 	// before the cut come through whole.
 	//
 	// It is the price of reading a count read off the tokens rather than one
-	// Netlify states, and the cases move with the scan: one of them starting to
-	// be located means the floor moved, and that is a decision to be taken
-	// rather than noticed afterwards.
+	// Netlify states.
 	tests := []struct {
 		name string
 		src  string
@@ -413,18 +411,13 @@ func Test_NetlifyAuthToken_anUnderscoreInTheBody(t *testing.T) {
 func Test_NetlifyAuthToken_insideAnOpaqueRun(t *testing.T) {
 	// What this pattern redacts that nobody issued. The prefix carries an
 	// underscore, which standard base64 writes nowhere, so only a base64url
-	// encoding can hold one — and there the four characters of a prefix stand
-	// about once in three million characters. Where thirty-six base62
-	// characters follow, everything from the prefix to the end of that run is
-	// redacted.
+	// encoding can hold one; where thirty-six base62 characters follow,
+	// everything from the prefix to the end of that run is redacted.
 	//
 	// The cases are held to being redacted rather than to being spared. What is
 	// taken is a stretch of a value already opaque to a reader, and the run is a
 	// token's format exactly: nothing is left in the text to tell the two apart,
 	// so a pattern letting it through would let a real token through with it.
-	// What the cases are for is that they move with the scan: one of them
-	// ceasing to be located means the grammar changed, and that is a decision to
-	// be taken rather than noticed afterwards.
 	tests := []struct {
 		name string
 		src  string
@@ -465,8 +458,7 @@ func Test_NetlifyAuthToken_aDigestBehindThePrefix(t *testing.T) {
 	//
 	// The two below it are where the floor and the prefix each hold: an MD5 is
 	// four characters short of a body, and a hyphen is no character a prefix
-	// carries. The cases move with the scan, so a change to either shows up here
-	// as a decision rather than as something the next reader discovers.
+	// carries.
 	tests := []struct {
 		name string
 		src  string

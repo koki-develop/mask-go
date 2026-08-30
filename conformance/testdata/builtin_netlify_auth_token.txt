@@ -153,10 +153,9 @@ out:      «netlify-auth-token» «netlify-auth-token»
 
 # What this pattern redacts that nobody issued. The prefix carries an
 # underscore, which standard base64 writes nowhere, so only a base64url encoding
-# can hold one — and there the four characters of a prefix stand about once in
-# three million characters. Where thirty-six base62 characters follow, the run
-# from the prefix to the end of them is redacted whether or not Netlify issued
-# it. That is the answer rather than a fault in it, because such a run is a
+# can hold one. Where thirty-six base62 characters follow, the run from the
+# prefix to the end of them is redacted whether or not Netlify issued it. That
+# is the answer rather than a fault in it, because such a run is a
 # token's format exactly and nothing in the text tells the two apart: sparing
 # these would spare a real token written the same way. What is taken is a
 # stretch of a value that was already opaque to a reader.
@@ -194,16 +193,14 @@ case:     a sha1 behind a hyphen rather than the prefix
 in:       nfp-0123456789abcdef0123456789abcdef01234567
 out:      nfp-0123456789abcdef0123456789abcdef01234567
 
-# And what this pattern leaves alone. The first three are the prefix, read in
-# the case Netlify writes it and in all four of its characters — the third of
-# them a character naming no kind, which is what a name opening nfs_ rests on.
-# The two after them are the alphabet and the anchor: a body a space has broken,
-# and a run of the right length with no prefix in front of it. Of the three
-# after those, a digest and a sentence hold no underscore where a prefix wants
-# one and so hold no position to be found at however long they run; the names
-# Unicode normalization code is written with do carry a prefix, and what turns
-# them away is the next underscore of the name, which ends the run long before
-# thirty-six characters of it have been read.
+# And what this pattern leaves alone. The prefix is held to the case Netlify
+# writes it in, to all four of its characters, and to naming one of the five
+# kinds — which is what a name opening nfs_ rests on. A digest and a sentence
+# hold no underscore where a prefix wants one, so they hold no position to be
+# found at however long they run; the names Unicode normalization code is
+# written with do carry a prefix, and what turns them away is the next
+# underscore of the name, which ends the run long before thirty-six characters
+# of it have been read.
 
 case:     an uppercase prefix
 in:       NFP_0123456789abcdefghijklmnopqrstuvwxyz
@@ -240,11 +237,9 @@ out:      nfc_normalized = nfc_normalize(nfc_quick_check(input_string))
 # And a Netlify credential this pattern has nothing to say about. The format
 # this one replaced carried no prefix and nothing of its own to be recognised
 # by, so the only thing left to locate one by is the word Netlify standing near
-# it — a rule about the text around a value rather than about the value — and
-# the run such a rule admits is a run of forty-odd letters, digits, underscores
-# and hyphens, which a digest and an ordinary snake_case name both fit. Netlify
-# has left those tokens working, so what stands here is a live credential the
-# library does not redact.
+# it, which is a rule about the text around a value rather than about the value.
+# Netlify has left those tokens working, so what stands here is a live
+# credential the library does not redact.
 
 case:     a token of the format netlify issued before this one
 in:       NETLIFY_AUTH_TOKEN=0123456789abcdefghijklmnopqrstuvwxyz0123456789ab

@@ -32,10 +32,9 @@ func NetlifyAuthToken() Pattern { return netlifyAuthToken }
 // behind it — is read off the tokens rather than off the announcement: the
 // rulesets that carry this format write the underscore, those of them that
 // state a count state thirty-six, and the two together come to the forty
-// Netlify published. That
-// is observation agreeing with a published length and not a division Netlify
-// has stated, and a token seen without the underscore is what would send it
-// back.
+// Netlify published. That is observation agreeing with a published length and
+// not a division Netlify has stated, and a token seen without the underscore
+// is what would send it back.
 //
 // The alphabet is base62, isBase62Byte in builtin_scan.go: the letters of both
 // cases and the digits, and neither the hyphen nor the underscore base64url
@@ -60,27 +59,20 @@ func NetlifyAuthToken() Pattern { return netlifyAuthToken }
 // in front of it nothing would be located and the whole token would come
 // through. That is the risk taken, and it is taken against a certainty on the
 // other side: the wide alphabet redacts ordinary identifiers of the right
-// length wherever they are written. Widening this is a change to
-// isBase62Byte's callers or to a byte test of this scan's own, and the cases
-// in builtin_netlify_auth_token_test.go spelling out an underscore in a body
-// are what would have to be rewritten to make it.
+// length wherever they are written.
+// Test_NetlifyAuthToken_anUnderscoreInTheBody pins the risk.
 //
-// The count is read as a floor and not as a count. A count is read exactly
-// where it is most of what tells a value from the text around it, since a run
-// longer than it is then a value with something written after it. Here the
-// prefix is doing that work, and the thirty-six is a number read off the
-// tokens rather than one Netlify has written down: were Netlify to lengthen
-// the body, a scan asking for thirty-six exactly would locate the
+// The count is read as a floor and not as a count. Reading it exactly is worth
+// it where the count is most of what tells a value from the text around it;
+// here the prefix is doing that work, and the thirty-six is a number read off
+// the tokens rather than one Netlify has written down. Were Netlify to
+// lengthen the body, a scan asking for thirty-six exactly would locate the
 // first forty characters of a token and leave the rest of it in the output.
-// Read as a floor, a token of any length at or above it is located to the end
-// of its run.
 //
 // What the floor costs is the token shorter than it. A line cut to a column
 // limit partway through a token leaves a prefix and a body too short to be
 // one, and nothing is located: the random characters written before the cut
-// stay in the output. That is the far side of this choice, and the cases in
-// builtin_netlify_auth_token_test.go pin it so that it stays a decision on the
-// record.
+// stay in the output. Test_NetlifyAuthToken_cutShortOfTheFloor pins that.
 //
 // The five kinds are one pattern and not five. A caller has no reason to
 // redact the token its CLI holds and leave the one its build carries, none of
@@ -122,23 +114,18 @@ func NetlifyAuthToken() Pattern { return netlifyAuthToken }
 // prefix inside a longer value. The underscore is what makes that rare.
 // Standard base64 writes none at all, so a certificate, a PEM body or an
 // embedded image carries no prefix to be found at however long it runs, and
-// only a base64url encoding can hold one. There the four characters of a
-// prefix stand about once in three million characters — three of them fixed
-// out of an alphabet of sixty-four and the fourth one of five — and the
-// thirty-six behind one carry neither of the two characters base64url adds
-// about three times in ten, so a prefix and a body together stand about once in
-// ten million characters of such an encoding. The run from that prefix to the
-// end of the encoding is then redacted, and what is taken is a stretch of a
-// value that was already opaque to a reader.
+// only a base64url encoding can hold one. There a prefix and a body together —
+// three fixed characters and one of five out of an alphabet of sixty-four, then
+// thirty-six carrying neither of the two characters base64url adds — stand
+// about once in ten million characters. The run from that prefix to the end of
+// the encoding is then redacted, and what is taken is a stretch of a value that
+// was already opaque to a reader.
 //
 // The format Netlify issued before this one is not read here. It carried no
 // prefix and nothing of its own to be recognised by, so the only thing left to
-// locate one by is the word Netlify standing near it — a rule about the text
-// around a value rather than about the value — and the run such a rule admits
-// is a run of forty-odd letters, digits, underscores and hyphens, which a
-// digest, a fragment of base64 and an ordinary snake_case name all fit.
-// Netlify has left those tokens working, so a caller holding one still has it
-// in the text.
+// locate one by is the word Netlify standing near it, which is a rule about the
+// text around a value rather than about the value. Netlify has left those
+// tokens working, so a caller holding one still has it in the text.
 //
 // The collision this format leaves is a digest written behind a prefix. The
 // hexadecimal digits are base62 and nothing inside a digest ends a run, so a
@@ -151,13 +138,9 @@ func NetlifyAuthToken() Pattern { return netlifyAuthToken }
 // behind a hyphen rather than an underscore.
 // Test_NetlifyAuthToken_aDigestBehindThePrefix pins all four.
 //
-// What reaches a span is never prose, and never a digest standing on its own. A
-// digest carries no underscore, so it holds no prefix to be found at however
-// long it runs, and prose is not written for thirty-six unbroken characters in
-// the alphabet a body is held to. Ordinary snake_case code does carry the
-// prefix — nfc_ opens the names Unicode normalization code is written with —
-// and what turns those away is that same thirty-six, which the next underscore
-// of such a name ends long before.
+// Ordinary snake_case code carries the prefix — nfc_ opens the names Unicode
+// normalization code is written with — and what turns those away is the
+// thirty-six, which the next underscore of such a name ends long before.
 //
 // referenceNetlifyAuthToken in builtin_netlify_auth_token_test.go keeps the
 // grammar as a regular expression, spelling the opening, the kinds, the
@@ -247,11 +230,9 @@ const (
 	// candidate rather than for the whole of it; what makes it this byte is
 	// that the two letters in front of the kind are ordinary ones — over the
 	// log line these benchmarks are written on the n stands three times and the
-	// f twice — where the underscore stands not once. It is the same
-	// character the run guarantee rests on, so a candidate found by it is a
-	// candidate whose body is the run beginning one byte along, and it closes
-	// every prefix rather than standing inside one, so reading a candidate back
-	// from it reads no further than the character naming the kind.
+	// f twice — where the underscore stands not once. It is the same character
+	// the run guarantee rests on, so a candidate found by it is a candidate
+	// whose body is the run beginning one byte along.
 	netlifyAuthTokenAnchor      = '_'
 	netlifyAuthTokenAnchorIndex = netlifyAuthTokenPrefixChars - 1
 
