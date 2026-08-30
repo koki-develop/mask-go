@@ -53,6 +53,7 @@ var builtins = []Pattern{
 	huggingFaceUserAccessToken,
 	jsonWebToken,
 	linearAPIKey,
+	newRelicUserKey,
 	notionAPIToken,
 	npmAccessToken,
 	onePasswordServiceAccountToken,

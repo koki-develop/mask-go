@@ -1,0 +1,257 @@
+# What New Relic user keys the library redacts, and what it leaves alone.
+#
+# Two kinds fall under one name, and it is New Relic that puts them there: NRAK-
+# opens the key it issues today, NRAA- opened an admin key, and every admin key
+# became a user key on 4 December 2020 — the same string, labelled a user key,
+# granted the same permissions. New Relic's own CLI reads the two together.
+#
+# Every key here is built from the ordered run its kind's alphabet admits. An
+# issued key is written in the uppercase letters and the digits, so its body is
+# 0123456789ABCDEFGHIJKLMNOPQ, which is twenty-seven characters of the run
+# 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ. A migrated key is written in
+# hexadecimal, so its body is 0123456789abcdef with 0123456789a behind it, which
+# is twenty-seven characters as well. No real credential is either.
+
+patterns: newrelic-user-key
+
+# The two prefixes, in the places a key is written: the environment New Relic's
+# CLI and its client libraries read one from, the argument the Terraform
+# provider takes it as, the Api-Key header a NerdGraph request carries it in and
+# the command line a curl example writes that header on.
+
+case:     an issued key in an environment assignment
+in:       NEW_RELIC_API_KEY=NRAK-0123456789ABCDEFGHIJKLMNOPQ
+out:      NEW_RELIC_API_KEY=«newrelic-user-key»
+
+case:     a migrated key in an environment assignment
+in:       NEW_RELIC_API_KEY=NRAA-0123456789abcdef0123456789a
+out:      NEW_RELIC_API_KEY=«newrelic-user-key»
+
+case:     an issued key in a terraform provider block
+in:       api_key = "NRAK-0123456789ABCDEFGHIJKLMNOPQ"
+out:      api_key = "«newrelic-user-key»"
+
+case:     a key in the header nerdgraph is called with
+in:       Api-Key: NRAK-0123456789ABCDEFGHIJKLMNOPQ
+out:      Api-Key: «newrelic-user-key»
+
+case:     a key on a command line
+in:       curl -X POST -H "Api-Key: NRAK-0123456789ABCDEFGHIJKLMNOPQ" https://api.newrelic.com/graphql
+out:      curl -X POST -H "Api-Key: «newrelic-user-key»" https://api.newrelic.com/graphql
+
+case:     a key in json
+in:       {"apiKey":"NRAK-0123456789ABCDEFGHIJKLMNOPQ"}
+out:      {"apiKey":"«newrelic-user-key»"}
+
+# The alphabets, which are the two kinds' own and do not meet. An issued body is
+# the uppercase letters and the digits, which is the case of every published key
+# of that kind; a migrated body is hexadecimal in either case, which is what the
+# one rule reading that format reads, though the key beside it is lowercase. The
+# two answers are weighed against the same cost — a base64url payload can hold a
+# prefix, and what the alphabet admits decides how often the characters behind
+# one are all admitted — and hexadecimal is narrow enough either way that reading
+# both cases costs nothing, where an issued body read in both would take a fair
+# share of all base64url text.
+
+case:     an issued body in lowercase
+in:       NRAK-0123456789abcdefghijklmnopq
+out:      NRAK-0123456789abcdefghijklmnopq
+
+case:     a migrated body in uppercase hexadecimal
+in:       NRAA-0123456789ABCDEF0123456789A
+out:      «newrelic-user-key»
+
+case:     an issued body behind the migrated prefix
+in:       NRAA-0123456789ABCDEFGHIJKLMNOPQ
+out:      NRAA-0123456789ABCDEFGHIJKLMNOPQ
+
+case:     a body broken by a hyphen
+in:       NRAK-0123456789ABCDEF-GHIJKLMNOPQ
+out:      NRAK-0123456789ABCDEF-GHIJKLMNOPQ
+
+case:     a body broken by an underscore
+in:       NRAK-0123456789ABCDEF_GHIJKLMNOPQ
+out:      NRAK-0123456789ABCDEF_GHIJKLMNOPQ
+
+# The count either side of twenty-seven. New Relic states no length for a key,
+# and no alphabet and no checksum either; three rulesets read twenty-seven
+# characters behind NRAK- and one reads twenty-seven behind NRAA-, and every key
+# any of them publishes is that long. The count is read as a floor rather than
+# exactly, because the prefix is what tells this format from text and an exact
+# count would leave the tail of a longer key in the output. What the floor costs
+# is the middle case below — a key cut short of twenty-seven keeps every random
+# character written in front of the cut, and none of them is redacted.
+
+case:     a body of twenty-seven characters is a key
+in:       NRAK-0123456789ABCDEFGHIJKLMNOPQ
+out:      «newrelic-user-key»
+
+case:     a body of twenty-six characters is not
+in:       NRAK-0123456789ABCDEFGHIJKLMNOP
+out:      NRAK-0123456789ABCDEFGHIJKLMNOP
+
+case:     an alphabet run longer than the floor is a key to the end of it
+in:       NRAK-0123456789ABCDEFGHIJKLMNOPQRS
+out:      «newrelic-user-key»
+
+# The prefix, which is five characters and is the whole of what tells this
+# format from text. It is read in the one case New Relic writes it, the hyphen
+# it closes with is asked for, and the character between the opening and that
+# hyphen has to name a kind New Relic issues.
+
+case:     a lowercase prefix
+in:       nrak-0123456789ABCDEFGHIJKLMNOPQ
+out:      nrak-0123456789ABCDEFGHIJKLMNOPQ
+
+case:     an underscore where the prefix closes
+in:       NRAK_0123456789ABCDEFGHIJKLMNOPQ
+out:      NRAK_0123456789ABCDEFGHIJKLMNOPQ
+
+case:     a kind character no user key carries
+in:       NRAX-0123456789ABCDEFGHIJKLMNOPQ
+out:      NRAX-0123456789ABCDEFGHIJKLMNOPQ
+
+case:     the opening with no character naming a kind
+in:       NRA-0123456789ABCDEFGHIJKLMNOPQR
+out:      NRA-0123456789ABCDEFGHIJKLMNOPQR
+
+# The other credentials New Relic hands out, which this pattern locates nothing
+# in. The license key carries no prefix at all and closes on the four characters
+# NRAL; the browser key and the two Insights keys carry prefixes of their own,
+# and none of them opens with the three characters a candidate is read back
+# from.
+
+case:     a license key
+in:       license_key=0123456789abcdef0123456789abcdef0123NRAL
+out:      license_key=0123456789abcdef0123456789abcdef0123NRAL
+
+case:     an ingest browser key
+in:       NRJS-0123456789abcdef0123456789a
+out:      NRJS-0123456789abcdef0123456789a
+
+case:     an insights insert key
+in:       NRII-0123456789abcdef0123456789abcdef01
+out:      NRII-0123456789abcdef0123456789abcdef01
+
+case:     an insights query key
+in:       NRIQ-0123456789abcdef0123456789abcdef01
+out:      NRIQ-0123456789abcdef0123456789abcdef01
+
+# What a key may be written against. There is no boundary on either side of the
+# prefix, so a key keeps its span whatever word character it abuts — and where
+# the run of its alphabet carries on past the floor, what carries it on is
+# redacted with the key. A character of the other case, a hyphen and an
+# underscore end the run instead.
+
+case:     a key after an underscore
+in:       NEW_RELIC_API_KEY_NRAK-0123456789ABCDEFGHIJKLMNOPQ
+out:      NEW_RELIC_API_KEY_«newrelic-user-key»
+
+case:     a key after a letter
+in:       xNRAK-0123456789ABCDEFGHIJKLMNOPQ
+out:      x«newrelic-user-key»
+
+case:     a word written against a key
+in:       NRAK-0123456789ABCDEFGHIJKLMNOPQsuffix
+out:      «newrelic-user-key»suffix
+
+case:     capitals written against a key
+in:       NRAK-0123456789ABCDEFGHIJKLMNOPQZZZ
+out:      «newrelic-user-key»
+
+case:     a hyphenated word written against a key
+in:       NRAK-0123456789ABCDEFGHIJKLMNOPQ-suffix
+out:      «newrelic-user-key»-suffix
+
+case:     a key at the end of a sentence
+in:       the key is NRAK-0123456789ABCDEFGHIJKLMNOPQ.
+out:      the key is «newrelic-user-key».
+
+# Two keys written together. The three letters of the opening and both
+# characters naming a kind belong to the alphabet an issued body is written in,
+# so such a body may close with a whole opening and a kind, and the hyphen of
+# the next key stand directly behind it: the second key begins four characters
+# before the first one ends, the two spans overlap and are redacted as one.
+# Written with nothing at all between them the first body reaches four
+# characters into the second prefix and stops at the hyphen behind them, so
+# those two overlap as well. A migrated body is hexadecimal and carries no
+# capital an opening needs, so a key written against one ends it rather than
+# running into it, and the two are separate values.
+
+case:     an issued key beginning inside the key before it
+in:       NRAK-0123456789ABCDEFGHIJKLMNRAK-0123456789ABCDEFGHIJKLMNOPQ
+out:      «newrelic-user-key»
+
+case:     a migrated key beginning inside an issued one
+in:       NRAK-0123456789ABCDEFGHIJKLMNRAA-0123456789abcdef0123456789a
+out:      «newrelic-user-key»
+
+case:     two issued keys with nothing between them
+in:       NRAK-0123456789ABCDEFGHIJKLMNOPQNRAK-0123456789ABCDEFGHIJKLMNOPQ
+out:      «newrelic-user-key»
+
+case:     an issued key written against a migrated one
+in:       NRAA-0123456789abcdef0123456789aNRAK-0123456789ABCDEFGHIJKLMNOPQ
+out:      «newrelic-user-key»«newrelic-user-key»
+
+case:     two keys separated by a space
+in:       NRAK-0123456789ABCDEFGHIJKLMNOPQ NRAA-0123456789abcdef0123456789a
+out:      «newrelic-user-key» «newrelic-user-key»
+
+# What this pattern redacts that nobody issued. Both prefixes close with a
+# hyphen, which standard base64 writes nowhere, so only a base64url encoding can
+# hold one — and where twenty-seven characters of one kind's alphabet follow,
+# the run from the prefix to the end of them is redacted whether or not New
+# Relic issued it. That is the answer rather than a fault in it, because such a
+# run is a key's format exactly and nothing in the text tells the two apart:
+# sparing these would spare a real key written the same way. What is taken is a
+# stretch of a value that was already opaque to a reader. A payload written in
+# both cases, which is what a base64url payload ordinarily is, ends the body at
+# the first character of the second case and is left alone.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzzNRAK-0123456789ABCDEFGHIJKLMNOPQzzzz
+out:      payload=zzzz«newrelic-user-key»zzzz
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.NRAA-0123456789abcdef0123456789a
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.«newrelic-user-key»
+
+case:     a base64url run written in both cases
+in:       payload=zzzzNRAK-0123456789ABCDefghijklmnopqzzzz
+out:      payload=zzzzNRAK-0123456789ABCDefghijklmnopqzzzz
+
+# A digest written behind a prefix, which is the over-match that takes a value a
+# reader had a use for. A SHA-1 is forty lowercase hexadecimal characters, which
+# is a migrated body's alphabet exactly, so NRAA- and a digest behind it are
+# that kind's format and both are redacted, in either case the digest is written
+# in. Declining them would mean declining every migrated key, since the two are
+# the same forty characters. The issued kind is spared it by its own alphabet: a
+# digest written in lowercase ends an issued body at its first letter.
+
+case:     a sha1 behind the migrated prefix
+in:       NRAA-0123456789abcdef0123456789abcdef01234567
+out:      «newrelic-user-key»
+
+case:     an uppercase sha1 behind the migrated prefix
+in:       NRAA-0123456789ABCDEF0123456789ABCDEF01234567
+out:      «newrelic-user-key»
+
+case:     a sha1 in a cache key
+in:       key: NRAA-0123456789abcdef0123456789abcdef01234567
+out:      key: «newrelic-user-key»
+
+case:     a sha1 behind the issued prefix
+in:       NRAK-0123456789abcdef0123456789abcdef01234567
+out:      NRAK-0123456789abcdef0123456789abcdef01234567
+
+# The text a New Relic log line is written from, which carries the words a
+# prefix is spelled from without carrying a prefix.
+
+case:     a log line naming the api a key is spent on
+in:       time=2026-08-17T00:00:00Z level=info msg="querying nerdgraph" url=https://api.newrelic.com/graphql
+out:      time=2026-08-17T00:00:00Z level=info msg="querying nerdgraph" url=https://api.newrelic.com/graphql
+
+case:     an environment variable holding a host name
+in:       NEW_RELIC_HOST=https://api.newrelic.com
+out:      NEW_RELIC_HOST=https://api.newrelic.com
