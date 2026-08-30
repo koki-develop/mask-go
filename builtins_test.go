@@ -469,6 +469,19 @@ var builtinPatterns = []struct {
 		benchmarks: linearAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "neon-api-key",
+		pattern: NeonAPIKey,
+		ref:     referenceNeonAPIKeyFind,
+		samples: []string{
+			"NEON_API_KEY=napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			"napi_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+			"napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+			"napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abnapi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"napi_0123456789abcdef"},
+		benchmarks: neonAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "newrelic-user-key",
 		pattern: NewRelicUserKey,
 		ref:     referenceNewRelicUserKeyFind,

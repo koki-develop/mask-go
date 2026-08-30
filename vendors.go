@@ -159,6 +159,12 @@ func HuggingFacePatterns() []Pattern { return []Pattern{huggingFaceUserAccessTok
 // The returned slice is freshly allocated and may be modified by the caller.
 func LinearPatterns() []Pattern { return []Pattern{linearAPIKey} }
 
+// NeonPatterns returns every built-in pattern that locates a credential Neon
+// issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func NeonPatterns() []Pattern { return []Pattern{neonAPIKey} }
+
 // NewRelicPatterns returns every built-in pattern that locates a credential New
 // Relic issues.
 //
