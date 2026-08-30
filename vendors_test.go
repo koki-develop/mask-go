@@ -51,6 +51,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"HerokuPatterns":       HerokuPatterns,
 	"HuggingFacePatterns":  HuggingFacePatterns,
 	"LinearPatterns":       LinearPatterns,
+	"NeonPatterns":         NeonPatterns,
 	"NewRelicPatterns":     NewRelicPatterns,
 	"NotionPatterns":       NotionPatterns,
 	"NPMPatterns":          NPMPatterns,

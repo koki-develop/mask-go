@@ -1,0 +1,211 @@
+# What Neon API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is. That run is sixteen characters, so a body is it four times over
+# — the shortest body the pattern reads, since the count is a floor. It is
+# spelled in lowercase where the case does not matter and in uppercase where the
+# case is what a case is about: base62 holds the letters of both, so either
+# spelling is a body.
+
+patterns: neon-api-key
+
+# The one prefix Neon has issued an API key with. There is a single kind of
+# string here rather than a table of them: the personal key, the organization
+# key and the project-scoped key are one format, so nothing in the value says
+# which of them it is or what it reaches, and the cases below are that one shape
+# in the places a key is written.
+
+case:     a key in an environment assignment
+in:       NEON_API_KEY=napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      NEON_API_KEY=«neon-api-key»
+
+case:     a key in the bearer authorization header the Neon API is called with
+in:       Authorization: Bearer napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      Authorization: Bearer «neon-api-key»
+
+case:     a key in json
+in:       {"key":"napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}
+out:      {"key":"«neon-api-key»"}
+
+case:     a key on a command line
+in:       curl -H "Authorization: Bearer napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" https://console.neon.tech/api/v2/projects
+out:      curl -H "Authorization: Bearer «neon-api-key»" https://console.neon.tech/api/v2/projects
+
+case:     a key in a configuration environment block
+in:       "env": {"NEON_API_KEY": "napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}
+out:      "env": {"NEON_API_KEY": "«neon-api-key»"}
+
+# The alphabet the sixty-four characters are written in. It is base62 — the
+# letters of both cases and the digits. The two characters base64url adds, the
+# hyphen and the underscore, are not admitted, and either of them ends a body.
+
+case:     a body written in capitals
+in:       napi_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «neon-api-key»
+
+case:     a body carrying a hyphen
+in:       napi_0123456789abcdef0123456789abcdef-123456789abcdef0123456789abcdef
+out:      napi_0123456789abcdef0123456789abcdef-123456789abcdef0123456789abcdef
+
+case:     a body carrying an underscore
+in:       napi_0123456789abcdef0123456789abcdef_123456789abcdef0123456789abcdef
+out:      napi_0123456789abcdef0123456789abcdef_123456789abcdef0123456789abcdef
+
+# The lengths either side of sixty-four. The count is read as a floor rather
+# than exactly, so sixty-three characters are not a key and sixty-five are one
+# key to the end of its run rather than a key and a character left over. What
+# the floor costs is the middle case — a key cut short of sixty-four keeps every
+# random character written in front of the cut, and none of them is redacted.
+
+case:     a body of sixty-four characters is a key
+in:       napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «neon-api-key»
+
+case:     a body of sixty-three characters is not
+in:       napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     an alphabet run longer than the floor is a key to the end of it
+in:       napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0
+out:      «neon-api-key»
+
+# The three spellings Neon's own response examples write where a key goes. None
+# of them is a prefix the library reads, so all three stay in the text, and the
+# same body behind napi_ is redacted.
+
+case:     the personal response example spelling
+in:       neon_api_key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      neon_api_key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     the organization response example spelling
+in:       neon_org_key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      neon_org_key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     the project-scoped response example spelling
+in:       neon_project_key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      neon_project_key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# The names Node-API writes with this prefix, which a source file of a native
+# addon carries on nearly every line. None of them reaches a body: a name is
+# snake_case, and the underscore after its next word ends the run long before
+# the sixty-fourth character.
+
+case:     a node-api call
+in:       napi_create_string_utf8(env, name, NAPI_AUTO_LENGTH, &result);
+out:      napi_create_string_utf8(env, name, NAPI_AUTO_LENGTH, &result);
+
+case:     a node-api status
+in:       napi_status status = napi_ok;
+out:      napi_status status = napi_ok;
+
+# What a key may be written against. There is no boundary on either side of the
+# prefix, so a key keeps its span whatever word character it abuts — and where
+# the run of its alphabet carries on past the floor, what carries it on is
+# redacted with the key. A hyphen and an underscore end the run instead.
+#
+# A snake_case name whose segment closes on napi carries a whole prefix, so
+# where sixty-four unbroken characters of the alphabet stand behind one,
+# everything from the napi onward is redacted and only the syllable in front of
+# it stays.
+
+case:     a key after an underscore
+in:       NEON_API_KEY_napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      NEON_API_KEY_«neon-api-key»
+
+case:     a key after a letter
+in:       xnapi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      x«neon-api-key»
+
+case:     a name closing on the prefix with a body behind it
+in:       sonapi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      so«neon-api-key»
+
+case:     a word written against a key
+in:       napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsuffix
+out:      «neon-api-key»
+
+case:     a hyphenated word written against a key
+in:       napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef-suffix
+out:      «neon-api-key»-suffix
+
+case:     an underscored word written against a key
+in:       napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef_suffix
+out:      «neon-api-key»_suffix
+
+case:     a key at the end of a sentence
+in:       the key is napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.
+out:      the key is «neon-api-key».
+
+# Two keys written together. The four letters the prefix opens with belong to
+# the alphabet a body is written in, so a body may close with napi and the
+# underscore of the next key stand directly behind it; the second key begins
+# four characters before the first one ends, the two spans overlap and are
+# redacted as one. Written with nothing at all between them the first body
+# reaches four characters into the second prefix and stops at the underscore
+# behind them, so those two overlap as well. Written with a space between them
+# the two are separate values, and both go.
+
+case:     a key beginning inside the key before it
+in:       napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abnapi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «neon-api-key»
+
+case:     two keys with nothing between them
+in:       napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefnapi_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «neon-api-key»
+
+case:     two keys separated by a space
+in:       napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef napi_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «neon-api-key» «neon-api-key»
+
+# What this pattern redacts that nobody issued. The prefix closes with an
+# underscore, which standard base64 writes nowhere, so only a base64url encoding
+# can hold one — and where sixty-four base62 characters follow, the run from the
+# prefix to the end of them is redacted whether or not Neon issued it. Such a
+# run is a key's format exactly and nothing in the text tells the two apart, so
+# sparing it would spare a real key written the same way.
+#
+# The digest is the same over-match taking a value a reader had a use for: a
+# SHA-256 is sixty-four hexadecimal characters, which are base62 and carry
+# nothing that ends a run. What holds either side of it is the floor and the
+# prefix — a SHA-1 is forty characters, twenty-four short of a body, an MD5 is
+# thirty-two, and a hyphen is no character the prefix carries.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzznapi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefzzzz
+out:      payload=zzzz«neon-api-key»
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzznapi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefzzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«neon-api-key»
+
+case:     a sha256 behind the prefix in a cache key
+in:       key: napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      key: «neon-api-key»
+
+case:     a sha1 behind the prefix, twenty-four characters short of a body
+in:       napi_0123456789abcdef0123456789abcdef01234567
+out:      napi_0123456789abcdef0123456789abcdef01234567
+
+case:     an md5 behind the prefix
+in:       napi_0123456789abcdef0123456789abcdef
+out:      napi_0123456789abcdef0123456789abcdef
+
+case:     a sha256 behind a hyphen rather than the prefix
+in:       napi-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      napi-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# The prefix written in a case Neon does not issue keys in, the prefix without
+# the underscore it closes with, and a body of the right length with no prefix
+# at all.
+
+case:     an uppercase prefix
+in:       NAPI_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      NAPI_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     the prefix without its closing underscore
+in:       napi0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      napi0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
