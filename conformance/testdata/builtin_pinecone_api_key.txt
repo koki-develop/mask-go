@@ -1,0 +1,180 @@
+# What Pinecone API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is. The run serves both parts — six characters of it for the label,
+# and three times over and then as far as its e for the sixty-three of the
+# secret — so a key comes to seventy-five characters under the prefix pcsk_ and
+# seventy-six under pckey_.
+
+patterns: pinecone-api-key
+
+# The two prefixes Pinecone writes a key with, which are one pattern rather than
+# two: a key of either authenticates the same project the same way, so a caller
+# with reason to redact one has the same reason for the other. The cases below
+# are those two shapes in the places a key is written.
+
+case:     a key in an environment assignment
+in:       PINECONE_API_KEY=pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      PINECONE_API_KEY=«pinecone-api-key»
+
+case:     a key in the api-key header Pinecone's endpoints are called with
+in:       Api-Key: pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      Api-Key: «pinecone-api-key»
+
+case:     a key under the prefix new keys are issued with
+in:       pckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «pinecone-api-key»
+
+case:     a key in the json a created key comes back in
+in:       {"key":{"name":"example-api-key"},"value":"pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde"}
+out:      {"key":{"name":"example-api-key"},"value":"«pinecone-api-key»"}
+
+case:     a key on the command line that configures the cli
+in:       pc auth configure --api-key pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      pc auth configure --api-key «pinecone-api-key»
+
+case:     the keys of both prefixes in one configuration
+in:       PINECONE_API_KEY=pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde PINECONE_API_KEY_STAGING=pckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      PINECONE_API_KEY=«pinecone-api-key» PINECONE_API_KEY_STAGING=«pinecone-api-key»
+
+# The alphabet both parts are written in, which is base62 — the letters of both
+# cases and the digits. So capitals stand anywhere a lowercase letter may, and
+# a hyphen or a space ends the reading wherever it falls.
+
+case:     an uppercase secret
+in:       pcsk_012345_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDE
+out:      «pinecone-api-key»
+
+case:     a hyphen inside the secret
+in:       pcsk_012345_0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcde
+out:      pcsk_012345_0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcde
+
+case:     a secret broken by a space
+in:       pcsk_012345_0123456789abcdef 123456789abcdef0123456789abcdef0123456789abcde
+out:      pcsk_012345_0123456789abcdef 123456789abcdef0123456789abcdef0123456789abcde
+
+# The label is read in that same alphabet, and Pinecone states nothing about
+# where its characters come from. The keys published unaltered carry six
+# mixed-case letters and digits there, which is the shape of a generated
+# identifier; what the vendor's own word leaves open is a label derived from the
+# name a key was created under, and the names Pinecone's guides write are
+# hyphenated. These two are what that reading would cost — a key located
+# nowhere rather than in part.
+
+case:     a hyphenated label
+in:       pcsk_example-api-key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      pcsk_example-api-key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     an underscored label
+in:       pckey_example_api_key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      pckey_example_api_key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+# The lengths either side of the two floors. Pinecone states neither, so both
+# are read as floors rather than counts: a part short of one is no key, and a
+# secret run longer than sixty-three characters is one key redacted to the end
+# of that run rather than a key with something written after it.
+
+case:     a label of six characters and a secret of sixty-three are a key
+in:       pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «pinecone-api-key»
+
+case:     a label of five characters is one too
+in:       pcsk_01234_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «pinecone-api-key»
+
+case:     a label longer than any published key carries is one as well
+in:       pcsk_0123456789abcdef_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «pinecone-api-key»
+
+case:     a label of four characters is not
+in:       pcsk_0123_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      pcsk_0123_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     a secret of sixty-two characters is not
+in:       pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd
+out:      pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd
+
+case:     a run longer than the secret's floor is redacted to its end
+in:       pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «pinecone-api-key»
+
+# What a key may be written against. The prefixes are the whole of the anchor
+# and there is no boundary on either side of one, so a key keeps its span
+# whatever word character stands in front of it — and the span reaches to the
+# end of the secret's run, so a character of that alphabet written behind a key
+# goes with it.
+
+case:     a key after an underscore
+in:       PINECONE_API_KEY_pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      PINECONE_API_KEY_«pinecone-api-key»
+
+case:     a key after a letter
+in:       xpcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      x«pinecone-api-key»
+
+case:     a key before a hyphenated word
+in:       pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde-suffix
+out:      «pinecone-api-key»-suffix
+
+case:     a key at the end of a sentence
+in:       the key is pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde.
+out:      the key is «pinecone-api-key».
+
+# Two keys written together. A key can begin inside another: its prefix is
+# spelled in the alphabet a secret is written in and closes on the separator a
+# key already carries, so a secret ending in pcsk holds the start of the key
+# behind it. The two spans overlap and are redacted as one. Written with nothing
+# at all between them the first key's secret run carries on into the second
+# key's prefix, so the two overlap there as well.
+
+case:     a key beginning inside the key before it
+in:       pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789apcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «pinecone-api-key»
+
+case:     two keys with nothing between them
+in:       pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdepcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «pinecone-api-key»
+
+case:     two keys with a space between them
+in:       pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde pckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «pinecone-api-key» «pinecone-api-key»
+
+# The prefixes, which are what tell this format from text. They agree on the two
+# characters pc and part at the third, and each is read in the one case Pinecone
+# writes it.
+
+case:     an uppercase prefix
+in:       PCSK_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      PCSK_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     the opening with neither spelling behind it
+in:       pcs_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      pcs_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     a run of the right shape opening with no prefix
+in:       xxxx_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      xxxx_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+# The other credential Pinecone issues, which this pattern does not reach. A
+# service account's client secret is what the Admin API is authenticated with by
+# exchanging it for an access token, and Pinecone writes it as
+# YOUR_CLIENT_SECRET everywhere it appears — no prefix, no length and no
+# alphabet — so there is nothing to anchor on.
+
+case:     a client secret in an environment assignment
+in:       PINECONE_CLIENT_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      PINECONE_CLIENT_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     a client secret in the body of a token request
+in:       {"client_id":"0123456789abcdef","client_secret":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde"}
+out:      {"client_id":"0123456789abcdef","client_secret":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde"}
+
+# And the text this pattern leaves alone besides.
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line naming the index a key is spent on
+in:       time=2026-08-17T00:00:00Z level=info msg="querying index" url=https://example-0123456789.svc.aped-0123-a56b.pinecone.io/query status=200
+out:      time=2026-08-17T00:00:00Z level=info msg="querying index" url=https://example-0123456789.svc.aped-0123-a56b.pinecone.io/query status=200

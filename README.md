@@ -38,7 +38,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 )...))
 ```
 
-The 59 built-in patterns cover 48 vendors and locate 149 kinds of credential:
+The 60 built-in patterns cover 49 vendors and locate 150 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -74,6 +74,7 @@ The 59 built-in patterns cover 48 vendors and locate 149 kinds of credential:
 | `OpenAIPatterns() []Pattern` | OpenAI project API keys, service account keys, Admin API keys, legacy user API keys |
 | `OpenRouterPatterns() []Pattern` | OpenRouter API keys |
 | `PaddlePatterns() []Pattern` | Paddle API keys |
+| `PineconePatterns() []Pattern` | Pinecone API keys |
 | `PlanetScalePatterns() []Pattern` | PlanetScale service tokens, OAuth access tokens, OAuth refresh tokens |
 | `PostHogPatterns() []Pattern` | PostHog personal API keys |
 | `PostmanPatterns() []Pattern` | Postman API keys |

@@ -579,6 +579,20 @@ var builtinPatterns = []struct {
 		benchmarks: paddleAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "pinecone-api-key",
+		pattern: PineconeAPIKey,
+		ref:     referencePineconeAPIKeyFind,
+		samples: []string{
+			"PINECONE_API_KEY=pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			"pckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			"pcsk_01234_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			"pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789apcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			"pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdepcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+		},
+		anchors:    []string{"pcsk_012345_0123456789abcdef", "pckey_012345_0123456789abcdef"},
+		benchmarks: pineconeAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "planetscale-token",
 		pattern: PlanetScaleToken,
 		ref:     referencePlanetScaleTokenFind,
