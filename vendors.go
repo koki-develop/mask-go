@@ -93,6 +93,12 @@ func DopplerPatterns() []Pattern { return []Pattern{dopplerAuthToken} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func DynatracePatterns() []Pattern { return []Pattern{dynatraceToken} }
 
+// FlyIOPatterns returns every built-in pattern that locates a credential
+// Fly.io issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func FlyIOPatterns() []Pattern { return []Pattern{flyIOAccessToken} }
+
 // GitHubPatterns returns every built-in pattern that locates a credential
 // GitHub issues.
 //
