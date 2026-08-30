@@ -487,6 +487,20 @@ var builtinPatterns = []struct {
 		benchmarks: openRouterAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "paddle-api-key",
+		pattern: PaddleAPIKey,
+		ref:     referencePaddleAPIKeyFind,
+		samples: []string{
+			"PADDLE_API_KEY=pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012",
+			"pdl_sdbx_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012",
+			"pdl_live_apikey_0123456789abcdef0123456789_0123456789ABCDEF012345_01A",
+			"pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012",
+			"pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012pdl_sdbx_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012",
+		},
+		anchors:    []string{"pdl_live_apikey_0123456789abcdef", "pdl_sdbx_apikey_0123456789abcdef"},
+		benchmarks: paddleAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "planetscale-token",
 		pattern: PlanetScaleToken,
 		ref:     referencePlanetScaleTokenFind,
