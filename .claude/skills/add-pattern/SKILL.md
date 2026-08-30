@@ -18,6 +18,25 @@ alphabet, length, checksum, and every variant sharing the prefix. Do not work
 from memory — formats change, and the scanner rationale comment in
 `builtin_<name>.go` is written from what this step establishes.
 
+The vendor states the prefix and often nothing else, while a grammar needs an
+alphabet and a length as well. Where the vendor's own implementation is public,
+it states them, and that is the vendor stating them. Otherwise they come from
+the public secret-scanning rulesets, and what those carry is corroboration
+rather than authority: what someone else observed of the values, not what the
+vendor undertakes to keep issuing. Read the rules themselves rather than
+inferring them from what a ruleset does and does not fire on: a rule may be
+written to an exact length rather than a floor, so a test value of one shape
+misses a rule that exists for another. Where a vendor's docs mask an example,
+the width of the mask corroborates a count stated elsewhere; on its own it
+establishes no length, since a docs example may elide rather than mask byte for
+byte.
+
+Narrow the alphabet or raise the floor on evidence, never on its absence — a
+value cut short is a credential with its tail left in the log. What the alphabet
+and the length rest on goes in the rationale, named: the next person to widen
+either needs to know whether they are reading the vendor's own format or an
+assembly of what a ruleset happened to carry.
+
 Then put what this step established through the rules file's "Weighing one
 before adding it". The gate is asked of the grammar as established here, not of
 what was assumed of it beforehand. Where it does not survive, stop and report
