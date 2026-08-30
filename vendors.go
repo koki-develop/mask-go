@@ -207,6 +207,12 @@ func OpenRouterPatterns() []Pattern { return []Pattern{openRouterAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func PaddlePatterns() []Pattern { return []Pattern{paddleAPIKey} }
 
+// PineconePatterns returns every built-in pattern that locates a credential
+// Pinecone issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func PineconePatterns() []Pattern { return []Pattern{pineconeAPIKey} }
+
 // PlanetScalePatterns returns every built-in pattern that locates a credential
 // PlanetScale issues.
 //
