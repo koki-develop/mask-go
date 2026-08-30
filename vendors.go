@@ -189,6 +189,12 @@ func PaddlePatterns() []Pattern { return []Pattern{paddleAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func PlanetScalePatterns() []Pattern { return []Pattern{planetScaleToken} }
 
+// PostHogPatterns returns every built-in pattern that locates a credential
+// PostHog issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func PostHogPatterns() []Pattern { return []Pattern{postHogPersonalAPIKey} }
+
 // PostmanPatterns returns every built-in pattern that locates a credential
 // Postman issues.
 //

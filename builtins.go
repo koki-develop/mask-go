@@ -60,6 +60,7 @@ var builtins = []Pattern{
 	openRouterAPIKey,
 	paddleAPIKey,
 	planetScaleToken,
+	postHogPersonalAPIKey,
 	postmanAPIKey,
 	privateKey,
 	pulumiAccessToken,
