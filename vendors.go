@@ -147,6 +147,12 @@ func HuggingFacePatterns() []Pattern { return []Pattern{huggingFaceUserAccessTok
 // The returned slice is freshly allocated and may be modified by the caller.
 func LinearPatterns() []Pattern { return []Pattern{linearAPIKey} }
 
+// NewRelicPatterns returns every built-in pattern that locates a credential New
+// Relic issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func NewRelicPatterns() []Pattern { return []Pattern{newRelicUserKey} }
+
 // NotionPatterns returns every built-in pattern that locates a credential
 // Notion issues.
 //

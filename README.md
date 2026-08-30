@@ -62,6 +62,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `HuggingFacePatterns() []Pattern` | Hugging Face user access tokens |
 | `JWT() Pattern` | JSON Web Tokens, signed and encrypted |
 | `LinearPatterns() []Pattern` | Linear personal API keys |
+| `NewRelicPatterns() []Pattern` | New Relic user keys, including the admin keys New Relic migrated into user keys |
 | `NotionPatterns() []Pattern` | Notion internal integration tokens, Notion OAuth access tokens, Notion personal access tokens |
 | `NPMPatterns() []Pattern` | npm granular access tokens, npm classic tokens (read-only, automation, publish) |
 | `OnePasswordPatterns() []Pattern` | 1Password service account tokens |

@@ -418,6 +418,20 @@ var builtinPatterns = []struct {
 		benchmarks: linearAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "newrelic-user-key",
+		pattern: NewRelicUserKey,
+		ref:     referenceNewRelicUserKeyFind,
+		samples: []string{
+			"NEW_RELIC_API_KEY=NRAK-0123456789ABCDEFGHIJKLMNOPQ",
+			"NRAA-0123456789abcdef0123456789a",
+			"NRAK-0123456789ABCDEFGHIJKLMNRAK-0123456789ABCDEFGHIJKLMNOPQ",
+			"NRAK-0123456789ABCDEFGHIJKLMNOPQRS",
+			"NRAK-0123456789ABCDEFGHIJKLMNOPQNRAA-0123456789abcdef0123456789a",
+		},
+		anchors:    []string{"NRAK-0123456789ABCDEF", "NRAA-0123456789abcdef"},
+		benchmarks: newRelicUserKeyFindBenchmarks,
+	},
+	{
 		name:    "notion-api-token",
 		pattern: NotionAPIToken,
 		ref:     referenceNotionAPITokenFind,
