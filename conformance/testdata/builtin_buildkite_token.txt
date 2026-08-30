@@ -1,0 +1,287 @@
+# What Buildkite tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run
+# 0123456789abcdef0123456789abcdef01234567, which no real credential is. That
+# run is forty characters and so is a whole token body — the shortest one the
+# pattern reads, since the count is a floor. It is spelled in lowercase where
+# the case does not matter and in uppercase where the case is what a case is
+# about: base64url holds the letters of both, so either spelling is a body.
+
+patterns: buildkite-token
+
+# The prefixes, one to a kind of token. Buildkite names each of them after the
+# acronym of what it calls that kind, and names no length or alphabet for any of
+# them. They are one pattern rather than ten because every one of them is a
+# secret that authenticates and none is published by design, so a caller has one
+# decision to make about the lot.
+
+case:     an api access token
+in:       bkua_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     an agent session token
+in:       bkaa_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     an agent job token
+in:       bkaj_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     an unclustered agent token
+in:       bkar_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     an agent token
+in:       bkct_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     a registry token
+in:       bkpt_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     a portal secret
+in:       bkps_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     a token exchange token
+in:       bktx_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     a portal token
+in:       bkpat_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     a job acquisition token
+in:       bkjat_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+# The places a token is written.
+
+case:     a token in an environment assignment
+in:       BUILDKITE_API_TOKEN=bkua_0123456789abcdef0123456789abcdef01234567
+out:      BUILDKITE_API_TOKEN=«buildkite-token»
+
+case:     a token in the authorization header a request to the api carries
+in:       Authorization: Bearer bkua_0123456789abcdef0123456789abcdef01234567
+out:      Authorization: Bearer «buildkite-token»
+
+case:     a token in the json a token exchange returns
+in:       {"access_token": "bktx_0123456789abcdef0123456789abcdef01234567"}
+out:      {"access_token": "«buildkite-token»"}
+
+case:     a token in an agent configuration file
+in:       token="bkct_0123456789abcdef0123456789abcdef01234567"
+out:      token="«buildkite-token»"
+
+case:     a token on a command line
+in:       buildkite-agent start --token bkct_0123456789abcdef0123456789abcdef01234567
+out:      buildkite-agent start --token «buildkite-token»
+
+# The alphabet the forty characters are written in. It is base64url — the
+# letters of both cases, the digits, the hyphen and the underscore — which is
+# what betterleaks admits behind seven of the ten prefixes. It is wider than
+# what the two rulesets covering the API access token admit behind that one,
+# lowercase and digits alone, and it is read at the wider one so that a body of
+# a kind nothing states an alphabet for is not cut at its first hyphen with the
+# rest of the credential left in the text. The dot belongs to neither, and it is
+# what an ordinary sentence and an ordinary path are broken by.
+
+case:     a body written in capitals
+in:       bkua_0123456789ABCDEF0123456789ABCDEF01234567
+out:      «buildkite-token»
+
+case:     a body carrying a hyphen
+in:       bkua_0123456789abcdef-0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     a body carrying an underscore
+in:       bkua_0123456789abcdef_0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     a body carrying a dot
+in:       bkua_0123456789abcdef.0123456789abcdef01234567
+out:      bkua_0123456789abcdef.0123456789abcdef01234567
+
+# The lengths either side of forty. Buildkite states no length for any of the
+# ten kinds — what it draws is a row of asterisks, and the rulesets read those
+# rows. betterleaks reads seven of the prefixes at a count exactly and the API
+# access token at forty characters or at fifty-three, which is that prefix's own
+# row; trufflehog reads the API access token at forty and nothing else. So one
+# floor is read for all ten rather than a count apiece, at forty, the shortest
+# of them: like the GitHub and npm bodies and unlike the AWS access key ID, a
+# body at or above it is a token to the end of its run. The two lengths
+# betterleaks carries for one prefix are why — that token's length changed, and
+# a count would have left thirteen characters of every later one in the text.
+#
+# What the floor costs is the two cases below the first. A token cut short of
+# forty keeps every random character written in front of the cut, and none of
+# them is redacted — and a kind whose whole body were shorter than forty would
+# be located nowhere at all, which is what the thirty-two character body pins.
+
+case:     a body of forty characters is a token
+in:       bkua_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     a body of thirty-nine characters is not
+in:       bkua_0123456789abcdef0123456789abcdef0123456
+out:      bkua_0123456789abcdef0123456789abcdef0123456
+
+case:     a whole body of thirty-two characters is not
+in:       bkua_0123456789abcdef0123456789abcdef
+out:      bkua_0123456789abcdef0123456789abcdef
+
+case:     an alphabet run longer than the floor is a token to the end of it
+in:       bkua_0123456789abcdef0123456789abcdef012345670
+out:      «buildkite-token»
+
+# What a token may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a token keeps its span whatever
+# word character it abuts — and where the run of its alphabet carries on past
+# the floor, what carries it on is redacted with the token. The hyphen and the
+# underscore belong to that alphabet, so a hyphenated or underscored word
+# written against a token goes with it; a space and a dot end the run.
+
+case:     a token after an underscore
+in:       BUILDKITE_API_TOKEN_bkua_0123456789abcdef0123456789abcdef01234567
+out:      BUILDKITE_API_TOKEN_«buildkite-token»
+
+case:     a token after a letter
+in:       xbkua_0123456789abcdef0123456789abcdef01234567
+out:      x«buildkite-token»
+
+case:     a word written against a token
+in:       bkua_0123456789abcdef0123456789abcdef01234567suffix
+out:      «buildkite-token»
+
+case:     a hyphenated word written against a token
+in:       bkua_0123456789abcdef0123456789abcdef01234567-suffix
+out:      «buildkite-token»
+
+case:     an underscored word written against a token
+in:       bkua_0123456789abcdef0123456789abcdef01234567_suffix
+out:      «buildkite-token»
+
+case:     a token at the end of a sentence
+in:       the token is bkua_0123456789abcdef0123456789abcdef01234567.
+out:      the token is «buildkite-token».
+
+# Two tokens written together. Every character of a prefix belongs to the
+# alphabet a body is written in, the underscore closing it included, so a whole
+# prefix can stand inside a body: the second token below begins five characters
+# into the first, the two bodies run to the same place, and the overlapping
+# spans are redacted as one. Written without that overlap the two are separate
+# values, and both go.
+
+case:     a token beginning inside the token before it
+in:       bkua_bkct_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     two tokens with nothing between them
+in:       bkua_0123456789abcdef0123456789abcdef01234567bkct_0123456789ABCDEF0123456789ABCDEF01234567
+out:      «buildkite-token»
+
+case:     two tokens separated by a space
+in:       bkua_0123456789abcdef0123456789abcdef01234567 bkct_0123456789ABCDEF0123456789ABCDEF01234567
+out:      «buildkite-token» «buildkite-token»
+
+# What this pattern redacts that nobody issued. A prefix carries an underscore,
+# which standard base64 writes nowhere, so only a base64url encoding can hold
+# one — and there the five characters of a prefix stand about once in a hundred
+# and thirty million characters. The run from such a prefix to the end of the
+# encoding is redacted whether or not Buildkite issued it. That is the answer
+# rather than a fault in it, because such a run is a token's format exactly and
+# nothing in the text tells the two apart: sparing these would spare a real
+# token written the same way. What is taken is a stretch of a value that was
+# already opaque to a reader.
+#
+# Every body written in this file is forty hexadecimal characters, which is a
+# SHA-1's shape exactly, so each of the cases above is also a digest behind a
+# prefix and is redacted for the same reason.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzzbkua_0123456789abcdef0123456789abcdef01234567zzzz
+out:      payload=zzzz«buildkite-token»
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzbkua_0123456789abcdef0123456789abcdef01234567zzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«buildkite-token»
+
+# And the readable text the floor leaves. The alphabet holds the underscore and
+# the hyphen, so snake_case and kebab-case run through it unbroken: a name
+# opening with one of these prefixes and carrying forty more characters of the
+# alphabet is a token's format exactly and is redacted. Raising the floor is
+# what would rule it out, and forty is the shortest body any source attests, so
+# a higher one would turn a real API access token away. A shorter name is left
+# alone, and a dotted one is broken by the dot long before forty characters of
+# it have been read.
+
+case:     a snake case name long enough to reach the floor
+in:       bkct_agent_token_for_the_production_cluster_east
+out:      «buildkite-token»
+
+case:     a kebab case name long enough to reach the floor
+in:       bkct_agent-token-for-the-production-cluster-east
+out:      «buildkite-token»
+
+case:     a shorter name behind the prefix
+in:       bkct_agent_token_for_production
+out:      bkct_agent_token_for_production
+
+case:     a dotted name behind the prefix
+in:       bkct_agent.token.for.the.production.cluster.east
+out:      bkct_agent.token.for.the.production.cluster.east
+
+# And what this pattern leaves alone. The first three are the prefix, read in
+# the case Buildkite writes it and with the separator it closes on. The two
+# after them are the acronym: one Buildkite names no token with, and one of its
+# own with a character written into it, which moves the separator off both
+# depths a kind may close at. Then the anchor and the run — a run of the right
+# length with no prefix in front of it, and a body a space has broken — and a
+# digest and a sentence, which hold no underscore where a prefix wants one and
+# so hold no position to be found at however long they run.
+
+case:     an uppercase prefix
+in:       BKUA_0123456789abcdef0123456789abcdef01234567
+out:      BKUA_0123456789abcdef0123456789abcdef01234567
+
+case:     a hyphen where the prefix carries an underscore
+in:       bkua-0123456789abcdef0123456789abcdef01234567
+out:      bkua-0123456789abcdef0123456789abcdef01234567
+
+case:     the opening with no acronym behind it
+in:       bk_0123456789abcdef0123456789abcdef01234567
+out:      bk_0123456789abcdef0123456789abcdef01234567
+
+case:     an acronym Buildkite names no token with
+in:       bkzz_0123456789abcdef0123456789abcdef01234567
+out:      bkzz_0123456789abcdef0123456789abcdef01234567
+
+case:     a character written into an acronym
+in:       bkuaa_0123456789abcdef0123456789abcdef01234567
+out:      bkuaa_0123456789abcdef0123456789abcdef01234567
+
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdef0123456789abcdef01234567
+out:      0123456789abcdef0123456789abcdef01234567
+
+case:     a body broken by a space
+in:       bkua_0123456789abcdef 0123456789abcdef01234567
+out:      bkua_0123456789abcdef 0123456789abcdef01234567
+
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And a Buildkite secret this pattern has nothing to say about. The value in a
+# pipeline trigger's URL carries a bk prefix of its own, bktr_, which Buildkite
+# neither calls a token nor lists among them — so reading it would have this
+# pattern locate more than its name covers. A caller who wants it redacted has
+# MustRegexp.
+
+case:     the value in a pipeline trigger url
+in:       https://webhook.buildkite.com/deliver/bktr_0123456789ab
+out:      https://webhook.buildkite.com/deliver/bktr_0123456789ab

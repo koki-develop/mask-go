@@ -44,6 +44,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `AirtablePatterns() []Pattern` | Airtable personal access tokens |
 | `AnthropicPatterns() []Pattern` | Anthropic API keys, Anthropic Admin API keys, Anthropic OAuth tokens, Anthropic session keys |
 | `AWSPatterns() []Pattern` | AWS access key IDs, AWS secret access keys |
+| `BuildkitePatterns() []Pattern` | Buildkite API access tokens, agent session tokens, agent job tokens, unclustered agent tokens, agent (cluster) tokens, registry tokens, Package Registries temporary tokens, portal tokens, portal secrets, job acquisition tokens, token exchange tokens |
 | `CircleCIPatterns() []Pattern` | CircleCI personal API tokens, project API tokens |
 | `CloudflarePatterns() []Pattern` | Cloudflare API tokens, Cloudflare API keys |
 | `CratesIOPatterns() []Pattern` | crates.io API tokens, Trusted Publishing access tokens |
