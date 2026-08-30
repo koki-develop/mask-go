@@ -133,6 +133,24 @@ var builtinPatterns = []struct {
 		benchmarks: awsSecretAccessKeyFindBenchmarks,
 	},
 	{
+		name:    "buildkite-token",
+		pattern: BuildkiteToken,
+		ref:     referenceBuildkiteTokenFind,
+		samples: []string{
+			"BUILDKITE_API_TOKEN=bkua_0123456789abcdef0123456789abcdef01234567",
+			"bkct_0123456789abcdef0123456789abcdef01234567",
+			"bkpat_0123456789ABCDEF0123456789ABCDEF01234567",
+			"bkaa_0123456789abcdef-0123456789abcdef_01234567",
+			"bkua_bkct_0123456789abcdef0123456789abcdef01234567",
+			"bkua_0123456789abcdef0123456789abcdef01234567 bkjat_0123456789abcdef0123456789abcdef01234567",
+		},
+		anchors: []string{
+			"bkua_0123456789abcdef0123456789abcdef0123456",
+			"bkpat_0123456789abcdef0123456789abcdef0123456",
+		},
+		benchmarks: buildkiteTokenFindBenchmarks,
+	},
+	{
 		name:    "circleci-api-token",
 		pattern: CircleCIAPIToken,
 		ref:     referenceCircleCIAPITokenFind,
