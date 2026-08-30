@@ -572,6 +572,20 @@ var builtinPatterns = []struct {
 		benchmarks: replicateAPITokenFindBenchmarks,
 	},
 	{
+		name:    "resend-api-key",
+		pattern: ResendAPIKey,
+		ref:     referenceResendAPIKeyFind,
+		samples: []string{
+			"RESEND_API_KEY=re_01234567_0123456789abcdef01234567",
+			"re_01234567_0123456789ABCDEF01234567",
+			"re_01234567_0123456789abcdef012345re_01234567_0123456789abcdef01234567",
+			"re_01234re_01234567_0123456789abcdef01234567",
+			"re_01234567_0123456789abcdef01234567re_01234567_0123456789abcdef01234567",
+		},
+		anchors:    []string{"re_0123"},
+		benchmarks: resendAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "rubygems-api-key",
 		pattern: RubyGemsAPIKey,
 		ref:     referenceRubyGemsAPIKeyFind,

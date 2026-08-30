@@ -64,6 +64,7 @@ var builtins = []Pattern{
 	pulumiAccessToken,
 	pypiAPIToken,
 	replicateAPIToken,
+	resendAPIKey,
 	rubyGemsAPIKey,
 	sendGridAPIKey,
 	sentryAuthToken,

@@ -73,6 +73,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 | `PulumiPatterns() []Pattern` | Pulumi personal access tokens, organization access tokens, team access tokens |
 | `PyPIPatterns() []Pattern` | PyPI API tokens, TestPyPI API tokens, Trusted Publisher tokens |
 | `ReplicatePatterns() []Pattern` | Replicate API tokens |
+| `ResendPatterns() []Pattern` | Resend API keys |
 | `RubyGemsPatterns() []Pattern` | RubyGems.org API keys |
 | `SendGridPatterns() []Pattern` | Twilio SendGrid API keys |
 | `SentryPatterns() []Pattern` | Sentry user auth tokens, organization auth tokens, user application tokens, internal integration tokens |

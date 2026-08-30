@@ -207,6 +207,12 @@ func PyPIPatterns() []Pattern { return []Pattern{pypiAPIToken} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func ReplicatePatterns() []Pattern { return []Pattern{replicateAPIToken} }
 
+// ResendPatterns returns every built-in pattern that locates a credential
+// Resend issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func ResendPatterns() []Pattern { return []Pattern{resendAPIKey} }
+
 // RubyGemsPatterns returns every built-in pattern that locates a credential
 // RubyGems issues.
 //
