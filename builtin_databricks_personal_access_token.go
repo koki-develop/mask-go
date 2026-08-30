@@ -245,8 +245,8 @@ const (
 	// databricksPersonalAccessTokenPrefix is what every personal access token
 	// opens with, and what the scan reads back from its anchor. Two of its four
 	// characters stand outside the alphabet a body is written in, which is what
-	// makes the search cheap on a line of digests and what leaves no position
-	// inside a token able to open a candidate;
+	// makes the search cheap on a line of digests and what leaves only the end
+	// of a body able to open a candidate inside a token;
 	// Test_databricksPersonalAccessTokenPrefix holds it to both.
 	databricksPersonalAccessTokenPrefix = "dapi"
 

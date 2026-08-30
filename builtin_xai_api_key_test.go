@@ -59,14 +59,6 @@ func Test_XAIAPIKey(t *testing.T) {
 			src:  "xai-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
 			want: []Span{{0, 84}},
 		},
-		{
-			// The first span reaches through the second key's xai to the hyphen
-			// that ends the run, so the two overlap and Masker.locate resolves
-			// them.
-			name: "two keys with nothing between them",
-			src:  "xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-			want: []Span{{0, 87}, {84, 168}},
-		},
 	}
 
 	for _, tt := range tests {

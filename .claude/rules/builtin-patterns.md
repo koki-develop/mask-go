@@ -373,9 +373,9 @@ quadratic input. There are three ways one gets it, and a scan has whichever it
 has for a reason its file gives:
 
 - **A cursor over the run**, remembered between candidates. Every such cursor is
-  load-bearing, and is held to never moving back by a test of its own —
-  `Test_slackTokenPrefixes_bodyNeverMovesBack` and the two beside it — or by a
-  `Test_<Pattern>_scanIsLinear` driving the input that would find it wrong.
+  load-bearing, and is held to never moving back by a test of its own — one
+  named `Test_<X>_bodyNeverMovesBack`, as the prefix-table patterns have — or by
+  a `Test_<Pattern>_scanIsLinear` driving the input that would find it wrong.
 - **A fixed count**, which bounds what a candidate reads without any state to be
   wrong about.
 - **A prefix closing with a character no body of that scan is written with**, so

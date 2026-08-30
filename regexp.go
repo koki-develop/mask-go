@@ -85,10 +85,11 @@ func Regexp(name, expr string) (Pattern, error) {
 	// regexp.Compile parses with syntax.Perl, so the tree walked here is the
 	// tree the matcher was built from. The error is dropped rather than
 	// reported because the Compile above has already accepted expr: reaching this
-	// line at all means the parse succeeds.
-	parsed, err := syntax.Parse(expr, syntax.Perl)
+	// line at all means the parse succeeds, so every walk of the tree below is
+	// a walk of a tree there is.
+	parsed, _ := syntax.Parse(expr, syntax.Perl)
 	width := regexpUnbounded
-	if err == nil && after != nil {
+	if after != nil {
 		width = regexpMaxWidth(parsed)
 	}
 	// What every match opens with, which bounds where one can begin. Go reports
@@ -115,10 +116,7 @@ func Regexp(name, expr string) (Pattern, error) {
 	//     such a match is dropped; the group it redacts is dropped with it
 	//     only where the group stands inside the opening too, which is what
 	//     leaves a rune's worth of room below the limit here.
-	masks := regexpUnbounded
-	if err == nil {
-		masks = regexpMaskDistance(parsed)
-	}
+	masks := regexpMaskDistance(parsed)
 	streams := after != nil &&
 		(width != regexpUnbounded || literal != "") &&
 		(masks == regexpNoMaskGroup ||
@@ -133,7 +131,7 @@ func Regexp(name, expr string) (Pattern, error) {
 		literal:     literal,
 		literalTail: newPrefixTail(literal),
 		streams:     streams,
-		coalesces:   err == nil && !regexpReadsBehind(parsed),
+		coalesces:   !regexpReadsBehind(parsed),
 		probes:      streams && width != regexpUnbounded,
 	}, nil
 }

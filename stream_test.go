@@ -114,6 +114,10 @@ func throughReader(t testing.TB, m *Masker, pieces []string, into int, opts ...S
 // Reading eats the pieces, so the list is cloned rather than kept: the same
 // cut is driven at several read sizes, and a reader eating the caller's slice
 // would leave every run after the first with nothing to read.
+//
+// An empty piece is a read that hands nothing over and reports no error, which
+// io.Reader permits and nothing useful does.
+// TestReader_readerMakingNoProgress is what drives them.
 type pieceReader struct {
 	pieces []string
 	err    error
@@ -533,6 +537,41 @@ func TestWriter_maxRetainedCountsARuneOnce(t *testing.T) {
 	}
 }
 
+func TestWriter_releasesAWholeRuneOrNoneOfIt(t *testing.T) {
+	// What a scan settles is a place in the text rather than a place between
+	// runes, so a settle point falls inside a rune wherever the text carries
+	// one: the HashiCorp scan settles this text one byte in, which is inside
+	// the two-byte rune it opens with.
+	//
+	// A stream releasing the first byte of that rune leaves the second behind
+	// to go out on its own once the stream gives up holding — a redaction
+	// opening in the middle of a rune, text that went in as valid UTF-8 coming
+	// out as something that is not, and a rune counted twice by a redactor
+	// counting what it is handed. So the byte is held with the rest of the rune
+	// rather than released ahead of it.
+	src := "ϻ0000000000000.000000000000000000000000000000"
+
+	var got strings.Builder
+	m := New(WithPatterns(HCPTerraformAPIToken()), WithRedactor(Fill('*')))
+	w := NewWriter(&got, m, WithMaxRetained(9))
+	for _, piece := range []string{src[:16], src[16:]} {
+		if _, err := w.Write([]byte(piece)); err != nil {
+			t.Fatalf("Write(%q) = %v", piece, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close() = %v", err)
+	}
+
+	if !utf8.ValidString(got.String()) {
+		t.Errorf("the writer underneath holds %q, which the text is not", got.String())
+	}
+	if want := utf8.RuneCountInString(src); utf8.RuneCountInString(got.String()) != want {
+		t.Errorf("the writer underneath has %d rune(s), the text has %d",
+			utf8.RuneCountInString(got.String()), want)
+	}
+}
+
 func TestWriter_maxRetainedZeroHoldsWithoutLimit(t *testing.T) {
 	var got strings.Builder
 	m := New(WithPatterns(StripeSecretKey()))
@@ -563,6 +602,56 @@ func TestReader_errorIsHeldUntilTheTextIs(t *testing.T) {
 	}
 	if string(got) != "ghp_012345" {
 		t.Errorf("ReadAll() gave %q, want %q", got, "ghp_012345")
+	}
+}
+
+func TestReader_readerMakingNoProgress(t *testing.T) {
+	// A reader handing nothing over and reporting no error is one a Reader
+	// would otherwise turn on forever. maxEmptyReads is where the turning
+	// stops and io.ErrNoProgress is what it stops with, which is where bufio
+	// draws the line too.
+	//
+	// A read that hands something over starts the count again, and that is
+	// driven here too: the count is how long a reader may pause for and not how
+	// many times it may pause, so a Reader behind a slow source would otherwise
+	// end on a wait it had already been through.
+	tests := []struct {
+		name   string
+		pieces []string
+		want   string
+		err    error
+	}{
+		{
+			name:   "a reader that hands nothing over at all",
+			pieces: slices.Repeat([]string{""}, maxEmptyReads),
+			err:    io.ErrNoProgress,
+		},
+		{
+			name:   "a reader that waits one read short of the count and ends",
+			pieces: slices.Repeat([]string{""}, maxEmptyReads-1),
+		},
+		{
+			name: "a reader that waits one read short of the count either side of a value",
+			pieces: slices.Concat(
+				slices.Repeat([]string{""}, maxEmptyReads-1),
+				[]string{"ghp_0123456789abcdefghijklmnopqrstuvwxyz"},
+				slices.Repeat([]string{""}, maxEmptyReads-1),
+			),
+			want: "[REDACTED]",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := New(WithPatterns(GitHubToken()), WithRedactor(Fixed("[REDACTED]")))
+			got, err := io.ReadAll(NewReader(newPieceReader(tt.pieces, nil), m))
+			if !errors.Is(err, tt.err) {
+				t.Fatalf("ReadAll() = %v, want %v", err, tt.err)
+			}
+			if string(got) != tt.want {
+				t.Errorf("ReadAll() gave %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 

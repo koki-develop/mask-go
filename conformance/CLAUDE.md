@@ -108,8 +108,14 @@ any other way is read and its cases run — nothing about the suite would fail.
   every offset and a byte at a time, and holds what comes out to what `Mask`
   returns for the case uncut. `Mask` is what the corpus states and what the
   properties beside it hold to everything masking must be, so holding a stream
-  to `Mask` holds it to all of that at once — there is nothing for a stream
-  property to state on its own.
+  to `Mask` holds it to almost all of that at once.
+- What is left over is `WithMaxRetained`. Giving up is the one output a stream
+  writes that `Mask` does not, so it is what a stream property has to state on
+  its own, and the second half of `stream_test.go` states it, driving the corpus
+  at limits short enough to reach. `TestProperties_everyCutUnderALimit` counts
+  the cases that parted from `Mask`: a limit none of them reached would leave
+  every one of those properties driving nothing, and only the count would say
+  so.
 - Adding a built-in pattern means adding cases here:
   `TestCorpus_coversEveryBuiltinPattern` asks for at least three cases locating
   it, and three where it locates nothing **masked with a set holding that

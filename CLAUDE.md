@@ -29,7 +29,9 @@ tree. `stream.go` and `stream_test.go` are the masking of text arriving a piece
 at a time, which is a `Reader` and a `Writer` over a `Masker` and belongs to
 none of the patterns. `pattern.go` is what a caller implements — `Span`,
 `LookBehind`, `Pattern` and `NewPattern` — and `regexp.go` is `Regexp`,
-`MustRegexp` and the machinery behind them, which reads none of the rest.
+`MustRegexp` and the machinery behind them, which reads `LookBehind` from
+`pattern.go` and `newPrefixTail` from `builtin_scan.go` for what it settles, and
+nothing else of the rest.
 Adding a pattern should touch the registry, the vendor accessor, the property
 table, two new files and the conformance corpus — nothing else. Keep it that
 way rather than letting a shared `builtin.go` grow back.
@@ -70,7 +72,7 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `FuzzMasker_locate`, `FuzzMasker_Mask`, `FuzzBuiltins_retain`,
   `FuzzPatterns_lookBehind`, `FuzzWriter_matchesMask` and one target a built-in,
   named `Fuzz<Pattern>_matchesReference`; `conformance` has `FuzzMask`,
-  `FuzzMask_customPatterns`, `FuzzStream` and `FuzzText`.
+  `FuzzMask_customPatterns`, `FuzzStream`, `FuzzStreamGivesUp` and `FuzzText`.
   `go test -list 'Fuzz.*' ./...` reports them all. CI gives each of them 30
   seconds.
 - `go test -bench . -benchmem` — benchmarks. `BenchmarkMasker_Mask` drives every

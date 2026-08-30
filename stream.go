@@ -209,17 +209,31 @@ func (s *stream) advance(final bool) {
 		retain = len(src)
 	}
 
-	// Text is settled as far as retain, less any value that begins in front
-	// of retain and reaches past it. Such a value is settled where it stands,
-	// but a value still growing can begin inside it, and the two would then be
-	// merged into one redaction that this one has already written half of.
-	// Values do not overlap once merged, so at most one reaches past retain.
+	// Text is settled as far as retain, and released as far as a whole rune of
+	// it. What a scan settles is a place in the text rather than a place
+	// between runes, so a settle point falls inside a rune wherever the text
+	// carries one — and a stream releasing the first byte of such a rune leaves
+	// the rest of it behind to go out on its own once the stream gives up
+	// holding, which is a redaction opening in the middle of a rune and a rune
+	// counted twice by a redactor counting what it is handed. What is held back
+	// for that is one rune at most, and the end of the text releases it: there
+	// is no more of the rune coming then, so giveUp writes what is left of it
+	// as it stands.
 	end := retain
+	if !final {
+		end -= incompleteRune(src[:end])
+	}
+
+	// Less any value that begins in front of that point and reaches past it.
+	// Such a value is settled where it stands, but a value still growing can
+	// begin inside it, and the two would then be merged into one redaction that
+	// this one has already written half of. Values do not overlap once merged,
+	// so at most one reaches past the point.
 	for _, f := range found.found {
-		if f.Start >= retain {
+		if f.Start >= end {
 			break
 		}
-		if f.End > retain {
+		if f.End > end {
 			end = f.Start
 			break
 		}

@@ -769,11 +769,15 @@ out:      STRIPE_SECRET_KEY=«stripe-secret-key»\nAWS_ACCESS_KEY_ID=«aws-acces
 
 # The other direction: a Stripe prefix written against the end of a value of
 # another kind rather than a value written into a Stripe body. A prefix standing
-# behind a letter or a digit opens nothing, so the access key ID is redacted and
-# the secret key beside it comes through whole and would authenticate a request
-# as it stands. That is what the case below shows, and it is here to be looked
-# up rather than arrived at: neither pattern's own file states what the two of
-# them come to when both are enabled.
+# behind a letter or a digit opens nothing, unless the run of them is long
+# enough to have been a key's own body — a key written against a key is a key,
+# which builtin_stripe_secret_key.go argues — and an access key ID leaves a run
+# shorter than that. So the access key ID is redacted and the secret key beside
+# it comes through whole and would authenticate a request as it stands. That is
+# what the case below shows, and it is here to be looked up rather than arrived
+# at: neither pattern's own file states what the two of them come to when both
+# are enabled. The Notion case further down is this shape with a long enough run
+# in front of the prefix, and does not end this way.
 #
 # It is the same shape the Slack case above it has, and it ends the same way,
 # which no out field can state. Redacting the access key ID puts characters that
@@ -873,21 +877,21 @@ case:     an environment file holding a notion token among the others
 in:       NOTION_TOKEN=ntn_0123456789abcdef0123456789abcdef0123456789abcd\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 out:      NOTION_TOKEN=«notion-api-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
-# A Stripe prefix written against the end of a Notion token, which is the
-# shape the case named "a stripe prefix written against the end of an access
-# key id" takes and ends the same way. A Notion body is read to a count and
-# stops, so the last character of one is a letter or a digit standing
-# directly in front of the sk — and the Stripe scan asks that no letter and
-# no digit stand there. The Notion token is redacted and the secret key
-# beside it comes through whole and would authenticate a request as it
-# stands. Neither pattern's own file states what the two come to together,
-# which is why the case is here.
+# A Stripe prefix written against the end of a Notion token, which is the shape
+# the case named "a stripe prefix written against the end of an access key id"
+# has and is not the way that one ends. What the Stripe scan asks in front of a
+# prefix is that no letter and no digit stand there — and then, where one does,
+# how long the run of them is. A run long enough to have been a key's own body
+# is read as a key written against a key rather than as a prefix closing a word,
+# which builtin_stripe_secret_key.go argues and which is what keeps every key of
+# a run written with nothing between them. A Notion body is read to a count far
+# past that length, so the secret key here is located in the same pass as the
+# token in front of it and neither is left in the text.
 #
-# No out field can state how it ends, any more than it can for that case:
-# redacting the Notion token puts characters that are neither a letter nor a
-# digit where its last one stood, so the prefix is open to a second pass and
-# the key is redacted then. Masking is not idempotent, and the doc comment on
-# Mask says so.
+# Neither pattern's own file states what the two come to together, which is why
+# the case is here — and what this case and that one state between them is where
+# the two shapes part: the run in front of the sk, not the kind of value that
+# left it.
 
 case:     a stripe prefix written against the end of a notion token
 in:       ntn_0123456789abcdef0123456789abcdef0123456789abcdsk_live_0123456789abcdef01234567
@@ -979,16 +983,17 @@ in:       GRAFANA_TOKEN=glsa_0123456789abcdef0123456789abcdef_01234567\nAWS_ACCE
 out:      GRAFANA_TOKEN=«grafana-service-account-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A Stripe prefix written against the end of a Grafana token, which is the shape
-# the two cases named "a stripe prefix written against the end of an access key
-# id" and "...of a notion token" take and ends the same way. A Grafana token is
-# read to a count and stops, and its last character is a hexadecimal digit — so
-# a letter or a digit stands directly in front of the sk, and the Stripe scan
-# asks that neither does. The token is redacted and the secret key beside it
+# the case named "a stripe prefix written against the end of an access key id"
+# takes and ends the same way. A Grafana token closes with an underscore and a
+# short segment behind it, and an underscore is no character a Stripe body is
+# written with — so the run of letters and digits standing in front of the sk is
+# that segment alone, which is shorter than a body, and the prefix behind it is
+# read as one closing a word. The token is redacted and the secret key beside it
 # comes through whole and would authenticate a request as it stands. Neither
 # pattern's own file states what the two come to together, which is why the case
 # is here.
 #
-# No out field can state how it ends, any more than it can for those two:
+# No out field can state how it ends, any more than it can for that case:
 # redacting the token puts characters that are neither a letter nor a digit
 # where its last one stood, so the prefix is open to a second pass and the key
 # is redacted then. Masking is not idempotent, and the doc comment on Mask says
@@ -1071,20 +1076,13 @@ case:     a secret key inside the signature of a jwt
 in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sb_secret_0123456789abcdef012345_01234567
 out:      «jwt»
 
-# A Stripe prefix written against the end of a Supabase token, which is the shape
-# the cases named "a stripe prefix written against the end of an access key id",
-# "...of a notion token" and "...of a grafana token" take and ends the same way. A
-# Supabase token is read to a count and stops, and its last character is a
-# hexadecimal digit — so a letter or a digit stands directly in front of the sk,
-# and the Stripe scan asks that neither does. The token is redacted and the secret
-# key beside it comes through whole and would authenticate a request as it stands.
-# Neither pattern's own file states what the two come to together, which is why
-# the case is here.
-#
-# No out field can state how it ends, any more than it can for those three:
-# redacting the token puts characters that are neither a letter nor a digit where
-# its last one stood, so the prefix is open to a second pass and the key is
-# redacted then. Masking is not idempotent, and the doc comment on Mask says so.
+# A Stripe prefix written against the end of a Supabase token, which ends the
+# way the case named "a stripe prefix written against the end of a notion token"
+# does and for the reason given there: a Supabase body is read to a count longer
+# than the run the Stripe scan reads as a key written against a key, so both
+# values are located in the one pass and neither is left in the text. Neither
+# pattern's own file states what the two come to together, which is why the case
+# is here.
 
 case:     a stripe prefix written against the end of a supabase token
 in:       sbp_0123456789abcdef0123456789abcdef01234567sk_live_0123456789abcdef01234567
@@ -1149,23 +1147,16 @@ in:       hvs.rubygems_0123456789abcdef0123456789abcdef0123456789abcdef
 out:      «hashicorp-vault-token»
 
 case:     an environment file holding a rubygems key among the others
-in:       RUBYGEMS_API_rubygems_0123456789abcdef0123456789abcdef0123456789abcdef=rubygems_0123456789abcdef0123456789abcdef0123456789abcdef\nAWS_ACCESS_rubygems_0123456789abcdef0123456789abcdef0123456789abcdef_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:      RUBYGEMS_API_«rubygems-api-key»=«rubygems-api-key»\nAWS_ACCESS_«rubygems-api-key»_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+in:       RUBYGEMS_API_KEY=rubygems_0123456789abcdef0123456789abcdef0123456789abcdef\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      RUBYGEMS_API_KEY=«rubygems-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
-# A Stripe prefix written against the end of a RubyGems key, which is the shape
-# the cases named "a stripe prefix written against the end of an access key id",
-# "...of a notion token" and "...of a grafana token" take and ends the same way.
-# A key is read to a count and stops, and its last character is a hexadecimal
-# digit — so a letter or a digit stands directly in front of the sk, and the
-# Stripe scan asks that neither does. The key is redacted and the secret key
-# beside it comes through whole and would authenticate a request as it stands.
-# Neither pattern's own file states what the two come to together, which is why
-# the case is here.
-#
-# No out field can state how it ends, any more than it can for those three:
-# redacting the key puts characters that are neither a letter nor a digit where
-# its last one stood, so the prefix is open to a second pass and the key is
-# redacted then. Masking is not idempotent, and the doc comment on Mask says so.
+# A Stripe prefix written against the end of a RubyGems key, which ends the way
+# the case named "a stripe prefix written against the end of a notion token"
+# does and for the reason given there: a RubyGems body is read to a count longer
+# than the run the Stripe scan reads as a key written against a key, and it
+# carries nothing that would break that run, so both values are located in the
+# one pass. Neither pattern's own file states what the two come to together,
+# which is why the case is here.
 
 case:     a stripe prefix written against the end of a rubygems key
 in:       rubygems_0123456789abcdef0123456789abcdef0123456789abcdefsk_live_0123456789abcdef01234567
@@ -1237,20 +1228,14 @@ case:     an environment file holding an openrouter key among the others
 in:       OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 out:      OPENROUTER_API_KEY=«openrouter-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
-# A Stripe prefix written against the end of an OpenRouter key, which is the
-# shape the cases named "a stripe prefix written against the end of an access
-# key id", "...of a notion token" and "...of a grafana token" take and ends the
-# same way. A key is read to a count and stops, and its last character is a
-# hexadecimal digit — so a letter or a digit stands directly in front of the sk,
-# and the Stripe scan asks that neither does. The key is redacted and the secret
-# key beside it comes through whole and would authenticate a request as it
-# stands. Neither pattern's own file states what the two come to together, which
-# is why the case is here.
-#
-# No out field can state how it ends, any more than it can for those three:
-# redacting the key puts characters that are neither a letter nor a digit where
-# its last one stood, so the prefix is open to a second pass and the key is
-# redacted then. Masking is not idempotent, and the doc comment on Mask says so.
+# A Stripe prefix written against the end of an OpenRouter key, which ends the
+# way the case named "a stripe prefix written against the end of a notion token"
+# does and for the reason given there: an OpenRouter body is read to a count
+# longer than the run the Stripe scan reads as a key written against a key, the
+# hyphens that would break such a run standing in the prefix in front of the
+# body rather than in it, so both values are located in the one pass. Neither
+# pattern's own file states what the two come to together, which is why the case
+# is here.
 
 case:     a stripe prefix written against the end of an openrouter key
 in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsk_live_0123456789abcdef01234567

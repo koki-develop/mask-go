@@ -184,14 +184,15 @@ func parseCorpusFile(name string, data []byte) (*corpusFile, error) {
 			// saying the same thing in every case.
 			switch key {
 			case fieldPatterns:
-				if _, ok := patternSets[value]; !ok {
-					return nil, fmt.Errorf("%s: no pattern set is called %q", at, value)
-				}
-				set = value
-			case fieldSpans:
-				found, err := parseSpans(value)
+				named, err := parsePatternsField(at, value)
 				if err != nil {
-					return nil, fmt.Errorf("%s: the spans field: %w", at, err)
+					return nil, err
+				}
+				set = named
+			case fieldSpans:
+				found, err := parseSpansField(at, value)
+				if err != nil {
+					return nil, err
 				}
 				reads = found
 			default:
@@ -214,14 +215,15 @@ func parseCorpusFile(name string, data []byte) (*corpusFile, error) {
 		f.field[i] = fieldAt{c: cur, key: key}
 		switch key {
 		case fieldPatterns:
-			if _, ok := patternSets[value]; !ok {
-				return nil, fmt.Errorf("%s: no pattern set is called %q", at, value)
-			}
-			cur.set = value
-		case fieldSpans:
-			found, err := parseSpans(value)
+			named, err := parsePatternsField(at, value)
 			if err != nil {
-				return nil, fmt.Errorf("%s: the spans field: %w", at, err)
+				return nil, err
+			}
+			cur.set = named
+		case fieldSpans:
+			found, err := parseSpansField(at, value)
+			if err != nil {
+				return nil, err
 			}
 			cur.reads = found
 		case fieldIn:
@@ -251,6 +253,32 @@ func parseCorpusFile(name string, data []byte) (*corpusFile, error) {
 		}
 	}
 	return f, nil
+}
+
+// parsePatternsField reads the patterns field: the name of the set the cases it
+// covers are masked with.
+//
+// The field is written in two places, over a block of cases and inside one, and
+// both of them come here. Written out twice it would be checked twice, and a
+// change to the checking — a retired set name turned away, a second spelling
+// admitted — applied to one of them would leave patterns: X meaning one thing
+// above a case and another inside it. Nothing in the corpus compares the two
+// forms against each other, so the difference would stand.
+func parsePatternsField(at, value string) (string, error) {
+	if _, ok := patternSets[value]; !ok {
+		return "", fmt.Errorf("%s: no pattern set is called %q", at, value)
+	}
+	return value, nil
+}
+
+// parseSpansField reads the spans field wherever it is written, as
+// parsePatternsField reads the patterns field, and for the reason given there.
+func parseSpansField(at, value string) (bool, error) {
+	found, err := parseSpans(value)
+	if err != nil {
+		return false, fmt.Errorf("%s: the spans field: %w", at, err)
+	}
+	return found, nil
 }
 
 // parseSpans reads the spans field: whether the patterns of the case locate
