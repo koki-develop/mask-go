@@ -235,8 +235,8 @@ func Test_OryAPIKey_inContext(t *testing.T) {
 
 func Test_OryAPIKey_theThreePrefixes(t *testing.T) {
 	// The three prefixes Ory lists under Ory Network API keys, each with the
-	// same body behind it. Only ory_pat_ has been published with a whole key,
-	// and builtin_ory_api_key.go argues why the other two are read at the same
+	// same body behind it. Ory writes a whole key under ory_pat_ alone, and
+	// builtin_ory_api_key.go argues why the other two are read at the same
 	// length and in the same alphabet; the cases are what makes a change of
 	// mind about that a decision rather than a widening nobody noticed.
 	//
@@ -250,7 +250,7 @@ func Test_OryAPIKey_theThreePrefixes(t *testing.T) {
 		want string
 	}{
 		{
-			name: "the project prefix a whole key has been published with",
+			name: "the project prefix Ory writes a whole key under",
 			src:  "ory_pat_0123456789abcdef0123456789abcdef",
 			want: "****************************************",
 		},

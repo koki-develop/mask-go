@@ -58,8 +58,8 @@ func OryAPIKey() Pattern { return oryAPIKey }
 // be a body, and nothing is located: the random characters in front of the cut
 // stay in the output. Test_OryAPIKey_cutShortOfTheFloor pins that.
 //
-// No whole key has been published under the other two prefixes, so the body
-// they are read with is a wager, and the two do not rest on the same thing. Ory
+// Ory writes no whole key under the other two prefixes, so the body they are
+// read with is a wager, and the two do not rest on the same thing. Ory
 // writes a workspace key once, in its guide to the CLI, cut off after six
 // characters: two digits, three lowercase letters and one uppercase. Six
 // characters state no length, and they witness which characters a body may

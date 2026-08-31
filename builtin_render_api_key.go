@@ -46,9 +46,8 @@ func RenderAPIKey() Pattern { return renderAPIKey }
 // end of its run.
 //
 // Twenty-eight is neither raised nor lowered from what the one rule reads,
-// which is the only length anything states. Raising the floor above it would
-// leave a real key in the log the moment a shorter one arrived; lowering it
-// would widen the net with nothing asking for the width.
+// which is the only length anything states. Lowering it would widen the net
+// with nothing asking for the width.
 //
 // The floor fails downward in silence. Were a real body shorter than
 // twenty-eight, nothing here would be located, every case would pass and the

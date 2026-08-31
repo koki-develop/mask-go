@@ -54,9 +54,8 @@ func ShippoAPIToken() Pattern { return shippoAPIToken }
 // description word for word, trivy writes gitleaks' rule id, kingfisher ships
 // betterleaks' rule, and Vulnetix generates its two out of a catalog it keeps
 // rather than writing them against tokens. For trufflehog nothing here shows
-// where the forty came from. Where the number was first read off a token is
-// published by none of them, so what the five carry is agreement rather than
-// five readings.
+// where the forty came from, and where the number was first read off a token is
+// published by none of them.
 //
 // That count is read as a floor. A count is read exactly where the vendor wrote
 // the length down, or where it is most of what tells a value from the text
