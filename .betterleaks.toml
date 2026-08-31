@@ -194,11 +194,11 @@ paths = ['''(^|/)builtin_pypi_api_token_test\.go$''']
 regexTarget = "secret"
 regexes = ['''^\+[A-Za-z_][A-Za-z0-9_]*\+$''']
 
-# Three values the corpus once wrote where a key for a password goes, before
-# they were built from the ordered run the entry at the top of this file asks
-# for: hunter2 in text_shapes.txt, s3cr3t-value and something-else in
-# custom_patterns.txt. The files carry the run now and are reported nowhere, and
-# this is about the two commits that wrote them rather than about the files.
+# Three values the corpus wrote where a key for a password goes, in place of the
+# ordered run the entry at the top of this file asks for: hunter2 in
+# text_shapes.txt, s3cr3t-value and something-else in custom_patterns.txt. Those
+# files carry the run and are reported nowhere; what this is written to is the
+# two commits that wrote the three, not the files.
 #
 # betterleaks reads the diffs git log gives it rather than the working tree,
 # which is what the depth the workflow checks out is for: a value committed and
@@ -210,8 +210,8 @@ regexes = ['''^\+[A-Za-z_][A-Za-z0-9_]*\+$''']
 # So the commits are what this is written to, where every other entry here is
 # written to a shape. A shape is the right key for a value that will be written
 # again — the ordered run is asked for of every corpus case there will ever be —
-# and the wrong one here, because these three strings are finished: the corpus
-# does not write them any more, and an entry allowing them by shape would go on
+# and the wrong one here, because these three strings are finished: no corpus
+# case is written with them, and an entry allowing them by shape would go on
 # allowing them, so writing hunter2 back into a case tomorrow would pass. Named
 # by commit, it permits nothing going forward at all. A value written into the
 # corpus tomorrow lands in a commit no line here names and is reported as
