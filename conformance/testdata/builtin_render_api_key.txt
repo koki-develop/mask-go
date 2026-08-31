@@ -1,0 +1,201 @@
+# What Render API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is. That run is sixteen characters, so a body is it once and twelve
+# characters of it again — the shortest body the pattern reads, since the count
+# is a floor. It is spelled in lowercase where the case does not matter and in
+# uppercase where the case is what a case is about: base62 holds the letters of
+# both, so either spelling is a body.
+
+patterns: render-api-key
+
+# The one prefix Render issues an API key with. There is a single kind of string
+# here rather than a table of them: one key authenticates against the whole API,
+# over every workspace the account it belongs to is a member of, so nothing in
+# the value says what it reaches, and the cases below are that one shape in the
+# places a key is written.
+
+case:     a key in an environment assignment
+in:       RENDER_API_KEY=rnd_0123456789abcdef0123456789ab
+out:      RENDER_API_KEY=«render-api-key»
+
+case:     a key in the bearer authorization header the Render API is called with
+in:       Authorization: Bearer rnd_0123456789abcdef0123456789ab
+out:      Authorization: Bearer «render-api-key»
+
+case:     a key in json
+in:       {"key":"rnd_0123456789abcdef0123456789ab"}
+out:      {"key":"«render-api-key»"}
+
+case:     a key on a command line
+in:       curl -H "Authorization: Bearer rnd_0123456789abcdef0123456789ab" https://api.render.com/v1/services
+out:      curl -H "Authorization: Bearer «render-api-key»" https://api.render.com/v1/services
+
+case:     a key in a configuration environment block
+in:       "env": {"RENDER_API_KEY": "rnd_0123456789abcdef0123456789ab"}
+out:      "env": {"RENDER_API_KEY": "«render-api-key»"}
+
+# The alphabet the twenty-eight characters are written in. It is base62 — the
+# letters of both cases and the digits. The two characters base64url adds, the
+# hyphen and the underscore, are not admitted, and either of them ends a body.
+
+case:     a body written in capitals
+in:       rnd_0123456789ABCDEF0123456789AB
+out:      «render-api-key»
+
+case:     a body carrying a hyphen
+in:       rnd_0123456789abcdef-123456789ab
+out:      rnd_0123456789abcdef-123456789ab
+
+case:     a body carrying an underscore
+in:       rnd_0123456789abcdef_123456789ab
+out:      rnd_0123456789abcdef_123456789ab
+
+# The lengths either side of twenty-eight. The count is read as a floor rather
+# than exactly, so twenty-seven characters are not a key and twenty-nine are one
+# key to the end of its run rather than a key and a character left over. What
+# the floor costs is the middle case — a key cut short of twenty-eight keeps
+# every random character written in front of the cut, and none of them is
+# redacted.
+
+case:     a body of twenty-eight characters is a key
+in:       rnd_0123456789abcdef0123456789ab
+out:      «render-api-key»
+
+case:     a body of twenty-seven characters is not
+in:       rnd_0123456789abcdef0123456789a
+out:      rnd_0123456789abcdef0123456789a
+
+case:     an alphabet run longer than the floor is a key to the end of it
+in:       rnd_0123456789abcdef0123456789abc
+out:      «render-api-key»
+
+# The names ordinary code writes with this prefix, where rnd abbreviates random.
+# None of them reaches a body: a name is snake_case, and the underscore after
+# its next word ends the run long before the twenty-eighth character. The
+# shouted spelling is turned away by the case of the prefix instead.
+
+case:     a generator state
+in:       rnd_state = rnd_seed(rnd_next(seed));
+out:      rnd_state = rnd_seed(rnd_next(seed));
+
+case:     a shouted constant
+in:       if (rnd_value > RND_MAX / 2) { }
+out:      if (rnd_value > RND_MAX / 2) { }
+
+# What a key may be written against. There is no boundary on either side of the
+# prefix, so a key keeps its span whatever word character it abuts — and where
+# the run of its alphabet carries on past the floor, what carries it on is
+# redacted with the key. A hyphen and an underscore end the run instead.
+#
+# A name whose segment closes on rnd carries a whole prefix, so where
+# twenty-eight unbroken characters of the alphabet stand behind one, everything
+# from the rnd onward is redacted and only the syllable in front of it stays.
+
+case:     a key after an underscore
+in:       RENDER_API_KEY_rnd_0123456789abcdef0123456789ab
+out:      RENDER_API_KEY_«render-api-key»
+
+case:     a key after a letter
+in:       xrnd_0123456789abcdef0123456789ab
+out:      x«render-api-key»
+
+case:     a name closing on the prefix with a body behind it
+in:       seedrnd_0123456789abcdef0123456789ab
+out:      seed«render-api-key»
+
+case:     a word written against a key
+in:       rnd_0123456789abcdef0123456789absuffix
+out:      «render-api-key»
+
+case:     a hyphenated word written against a key
+in:       rnd_0123456789abcdef0123456789ab-suffix
+out:      «render-api-key»-suffix
+
+case:     an underscored word written against a key
+in:       rnd_0123456789abcdef0123456789ab_suffix
+out:      «render-api-key»_suffix
+
+case:     a key at the end of a sentence
+in:       the key is rnd_0123456789abcdef0123456789ab.
+out:      the key is «render-api-key».
+
+# Two keys written together. The three letters the prefix opens with belong to
+# the alphabet a body is written in, so a body may close with rnd and the
+# underscore of the next key stand directly behind it; the second key begins
+# three characters before the first one ends, the two spans overlap and are
+# redacted as one. Written with nothing at all between them the first body
+# reaches three characters into the second prefix and stops at the underscore
+# behind them, so those two overlap as well. Written with a space between them
+# the two are separate values, and both go.
+
+case:     a key beginning inside the key before it
+in:       rnd_0123456789abcdef0123456789rnd_0123456789abcdef0123456789ab
+out:      «render-api-key»
+
+case:     two keys with nothing between them
+in:       rnd_0123456789abcdef0123456789abrnd_0123456789ABCDEF0123456789AB
+out:      «render-api-key»
+
+case:     two keys separated by a space
+in:       rnd_0123456789abcdef0123456789ab rnd_0123456789ABCDEF0123456789AB
+out:      «render-api-key» «render-api-key»
+
+# What this pattern redacts that nobody issued. The prefix closes with an
+# underscore, which standard base64 writes nowhere, so only a base64url encoding
+# can hold one — and where twenty-eight base62 characters follow, the run from
+# the prefix to the end of them is redacted whether or not Render issued it.
+# Such a run is a key's format exactly and nothing in the text tells the two
+# apart, so sparing it would spare a real key written the same way.
+#
+# The digest is the same over-match taking a value a reader had a use for.
+# Hexadecimal digits are base62 and a digest carries nothing that ends a run, so
+# every digest written behind the prefix runs past a floor as low as this one:
+# an MD5 is thirty-two characters, a SHA-1 forty and a SHA-256 sixty-four. What
+# holds either side of it is the floor and the prefix — a run of sixteen is
+# twelve characters short of a body, and a hyphen is no character the prefix
+# carries.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzzrnd_0123456789abcdef0123456789abzzzz
+out:      payload=zzzz«render-api-key»
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzrnd_0123456789abcdef0123456789abzzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«render-api-key»
+
+case:     an md5 behind the prefix
+in:       rnd_0123456789abcdef0123456789abcdef
+out:      «render-api-key»
+
+case:     a sha1 behind the prefix in a cache key
+in:       key: rnd_0123456789abcdef0123456789abcdef01234567
+out:      key: «render-api-key»
+
+case:     a sha256 behind the prefix
+in:       rnd_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «render-api-key»
+
+case:     a run of sixteen behind the prefix, twelve characters short of a body
+in:       rnd_0123456789abcdef
+out:      rnd_0123456789abcdef
+
+case:     an md5 behind a hyphen rather than the prefix
+in:       rnd-0123456789abcdef0123456789abcdef
+out:      rnd-0123456789abcdef0123456789abcdef
+
+# The prefix written in a case Render does not issue keys in, the prefix without
+# the underscore it closes with, and a body of the right length with no prefix
+# at all.
+
+case:     an uppercase prefix
+in:       RND_0123456789abcdef0123456789ab
+out:      RND_0123456789abcdef0123456789ab
+
+case:     the prefix without its closing underscore
+in:       rnd0123456789abcdef0123456789ab
+out:      rnd0123456789abcdef0123456789ab
+
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdef0123456789ab
+out:      0123456789abcdef0123456789ab

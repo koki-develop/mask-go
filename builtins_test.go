@@ -703,6 +703,19 @@ var builtinPatterns = []struct {
 		benchmarks: pypiAPITokenFindBenchmarks,
 	},
 	{
+		name:    "render-api-key",
+		pattern: RenderAPIKey,
+		ref:     referenceRenderAPIKeyFind,
+		samples: []string{
+			"RENDER_API_KEY=rnd_0123456789abcdef0123456789ab",
+			"rnd_0123456789ABCDEF0123456789AB",
+			"rnd_0123456789abcdef0123456789abc",
+			"rnd_0123456789abcdef0123456789rnd_0123456789abcdef0123456789ab",
+		},
+		anchors:    []string{"rnd_0123456789abcdef"},
+		benchmarks: renderAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "replicate-api-token",
 		pattern: ReplicateAPIToken,
 		ref:     referenceReplicateAPITokenFind,

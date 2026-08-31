@@ -67,6 +67,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"PostmanPatterns":      PostmanPatterns,
 	"PulumiPatterns":       PulumiPatterns,
 	"PyPIPatterns":         PyPIPatterns,
+	"RenderPatterns":       RenderPatterns,
 	"ReplicatePatterns":    ReplicatePatterns,
 	"ResendPatterns":       ResendPatterns,
 	"RubyGemsPatterns":     RubyGemsPatterns,
