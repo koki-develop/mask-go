@@ -58,9 +58,9 @@ func SendGridAPIKey() Pattern { return sendGridAPIKey }
 // trufflehog reads the two segments as segments, and reads them as ranges —
 // twenty to twenty-four in front and thirty-nine to fifty behind — around a
 // test value of its own that is seventy-four characters and so is not a key of
-// the length SendGrid states. So the exact shape is what every published key
-// carries and what two of the three rulesets total, and the ranges are one
-// ruleset's slack around it.
+// the length SendGrid states. So the exact shape is what SendGrid states and
+// what two of the three rulesets total, and the ranges are one ruleset's slack
+// around it.
 //
 // The counts are therefore read exactly. A scan declines an exact count — for
 // a floor, or for the end of a run — where its vendor states no length, since

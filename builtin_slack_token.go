@@ -13,7 +13,7 @@ import (
 //
 // Slack documents the prefixes and nothing else: no length, no alphabet, no
 // count of the parts a token is written in. So a body is read as the hyphen
-// separated segments every Slack token anyone has published is written in, and
+// separated segments Slack's own API responses write a token in, and
 // a token is one where some segment other than the first is long enough to be
 // the secret such a token ends with and carries a letter as every such secret
 // does. Asking that the secret stand behind a part rather than against the
@@ -70,14 +70,15 @@ func SlackToken() Pattern { return slackToken }
 // What that wagers is a Slack secret with no letter at all, which would then be
 // left in the output whole. It is a wager and not a certainty, because Slack
 // documents no alphabet — but it is a small one, and smaller than the shape of
-// the secrets makes it look: the shortest published secret is twenty-four
-// characters of mixed case and digits, where all digits is one chance in
-// something like ten to the nineteen, and the narrowest is thirty-two of
-// hexadecimal, where it is one in a million and a half. Against that stands
-// every eighteen digit identifier written after a prefix, which exists today.
+// the secrets makes it look: the shortest secret Slack's own examples carry is
+// twenty-four characters of mixed case and digits, where all digits is one
+// chance in something like ten to the nineteen, and the narrowest is
+// thirty-two of hexadecimal, where it is one in a million and a half. Against
+// that stands every eighteen digit identifier written after a prefix, which
+// exists today.
 //
 // That the secret may not be the first segment is what keeps a bare digest out.
-// Every Slack token whose shape anyone has published carries at least one part
+// Every Slack token Slack's own examples show carries at least one part
 // between the prefix and its secret: the bot token in Slack's own
 // oauth.v2.access response carries two identifiers, a user token three, an
 // app-level token an application id and an issue time, and a refresh token and
@@ -155,7 +156,7 @@ func SlackToken() Pattern { return slackToken }
 // Where such a word is itself inside the body of an earlier token the token is
 // still redacted, because a body is read to the end of its run and covers what
 // is written inside it; where it is not, a credential written that way is left
-// whole, and nothing has been seen written that way.
+// whole, and neither Slack nor a ruleset writes one that way.
 //
 // There is no boundary behind the match. One there would drop rather than
 // trim, and where it were asked decides what it drops. Asked behind the count,

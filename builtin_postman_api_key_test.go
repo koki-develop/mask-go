@@ -59,8 +59,9 @@ func Test_PostmanAPIKey(t *testing.T) {
 			want: []Span{{0, 64}, {64, 128}},
 		},
 		{
-			// Every key that has been published is written in lowercase
-			// hexadecimal, and nothing Postman publishes says a key must be.
+			// Every key the rulesets carry in their corpora is written in
+			// lowercase hexadecimal, and nothing Postman publishes says a key
+			// must be.
 			name: "an uppercase body",
 			src:  "PMAK-0123456789ABCDEF01234567-0123456789ABCDEF0123456789ABCDEF01",
 			want: []Span{{0, 64}},

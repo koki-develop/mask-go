@@ -363,7 +363,7 @@ func Test_XAIAPIKey_aManagementKey(t *testing.T) {
 
 func Test_XAIAPIKey_aDigestBehindThePrefix(t *testing.T) {
 	// The collision this format leaves. Eighty letters and digits behind the
-	// prefix is the shape every key that has been published is, so a run of
+	// prefix is the shape every key xAI and the rulesets carry is, so a run of
 	// hexadecimal that long written there is indistinguishable from a key and
 	// is redacted. A SHA-256 is sixteen characters short of the floor and
 	// reaches nothing; two of them written together are past it. A digest on

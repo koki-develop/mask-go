@@ -71,7 +71,8 @@ func ShippoAPIToken() Pattern { return shippoAPIToken }
 // silence: were a real token shorter, this pattern would locate none at all,
 // every test here would pass, and the corpus could not report it either, since
 // its tokens are built to the floor and move with it. What would move the floor
-// down is a token shorter than forty, written somewhere it can be counted.
+// down is a shorter token written into what Shippo publishes, or a rule that
+// reads one.
 //
 // What the floor costs when it is right is the token cut short of it. A line
 // cut to a column limit partway through one leaves a prefix and a body too

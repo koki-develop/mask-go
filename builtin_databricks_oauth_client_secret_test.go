@@ -260,8 +260,9 @@ func Test_DatabricksOAuthClientSecret_nextToWordCharacters(t *testing.T) {
 func Test_DatabricksOAuthClientSecret_anUppercaseBody(t *testing.T) {
 	// The alphabet is lowercase hexadecimal. A hexadecimal encoder settles the
 	// case once for all of its output rather than varying it between secrets,
-	// so admitting the other case would widen the net for a credential nobody
-	// has been shown, and these are the cases that would move if it were taken.
+	// so admitting the other case would widen the net for a credential neither
+	// Databricks nor a ruleset states, and these are the cases that would move
+	// if it were taken.
 	tests := []struct {
 		name string
 		src  string

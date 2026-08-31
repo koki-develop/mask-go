@@ -40,12 +40,13 @@ func CircleCIAPIToken() Pattern { return circleCIAPIToken }
 // for the middle, and the documentation pages that manage tokens do not
 // describe the string at all.
 //
-// The count of twenty-two is what that line comes to rather than something read
-// off the tokens that have been published. A UUID is sixteen bytes, and a
-// base58 encoding of a fixed sixteen bytes is ceil(log(2^128)/log(58)) = 22
-// characters wide — twenty-one and a fraction, rounded up and padded to the
-// width, which is what the base58 encoders written for UUIDs do. The token
-// CircleCI writes out is twenty-two characters between its separators.
+// The count of twenty-two is what that line comes to rather than something
+// read off the tokens the changelog and the rulesets' tests carry. A UUID is
+// sixteen bytes, and a base58 encoding of a fixed sixteen bytes is
+// ceil(log(2^128)/log(58)) = 22 characters wide — twenty-one and a fraction,
+// rounded up and padded to the width, which is what the base58 encoders
+// written for UUIDs do. The token CircleCI writes out is twenty-two characters
+// between its separators.
 //
 // What an encoder padding to no fixed width would give instead is twenty-one
 // characters, which is 58^21 / 2^128 of the tokens there are — about one in
@@ -85,7 +86,7 @@ func CircleCIAPIToken() Pattern { return circleCIAPIToken }
 // digits and says nothing about the case they are rendered in, and the vendor
 // writes nothing else about it anywhere.
 //
-// Shown: every token anyone has published is lowercase — the one in the
+// Shown: every token written down for this format is lowercase — the one in the
 // changelog, and the ones standing in osv-scalibr's tests, kingfisher's and
 // trufflehog's. Read: osv-scalibr asks for lowercase, kingfisher for lowercase
 // letters and digits, trufflehog for either case. GitHub's partner pattern goes

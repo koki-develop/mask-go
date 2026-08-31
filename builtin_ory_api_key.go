@@ -50,8 +50,8 @@ func OryAPIKey() Pattern { return oryAPIKey }
 // The floor fails downward in silence. Were a real body shorter than
 // thirty-two, this pattern would locate no key at all, every case here would
 // pass, and the corpus could not report it either — its keys are built to the
-// floor, so they move with it. What would move the count down is a shorter key,
-// written somewhere it can be counted.
+// floor, so they move with it. What would move the count down is a shorter key
+// written into what Ory publishes, or a rule that reads one.
 //
 // What the floor costs when it is right is the key cut short of it. A line cut
 // to a column limit partway through one leaves a prefix and a body too short to

@@ -46,9 +46,9 @@ out:      const stripe = Stripe('«stripe-publishable-key»');
 # floor the secret keys are held to because it is the same format. Twenty-four
 # characters is the shortest body Stripe has printed in its own documentation:
 # the ninety-nine characters it issues today are redacted whole, and so would a
-# length nobody has published be. What the floor holds back is the placeholder a
-# template carries where a key goes, which for a publishable key is written into
-# documentation far more often than a key is.
+# length neither Stripe nor a ruleset states be. What the floor holds back is
+# the placeholder a template carries where a key goes, which for a publishable
+# key is written into documentation far more often than a key is.
 #
 # What it leaves over is the key cut short. A line cut to a column limit partway
 # through one leaves a prefix and a body too short to be a body, and every

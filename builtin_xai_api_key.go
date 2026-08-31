@@ -65,9 +65,9 @@ func XAIAPIKey() Pattern { return xaiAPIKey }
 // same class under an entropy filter of its own, and kingfisher cites
 // betterleaks for the rule. gitleaks reads this format not at all. So two
 // rulesets read a count and two read a range, the count is the length of every
-// whole key anybody has published — xAI's own, osv-scalibr's two and
+// whole key those sources carry — xAI's own, osv-scalibr's two and
 // kingfisher's three — and the range reaches ten characters below it and forty
-// above with no key shown at either end.
+// above, where none of those keys is written.
 //
 // The count is therefore read as a floor and not as a count. A count is read
 // exactly where the vendor wrote the length down, and xAI wrote down a key
@@ -78,11 +78,12 @@ func XAIAPIKey() Pattern { return xaiAPIKey }
 // end of its run.
 //
 // The floor is eighty rather than the seventy two of the rulesets read, because
-// eighty is the length every whole key runs to and seventy is a number no key
-// has been shown at. What a body looks like is the one thing an opening of four
-// characters does not give this scan, so a floor lowered towards prose is a
-// guess at exactly the part of the grammar that is load bearing, and what it
-// would buy is a key nobody has been shown.
+// eighty is the length every whole key those sources carry runs to and seventy
+// is a number none of them is written at. What a body looks like is the one
+// thing an opening of four characters does not give this scan, so a floor
+// lowered towards prose is a guess at exactly the part of the grammar that is
+// load bearing, and what it would buy is a key neither xAI nor a ruleset
+// carries.
 //
 // What the floor costs is the key shorter than it. A line cut to a column limit
 // partway through one leaves an opening and a body too short to be a body, and
@@ -105,10 +106,10 @@ func XAIAPIKey() Pattern { return xaiAPIKey }
 //
 // The alphabet is base62, isBase62Byte in builtin_scan.go: the letters of both
 // cases and the digits, and neither the hyphen nor the underscore base64url
-// adds. Every whole key that has been published is written in the letters and
-// digits alone, and osv-scalibr is the ruleset reading that class exactly. The
-// two characters the others admit besides are both declined, though for
-// different reasons.
+// adds. Every whole key xAI, osv-scalibr and kingfisher carry is written in
+// the letters and digits alone, and osv-scalibr is the ruleset reading that
+// class exactly. The two characters the others admit besides are both
+// declined, though for different reasons.
 //
 // The underscore is the one trufflehog admits, and what it would cast a net
 // over is the snake_case name: eighty characters of letters, digits and

@@ -66,7 +66,7 @@ func StripeWebhookSigningSecret() Pattern { return stripeWebhookSigningSecret }
 // underscore — a character no key Stripe issues carries, and one this package's
 // other Stripe scans rely on a body never holding — so what those expressions
 // say about an alphabet is that they were written to catch rather than to
-// describe. The one other reading anybody has published is an open request
+// describe. The one other reading is an open request
 // against trufflehog, which calls the value base64 style and then admits the
 // plus without the slash, which is no base64 at all; it is a proposal rather
 // than an observation, and no ruleset has taken it up.
@@ -75,7 +75,7 @@ func StripeWebhookSigningSecret() Pattern { return stripeWebhookSigningSecret }
 // wrong. Were Stripe to write one of those characters into a secret, the run
 // would end there: with thirty-two base62 characters in front of it the rest of
 // the secret stays in the text, and with fewer the secret is located nowhere at
-// all. Nothing observed says Stripe does. Both values it has printed are
+// all. Nothing Stripe writes says it does. Both values it has printed are
 // base62, the placeholder it writes into its own example is base62, and the
 // identifiers and keys it hands out elsewhere are written in letters and digits
 // alone.

@@ -5,7 +5,7 @@ import "strings"
 // NewRelicUserKey locates New Relic user keys: the prefix NRAK- and the
 // twenty-seven or more uppercase letters and digits behind it, or the prefix
 // NRAA- and the twenty-seven or more hexadecimal characters behind it, redacted
-// to the end of the run they stand in. Every key anybody has published is
+// to the end of the run they stand in. Every key the rulesets carry is
 // twenty-seven characters behind the prefix, thirty-two altogether. A key
 // queries NerdGraph and the REST API as the user it was issued to, across every
 // account that user can see, so what one reaches is whatever its user was
@@ -63,9 +63,8 @@ func NewRelicUserKey() Pattern { return newRelicUserKey }
 // them reads a range: trufflehog reads twenty-seven uppercase letters and
 // digits, gitleaks and noseyparker read the same count without regard to case,
 // which over the letters of one case and the digits is the same class read
-// twice over. Every key any of them publishes is twenty-seven uppercase letters
-// and digits, and so is every key published outside them — the one written into
-// a curl example in an API tutorial among them.
+// twice over. Every key any of them publishes is twenty-seven uppercase
+// letters and digits.
 //
 // Behind NRAA-, one ruleset reads a format at all. noseyparker reads
 // twenty-seven hexadecimal characters without regard to case, and the one key it

@@ -62,7 +62,7 @@ in:       xai-token-token-0123456789abcdef0123456789abcdef0123456789abcdef012345
 out:      xai-token-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 # The alphabet the eighty characters are written in: the letters of both cases
-# with the digits, which is what every whole key that has been published is
+# with the digits, which is what every whole key xAI and the rulesets carry is
 # spelled in and what osv-scalibr reads. The two characters the others admit
 # besides are what the pattern's own file weighs — trufflehog the underscore,
 # kingfisher and betterleaks the hyphen as well — and a run carrying either is

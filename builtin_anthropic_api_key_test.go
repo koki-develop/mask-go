@@ -305,7 +305,8 @@ func Test_AnthropicAPIKey_reachesTheEndOfTheRun(t *testing.T) {
 	// where its alphabet stops, so ordinary punctuation ends one and nothing
 	// written after it joins it — but a character of the key's own alphabet
 	// written straight against a key is redacted with the key, which is what
-	// buys a key of a length nobody has published being located whole.
+	// buys a key of a length neither Anthropic nor a ruleset states being
+	// located whole.
 	tests := []struct {
 		name string
 		src  string

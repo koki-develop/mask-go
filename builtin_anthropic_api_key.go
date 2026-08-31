@@ -97,12 +97,12 @@ func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 // record.
 //
 // The two characters a key closes with are not read. AA closes the ninety-five
-// characters behind the hyphen in every key anyone has published, so a scan
-// asking for it there is asking for the count exactly, in the one direction
-// that costs a credential rather than a tail. Asking for it at the end of the
-// run instead would be worse: the span reaches to the end of the run, so a key
-// with a character of its own alphabet written against it does not close with
-// AA at all, and neither does a key inside a longer blob.
+// characters behind the hyphen in Anthropic's own hint and in both rulesets'
+// expressions, so a scan asking for it there is asking for the count exactly,
+// in the one direction that costs a credential rather than a tail. Asking for
+// it at the end of the run instead would be worse: the span reaches to the end
+// of the run, so a key with a character of its own alphabet written against it
+// does not close with AA at all, and neither does a key inside a longer blob.
 //
 // There is no boundary on either side of a match. A boundary in front would
 // drop the whole match rather than trim it wherever a key is written against a

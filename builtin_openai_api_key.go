@@ -57,8 +57,8 @@ func OpenAIAPIKey() Pattern { return openAIAPIKey }
 // to guess: the counts differ by kind and have already been shipped at three
 // sizes — twenty either side of an older key, fifty-eight either side of an
 // admin key, seventy-four either side of the rest — while the marker is the
-// same eight characters in every key anyone has published, old or new, and in
-// every ruleset that reads one.
+// same eight characters in every key gitleaks holds its rule to, old or new,
+// and in every ruleset that reads one.
 //
 // So the runs either side of the marker are read as runs and not as counts. A
 // count is read exactly where it is most of what tells a value from the text

@@ -63,8 +63,8 @@ func NeonAPIKey() Pattern { return neonAPIKey }
 // floor, so they move with it. What holds the count up is three sources
 // carrying it and disagreeing about nothing else: betterleaks reads sixty-four
 // exactly, the static-analysis rule stops there, and Neon's own pages write it
-// without a unit. What would move it down is a key shorter than that, written
-// somewhere it can be counted.
+// without a unit. What would move it down is a shorter key written into what
+// Neon publishes, or a rule that reads one.
 //
 // What the floor costs when it is right is the key cut short of it. A line cut
 // to a column limit partway through one leaves a prefix and a body too short to

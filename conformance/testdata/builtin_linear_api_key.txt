@@ -237,7 +237,7 @@ out:      there is no credential in this sentence
 
 # The prefix this pattern does not read. Linear's changelog names lin_oauth_
 # beside lin_api_ and names nothing else about it — no ruleset carries a rule
-# for it, no example of such a token has been published, and Linear's own OAuth
+# for it, Linear writes no such token down, and Linear's own OAuth
 # page still prints an access token of sixty-four hexadecimal characters with
 # no prefix at all. So an OAuth access token is left in the text whole, and the
 # cases below are here to move with the scan: a body invented for the second

@@ -73,7 +73,7 @@ func OnePasswordServiceAccountToken() Pattern { return onePasswordServiceAccount
 // the right alphabet but bounds the body at five hundred characters and puts a
 // word boundary behind it, which is fewer characters than the vendor's own
 // printed token has. This scan reads the run to its end and bounds it nowhere,
-// so a token longer than anybody has published is redacted whole.
+// so a token longer than the one 1Password prints is redacted whole.
 //
 // The count of what follows is read as a floor and not as a count, since no
 // length is stated anywhere and none can be: the object carries an email
@@ -90,7 +90,7 @@ func OnePasswordServiceAccountToken() Pattern { return onePasswordServiceAccount
 // page prints beside it names a throttle secret and a device identifier too, so
 // a token carrying those is longer again.
 //
-// So the floor is about a quarter of the shortest token anybody has published,
+// So the floor is about a quarter of the token 1Password prints,
 // which is the room a floor wants — and the room is worth more here than the
 // count would be. A token is long enough that the ordinary way to meet half of
 // one is a log line or a diff cut to a column limit, and every character short

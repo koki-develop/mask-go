@@ -115,7 +115,7 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 //
 // The alphabet is base62, isBase62Byte in builtin_scan.go: the letters of both
 // cases and the ten digits, which is what all three rulesets admit behind the
-// prefix and what every key anyone has published is written in. Neither the
+// prefix and what the keys Stripe prints are written in. Neither the
 // hyphen nor the underscore is in it, and leaving the underscore out is doing
 // more work here than an alphabet usually does: it is what ends a body at the
 // next segment of a snake_case name, so that
@@ -137,11 +137,11 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // printed. What it holds back is the placeholder: sk_live_ and rk_test_ are
 // written into documentation, templates and test fixtures with a word behind
 // them far more often than with a key, and sk_test_yourkey is a body of seven
-// characters that nobody has to redact. Below twenty-four there is
-// nothing but such text to gain, since no key anyone has published is shorter
+// characters that nobody has to redact. Below twenty-four there is nothing but
+// such text to gain, since neither Stripe nor a ruleset writes a key shorter
 // than that. What the floor costs is the key shorter than it — a line cut to a
-// column limit partway through one leaves a prefix and a body too short to be a
-// body, and the random characters written before the cut stay in the output.
+// column limit partway through one leaves a prefix and a body too short to be
+// a body, and the random characters written before the cut stay in the output.
 // That is the far side of this choice, and the cases in
 // builtin_stripe_secret_key_test.go pin it so that it stays a decision on the
 // record.
@@ -170,7 +170,7 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // such a word is itself inside the body of an earlier key the key is still
 // redacted, because a body is read to the end of its run and covers what is
 // written inside it; where it is not, a credential written that way is left
-// whole, and nothing has been seen written that way.
+// whole, and neither Stripe nor a ruleset writes one that way.
 //
 // There is no boundary behind the match. One there would drop rather than
 // trim, and where it were asked decides what it drops. Asked behind the count,

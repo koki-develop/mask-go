@@ -175,14 +175,14 @@ func ShopifyAccessToken() Pattern { return shopifyAccessToken }
 // reading it is a change somebody argues for rather than one somebody notices
 // afterwards.
 //
-// A fifth prefix is written about and is not read. shpua_ is named in Shopify's
-// community forums as the prefix of tokens belonging to apps of some other
-// description, but Shopify documents no such credential, neither changelog
-// names it and no published ruleset reads one. A kind guessed at is a candidate
-// opened on text nobody has ever seen; a kind stated is one entry added to
-// shopifyAccessTokenKinds below on the day the format is published.
-// Test_ShopifyAccessToken_aKindShopifyNamesNoPrefixFor pins the decision so
-// that reading one is a change somebody argues for.
+// A fifth prefix is written about and is not read. shpua_ is named in
+// Shopify's community forums as the prefix of tokens belonging to apps of some
+// other description, but Shopify documents no such credential, neither
+// changelog names it and no published ruleset reads one. A kind guessed at is
+// a candidate opened on text neither Shopify nor a ruleset writes; a kind
+// stated is one entry added to shopifyAccessTokenKinds below on the day the
+// format is published. Test_ShopifyAccessToken_aKindShopifyNamesNoPrefixFor
+// pins the decision so that reading one is a change somebody argues for.
 //
 // referenceShopifyAccessToken in builtin_shopify_access_token_test.go keeps the
 // grammar as a regular expression, spelling the opening, the three kinds, the
