@@ -681,17 +681,13 @@ func Test_oryAPIKeyKinds(t *testing.T) {
 			if i == j {
 				continue
 			}
-			// The one that decides whether a key is located at all. It is
-			// asked of every ordered pair, because which of two nested words
-			// is reached first is the table's order and nothing holds that.
+			// The one that decides whether a key is located at all.
 			if strings.HasPrefix(other, kind) {
 				t.Errorf("the kind %q opens %q, so a key of the second kind is located nowhere: the loop matches the first, finds no separator behind it and gives up on the candidate", kind, other)
 			}
 		}
 		for _, other := range oryAPIKeyKinds[i+1:] {
-			// And the one that decides what a position costs. Words opening on
-			// different bytes cannot nest, so this asks for more than the check
-			// above and is what the scan's own account of its cost rests on.
+			// And the one that decides what a position costs.
 			if kind[0] == other[0] {
 				t.Errorf("the kinds %q and %q open on the same byte, so the loop no longer turns a word away on one", kind, other)
 			}
