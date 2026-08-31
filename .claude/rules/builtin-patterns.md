@@ -55,6 +55,8 @@ is about, where the next person to change that declaration is already reading.
 ## What a grammar may rest on
 
 Two kinds of source settle a grammar, and the two do not carry the same weight.
+The next person can open either again, which is what a count has to rest on: a
+value read anywhere else settles nothing, however genuine it is.
 
 The first is the vendor's own: its documentation, the SDKs and the CLI it
 publishes, the fixtures those are tested against, and, where it is published,
