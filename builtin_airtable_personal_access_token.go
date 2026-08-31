@@ -64,8 +64,8 @@ func AirtablePersonalAccessToken() Pattern { return airtablePersonalAccessToken 
 //
 // Both counts are therefore read exactly, and the vendor's sentence about
 // length is what the decision has to be weighed against rather than what
-// settles it. Airtable reserves the right to issue a different shape and has
-// not been shown doing so, and what matters is what each half would cost if
+// settles it. Airtable reserves the right to issue a different shape and
+// writes no such shape down, and what matters is what each half would cost if
 // that day came. A secret wider than sixty-four characters is redacted for
 // sixty-four with the rest left in the text, which is what an exact count
 // costs everywhere. An identifier of some other width is a token this scan

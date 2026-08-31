@@ -410,10 +410,10 @@ func Test_PineconeAPIKey_theNewPrefix(t *testing.T) {
 }
 
 func Test_PineconeAPIKey_aLabelOutsideTheAlphabet(t *testing.T) {
-	// The label is read as letters and digits, which is what the keys published
-	// unaltered carry and what the one published rule admits. Pinecone states
-	// nothing about the part at all, and the reading it leaves open is a label
-	// derived from the name a key was created under — where names are
+	// The label is read as letters and digits, which is what the one rule that
+	// reads this format admits there, surfacing the part as a key id. Pinecone
+	// states nothing about the part at all, and the reading it leaves open is
+	// a label derived from the name a key was created under — where names are
 	// hyphenated in Pinecone's own guides. This is what that would cost: a key
 	// whose label carried a hyphen or an underscore is located nowhere, whole
 	// secret and all, because the run in front of the separator ends at that

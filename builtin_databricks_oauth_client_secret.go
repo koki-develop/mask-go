@@ -66,9 +66,10 @@ func DatabricksOAuthClientSecret() Pattern { return databricksOAuthClientSecret 
 // afterwards.
 //
 // Lowercase is what the class is read as. A hexadecimal encoder settles the
-// case once for all of its output rather than varying it between secrets, and
-// admitting the other case would widen the net for a credential nobody has been
-// shown. Test_DatabricksOAuthClientSecret_anUppercaseBody holds it there.
+// case once for all of its output rather than varying it between secrets, so
+// what admitting the other case would widen the net for is a secret written in
+// a case the vendor's own scanner does not describe.
+// Test_DatabricksOAuthClientSecret_anUppercaseBody holds it there.
 //
 // The count is read exactly rather than as a floor. A run longer than
 // thirty-two is not one longer secret but a secret with something written after

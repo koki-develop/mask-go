@@ -41,14 +41,12 @@ case:     a key at the end of a sentence
 in:       the key is SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a.
 out:      the key is «sendgrid-api-key».
 
-# The alphabet the two segments are written in: base64url, which is what every
-# ruleset admits behind the prefix and what the keys GitLab publishes for its
-# own SendGrid rule carry — two of the five write an underscore into the
-# identifier and one writes both a hyphen and an underscore into the secret.
-# Padding is not in
-# it and does not arise: twenty-two and forty-three are the unpadded lengths of
-# sixteen bytes and of thirty-two, and a padded encoding of the same bytes would
-# not come to sixty-nine characters.
+# The alphabet the two segments are written in: base64url, which is what the
+# rulesets that spell a class admit behind the prefix, the hyphen and the
+# underscore among them. Padding is not in it and does not arise: twenty-two
+# and forty-three are the unpadded lengths of sixteen bytes and of thirty-two,
+# and a padded encoding of the same bytes would not come to sixty-nine
+# characters.
 
 case:     a hyphen and an underscore in each segment
 in:       SG.0123456789abcdef-1234_.0123456789abcdef0123456789abcdef-123456789a

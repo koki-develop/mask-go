@@ -53,8 +53,8 @@ func Test_XAIAPIKey(t *testing.T) {
 		},
 		{
 			// The alphabet is the letters of both cases with the digits, which
-			// is what every published key is spelled in, so the bodies written
-			// out here carry both.
+			// is what every key xAI, osv-scalibr and kingfisher carry is
+			// spelled in, so the bodies written out here carry both.
 			name: "an uppercase body",
 			src:  "xai-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
 			want: []Span{{0, 84}},

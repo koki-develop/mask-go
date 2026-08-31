@@ -3,11 +3,10 @@
 # Every key here is built from the ordered run 0123456789ABCDEF, which no real
 # credential is. That run is sixteen characters and so is a whole key body, and
 # it carries 0, 1, 8 and 9 — the four digits missing from the base32 alphabet
-# issued keys are reported to be drawn from. So every key below is one this
-# library locates and, if that report is right, no generator would produce.
-# That is the pattern's alphabet decision written into the data: it admits
-# every character AWS has shown in a key rather than the narrower set other
-# people have read off issued ones.
+# gitleaks reads this format in. So every key below is one this library locates
+# and that rule declines. That is the pattern's alphabet decision written into
+# the data: it admits every character AWS has shown in a key rather than the
+# narrower set.
 
 patterns: aws-access-key-id
 

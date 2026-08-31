@@ -52,13 +52,13 @@ func DatabricksPersonalAccessToken() Pattern { return databricksPersonalAccessTo
 // what a hexadecimal encoder settles once for all of its output rather than a
 // thing a generator varies between tokens.
 //
-// So the alphabet is lowercase hexadecimal, and admitting the other case beside
-// it is the widening on offer. It is declined on the rulesets rather than on
-// the vendor: Databricks itself states no case at all, the classifier states
-// both for the reason above, and what four readings of real tokens agree on is
-// lowercase. What admitting the other case
-// would buy is a credential nobody has yet been shown; what it would cost is a
-// net cast wider than every reading of the format there is.
+// So the alphabet is lowercase hexadecimal, and admitting the other case
+// beside it is the widening on offer. It is declined on the rulesets rather
+// than on the vendor: Databricks itself states no case at all, the classifier
+// states both for the reason above, and what four readings of real tokens
+// agree on is lowercase. What admitting the other case would buy is a token
+// none of those four rules admits; what it would cost is a net cast wider than
+// every reading of the format there is.
 // Test_DatabricksPersonalAccessToken_anUppercaseBody pins the decision so that
 // widening it is a change somebody argues for rather than one somebody notices
 // afterwards.
