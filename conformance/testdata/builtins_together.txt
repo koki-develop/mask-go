@@ -1052,13 +1052,13 @@ in:       SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567\nAW
 out:      SUPABASE_ACCESS_TOKEN=«supabase-access-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # The three prefixes Supabase writes credentials with, which are three patterns
-# and agree on their first two characters. sbp_ carries the p of a personal access
-# token where a project key carries the underscore that opens the word naming its
-# kind, so the third character is what decides between them; the anon key those
-# project keys replaced is a JWT signed with the project's secret, which the JWT
-# pattern reads. The first case is what a project's environment file looks like
-# with all four in it, and the three after it are the prefixes written against one
-# another with nothing between.
+# and agree on their first two characters. sbp_ carries the p of a personal
+# access token where a project key carries the underscore that opens the word
+# naming its kind, so the third character is what decides between them; the anon
+# key those project keys replaced is a JWT signed with the project's secret,
+# which the JWT pattern reads. The first case is what a project's environment
+# file looks like with all four in it, and the three after it are the prefixes
+# written against one another with nothing between.
 
 case:     an access token, an anon key and both project keys in one environment file
 in:       SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567\nSUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.0123456789abcdef\nSUPABASE_PUBLISHABLE_KEY=sb_publishable_0123456789abcdef012345_01234567\nSUPABASE_SECRET_KEY=sb_secret_0123456789abcdef012345_01234567

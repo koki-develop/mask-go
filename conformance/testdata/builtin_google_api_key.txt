@@ -1,11 +1,11 @@
 # What Google API keys the library redacts, and what it leaves alone.
 #
-# Every key here is built from the ordered run 0123456789abcdefghijklmnopqrstuvwxy,
-# which no real credential is. That run is thirty-five characters and so is a
-# whole key body. It is spelled in lowercase because base64url holds the letters
-# of both cases, so either spelling is a body; the case further down carrying a
-# hyphen and an underscore is the rest of that alphabet, and Google's own
-# example key carries all four together.
+# Every key here is built from the ordered run
+# 0123456789abcdefghijklmnopqrstuvwxy, which no real credential is. That run is
+# thirty-five characters and so is a whole key body. It is spelled in lowercase
+# because base64url holds the letters of both cases, so either spelling is a
+# body; the case further down carrying a hyphen and an underscore is the rest of
+# that alphabet, and Google's own example key carries all four together.
 
 patterns: google-api-key
 

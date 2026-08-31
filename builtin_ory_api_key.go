@@ -86,13 +86,19 @@ func OryAPIKey() Pattern { return oryAPIKey }
 // spelling and none of the Go source Ory publishes does. So that block is read
 // for what a body is written in and not for what a prefix is.
 //
-// Reading it would cost more than a fourth entry besides. The word would open
-// on the byte pat opens on, where the scan stops at the first word it matches
-// on the strength of the three opening on three different bytes, which
-// Test_oryAPIKeyKinds holds them to. A word sharing a first byte would have to
-// be tried alongside pat rather than instead of it.
-// Test_OryAPIKey_theCLIGuideSpelling pins the spelling as one this scan leaves
-// alone.
+// Reading it would cost the invariant the kinds are held to as well as a
+// fourth entry. Test_oryAPIKeyKinds asks that the three words open on three
+// different bytes, which a fourth opening on p would not, and what that buys is
+// a rejection on one byte: at any position at most one word is compared past
+// its first character.
+//
+// Loosening the invariant rather than declining the word would leave the scan
+// locating what it locates and cost it that. Two words can stand at one
+// position only where one is written inside the other from its start, which pt
+// and pat are not, so the loop would still be right to give up on a candidate
+// whose word the separator does not close — it would only test two words at
+// every p where it now tests one. Test_OryAPIKey_theCLIGuideSpelling pins the
+// spelling as one this scan leaves alone.
 //
 // The alphabet is base62, isBase62Byte in builtin_scan.go: the letters of both
 // cases and the digits, and neither the hyphen nor the underscore base64url
@@ -125,8 +131,7 @@ func OryAPIKey() Pattern { return oryAPIKey }
 // the count, it drops the key a letter, a digit or an underscore is written
 // against. Asked behind that run, it drops the key an underscore is written
 // against and nothing else, the underscore being the one word character no
-// body admits.
-// Test_OryAPIKey_reachesTheEndOfTheRun writes both keys out.
+// body admits. Test_OryAPIKey_reachesTheEndOfTheRun writes both keys out.
 //
 // The tightening on offer in front is the demand that no letter and no digit
 // stand before the opening. It is declined because it would reject the key
@@ -222,12 +227,12 @@ var oryAPIKey = NewPattern("ory-api-key", func(src string) ([]Span, int) {
 			continue
 		}
 
-		// The word naming the kind, and the separator that has to close it. The
-		// three words open on three different bytes, so the comparison here
-		// rejects all but one of them on its first character and at most one of
-		// them can stand at this position — which is why a word that matches
-		// and is not closed by the separator ends the search rather than
-		// letting the next word be tried.
+		// The word naming the kind, and the separator that has to close it. No
+		// word is written inside another from its start, so at most one of them
+		// can stand at this position — which is why a word that matches and is
+		// not closed by the separator ends the search rather than letting the
+		// next word be tried. The three open on three different bytes besides,
+		// which is what rejects all but one of them on its first character.
 		body := -1
 		for _, kind := range oryAPIKeyKinds {
 			if !strings.HasPrefix(src[anchor+1:], kind) {
@@ -280,8 +285,9 @@ var oryAPIKeyPrefixes = func() []string {
 // to tell a prefix from text that merely opens like one and for nothing else.
 //
 // Test_oryAPIKeyKinds holds them to opening on three different bytes, which is
-// what lets the scan stop at the first word it matches, and to being words a
-// prefix can be built from.
+// what rejects all but one of them on a byte, and to being words a prefix can
+// be built from. What lets the scan stop at the first word it matches is the
+// weaker half of that: no word is written inside another from its start.
 var oryAPIKeyKinds = []string{"pat", "apikey", "wak"}
 
 const (

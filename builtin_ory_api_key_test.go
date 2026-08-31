@@ -648,12 +648,21 @@ func Test_oryAPIKeyOpening(t *testing.T) {
 
 func Test_oryAPIKeyKinds(t *testing.T) {
 	// The scan stops at the first word it matches rather than trying the rest,
-	// which is right only while at most one of them can stand at a position:
-	// the words open on three different bytes, so a word that matched and was
-	// not closed by the separator rules the others out as well. Were two of
-	// them to share a first byte, or one to be written inside another, a key of
-	// the kind tried second would go unlocated and nothing else here would
+	// which is right only while at most one of them can stand at a position.
+	// Two words stand at one only where one is written inside the other from
+	// its start, so nesting is what would lose a key: the word matched first
+	// ends the search, and the kind it hid goes unlocated with nothing here to
 	// report it.
+	//
+	// That is the first of the two checks below, and it is asked of every
+	// ordered pair rather than of each pair once, since which of two nested
+	// words is reached first is the order of the table and nothing holds that.
+	//
+	// The second asks for more. Words opening on different bytes cannot nest,
+	// so it rules the nesting out again and buys the byte the loop turns a word
+	// away on besides. What builtin_ory_api_key.go weighs is the cost of
+	// dropping that second one, which is the cost of a position rather than of
+	// a key.
 	if len(oryAPIKeyKinds) == 0 {
 		t.Fatal("the pattern names no kind, so it locates nothing")
 	}
@@ -668,9 +677,19 @@ func Test_oryAPIKeyKinds(t *testing.T) {
 		}
 	}
 	for i, kind := range oryAPIKeyKinds {
+		for j, other := range oryAPIKeyKinds {
+			if i == j {
+				continue
+			}
+			// The one that decides whether a key is located at all.
+			if strings.HasPrefix(other, kind) {
+				t.Errorf("the kind %q opens %q, so a key of the second kind is located nowhere: the loop matches the first, finds no separator behind it and gives up on the candidate", kind, other)
+			}
+		}
 		for _, other := range oryAPIKeyKinds[i+1:] {
+			// And the one that decides what a position costs.
 			if kind[0] == other[0] {
-				t.Errorf("the kinds %q and %q open on the same byte, so the scan cannot stop at the first of them it matches", kind, other)
+				t.Errorf("the kinds %q and %q open on the same byte, so the loop no longer turns a word away on one", kind, other)
 			}
 		}
 	}

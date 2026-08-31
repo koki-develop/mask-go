@@ -496,9 +496,9 @@ func Test_PineconeAPIKey_insideAnOpaqueRun(t *testing.T) {
 func Test_PineconeAPIKey_aDigestWhereTheSecretBelongs(t *testing.T) {
 	// The collision a prefix leaves where everything behind it is one class is a
 	// digest written there. Hexadecimal digits are base62 and a digest carries
-	// nothing that ends a run, so a digest standing where a secret belongs is a key's
-	// format exactly and is redacted whole — which is right for the reason the
-	// floor is read at all: declining it would decline every key Pinecone
+	// nothing that ends a run, so a digest standing where a secret belongs is a
+	// key's format exactly and is redacted whole — which is right for the reason
+	// the floor is read at all: declining it would decline every key Pinecone
 	// happened to write in the digits and the first six letters.
 	//
 	// What the floor turns away is the digest too short to be a secret, and

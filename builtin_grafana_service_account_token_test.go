@@ -592,12 +592,12 @@ func Test_isGrafanaServiceAccountTokenBody(t *testing.T) {
 //
 // The prefix, the two counts, the separator and the two character classes are
 // spelled again rather than built from grafanaServiceAccountTokenPrefix,
-// grafanaServiceAccountTokenSecretChars, grafanaServiceAccountTokenChecksumChars,
-// grafanaServiceAccountTokenSeparator, isBase62Byte and
-// isGrafanaServiceAccountTokenChecksumByte. A reference sharing those
-// declarations could not disagree with the scan about them, and it is exactly
-// that disagreement the fuzz target below is for: the two have to be changed
-// together or reported apart.
+// grafanaServiceAccountTokenSecretChars,
+// grafanaServiceAccountTokenChecksumChars, grafanaServiceAccountTokenSeparator,
+// isBase62Byte and isGrafanaServiceAccountTokenChecksumByte. A reference
+// sharing those declarations could not disagree with the scan about them, and
+// it is exactly that disagreement the fuzz target below is for: the two have to
+// be changed together or reported apart.
 //
 // The counted repetitions here are thirty-two and eight, so the machine an
 // engine builds for a candidate is forty states wide and bounded, and the

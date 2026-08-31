@@ -304,9 +304,8 @@ func Test_StripeWebhookSigningSecret_reachesTheEndOfTheRun(t *testing.T) {
 	// is where its alphabet stops, so a letter or a digit written straight
 	// against one is redacted with it — which is what buys a secret of a length
 	// neither Stripe nor a ruleset states being located whole. The alphabet is
-	// base62, so the
-	// hyphen and the underscore end a run rather than carrying it on, and so do
-	// the two characters standard base64 adds.
+	// base62, so the hyphen and the underscore end a run rather than carrying it
+	// on, and so do the two characters standard base64 adds.
 	tests := []struct {
 		name string
 		src  string

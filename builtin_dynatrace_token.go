@@ -104,10 +104,11 @@ func DynatraceToken() Pattern { return dynatraceToken }
 // behind on the day the next one shipped — which the prefixes standing outside
 // the vendor's own table already show happening. What is left is the name, and
 // token is the term Dynatrace uses for the whole of what this locates — its
-// page heads the section Token format, keeps a table of Token prefixes and offers
-// the expression above to look for tokens. Access token would be the narrower
-// term, and a refresh token and a platform token are not ones. noseyparker and
-// kingfisher both name their rule for this format Dynatrace Token as well.
+// page heads the section Token format, keeps a table of Token prefixes and
+// offers the expression above to look for tokens. Access token would be the
+// narrower term, and a refresh token and a platform token are not ones.
+// noseyparker and kingfisher both name their rule for this format Dynatrace
+// Token as well.
 //
 // There is no boundary on either side of a match. A word boundary in front
 // would drop the whole match rather than trim it wherever a token is written

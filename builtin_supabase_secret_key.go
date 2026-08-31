@@ -99,9 +99,10 @@ func SupabaseSecretKey() Pattern { return supabaseSecretKey }
 // to ask that no letter and no digit stand before the prefix. It is declined
 // because there is nothing here for it to turn away. The prefix is ten
 // characters carrying two underscores, of which the second closes it, so a
-// prefix standing inside a word would need that word to be spelled with sb_secret_
-// at the end of it. What the demand would cost is a key written straight against
-// a letter, which would then be left in the output whole rather than trimmed.
+// prefix standing inside a word would need that word to be spelled with
+// sb_secret_ at the end of it. What the demand would cost is a key written
+// straight against a letter, which would then be left in the output whole
+// rather than trimmed.
 //
 // The scan resumes one byte past the start of a candidate whether it became a
 // key or not, which is the default and is what a key written inside another

@@ -121,11 +121,12 @@ func ResendAPIKey() Pattern { return resendAPIKey }
 // The second is a snake-cased identifier, and it is the one worth stating: re_
 // is a prefix a name can open with, and an identifier written re_, a segment of
 // exactly eight characters, an underscore and a segment of exactly twenty-four
-// is this format character for character. Twenty-four unbroken letters and digits are what a digest or an
-// encoded field is written as rather than what a word is, which is what keeps
-// the shape rare — and where one is written there is nothing left in the text
-// to tell it from a key, so declining it would mean declining every key Resend
-// issues. Test_ResendAPIKey_theShapesWrittenByAccident pins both.
+// is this format character for character. Twenty-four unbroken letters and
+// digits are what a digest or an encoded field is written as rather than what a
+// word is, which is what keeps the shape rare — and where one is written there
+// is nothing left in the text to tell it from a key, so declining it would mean
+// declining every key Resend issues.
+// Test_ResendAPIKey_theShapesWrittenByAccident pins both.
 //
 // A digest reaches nothing on its own account, and its length has no part in
 // that: hexadecimal carries no underscore, so one written behind the prefix is

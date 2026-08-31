@@ -82,10 +82,10 @@ func PostHogPersonalAPIKey() Pattern { return postHogPersonalAPIKey }
 // in three thousand eight hundred is forty-one, and fewer than one in two
 // hundred thousand is shorter than that. A floor fails in one direction only —
 // a key below it is located nowhere — so it is set where what falls below stops
-// being something a caller would meet. And forty-one is one character past the forty
-// of a git SHA, so a digest written straight behind the prefix falls short of a
-// body where a floor of forty would have taken one; an MD5's thirty-two falls
-// nine further short again.
+// being something a caller would meet. And forty-one is one character past the
+// forty of a git SHA, so a digest written straight behind the prefix falls
+// short of a body where a floor of forty would have taken one; an MD5's
+// thirty-two falls nine further short again.
 //
 // What the floor costs is the key cut short of it. A line cut to a column limit
 // partway through one leaves a prefix and a body too short to be a body, and
@@ -113,8 +113,8 @@ func PostHogPersonalAPIKey() Pattern { return postHogPersonalAPIKey }
 // Asked behind the count, it drops the key a letter, a digit or an underscore
 // is written against. Asked behind that run, it drops the key an underscore is
 // written against and nothing else, the underscore being the one word
-// character no body admits.
-// Test_PostHogPersonalAPIKey_reachesTheEndOfTheRun writes both keys out.
+// character no body admits. Test_PostHogPersonalAPIKey_reachesTheEndOfTheRun
+// writes both keys out.
 //
 // The byte the scan searches the input for is the underscore the prefix closes
 // with, and the prefix is read back from it. builtin_scan.go says why a scan

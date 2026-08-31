@@ -510,9 +510,10 @@ func Test_stripeKeys_locateEveryKeyOfAMixedRun(t *testing.T) {
 }
 
 func Test_stripeKeys_locateAMixedRunThroughAWindow(t *testing.T) {
-	// The same run, read the way a stream reads it. Test_stripeKeys_locateEveryKeyOfAMixedRun
-	// hands the whole text to Find at once, where a Writer hands it a window:
-	// LookBehind bytes in front of what it has still to write out, and no more.
+	// The same run, read the way a stream reads it.
+	// Test_stripeKeys_locateEveryKeyOfAMixedRun hands the whole text to Find at
+	// once, where a Writer hands it a window: LookBehind bytes in front of what
+	// it has still to write out, and no more.
 	//
 	// A rule reading further back than that is a rule a window cannot
 	// reproduce. It would locate the key when handed the text entire and leave

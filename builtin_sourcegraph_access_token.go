@@ -62,20 +62,21 @@ func SourcegraphAccessToken() Pattern { return sourcegraphAccessToken }
 // The alphabet is hexadecimal in either case, where the Pulumi and Supabase
 // bodies beside it are read lowercase alone, and the difference is the vendor's
 // rather than a taste. Sourcegraph says so twice: the expression on the secret
-// formats page is written [a-fA-F0-9] at every one of its three positions, and the
-// parser the API authenticates with, lib/accesstoken/personal_access_token.go,
-// is written the same way, so an uppercased token is a token the vendor accepts
-// and this library may not leave in the output. The generator writes lowercase,
-// which makes the uppercase half a case nothing mints and everything accepts —
-// and a credential the vendor authenticates is a credential to redact.
+// formats page is written [a-fA-F0-9] at every one of its three positions, and
+// the parser the API authenticates with,
+// lib/accesstoken/personal_access_token.go, is written the same way, so an
+// uppercased token is a token the vendor accepts and this library may not leave
+// in the output. The generator writes lowercase, which makes the uppercase half
+// a case nothing mints and everything accepts — and a credential the vendor
+// authenticates is a credential to redact.
 // Test_SourcegraphAccessToken_anUppercaseBody pins the half of the class the
 // generator never writes.
 //
 // The counts are read exactly rather than as floors, the vendor having stated
-// both of them twice over. A run longer than forty is not one longer token but a token with something
-// written after it, and only the token is redacted; a run of seventeen
-// hexadecimal characters where an identifier stands is no identifier, and the
-// candidate is then read as the form carrying none.
+// both of them twice over. A run longer than forty is not one longer token but
+// a token with something written after it, and only the token is redacted; a
+// run of seventeen hexadecimal characters where an identifier stands is no
+// identifier, and the candidate is then read as the form carrying none.
 //
 // The three forms are read together because they are one credential to a
 // caller. They are one string to Sourcegraph as well: its parser strips

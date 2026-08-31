@@ -76,8 +76,8 @@ func NPMAccessToken() Pattern { return npmAccessToken }
 // the count, it drops the token a letter, a digit or an underscore is written
 // against. Asked behind that run, it drops the token an underscore is written
 // against and nothing else, the underscore being the one word character no
-// body admits.
-// Test_NPMAccessToken_reachesTheEndOfTheRun writes both tokens out.
+// body admits. Test_NPMAccessToken_reachesTheEndOfTheRun writes both tokens
+// out.
 //
 // The Stripe scan beside this one does ask that the byte in front be no letter
 // and no digit, and what makes that worth its cost there makes it worthless

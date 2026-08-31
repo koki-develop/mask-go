@@ -72,9 +72,9 @@ out:      time=2026-08-17T00:00:00Z level=error msg="slack api failed" token=«s
 # What makes a part of the run a secret. Slack states no length and no alphabet
 # for any part of a token, so what the pattern asks is that some part reach
 # eighteen characters and carry a letter. Eighteen is below every secret Slack's
-# own examples carry and above what a hyphenated word is; the letter
-# is what separates a secret from an identifier, a timestamp or an id, which
-# Slack writes in digits alone.
+# own examples carry and above what a hyphenated word is; the letter is what
+# separates a secret from an identifier, a timestamp or an id, which Slack
+# writes in digits alone.
 
 case:     a secret of eighteen characters is a token
 in:       xoxb-0123456789ab-0123456789abcdefgh

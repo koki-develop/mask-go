@@ -34,10 +34,10 @@ in:       github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyz
 out:      «github-token»
 
 # The lengths either side of what each kind must reach. GitHub gives no length,
-# so what the library accepts is the count gitleaks reads, and the pair of
-# cases below is where that choice is written down. The fine grained pair is
-# written without the underscore a real body carries, because it is the count
-# that decides here and not the shape.
+# so what the library accepts is the count gitleaks reads, and the pair of cases
+# below is where that choice is written down. The fine grained pair is written
+# without the underscore a real body carries, because it is the count that
+# decides here and not the shape.
 
 case:     a classic body of thirty-six characters is a token
 in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz

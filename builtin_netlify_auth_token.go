@@ -88,8 +88,8 @@ func NetlifyAuthToken() Pattern { return netlifyAuthToken }
 // behind the count, it drops the token a letter, a digit or an underscore is
 // written against. Asked behind that run, it drops the token an underscore is
 // written against and nothing else, the underscore being the one word
-// character no body admits.
-// Test_NetlifyAuthToken_reachesTheEndOfTheRun writes both tokens out.
+// character no body admits. Test_NetlifyAuthToken_reachesTheEndOfTheRun writes
+// both tokens out.
 //
 // The scan resumes one byte past the start of a candidate whether it became a
 // token or not. The three characters in front of the underscore belong to the
