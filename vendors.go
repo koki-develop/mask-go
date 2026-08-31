@@ -255,6 +255,12 @@ func PulumiPatterns() []Pattern { return []Pattern{pulumiAccessToken} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func PyPIPatterns() []Pattern { return []Pattern{pypiAPIToken} }
 
+// RenderPatterns returns every built-in pattern that locates a credential
+// Render issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func RenderPatterns() []Pattern { return []Pattern{renderAPIKey} }
+
 // ReplicatePatterns returns every built-in pattern that locates a credential
 // Replicate issues.
 //

@@ -38,7 +38,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 )...))
 ```
 
-The 62 built-in patterns cover 51 vendors and locate 157 kinds of credential:
+The 63 built-in patterns cover 52 vendors and locate 158 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -83,6 +83,7 @@ The 62 built-in patterns cover 51 vendors and locate 157 kinds of credential:
 | `PrivateKey() Pattern` | PKCS#8 private keys, encrypted PKCS#8 private keys, PKCS#1 RSA private keys, EC private keys, DSA private keys, OpenSSH private keys, PGP private key blocks |
 | `PulumiPatterns() []Pattern` | Pulumi personal access tokens, organization access tokens, team access tokens |
 | `PyPIPatterns() []Pattern` | PyPI API tokens, TestPyPI API tokens, Trusted Publishing short-lived API tokens |
+| `RenderPatterns() []Pattern` | Render API keys |
 | `ReplicatePatterns() []Pattern` | Replicate API tokens |
 | `ResendPatterns() []Pattern` | Resend API keys |
 | `RubyGemsPatterns() []Pattern` | RubyGems.org API keys |

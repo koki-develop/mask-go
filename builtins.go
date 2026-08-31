@@ -73,6 +73,7 @@ var builtins = []Pattern{
 	privateKey,
 	pulumiAccessToken,
 	pypiAPIToken,
+	renderAPIKey,
 	replicateAPIToken,
 	resendAPIKey,
 	rubyGemsAPIKey,
