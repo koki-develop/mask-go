@@ -73,6 +73,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"RubyGemsPatterns":     RubyGemsPatterns,
 	"SendGridPatterns":     SendGridPatterns,
 	"SentryPatterns":       SentryPatterns,
+	"ShippoPatterns":       ShippoPatterns,
 	"ShopifyPatterns":      ShopifyPatterns,
 	"SlackPatterns":        SlackPatterns,
 	"SonarQubePatterns":    SonarQubePatterns,

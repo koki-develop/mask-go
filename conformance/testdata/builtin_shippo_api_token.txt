@@ -1,0 +1,187 @@
+# What Shippo API tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is. That run is sixteen characters, so a body is it twice over and
+# half of it again — the shortest body the pattern reads, since the count is a
+# floor. It is spelled in lowercase where the case does not matter and in
+# uppercase where the case is what a case is about: a body is hexadecimal of
+# either case, so either spelling is a body.
+
+patterns: shippo-api-token
+
+# The two modes Shippo issues a token for. They are one kind of string rather
+# than two: the mode says which data the token reaches, nothing else about the
+# format differs, and a caller redacting one redacts the other.
+
+case:     a live token in an environment assignment
+in:       SHIPPO_API_TOKEN=shippo_live_0123456789abcdef0123456789abcdef01234567
+out:      SHIPPO_API_TOKEN=«shippo-api-token»
+
+case:     a test token in an environment assignment
+in:       SHIPPO_API_TOKEN=shippo_test_0123456789abcdef0123456789abcdef01234567
+out:      SHIPPO_API_TOKEN=«shippo-api-token»
+
+case:     a token in the shippotoken authorization header the api is called with
+in:       Authorization: ShippoToken shippo_live_0123456789abcdef0123456789abcdef01234567
+out:      Authorization: ShippoToken «shippo-api-token»
+
+case:     a token in json
+in:       {"token":"shippo_live_0123456789abcdef0123456789abcdef01234567"}
+out:      {"token":"«shippo-api-token»"}
+
+case:     a token on a command line
+in:       curl -H "Authorization: ShippoToken shippo_live_0123456789abcdef0123456789abcdef01234567" https://api.goshippo.com/shipments/
+out:      curl -H "Authorization: ShippoToken «shippo-api-token»" https://api.goshippo.com/shipments/
+
+case:     a token in a configuration environment block
+in:       "env": {"SHIPPO_API_TOKEN": "shippo_test_0123456789abcdef0123456789abcdef01234567"}
+out:      "env": {"SHIPPO_API_TOKEN": "«shippo-api-token»"}
+
+# The alphabet the forty characters are written in. It is hexadecimal in either
+# case, so a letter past f ends a body — and where the run behind that letter is
+# too short to be one, nothing is located.
+
+case:     a body written in capitals
+in:       shippo_live_0123456789ABCDEF0123456789ABCDEF01234567
+out:      «shippo-api-token»
+
+case:     a body carrying a letter past f
+in:       shippo_live_0123456789abcdef0123456789abcdefg1234567
+out:      shippo_live_0123456789abcdef0123456789abcdefg1234567
+
+case:     a body carrying a hyphen
+in:       shippo_live_0123456789abcdef0123456789abcdef-1234567
+out:      shippo_live_0123456789abcdef0123456789abcdef-1234567
+
+case:     a body carrying an underscore
+in:       shippo_live_0123456789abcdef0123456789abcdef_1234567
+out:      shippo_live_0123456789abcdef0123456789abcdef_1234567
+
+# The lengths either side of forty. The count is read as a floor rather than
+# exactly, so thirty-nine characters are not a token and forty-one are one token
+# to the end of its run rather than a token and a character left over. What the
+# floor costs is the middle case — a token cut short of forty keeps every random
+# character written in front of the cut, and none of them is redacted.
+
+case:     a body of forty characters is a token
+in:       shippo_live_0123456789abcdef0123456789abcdef01234567
+out:      «shippo-api-token»
+
+case:     a body of thirty-nine characters is not
+in:       shippo_live_0123456789abcdef0123456789abcdef0123456
+out:      shippo_live_0123456789abcdef0123456789abcdef0123456
+
+case:     an alphabet run longer than the floor is a token to the end of it
+in:       shippo_live_0123456789abcdef0123456789abcdef012345670
+out:      «shippo-api-token»
+
+# The modes are read by the names Shippo writes. A mode no Shippo page states is
+# no prefix, and neither is the vendor's own name written in front of any other
+# word — which is what keeps the account id Shippo's own carrier-account
+# response carries out of a span, and the placeholder its authentication example
+# writes where a token goes.
+
+case:     a mode no shippo page writes
+in:       shippo_prod_0123456789abcdef0123456789abcdef01234567
+out:      shippo_prod_0123456789abcdef0123456789abcdef01234567
+
+case:     a carrier account id written with the vendor name
+in:       {"account_id":"shippo_ups_account"}
+out:      {"account_id":"shippo_ups_account"}
+
+case:     the placeholder the documentation writes where a token goes
+in:       Authorization: ShippoToken shippo_test_token
+out:      Authorization: ShippoToken shippo_test_token
+
+# What a token may be written against. There is no boundary on either side of
+# the prefix, so a token keeps its span whatever word character it abuts — and
+# where the run of its alphabet carries on past the floor, what carries it on is
+# redacted with the token. A letter past f, a hyphen and an underscore end the
+# run instead.
+
+case:     a token after an underscore
+in:       SHIPPO_API_TOKEN_shippo_live_0123456789abcdef0123456789abcdef01234567
+out:      SHIPPO_API_TOKEN_«shippo-api-token»
+
+case:     a token after a letter
+in:       xshippo_live_0123456789abcdef0123456789abcdef01234567
+out:      x«shippo-api-token»
+
+case:     a hexadecimal word written against a token
+in:       shippo_live_0123456789abcdef0123456789abcdef01234567deadbeef
+out:      «shippo-api-token»
+
+case:     a word past f written against a token
+in:       shippo_live_0123456789abcdef0123456789abcdef01234567suffix
+out:      «shippo-api-token»suffix
+
+case:     an underscored word written against a token
+in:       shippo_live_0123456789abcdef0123456789abcdef01234567_suffix
+out:      «shippo-api-token»_suffix
+
+case:     a token at the end of a sentence
+in:       the token is shippo_live_0123456789abcdef0123456789abcdef01234567.
+out:      the token is «shippo-api-token».
+
+# Two tokens written together. Nothing the opening is written with is
+# hexadecimal, so no token can begin inside another: written with nothing
+# between them the first body ends at the s of the second prefix, and the two
+# spans meet rather than overlapping. Written with a space between them the two
+# are separate values, and both go.
+
+case:     two tokens with nothing between them
+in:       shippo_live_0123456789abcdef0123456789abcdef01234567shippo_test_0123456789abcdef0123456789abcdef01234567
+out:      «shippo-api-token»«shippo-api-token»
+
+case:     the two modes separated by a space
+in:       shippo_live_0123456789abcdef0123456789abcdef01234567 shippo_test_0123456789ABCDEF0123456789ABCDEF01234567
+out:      «shippo-api-token» «shippo-api-token»
+
+# What this pattern redacts that nobody issued. A SHA-1 is forty hexadecimal
+# characters, which is a body exactly, so a prefix and a digest behind it is a
+# token's format exactly and nothing in the text tells the two apart — sparing
+# it would spare a real token written the same way. A longer digest goes whole
+# rather than being cut at the fortieth character, because the count is a floor
+# and the span reaches the end of the run.
+#
+# What holds either side of that is the floor and the prefix: an MD5 is eight
+# characters short of a body, and a digest with nothing in front of it opens no
+# candidate at all. The last of those is also what the tokens Shippo issued
+# before this format would have cost — no page states their shape, so a pattern
+# reading them would have a bare run to key on and nothing else.
+
+case:     a sha256 behind the prefix, redacted to the end of the run
+in:       shippo_live_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «shippo-api-token»
+
+case:     an uppercase sha1 behind the prefix in a cache key
+in:       key: shippo_test_0123456789ABCDEF0123456789ABCDEF01234567
+out:      key: «shippo-api-token»
+
+case:     an md5 behind the prefix, eight characters short of a body
+in:       shippo_live_0123456789abcdef0123456789abcdef
+out:      shippo_live_0123456789abcdef0123456789abcdef
+
+case:     a sha1 with no prefix in front of it
+in:       0123456789abcdef0123456789abcdef01234567
+out:      0123456789abcdef0123456789abcdef01234567
+
+# The prefix written in a case Shippo does not issue tokens in, the two
+# underscores written as the hyphens a delimiter is elsewhere, and the prefix
+# with either of them left out.
+
+case:     an uppercase prefix
+in:       SHIPPO_LIVE_0123456789abcdef0123456789abcdef01234567
+out:      SHIPPO_LIVE_0123456789abcdef0123456789abcdef01234567
+
+case:     hyphens where the prefix carries underscores
+in:       shippo-live-0123456789abcdef0123456789abcdef01234567
+out:      shippo-live-0123456789abcdef0123456789abcdef01234567
+
+case:     the opening without its underscore
+in:       shippolive_0123456789abcdef0123456789abcdef01234567
+out:      shippolive_0123456789abcdef0123456789abcdef01234567
+
+case:     the mode without the underscore that closes it
+in:       shippo_live0123456789abcdef0123456789abcdef01234567
+out:      shippo_live0123456789abcdef0123456789abcdef01234567
