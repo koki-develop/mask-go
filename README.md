@@ -38,7 +38,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 )...))
 ```
 
-The 63 built-in patterns cover 52 vendors and locate 158 kinds of credential:
+The 64 built-in patterns cover 53 vendors and locate 160 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -89,6 +89,7 @@ The 63 built-in patterns cover 52 vendors and locate 158 kinds of credential:
 | `RubyGemsPatterns() []Pattern` | RubyGems.org API keys |
 | `SendGridPatterns() []Pattern` | Twilio SendGrid API keys |
 | `SentryPatterns() []Pattern` | Sentry personal tokens, organization auth tokens, user application tokens, internal integration tokens |
+| `ShippoPatterns() []Pattern` | Shippo live API tokens, test API tokens |
 | `ShopifyPatterns() []Pattern` | Shopify public app access tokens, Shopify custom app access tokens, Shopify private app access tokens, Shopify delegate access tokens, Shopify app secret keys |
 | `SlackPatterns() []Pattern` | Slack bot tokens, user tokens, app-level tokens, workflow tokens, refresh tokens, expiring access tokens |
 | `SonarQubePatterns() []Pattern` | SonarQube user tokens, global analysis tokens, project analysis tokens, project badge tokens |

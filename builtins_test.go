@@ -787,6 +787,19 @@ var builtinPatterns = []struct {
 		benchmarks: sentryAuthTokenFindBenchmarks,
 	},
 	{
+		name:    "shippo-api-token",
+		pattern: ShippoAPIToken,
+		ref:     referenceShippoAPITokenFind,
+		samples: []string{
+			"SHIPPO_API_TOKEN=shippo_live_0123456789abcdef0123456789abcdef01234567",
+			"shippo_test_0123456789ABCDEF0123456789ABCDEF01234567",
+			"shippo_live_0123456789abcdef0123456789abcdef012345670",
+			"shippo_live_0123456789abcdef0123456789abcdef01234567shippo_test_0123456789abcdef0123456789abcdef01234567",
+		},
+		anchors:    []string{"shippo_live_0123", "shippo_test_0123"},
+		benchmarks: shippoAPITokenFindBenchmarks,
+	},
+	{
 		name:    "shopify-access-token",
 		pattern: ShopifyAccessToken,
 		ref:     referenceShopifyAccessTokenFind,

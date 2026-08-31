@@ -79,6 +79,7 @@ var builtins = []Pattern{
 	rubyGemsAPIKey,
 	sendGridAPIKey,
 	sentryAuthToken,
+	shippoAPIToken,
 	shopifyAccessToken,
 	shopifyAppSecretKey,
 	slackToken,

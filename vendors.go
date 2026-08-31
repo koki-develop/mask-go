@@ -291,6 +291,12 @@ func SendGridPatterns() []Pattern { return []Pattern{sendGridAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func SentryPatterns() []Pattern { return []Pattern{sentryAuthToken} }
 
+// ShippoPatterns returns every built-in pattern that locates a credential
+// Shippo issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func ShippoPatterns() []Pattern { return []Pattern{shippoAPIToken} }
+
 // ShopifyPatterns returns every built-in pattern that locates a credential
 // Shopify issues.
 //
