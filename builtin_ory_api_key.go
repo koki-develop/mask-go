@@ -86,13 +86,19 @@ func OryAPIKey() Pattern { return oryAPIKey }
 // spelling and none of the Go source Ory publishes does. So that block is read
 // for what a body is written in and not for what a prefix is.
 //
-// Reading it would cost more than a fourth entry besides. The word would open
-// on the byte pat opens on, where the scan stops at the first word it matches
-// on the strength of the three opening on three different bytes, which
-// Test_oryAPIKeyKinds holds them to. A word sharing a first byte would have to
-// be tried alongside pat rather than instead of it.
-// Test_OryAPIKey_theCLIGuideSpelling pins the spelling as one this scan leaves
-// alone.
+// Reading it would cost the invariant the kinds are held to as well as a
+// fourth entry. Test_oryAPIKeyKinds asks that the three words open on three
+// different bytes, which a fourth opening on p would not, and what that buys is
+// a rejection on one byte: at any position at most one word is compared past
+// its first character.
+//
+// Loosening the invariant rather than declining the word would leave the scan
+// locating what it locates and cost it that. Two words can stand at one
+// position only where one is written inside the other from its start, which pt
+// and pat are not, so the loop would still be right to give up on a candidate
+// whose word the separator does not close — it would only test two words at
+// every p where it now tests one. Test_OryAPIKey_theCLIGuideSpelling pins the
+// spelling as one this scan leaves alone.
 //
 // The alphabet is base62, isBase62Byte in builtin_scan.go: the letters of both
 // cases and the digits, and neither the hyphen nor the underscore base64url

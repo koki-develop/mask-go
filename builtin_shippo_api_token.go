@@ -38,9 +38,9 @@ func ShippoAPIToken() Pattern { return shippoAPIToken }
 // the same expression with an entropy floor beside it, and trufflehog, trivy
 // and Vulnetix read the same forty in lowercase alone. GitHub's secret scanning
 // lists the credential twice, as Shippo Live API Token and Shippo Test API
-// Token, and GitLab lists both as well; each publishes what it detects rather than the expression it detects
-// with, so they corroborate that live and test are the two kinds and add
-// nothing to the count.
+// Token, and GitLab lists both as well; each publishes what it detects rather
+// than the expression it detects with, so they corroborate that live and test
+// are the two kinds and add nothing to the count.
 //
 // Five counts the rulesets that state the format, not the rules they state it
 // in: Vulnetix states it as two, one to a prefix, and kingfisher states it
@@ -49,13 +49,13 @@ func ShippoAPIToken() Pattern { return shippoAPIToken }
 //
 // Nor is it a count of readings taken apart from one another, and that
 // difference is worth naming, because a floor read off agreeing sources is only
-// as strong as the number of sources that looked. Some of these plainly descend: betterleaks
-// writes gitleaks' expression with a delimiter behind it and gitleaks'
-// description word for word, trivy writes gitleaks' rule id, kingfisher ships
-// betterleaks' rule, and Vulnetix generates its two out of a catalog it keeps
-// rather than writing them against tokens. For trufflehog nothing here shows
-// where the forty came from, and where the number was first read off a token is
-// published by none of them.
+// as strong as the number of sources that looked. Some of these plainly
+// descend: betterleaks writes gitleaks' expression with a delimiter behind it
+// and gitleaks' description word for word, trivy writes gitleaks' rule id,
+// kingfisher ships betterleaks' rule, and Vulnetix generates its two out of a
+// catalog it keeps rather than writing them against tokens. For trufflehog
+// nothing here shows where the forty came from, and where the number was first
+// read off a token is published by none of them.
 //
 // That count is read as a floor. A count is read exactly where the vendor wrote
 // the length down, or where it is most of what tells a value from the text
