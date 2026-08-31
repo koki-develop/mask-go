@@ -304,9 +304,10 @@ func Test_HashiCorpVaultToken_nextToWordCharacters(t *testing.T) {
 			want: "VAULT_TOKEN_****************************",
 		},
 		{
-			// The far side of the same choice. A boundary behind the match
-			// would drop this token rather than trim it; without one the span
-			// reaches to the end of the run, which is what the floor asks for.
+			// The far side of the same choice. A boundary asked behind the count
+			// would drop this token rather than trim it to the count; without
+			// one the span reaches to the end of the run, which is what the
+			// floor asks for.
 			name: "a character of the alphabet after",
 			src:  "hvs.0123456789abcdef012345678",
 			want: "*****************************",

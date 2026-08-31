@@ -94,9 +94,12 @@ func OpenAIAPIKey() Pattern { return openAIAPIKey }
 // There is no boundary on either side of a match, as there is none in the AWS,
 // GitLab and Google scans. A boundary in front would drop the whole match
 // rather than trim it wherever a key is written against a word character, as
-// OPENAI_API_KEY_sk-proj-... is, and one behind it would drop a key followed by
-// a character of the key's own alphabet — which, since the span already reaches
-// to the end of the run, is every key with anything written against it.
+// OPENAI_API_KEY_sk-proj-... is. One behind would drop rather than trim as
+// well, and there is only one place it could be asked here, since this scan
+// reads no count to ask it behind: at the end of the run. There it drops the
+// key whose run closes on a hyphen and nothing else, since every word character
+// belongs to base64url — so the character standing behind a run is never one,
+// and a boundary is left asking the key's own last character to be one.
 //
 // The scan resumes one byte past the start of a candidate whether it became a
 // key or not. Every character of sk- belongs to the alphabet a run is written

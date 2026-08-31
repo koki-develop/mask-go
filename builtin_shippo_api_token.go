@@ -111,10 +111,13 @@ func ShippoAPIToken() Pattern { return shippoAPIToken }
 //
 // There is no boundary on either side of a match. One in front would drop the
 // whole match rather than trim it wherever a token is written against a word
-// character, as SHIPPO_API_TOKEN_shippo_live_... is, and one behind would drop
-// a token followed by a character of the body's own alphabet — which, since the
-// span already reaches the end of the run, is every token with a hexadecimal
-// character written against it.
+// character, as SHIPPO_API_TOKEN_shippo_live_... is. One behind would drop
+// rather than trim as well, and where it were asked decides what it drops.
+// Asked behind the count, it drops the token a letter, a digit or an
+// underscore is written against. Asked behind that run, it drops the token a
+// letter past f or an underscore is written against, those being the word
+// characters no body admits.
+// Test_ShippoAPIToken_reachesTheEndOfTheRun writes all three out.
 //
 // The tokens Shippo issued before this format are not read. The release note
 // says existing implementations with old tokens go on working, and no Shippo

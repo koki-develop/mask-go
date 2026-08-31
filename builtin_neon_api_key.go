@@ -103,10 +103,13 @@ func NeonAPIKey() Pattern { return neonAPIKey }
 //
 // There is no boundary on either side of a match. One in front would drop the
 // whole match rather than trim it wherever a key is written against a word
-// character, as NEON_API_KEY_napi_... is, and one behind would drop a key
-// followed by a character of the key's own alphabet — which, since the span
-// already reaches the end of the run, is every key with a letter or a digit
-// written against it.
+// character, as NEON_API_KEY_napi_... is. One behind would drop rather than
+// trim as well, and where it were asked decides what it drops. Asked behind
+// the count, it drops the key a letter, a digit or an underscore is written
+// against. Asked behind that run, it drops the key an underscore is written
+// against and nothing else, the underscore being the one word character no
+// body admits.
+// Test_NeonAPIKey_reachesTheEndOfTheRun writes both keys out.
 //
 // The tightening on offer in front is the demand that no letter and no digit
 // stand before the prefix. It is declined because it would reject the key

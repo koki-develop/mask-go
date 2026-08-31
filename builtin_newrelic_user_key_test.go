@@ -284,9 +284,12 @@ func Test_NewRelicUserKey_inContext(t *testing.T) {
 func Test_NewRelicUserKey_nextToWordCharacters(t *testing.T) {
 	// There is no boundary on either side of a match. A word boundary in front
 	// would drop the whole match rather than trim it wherever a key is written
-	// against a word character, and one behind it would drop a key followed by
-	// a character of the key's own alphabet — which, the span reaching to the
-	// end of the run already, is every key with such a character against it.
+	// against a word character. One behind would drop rather than trim as well,
+	// and where it were asked decides what it drops. Asked behind the count, it
+	// drops the key a letter, a digit or an underscore is written against. Asked
+	// behind that run, it drops the key a word character that alphabet leaves out
+	// is written against — a lowercase letter behind an issued key, a letter past
+	// f behind a migrated one, an underscore behind either.
 	key := newRelicIssuedKey
 
 	tests := []struct {

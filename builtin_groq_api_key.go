@@ -99,11 +99,14 @@ func GroqAPIKey() Pattern { return groqAPIKey }
 //
 // There is no boundary on either side of a match. A boundary in front would
 // drop the whole match rather than trim it wherever a key is written against a
-// word character, as GROQ_API_KEY_gsk_... is, and one behind it would drop a
-// key followed by a character of the key's own alphabet — which, since the span
-// already reaches to the end of the run, is every key with a letter or a digit
-// written against it. Every ruleset reading this format asks for \b on both
-// sides.
+// word character, as GROQ_API_KEY_gsk_... is. One behind would drop rather
+// than trim as well, and where it were asked decides what it drops. Asked
+// behind the count, it drops the key a letter, a digit or an underscore is
+// written against. Asked behind that run, it drops the key an underscore is
+// written against and nothing else, the underscore being the one word
+// character no body admits.
+// Test_GroqAPIKey_reachesTheEndOfTheRun writes both keys out. Every ruleset
+// reading this format asks for \b on both sides.
 //
 // The tightening on offer in front is the demand that no letter and no digit
 // stand before the prefix. It is declined because it would reject the key

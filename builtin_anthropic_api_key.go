@@ -106,10 +106,15 @@ func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 //
 // There is no boundary on either side of a match. A boundary in front would
 // drop the whole match rather than trim it wherever a key is written against a
-// word character, as ANTHROPIC_API_KEY_sk-ant-api03-... is, and one behind it
-// would drop a key followed by a character of the key's own alphabet — which,
-// since the span already reaches to the end of the run, is every key with
-// anything written against it.
+// word character, as ANTHROPIC_API_KEY_sk-ant-api03-... is. One behind would
+// drop rather than trim as well, and where it were asked decides what it
+// drops. Asked behind the count, it drops the key a letter, a digit or an
+// underscore is written against wherever the count closes on one of those, and
+// the key whose count closes on the hyphen wherever no word character is
+// written against it. Asked behind that run, it drops the key whose body
+// closes on a hyphen and nothing else, since every word character belongs to
+// base64url — so the character standing behind a run is never one, and a
+// boundary is left asking the key's own last character to be one.
 //
 // The byte the scan searches the input for is the k of sk-, for the reason
 // builtin_scan.go gives, and the prefix is read back from it. It is the one

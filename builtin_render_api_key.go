@@ -76,13 +76,13 @@ func RenderAPIKey() Pattern { return renderAPIKey }
 //
 // There is no boundary on either side of a match. One in front would drop the
 // whole match rather than trim it wherever a key is written against a word
-// character, as RENDER_API_KEY_rnd_... is. One behind would drop the key an
-// underscore is written against, and that key alone: the span reaches the end
-// of the run, so whatever stands behind it is a character no body admits, and
-// the underscore is the one of those a boundary reads as a word character
-// rather than as the edge it is asking for.
-// Test_RenderAPIKey_reachesTheEndOfTheRun writes that key out, beside the
-// hyphen that ends a run and would satisfy a boundary.
+// character, as RENDER_API_KEY_rnd_... is. One behind would drop rather than
+// trim as well, and where it were asked decides what it drops. Asked behind
+// the count, it drops the key a letter, a digit or an underscore is written
+// against. Asked behind that run, it drops the key an underscore is written
+// against and nothing else, the underscore being the one word character no
+// body admits.
+// Test_RenderAPIKey_reachesTheEndOfTheRun writes both keys out.
 //
 // The tightening on offer in front is the demand that no letter and no digit
 // stand before the prefix. It is declined because it would reject the key

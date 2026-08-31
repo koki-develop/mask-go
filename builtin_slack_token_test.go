@@ -528,9 +528,10 @@ func Test_SlackToken_whatEndsABody(t *testing.T) {
 			want: "******************************************_x",
 		},
 		{
-			// A boundary behind the match would drop this token rather than
-			// trim it, so the three letters written after it are redacted
-			// with it: nothing in the run says where Slack stopped writing.
+			// A boundary asked behind the count would drop this token rather
+			// than trim it to the count, so the three letters written after it
+			// are redacted with it: nothing in the run says where Slack stopped
+			// writing.
 			name: "letters",
 			src:  "xoxb-0123456789ab-0123456789abcdefghijklmnZZZ",
 			want: "*********************************************",
