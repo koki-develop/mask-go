@@ -75,19 +75,19 @@ func PineconeAPIKey() Pattern { return pineconeAPIKey }
 // the same body.
 //
 // What the label is made of is the part of that wager the floors do not bound,
-// since Pinecone states nothing about it at all: not a length, not an alphabet,
-// and not where the characters come from. A label read too narrowly locates no
-// key rather than part of one. The reading here is that a label is a value
-// Pinecone generates — the published ones have the shape of an identifier
-// rather than of anything a person typed, and the one published rule surfaces
-// the part as a key id. The alternative the vendor's own word leaves open is a
-// label derived from the name a key was created under, and the names Pinecone's
-// guides write are hyphenated: were that the derivation, every key whose name
-// carried a hyphen or an underscore would be located nowhere, since the run in
-// front of the separator would end at that character.
-// Test_PineconeAPIKey_aLabelOutsideTheAlphabet pins what that would cost, so
-// that widening the label is a change somebody argues for rather than one
-// somebody notices afterwards.
+// since Pinecone states nothing about it at all: not a length, not an
+// alphabet, and not where the characters come from. A label read too narrowly
+// locates no key rather than part of one. The reading here is that a label is
+// an identifier Pinecone generates rather than a name somebody typed, which is
+// what the one rule that reads this format treats it as: it reads letters and
+// digits there and surfaces the part as a key id. The alternative the vendor's
+// own word leaves open is a label derived from the name a key was created
+// under, and the names Pinecone's guides write are hyphenated: were that the
+// derivation, every key whose name carried a hyphen or an underscore would be
+// located nowhere, since the run in front of the separator would end at that
+// character. Test_PineconeAPIKey_aLabelOutsideTheAlphabet pins what that would
+// cost, so that widening the label is a change somebody argues for rather than
+// one somebody notices afterwards.
 //
 // The alphabet is base62, isBase62Byte in builtin_scan.go: the letters of both
 // cases and the digits, and neither the hyphen nor the underscore base64url

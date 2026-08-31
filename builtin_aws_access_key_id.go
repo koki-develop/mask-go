@@ -62,15 +62,15 @@ func AWSAccessKeyID() Pattern { return awsAccessKeyID }
 // below cost a reader a whole word rather than twenty characters of one.
 //
 // The alphabet is the uppercase letters and the ten digits, which is every
-// character AWS has shown in a key. It is wider than what the keys are thought
-// to be built from: the characters of a real key are reported to come from the
-// base32 alphabet ABCDEFGHIJKLMNOPQRSTUVWXYZ234567, which holds no 0, 1, 8 or
-// 9. That report is other people's reading of issued keys, not something AWS
-// documents, so it is not what the scan turns on — a scan keyed on it would
-// leave a whole key in the output the day one of those four digits appears in
-// one, on the strength of a claim AWS never made. Admitting the ten widens
-// what is located by nothing a reader can read: what reaches a span either way
-// is twenty uppercase characters and digits opening with AKIA or ASIA.
+// character AWS has shown in a key. It is wider than what gitleaks reads,
+// which is the base32 alphabet ABCDEFGHIJKLMNOPQRSTUVWXYZ234567, holding no 0,
+// 1, 8 or 9; noseyparker and trufflehog read the uppercase letters and the ten
+// digits, as this scan does. AWS documents neither reading, so the narrower
+// one is not what the scan turns on — a scan keyed on it would leave a whole
+// key in the output the day one of those four digits appears in one, on the
+// strength of something AWS never wrote. Admitting the ten widens what is
+// located by nothing a reader can read: what reaches a span either way is
+// twenty uppercase characters and digits opening with AKIA or ASIA.
 //
 // What this pattern over-matches on: ASIA is an English word, and AKIA is not.
 // So an unbroken run of twenty uppercase letters and digits that opens with

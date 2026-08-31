@@ -372,10 +372,9 @@ func Test_awsAccessKeyIDAnchor(t *testing.T) {
 func Test_isAWSAccessKeyIDByte(t *testing.T) {
 	// The alphabet is what the pattern is widest on, so it is stated over
 	// every byte rather than by example. It admits every character AWS has
-	// shown in a key and no more: issued keys are reported to be narrower
-	// still — base32, which holds no 0, 1, 8 or 9 — but that report is not
-	// AWS's, and the lowercase half is left out because no key AWS has
-	// published carries one.
+	// shown in a key and no more: gitleaks reads the narrower base32, which
+	// holds no 0, 1, 8 or 9, but AWS documents neither reading, and the
+	// lowercase half is left out because no key AWS writes carries one.
 	for c := range 256 {
 		b := byte(c)
 		want := '0' <= b && b <= '9' || 'A' <= b && b <= 'Z'

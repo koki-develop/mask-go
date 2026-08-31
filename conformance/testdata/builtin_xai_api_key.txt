@@ -153,14 +153,14 @@ case:     a prefix written where a body would stand
 in:       xai-0123456789abcxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      xai-0123456789abc«xai-api-key»
 
-# What this pattern redacts that nobody issued. Eighty letters and digits behind
-# the prefix is the shape every published key is, so a run of hexadecimal that
-# long written there is redacted to the end of its run. That is the answer
-# rather than a fault in it, because nothing in the text tells such a run from a
-# key: sparing these would spare a real key written the same way. What is taken
-# is a stretch of a value that was already opaque. A SHA-256 is sixteen
-# characters short of the floor and is left alone; two of them written together
-# are past it.
+# What this pattern redacts that nobody issued. Eighty letters and digits
+# behind the prefix is the shape every key xAI, osv-scalibr and kingfisher
+# carry is, so a run of hexadecimal that long written there is redacted to the
+# end of its run. That is the answer rather than a fault in it, because nothing
+# in the text tells such a run from a key: sparing these would spare a real key
+# written the same way. What is taken is a stretch of a value that was already
+# opaque. A SHA-256 is sixteen characters short of the floor and is left alone;
+# two of them written together are past it.
 
 case:     the prefix in front of a sha-256
 in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef

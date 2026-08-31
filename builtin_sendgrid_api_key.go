@@ -21,7 +21,7 @@ func SendGridAPIKey() Pattern { return sendGridAPIKey }
 // they are wherever a vendor names a prefix and leaves the rest of a format to
 // be read off the values it issued. On this format the separation comes out
 // the other way round: SendGrid states the length, which is the part a vendor
-// usually withholds, and leaves the division inside it to be read off keys.
+// usually withholds, and states nothing about the division inside it.
 //
 // What SendGrid states is that a key is sixty-nine characters, always. The
 // support article answering whether a shorter key can be issued says a key is
@@ -41,26 +41,27 @@ func SendGridAPIKey() Pattern { return sendGridAPIKey }
 // constant and warns when a key does not open with it, and checks nothing else
 // about the string.
 //
-// The two counts are what is left, and they are read off the keys published
-// rather than off anything SendGrid wrote. GitLab's secret detection ruleset
-// carries five example keys for its own SendGrid rule, and every one of them is
-// SG. and twenty-two characters, a dot, and forty-three characters —
-// sixty-nine altogether, which is the length SendGrid states. Nothing else
-// divides sixty-nine that way: the segments are the base64url of sixteen bytes
-// and of thirty-two, written without padding, so twenty-two and forty-three are
-// what an identifier of one and a secret of the other come to and their total
-// is the number SendGrid published.
+// The two counts are what is left, and they are stated by the rulesets rather
+// than by SendGrid. noseyparker reads a key as SG., twenty-two characters, a
+// dot and forty-three; kingfisher asks the same two counts of what the rule it
+// imports hands it. That is the division written as two counts rather than as
+// one total. Nothing else divides sixty-nine that way: the segments are the
+// base64url of sixteen bytes and of thirty-two, written without padding, so
+// twenty-two and forty-three are what an identifier of one and a secret of the
+// other come to and their total is the number SendGrid published.
 //
-// The three rulesets that state a shape agree with that and with each other on
+// The rulesets that state a shape agree with that and with each other on
 // everything but how tightly to read it. gitleaks reads SG. and sixty-six
 // characters of one class, which is twenty-two, the dot and forty-three
-// counted together rather than apart. GitLab reads the same sixty-six. Only
-// trufflehog reads the two segments as segments, and reads them as ranges —
-// twenty to twenty-four in front and thirty-nine to fifty behind — around a
-// test value of its own that is seventy-four characters and so is not a key of
-// the length SendGrid states. So the exact shape is what SendGrid states and
-// what two of the three rulesets total, and the ranges are one ruleset's slack
-// around it.
+// counted together rather than apart; betterleaks writes the same expression
+// with an entropy filter beside it, and GitLab reads the same sixty-six.
+// kingfisher imports betterleaks' rule and filters what it returns to the two
+// counts above, which noseyparker reads outright. Only trufflehog reads them
+// as ranges — twenty to twenty-four in front and thirty-nine to fifty behind —
+// around a test value of its own that is seventy-four characters and so is not
+// a key of the length SendGrid states. So the total is SendGrid's, the
+// division is what noseyparker and kingfisher ask for, and the ranges are one
+// ruleset's slack around them.
 //
 // The counts are therefore read exactly. A scan declines an exact count — for
 // a floor, or for the end of a run — where its vendor states no length, since
@@ -74,15 +75,15 @@ func SendGridAPIKey() Pattern { return sendGridAPIKey }
 // after it, and only the key is redacted.
 //
 // The alphabet is the base64url one, isBase64URLByte in builtin_scan.go. Both
-// characters that distinguish it from the alphanumerics stand in the keys
-// GitLab publishes — two of the five write an underscore into the identifier,
-// one of those opening with it, and one writes both a hyphen and an underscore
-// into the secret — so neither is inferred from the rulesets. Padding is not
-// admitted, and does not arise: twenty-two and forty-three are the unpadded
-// lengths, and a padded encoding of the same bytes would be twenty-four and
-// forty-four and so would not be sixty-nine characters. gitleaks admits = in
-// its class all the same, which is slack of the same kind as trufflehog's
-// ranges and is not read here.
+// characters that distinguish it from the alphanumerics are admitted by every
+// rule here that spells a class: gitleaks and betterleaks carry the underscore
+// and the hyphen, noseyparker spells the same two, trufflehog reads the word
+// characters with the hyphen beside them, and the filter kingfisher applies
+// admits both. Padding is not admitted, and does not arise: twenty-two and
+// forty-three are the unpadded lengths, and a padded encoding of the same
+// bytes would be twenty-four and forty-four and so would not be sixty-nine
+// characters. gitleaks admits = in its class all the same, which is slack of
+// the same kind as trufflehog's ranges and is not read here.
 //
 // The dot between the segments is the one character of the format that is not
 // in the alphabet, and it is doing two things. It is what tells this format

@@ -84,6 +84,17 @@ case:     a session cookie prefix
 in:       ory_session_0123456789abcdef0123456789abcdef
 out:      ory_session_0123456789abcdef0123456789abcdef
 
+# The spelling one line of Ory's CLI guide writes a project key as. The page
+# that states the format and the page that issues a key both name ory_pat_ and
+# ory_apikey_ and neither names this one, so those two are the project key's
+# spellings the scan reads and this one is left alone. It is the closest of
+# these to a key the scan does read — the word it carries opens on the byte pat
+# opens on — which is why it is written out here beside them.
+
+case:     the spelling the cli guide writes
+in:       ory_pt_0123456789abcdef0123456789abcdef
+out:      ory_pt_0123456789abcdef0123456789abcdef
+
 # The snake_case names ordinary code carries, since English has a shelf of words
 # closing on ory. What turns them away is the word naming the kind, which the
 # second underscore has to stand directly behind, and the floor, which the next

@@ -304,11 +304,11 @@ const (
 	xaiAPIKeyAnchor      = 'x'
 	xaiAPIKeyAnchorIndex = 0
 
-	// xaiAPIKeyBodyChars is the count a body is held to, read as a floor rather
-	// than exactly. Eighty is what the key xAI prints whole runs to and what
-	// every published key of either kind runs to; the rationale above weighs
-	// reading it as a floor and says why the floor is not the lower one two
-	// rulesets read.
+	// xaiAPIKeyBodyChars is the count a body is held to, read as a floor
+	// rather than exactly. Eighty is what the key xAI prints whole runs to and
+	// what the keys osv-scalibr and kingfisher carry run to; the rationale
+	// above weighs reading it as a floor and says why the floor is not the
+	// lower one two rulesets read.
 	xaiAPIKeyBodyChars = 80
 )
 

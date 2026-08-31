@@ -41,10 +41,8 @@ func Test_SendGridAPIKey(t *testing.T) {
 			want: []Span{{17, 86}},
 		},
 		{
-			// The hyphen and the underscore are base64url characters, and the
-			// keys GitLab publishes for its own SendGrid rule carry both — two
-			// of the five write an underscore into the identifier, and one
-			// writes both a hyphen and an underscore into the secret.
+			// The hyphen and the underscore are base64url characters, and
+			// every rule here that spells a class admits both of them.
 			name: "an identifier and a secret carrying a hyphen and an underscore",
 			src:  "SG.0123456789abcdef-hij_l.0123456789abcdefghijklmnopqrstuvwxy-ABCDE_G",
 			want: []Span{{0, 69}},
@@ -434,8 +432,8 @@ func Test_sendGridAPIKeyChars(t *testing.T) {
 	// Sixty-nine is the one part of this grammar SendGrid states outright: a
 	// support article on whether a shorter key can be issued says a key is
 	// always this many characters. The two counts either side of the separator
-	// are read off published keys instead, so they are only as good as their
-	// total agreeing with the number the vendor wrote down.
+	// come from the rulesets instead, so they are only as good as their total
+	// agreeing with the number the vendor wrote down.
 	const documented = 69
 	if sendGridAPIKeyChars != documented {
 		t.Errorf("a key is read as %d characters, SendGrid states %d", sendGridAPIKeyChars, documented)

@@ -80,13 +80,15 @@ func ShippoAPIToken() Pattern { return shippoAPIToken }
 // before the cut stay in the output. Test_ShippoAPIToken_cutShortOfTheFloor
 // pins that.
 //
-// The body is read in hexadecimal of either case, which is the reading two of
-// the five rulesets take and the one that fails safely. Reading lowercase alone
+// The body is read in hexadecimal of either case, and what decides that is
+// which way being wrong falls rather than how the rules divide — gitleaks and
+// betterleaks admit both cases, trufflehog, trivy and Vulnetix read lowercase
+// alone, and the wider reading is the minority one. Reading lowercase alone
 // would not trim a token carrying an uppercase letter but lose it: the body
-// would end at that letter, fall short of forty, and the whole credential would
-// stay in the output. The wider class costs the uppercase digest written behind
-// a prefix, which is redacted, and Test_ShippoAPIToken_aDigestBehindThePrefix
-// pins what that costs.
+// would end at that letter, fall short of forty, and the whole credential
+// would stay in the output. The wider class costs the uppercase digest written
+// behind a prefix, which is redacted, and
+// Test_ShippoAPIToken_aDigestBehindThePrefix pins what that costs.
 //
 // Widening past hexadecimal is declined: no source reads anything but
 // hexadecimal behind these prefixes, so a wider class would rest on nothing.
