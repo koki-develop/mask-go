@@ -179,6 +179,13 @@ regexes = ['''AnthropicPatterns''']
 # plus sign, the characters a Go identifier is written with, and a plus sign.
 # Base64 admits the plus sign, so an encoded body fenced by two of them and
 # holding neither the slash nor a leading digit is given up with it.
+#
+# The rule named below arrived with betterleaks 1.8, so a binary older than the
+# one mise.toml pins refuses this whole file rather than reading it: the name
+# resolves to no rule and the load fails in front of any scan. That is the
+# direction to fail in — an old binary says so, where one that read the file and
+# skipped what it did not recognise would scan with an entry it had not
+# understood.
 [[allowlists]]
 description = "the concatenation around a variable's name in a Go test, which the rule for a hardcoded password reads as one"
 condition = "AND"
