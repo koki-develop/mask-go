@@ -64,6 +64,7 @@ var builtins = []Pattern{
 	onePasswordServiceAccountToken,
 	openAIAPIKey,
 	openRouterAPIKey,
+	oryAPIKey,
 	paddleAPIKey,
 	pineconeAPIKey,
 	planetScaleToken,

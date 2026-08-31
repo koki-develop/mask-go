@@ -1,0 +1,217 @@
+# What Ory Network API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is. That run is sixteen characters, so a body is it twice over —
+# the shortest body the pattern reads, since the count is a floor. It is spelled
+# in lowercase where the case does not matter and in uppercase where the case is
+# what a case is about: base62 holds the letters of both, so either spelling is
+# a body.
+
+patterns: ory-api-key
+
+# The three prefixes Ory lists under Ory Network API keys: ory_pat_ and
+# ory_apikey_, which a project API key carries, and ory_wak_, which a workspace
+# API key carries. All three are read with the same body, so the cases below are
+# that one shape in the places a key is written.
+
+case:     a key in an environment assignment
+in:       ORY_API_KEY=ory_pat_0123456789abcdef0123456789abcdef
+out:      ORY_API_KEY=«ory-api-key»
+
+case:     a key in the bearer authorization header an admin api is called with
+in:       Authorization: Bearer ory_pat_0123456789abcdef0123456789abcdef
+out:      Authorization: Bearer «ory-api-key»
+
+case:     a key in json
+in:       {"value":"ory_apikey_0123456789abcdef0123456789abcdef"}
+out:      {"value":"«ory-api-key»"}
+
+case:     a key on a command line
+in:       curl -H "Authorization: Bearer ory_pat_0123456789abcdef0123456789abcdef" https://practical-swirles-01234567.projects.oryapis.com/admin/identities
+out:      curl -H "Authorization: Bearer «ory-api-key»" https://practical-swirles-01234567.projects.oryapis.com/admin/identities
+
+case:     a workspace key in a configuration environment block
+in:       "env": {"ORY_WORKSPACE_API_KEY": "ory_wak_0123456789abcdef0123456789abcdef"}
+out:      "env": {"ORY_WORKSPACE_API_KEY": "«ory-api-key»"}
+
+# The alphabet the thirty-two characters are written in. It is base62 — the
+# letters of both cases and the digits. The two characters base64url adds, the
+# hyphen and the underscore, are not admitted, and either of them ends a body.
+
+case:     a body written in capitals
+in:       ory_pat_0123456789ABCDEF0123456789ABCDEF
+out:      «ory-api-key»
+
+case:     a body carrying a hyphen
+in:       ory_pat_0123456789abcdef-123456789abcdef
+out:      ory_pat_0123456789abcdef-123456789abcdef
+
+case:     a body carrying an underscore
+in:       ory_pat_0123456789abcdef_123456789abcdef
+out:      ory_pat_0123456789abcdef_123456789abcdef
+
+# The lengths either side of thirty-two. The count is read as a floor rather
+# than exactly, so thirty-one characters are not a key and thirty-three are one
+# key to the end of its run rather than a key and a character left over. What
+# the floor costs is the middle case — a key cut short of thirty-two keeps every
+# random character written in front of the cut, and none of them is redacted.
+
+case:     a body of thirty-two characters is a key
+in:       ory_pat_0123456789abcdef0123456789abcdef
+out:      «ory-api-key»
+
+case:     a body of thirty-one characters is not
+in:       ory_pat_0123456789abcdef0123456789abcde
+out:      ory_pat_0123456789abcdef0123456789abcde
+
+case:     an alphabet run longer than the floor is a key to the end of it
+in:       ory_pat_0123456789abcdef0123456789abcdef0
+out:      «ory-api-key»
+
+# The prefixes Ory writes on the credentials that are not API keys. They stand
+# under headings of their own on the same page and are a different credential
+# under a different term of Ory's, so all of them stay in the text.
+
+case:     an oauth2 access token prefix
+in:       ory_at_0123456789abcdef0123456789abcdef
+out:      ory_at_0123456789abcdef0123456789abcdef
+
+case:     a session token prefix
+in:       ory_st_0123456789abcdef0123456789abcdef
+out:      ory_st_0123456789abcdef0123456789abcdef
+
+case:     a session cookie prefix
+in:       ory_session_0123456789abcdef0123456789abcdef
+out:      ory_session_0123456789abcdef0123456789abcdef
+
+# The snake_case names ordinary code carries, since English has a shelf of words
+# closing on ory. What turns them away is the word naming the kind, which the
+# second underscore has to stand directly behind, and the floor, which the next
+# segment of such a name ends the run long before.
+
+case:     a name whose next segment merely opens like a kind
+in:       repository_pattern = None
+out:      repository_pattern = None
+
+case:     a name whose next segment opens like another kind
+in:       memory_wakeup_timer = 30
+out:      memory_wakeup_timer = 30
+
+case:     a name spelling a whole prefix with segments behind it
+in:       inventory_pat_index_by_id
+out:      inventory_pat_index_by_id
+
+# What a key may be written against. There is no boundary on either side of the
+# prefix, so a key keeps its span whatever word character it abuts — and where
+# the run of its alphabet carries on past the floor, what carries it on is
+# redacted with the key. A hyphen and an underscore end the run instead.
+#
+# A snake_case name whose segments spell a whole prefix carries one, so where
+# thirty-two unbroken characters of the alphabet stand behind it, everything
+# from the ory onward is redacted and only the syllable in front of it stays.
+
+case:     a key after an underscore
+in:       ORY_API_KEY_ory_pat_0123456789abcdef0123456789abcdef
+out:      ORY_API_KEY_«ory-api-key»
+
+case:     a key after a letter
+in:       xory_pat_0123456789abcdef0123456789abcdef
+out:      x«ory-api-key»
+
+case:     a name spelling a whole prefix with a body behind it
+in:       memory_pat_0123456789abcdef0123456789abcdef
+out:      mem«ory-api-key»
+
+case:     a word written against a key
+in:       ory_pat_0123456789abcdef0123456789abcdefsuffix
+out:      «ory-api-key»
+
+case:     a hyphenated word written against a key
+in:       ory_pat_0123456789abcdef0123456789abcdef-suffix
+out:      «ory-api-key»-suffix
+
+case:     an underscored word written against a key
+in:       ory_pat_0123456789abcdef0123456789abcdef_suffix
+out:      «ory-api-key»_suffix
+
+case:     a key at the end of a sentence
+in:       the key is ory_pat_0123456789abcdef0123456789abcdef.
+out:      the key is «ory-api-key».
+
+# Two keys written together. The three letters the opening is made of belong to
+# the alphabet a body is written in, so a body may close with ory and the
+# underscore of the next key stand directly behind it; the second key begins
+# three characters before the first one ends, the two spans overlap and are
+# redacted as one. Written with nothing at all between them the first body
+# reaches three characters into the second opening and stops at the underscore
+# behind them, so those two overlap as well. Written with a space between them
+# the two are separate values, and both go.
+
+case:     a key beginning inside the key before it
+in:       ory_pat_0123456789abcdef0123456789abcdefory_pat_0123456789abcdef0123456789abcdef
+out:      «ory-api-key»
+
+case:     two keys of different kinds with nothing between them
+in:       ory_pat_0123456789abcdef0123456789abcdefory_apikey_0123456789ABCDEF0123456789ABCDEF
+out:      «ory-api-key»
+
+case:     two keys separated by a space
+in:       ory_pat_0123456789abcdef0123456789abcdef ory_wak_0123456789ABCDEF0123456789ABCDEF
+out:      «ory-api-key» «ory-api-key»
+
+# What this pattern redacts that nobody issued. A prefix carries two
+# underscores, which standard base64 writes nowhere, so only a base64url
+# encoding can hold one — and where thirty-two base62 characters follow, the run
+# from the prefix to the end of them is redacted whether or not Ory issued it.
+# Such a run is a key's format exactly and nothing in the text tells the two
+# apart, so sparing it would spare a real key written the same way.
+#
+# The digest is the same over-match taking a value a reader had a use for: an
+# MD5 is thirty-two hexadecimal characters, which are base62 and carry nothing
+# that ends a run, and a SHA-1 is longer still. What holds the other side of it
+# is the floor and the prefix — a digest of twenty-four characters is eight
+# short of a body, and a hyphen is no character the prefix carries.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzzory_pat_0123456789abcdef0123456789abcdefzzzz
+out:      payload=zzzz«ory-api-key»
+
+case:     an md5 behind the prefix in a cache key
+in:       key: ory_pat_0123456789abcdef0123456789abcdef
+out:      key: «ory-api-key»
+
+case:     a sha1 behind the prefix
+in:       ory_pat_0123456789abcdef0123456789abcdef01234567
+out:      «ory-api-key»
+
+case:     a digest of twenty-four characters behind the prefix
+in:       ory_pat_0123456789abcdef01234567
+out:      ory_pat_0123456789abcdef01234567
+
+case:     an md5 behind a hyphen rather than the prefix
+in:       ory-pat-0123456789abcdef0123456789abcdef
+out:      ory-pat-0123456789abcdef0123456789abcdef
+
+# The prefix written in a case Ory does not issue keys in, the prefix without
+# the underscore it closes with, the opening with no word naming a kind behind
+# it, and a body of the right length with no prefix at all.
+
+case:     an uppercase prefix
+in:       ORY_PAT_0123456789abcdef0123456789abcdef
+out:      ORY_PAT_0123456789abcdef0123456789abcdef
+
+case:     the prefix without its closing underscore
+in:       ory_pat0123456789abcdef0123456789abcdef
+out:      ory_pat0123456789abcdef0123456789abcdef
+
+case:     the opening with no word naming a kind
+in:       ory_0123456789abcdef0123456789abcdef
+out:      ory_0123456789abcdef0123456789abcdef
+
+case:     a word no key is issued with where the kind stands
+in:       ory_key_0123456789abcdef0123456789abcdef
+out:      ory_key_0123456789abcdef0123456789abcdef
+
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdef0123456789abcdef
+out:      0123456789abcdef0123456789abcdef
