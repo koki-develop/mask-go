@@ -172,10 +172,12 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // written inside it; where it is not, a credential written that way is left
 // whole, and nothing has been seen written that way.
 //
-// There is no boundary behind the match. One there would drop rather than trim
-// a key whose body runs on into the text after it, and since the span already
-// reaches the end of the run, that is every key with a letter or a digit
-// written against it.
+// There is no boundary behind the match. One there would drop rather than
+// trim, and where it were asked decides what it drops. Asked behind the count,
+// it drops the key a letter, a digit or an underscore is written against.
+// Asked behind that run, it drops the key an underscore is written against and
+// nothing else, the underscore being the one word character no body admits.
+// Test_StripeSecretKey_reachesTheEndOfTheRun writes both keys out.
 //
 // A key can begin inside the span of the one in front of it, and in a run
 // written with nothing between two keys every key after the first does: a body

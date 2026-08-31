@@ -106,10 +106,15 @@ func BuildkiteToken() Pattern { return buildkiteToken }
 //
 // There is no boundary on either side of a match. A boundary in front would
 // drop the whole match rather than trim it wherever a token is written against
-// a word character, as BUILDKITE_API_TOKEN_bkua_... is, and one behind it would
-// drop a token followed by a character of the token's own alphabet — which,
-// since the span already reaches to the end of the run, is every token with
-// anything written against it.
+// a word character, as BUILDKITE_API_TOKEN_bkua_... is. One behind would drop
+// rather than trim as well, and where it were asked decides what it drops.
+// Asked behind the count, it drops the token a letter, a digit or an
+// underscore is written against wherever the count closes on one of those, and
+// the token whose count closes on the hyphen wherever no word character is
+// written against it. Asked behind that run, it drops the token whose body
+// closes on a hyphen and nothing else, since every word character belongs to
+// base64url — so the character standing behind a run is never one, and a
+// boundary is left asking the token's own last character to be one.
 //
 // The scan searches for the k of the opening rather than for the underscore
 // closing a prefix, and the reason is not rarity. A prefix here is bk, a kind

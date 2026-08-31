@@ -133,13 +133,15 @@ func XAIAPIKey() Pattern { return xaiAPIKey }
 // There is no boundary on either side of a match, and here that is a
 // disagreement with three of the four, since trufflehog, kingfisher and
 // betterleaks each write one at both ends where osv-scalibr writes neither. A
-// boundary in front drops rather than trims the match wherever a key is written
-// against a word character, which is what XAI_API_KEY_xai-... is and what a
-// shell writes into a log line. One behind it drops a key followed by a
-// character of the key's own alphabet — which, since the span already reaches
-// to the end of the run, is every key with a letter or a digit written against
-// it. What may stand either side is held back by the character class and the
-// floor alone.
+// boundary in front drops rather than trims the match wherever a key is
+// written against a word character, which is what XAI_API_KEY_xai-... is and
+// what a shell writes into a log line. One behind drops rather than trims as
+// well, and where it were asked decides what it drops. Asked behind the count,
+// it drops the key a letter, a digit or an underscore is written against.
+// Asked behind that run, it drops the key an underscore is written against and
+// nothing else, the underscore being the one word character no body admits.
+// What may stand either side is held back by the character class and the floor
+// alone.
 //
 // A key can be written inside another, which is what the scan resuming a byte
 // past the start of a candidate is for. The three characters in front of the

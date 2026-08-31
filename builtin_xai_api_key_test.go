@@ -208,9 +208,11 @@ func Test_XAIAPIKey_inContext(t *testing.T) {
 func Test_XAIAPIKey_nextToWordCharacters(t *testing.T) {
 	// There is no boundary on either side of a match. A word boundary in front
 	// would drop the whole match rather than trim it wherever a key is written
-	// against a word character, and one behind it would drop every key with a
-	// letter or a digit written against it, since the span already reaches to
-	// the end of the run.
+	// against a word character. One behind would drop rather than trim as well,
+	// and where it were asked decides what it drops. Asked behind the count, it
+	// drops the key a letter, a digit or an underscore is written against. Asked
+	// behind that run, it drops the key an underscore is written against and
+	// nothing else, the underscore being the one word character no body admits.
 	const key = "xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
 	tests := []struct {

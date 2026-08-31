@@ -74,9 +74,12 @@ func StripePublishableKey() Pattern { return stripePublishableKey }
 // differently and nothing would report the disagreement.
 //
 // There is no boundary behind the match, as there is none in the scan beside
-// this one, and for its reason: the span already reaches the end of the run, so
-// a boundary there would drop rather than trim every key with a letter or a
-// digit written against it.
+// this one, and for its reason: one there would drop rather than trim, and
+// where it were asked decides what it drops. Asked behind the count, it drops
+// the key a letter, a digit or an underscore is written against. Asked behind
+// that run, it drops the key an underscore is written against and nothing
+// else, the underscore being the one word character no body admits.
+// Test_StripePublishableKey_reachesTheEndOfTheRun writes both keys out.
 //
 // A key written against a key is located all the same, which is the exemption
 // the byte in front carries here as it does in the scan beside this one, and

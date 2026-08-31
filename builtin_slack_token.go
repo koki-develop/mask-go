@@ -157,9 +157,19 @@ func SlackToken() Pattern { return slackToken }
 // is written inside it; where it is not, a credential written that way is left
 // whole, and nothing has been seen written that way.
 //
-// There is no boundary behind the match, and one there would drop rather than
-// trim a token whose body runs on into the text after it. What may follow is
-// held back by the character classes alone.
+// There is no boundary behind the match. One there would drop rather than
+// trim, and where it were asked decides what it drops. Asked behind the count,
+// it drops the token a letter, a digit or an underscore is written against
+// wherever the count closes on a letter or a digit, and the token whose count
+// closes on the hyphen wherever no word character is written against it. Asked
+// behind that run, what it drops is decided by the characters either side of
+// the end, since a boundary asks for exactly one of them to be a word
+// character: the hyphen a token's parts are separated by is none, and the
+// underscore is the one word character no body admits. So it drops the token
+// an underscore is written against wherever that token closes on a letter or a
+// digit, and the token closing on the hyphen wherever an underscore is not
+// what stands behind it. What may follow is held back by the character classes
+// alone.
 //
 // A token written inside another is still reached, because the separator is
 // neither a letter nor a digit: the second prefix of xoxb-xoxb-... stands

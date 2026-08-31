@@ -119,12 +119,15 @@ func NewRelicUserKey() Pattern { return newRelicUserKey }
 // which, the opening being three letters of the alphabet an issued body is
 // written in, is a candidate inside every other word of prose.
 //
-// There is no boundary on either side of a match. A boundary in front would drop
-// the whole match rather than trim it wherever a key is written against a word
-// character, as NEW_RELIC_API_KEY_NRAK-... is, and one behind it would drop a
-// key followed by a character of the key's own alphabet — which, since the span
-// already reaches to the end of the run, is every key with such a character
-// written against it. The rulesets reading this format ask for \b on both sides.
+// There is no boundary on either side of a match. A boundary in front would
+// drop the whole match rather than trim it wherever a key is written against a
+// word character, as NEW_RELIC_API_KEY_NRAK-... is. One behind would drop
+// rather than trim as well, and where it were asked decides what it drops.
+// Asked behind the count, it drops the key a letter, a digit or an underscore
+// is written against. Asked behind that run, it drops the key a word character
+// that alphabet leaves out is written against — a lowercase letter behind an
+// issued key, a letter past f behind a migrated one, an underscore behind
+// either. The rulesets reading this format ask for \b on both sides.
 //
 // The byte the scan searches the input for is the R of the opening, and the
 // prefix is read back from it. builtin_scan.go says why a scan searches for one

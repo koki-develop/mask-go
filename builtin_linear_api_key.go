@@ -74,10 +74,13 @@ func LinearAPIKey() Pattern { return linearAPIKey }
 //
 // There is no boundary on either side of a match. A boundary in front would
 // drop the whole match rather than trim it wherever a key is written against a
-// word character, as LINEAR_API_KEY_lin_api_... is, and one behind it would
-// drop a key followed by a character of the key's own alphabet — which, since
-// the span already reaches to the end of the run, is every key with a letter
-// or a digit written against it.
+// word character, as LINEAR_API_KEY_lin_api_... is. One behind would drop
+// rather than trim as well, and where it were asked decides what it drops.
+// Asked behind the count, it drops the key a letter, a digit or an underscore
+// is written against. Asked behind that run, it drops the key an underscore is
+// written against and nothing else, the underscore being the one word
+// character no body admits.
+// Test_LinearAPIKey_reachesTheEndOfTheRun writes both keys out.
 //
 // The tightening on offer in front is the one the Slack and Stripe scans take:
 // to ask that no letter and no digit stand before the prefix. That is exactly

@@ -110,10 +110,20 @@ func FlyIOAccessToken() Pattern { return flyIOAccessToken }
 //
 // There is no boundary on either side of a match. A word boundary in front
 // would drop the whole match rather than trim it wherever a token is written
-// against a word character, as FLY_API_TOKEN_fm2_… is, and one behind it would
-// drop a token followed by a character of the token's own alphabet — which,
-// since the span already reaches to the end of the run, is every token with
-// such a character written against it.
+// against a word character, as FLY_API_TOKEN_fm2_… is. One behind would drop
+// rather than trim as well, and where it were asked decides what it drops.
+// Asked behind the count, it drops the token a letter, a digit or an
+// underscore is written against wherever the count closes on a letter or a
+// digit, and the token whose count closes on +, / or the padding wherever no
+// word character is written against it. Asked behind that run, what it drops
+// is decided by the characters either side of the end, since a boundary asks
+// for exactly one of them to be a word character: the + and the / standard
+// base64 holds are neither, nor is the padding, and the underscore is the one
+// word character the alphabet leaves out. So it drops three: the token an
+// underscore is written against wherever that token closes on a letter or a
+// digit, the token closing on + or / wherever an underscore is not what stands
+// behind it, and the padded token wherever no word character stands behind it
+// at all.
 //
 // The byte the scan searches the input for is the underscore closing every
 // prefix, and the label in front of it is read back from there.

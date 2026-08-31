@@ -116,9 +116,12 @@ func StripeWebhookSigningSecret() Pattern { return stripeWebhookSigningSecret }
 // so that it stays a decision on the record.
 //
 // There is no boundary on either side of a match. A boundary behind it would
-// drop rather than trim a secret whose body runs on into the text after it,
-// which the span reaching the end of the run makes every secret with a letter
-// or a digit written against it.
+// drop rather than trim, and where it were asked decides what it drops. Asked
+// behind the count, it drops the secret a letter, a digit or an underscore is
+// written against. Asked behind that run, it drops the secret an underscore is
+// written against and nothing else, the underscore being the one word
+// character no body admits.
+// Test_StripeWebhookSigningSecret_reachesTheEndOfTheRun writes both out.
 //
 // A boundary in front is a demand the Stripe API key scans do make, and it is
 // worth saying why this one does not, because a caller reaching for the vendor
