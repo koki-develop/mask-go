@@ -165,6 +165,12 @@ func LinearPatterns() []Pattern { return []Pattern{linearAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func NeonPatterns() []Pattern { return []Pattern{neonAPIKey} }
 
+// NetlifyPatterns returns every built-in pattern that locates a credential
+// Netlify issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func NetlifyPatterns() []Pattern { return []Pattern{netlifyAuthToken} }
+
 // NewRelicPatterns returns every built-in pattern that locates a credential New
 // Relic issues.
 //
