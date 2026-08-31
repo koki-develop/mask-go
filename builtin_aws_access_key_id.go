@@ -196,9 +196,8 @@ const (
 
 	// The counts an access key ID is written to. Every one AWS shows is
 	// twenty characters, and AWS states no length of its own, so unlike the
-	// GitHub bodies these are exact rather than the shortest seen — on an
-	// observation rather than a specification, which the rationale above
-	// weighs.
+	// GitHub bodies these are exact rather than floors — on an observation
+	// rather than a specification, which the rationale above weighs.
 	awsAccessKeyIDPrefixChars = 4
 	awsAccessKeyIDBodyChars   = 16
 	awsAccessKeyIDChars       = awsAccessKeyIDPrefixChars + awsAccessKeyIDBodyChars

@@ -288,11 +288,11 @@ func Test_LinearAPIKey_nextToWordCharacters(t *testing.T) {
 func Test_LinearAPIKey_reachesTheEndOfTheRun(t *testing.T) {
 	// The far side of reading a floor rather than a count. Where a key ends is
 	// where its alphabet stops, so a letter or a digit written straight against
-	// a key is redacted with it — which is what buys a key of a length nobody
-	// has published being located whole. The alphabet is base62 and not
-	// base64url, so the two characters that separate them, the hyphen and the
-	// underscore, end a key here where they would carry one on in the OpenAI
-	// and Anthropic scans.
+	// a key is redacted with it — which is what buys a key of a length neither
+	// Linear nor a ruleset states being located whole. The alphabet is base62
+	// and not base64url, so the two characters that separate them, the hyphen
+	// and the underscore, end a key here where they would carry one on in the
+	// OpenAI and Anthropic scans.
 	tests := []struct {
 		name string
 		src  string
@@ -512,7 +512,8 @@ func Test_LinearAPIKey_theOtherPrefix(t *testing.T) {
 	// The prefix this pattern does not read, held to being left in the text.
 	// Linear's changelog names lin_oauth_ beside lin_api_ and names nothing
 	// else about it, and builtin_linear_api_key.go weighs reading a body
-	// nobody has published against leaving an OAuth access token whole.
+	// neither Linear nor a ruleset states against leaving an OAuth access
+	// token whole.
 	//
 	// The case is here so that the decision moves with the scan: a body
 	// invented for the second prefix would start locating this, and that is a

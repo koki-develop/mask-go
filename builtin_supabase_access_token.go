@@ -37,11 +37,11 @@ func SupabaseAccessToken() Pattern { return supabaseAccessToken }
 //
 // It is a weaker source than Grafana's generator and a stronger one than an
 // example, and it is worth being exact about which. What mints a token is the
-// platform API, which is not published, so nothing here has seen a token
-// written. What the CLI states instead is what it will accept: every token that
-// reaches the Management API through Supabase's own tooling passes that
-// expression, and a token that did not would be refused by the vendor before it
-// was refused by this scan.
+// platform API, which is not published, so no whole token appears in anything
+// Supabase publishes. What the CLI states instead is what it will accept:
+// every token that reaches the Management API through Supabase's own tooling
+// passes that expression, and a token that did not would be refused by the
+// vendor before it was refused by this scan.
 //
 // The documentation is the second source and agrees. The Management API
 // introduction prints sbp_bdd0 followed by thirty-two bullets and 4f23, which is

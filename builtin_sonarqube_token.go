@@ -45,8 +45,8 @@ func SonarQubeToken() Pattern { return sonarQubeToken }
 //
 // What SonarQube states about the string it states twice. The generator above
 // is the first: it is the vendor's own source, so the prefixes, the count and
-// the alphabet are read off the code that mints a token rather than off the
-// tokens somebody has published. Behind it stands prose — the release notes for
+// the alphabet are read off the code that mints a token rather than off any
+// token SonarQube prints. Behind it stands prose — the release notes for
 // the version that introduced the prefixes say that newly generated tokens
 // carry a brief prefix distinguishing the project (sqp), global analysis (sqa)
 // and legacy or user (squ) types, which names three of the four and no length

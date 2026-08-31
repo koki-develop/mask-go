@@ -246,8 +246,9 @@ var githubTokenPrefixes = func() []string {
 }()
 
 // The literal a fine grained personal access token opens with, and the counts
-// the two token bodies must reach. GitHub documents no length, so these are
-// the shortest bodies seen rather than exact sizes.
+// the two token bodies must reach. GitHub documents no length; gitleaks reads
+// thirty-six characters behind ghp_ and eighty-two behind github_pat_, and
+// these are read as floors rather than as exact sizes.
 const (
 	githubPATPrefix    = "github_pat_"
 	githubPATChars     = 82

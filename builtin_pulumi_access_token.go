@@ -61,21 +61,21 @@ func PulumiAccessToken() Pattern { return pulumiAccessToken }
 // trufflehog's class, which admits every lowercase letter besides. It is
 // declined. Forty hexadecimal characters are twenty bytes written by a
 // hexadecimal encoder, which settles the case once for the whole of its output
-// and is the shape a token of that length ordinarily is, where forty characters
-// of a thirty-six character alphabet is a width nothing announces. The
-// fragments of tokens Pulumi's own pages print are written in hexadecimal as
-// well — pul-d2d2… on the pages configuring a deployment runner,
+// and is the shape a token of that length ordinarily is, where forty
+// characters of a thirty-six character alphabet is a width nothing announces.
+// The fragments of tokens Pulumi's own pages print are written in hexadecimal
+// as well — pul-d2d2… on the pages configuring a deployment runner,
 // pul-fa..REDACTED..fa in the post walking through the REST API and pul-abc123
 // in the post on property search — where the two placeholders beside them,
 // pul-xxx and pul-xxxxxxxx, are written in no alphabet at all. That is
 // suggestive rather than decisive, and it points the same way the two rulesets
-// do. What the wider class would buy is a token nobody has been shown; what it
-// would cost is forty characters of base36 behind a four character prefix,
-// which is a net cast wider than the format any published rule reads.
-// Test_PulumiAccessToken_aBodyPastHexadecimal pins the decision, and
-// Test_PulumiAccessToken_anUppercaseBody pins the other half of the class, so
-// that widening either is a change somebody argues for rather than one somebody
-// notices afterwards.
+// do. What the wider class would buy is a token neither Pulumi nor a ruleset
+// writes; what it would cost is forty characters of base36 behind a four
+// character prefix, which is a net cast wider than the format any published
+// rule reads. Test_PulumiAccessToken_aBodyPastHexadecimal pins the decision,
+// and Test_PulumiAccessToken_anUppercaseBody pins the other half of the class,
+// so that widening either is a change somebody argues for rather than one
+// somebody notices afterwards.
 //
 // The count is read exactly rather than as a floor. A run longer than forty is
 // not one longer token but a token with something written after it, and only

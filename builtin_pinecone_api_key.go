@@ -39,23 +39,22 @@ func PineconeAPIKey() Pattern { return pineconeAPIKey }
 //
 // Both counts are therefore read as floors. A count is read exactly where the
 // vendor wrote the length down or where its own generator does, and Pinecone
-// does neither: sixty-three is what somebody measured on the keys they were
-// shown, and being wrong about it upward costs the end of a key while being
-// wrong about it downward costs the whole of one. Read as a floor, a key with a
-// longer secret is still redacted whole, and the day Pinecone lengthens either
-// part nothing here has to change. That is the reading the Groq scan takes on a
-// prefix its vendor states alone, and it is taken here for that reason.
+// does neither: sixty-three is the count trufflehog's rule reads, and being
+// wrong about it upward costs the end of a key while being wrong about it
+// downward costs the whole of one. Read as a floor, a key with a longer secret
+// is still redacted whole, and the day Pinecone lengthens either part nothing
+// here has to change. That is the reading the Groq scan takes on a prefix its
+// vendor states alone, and it is taken here for that reason.
 //
 // The label's floor is five rather than six, which is the shorter of the two
-// lengths that one rule admits, and no ceiling is read at all. The keys
-// published unaltered carry six characters there — five of them, every one six
-// — so six is what a ceiling would be read off, over a part the vendor names
-// and describes no further. A ceiling wrong by one character locates nothing at
-// all, which is the whole credential rather than the end of one, and what
-// dropping it admits is a longer run of letters and digits standing where a
-// label stands, in front of a separator and sixty-three more. The secret behind
-// it is what makes this format tell itself from text, and that count is
-// untouched.
+// lengths trufflehog's rule admits, and no ceiling is read at all. Six is the
+// longer of the two and is what a ceiling would be read off, over a part the
+// vendor names and describes no further. A ceiling wrong by one character
+// locates nothing at all, which is the whole credential rather than the end of
+// one, and what dropping it admits is a longer run of letters and digits
+// standing where a label stands, in front of a separator and sixty-three more.
+// The secret behind it is what makes this format tell itself from text, and
+// that count is untouched.
 //
 // What the floors cost on the other side is the key cut short of one. A line
 // cut to a column limit partway through a key leaves a prefix, a label and a
@@ -65,15 +64,15 @@ func PineconeAPIKey() Pattern { return pineconeAPIKey }
 // on the record.
 //
 // The pckey_ prefix is read with the same body grammar as pcsk_, and that is a
-// wager worth naming: no published rule reads pckey_, and no key carrying it
-// has been published for its parts to be measured. Pinecone states one shape
-// for both, so the parts are read at the lengths and in the alphabet the keys
-// of the other prefix carry. A wager on a floor is bounded in the
-// direction that matters: if a pckey_ key's parts are longer, the floors still
-// locate it whole, and only a shorter one is missed, which is what leaving the
-// prefix out would do to every one of them. Against that stands the format
-// Pinecone says new keys are issued in going unread.
-// Test_PineconeAPIKey_theNewPrefix drives both prefixes through the same body.
+// wager worth naming: no published rule reads pckey_, and Pinecone writes no
+// whole key carrying it. Pinecone states one shape for both, so the parts are
+// read at the lengths and in the alphabet the keys of the other prefix carry.
+// A wager on a floor is bounded in the direction that matters: if a pckey_
+// key's parts are longer, the floors still locate it whole, and only a shorter
+// one is missed, which is what leaving the prefix out would do to every one of
+// them. Against that stands the format Pinecone says new keys are issued in
+// going unread. Test_PineconeAPIKey_theNewPrefix drives both prefixes through
+// the same body.
 //
 // What the label is made of is the part of that wager the floors do not bound,
 // since Pinecone states nothing about it at all: not a length, not an alphabet,
@@ -256,10 +255,10 @@ var pineconeAPIKey = NewPattern("pinecone-api-key", func(src string) ([]Span, in
 })
 
 // pineconeAPIKeyPrefixes is what a candidate opens with, one entry per prefix
-// Pinecone writes a key with: pcsk_, which every key published unaltered
-// carries, and pckey_, which the Admin API reference states new keys are issued
-// with. They agree on their first two characters and part at the third, so at
-// most one of them stands at any position.
+// Pinecone writes a key with: pcsk_, which its CLI reference writes a key with
+// and which trufflehog's rule reads, and pckey_, which the Admin API reference
+// states new keys are issued with. They agree on their first two characters
+// and part at the third, so at most one of them stands at any position.
 //
 // It is one table, read by the scan and by the tail below, so there is nothing
 // here for a second list to come to disagree with.

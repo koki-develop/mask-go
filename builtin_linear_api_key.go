@@ -149,7 +149,7 @@ func LinearAPIKey() Pattern { return linearAPIKey }
 // The other credential that changelog names is not read, and what stops it is
 // that the entry is the only thing naming it. lin_oauth_ is stated as a prefix
 // and nothing states what stands behind one: neither ruleset above carries a
-// rule for it, no example of such a token has been published, and Linear's own
+// rule for it, Linear writes no such token down, and Linear's own
 // OAuth page still prints its example access token as sixty-four hexadecimal
 // characters with no prefix at all — which is the format the changelog says was
 // replaced. So the one thing a scan needs that an anchor does not give it, what

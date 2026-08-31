@@ -452,10 +452,10 @@ func Test_OryAPIKey_nextToWordCharacters(t *testing.T) {
 func Test_OryAPIKey_reachesTheEndOfTheRun(t *testing.T) {
 	// The far side of reading a floor rather than a count. Where a key ends is
 	// where its alphabet stops, so a letter or a digit written straight against
-	// a key is redacted with it — which is what buys a key of a length nobody
-	// has published being located whole. The alphabet is base62 and not
-	// base64url, so the two characters that separate them, the hyphen and the
-	// underscore, end a key here.
+	// a key is redacted with it — which is what buys a key of a length neither
+	// Ory nor a ruleset states being located whole. The alphabet is base62 and
+	// not base64url, so the two characters that separate them, the hyphen and
+	// the underscore, end a key here.
 	tests := []struct {
 		name string
 		src  string

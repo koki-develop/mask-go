@@ -94,8 +94,8 @@ func GitLabToken() Pattern { return gitLabToken }
 // rather than a count anyone observed. Its design document writes it as
 // <prefix><base64-payload>.<base64-payload-length><crc32>, and
 // Authn::TokenField::Generator::RoutableToken, which emits it, has since put a
-// version between the payload and the rest, so that the two forms in the wild
-// are
+// version between the payload and the rest, so that the two forms that
+// generator has emitted are
 //
 //	glpat-<payload>.<length><crc>
 //	glpat-<payload>.<version>.<length><crc>

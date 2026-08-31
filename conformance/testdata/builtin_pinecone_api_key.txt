@@ -54,12 +54,11 @@ in:       pcsk_012345_0123456789abcdef 123456789abcdef0123456789abcdef0123456789
 out:      pcsk_012345_0123456789abcdef 123456789abcdef0123456789abcdef0123456789abcde
 
 # The label is read in that same alphabet, and Pinecone states nothing about
-# where its characters come from. The keys published unaltered carry six
-# mixed-case letters and digits there, which is the shape of a generated
-# identifier; what the vendor's own word leaves open is a label derived from the
-# name a key was created under, and the names Pinecone's guides write are
-# hyphenated. These two are what that reading would cost — a key located
-# nowhere rather than in part.
+# where its characters come from. The one rule that reads this format reads
+# letters and digits there; what the vendor's own word leaves open is a label
+# derived from the name a key was created under, and the names Pinecone's guides
+# write are hyphenated. These two are what that reading would cost — a key
+# located nowhere rather than in part.
 
 case:     a hyphenated label
 in:       pcsk_example-api-key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde

@@ -86,10 +86,10 @@ func FlyIOAccessToken() Pattern { return flyIOAccessToken }
 // bytes are sixty-four base64 characters, and that is the floor. It cannot be
 // too high: every token carries the MessagePack framing, the location and the
 // key identifier besides, so a real one is half as long again at least. Reading
-// the floor at what a token cannot undercut, rather than at what the tokens
-// anybody has published measure, is what keeps a count from being wrong about
-// the shortest token Fly.io ever writes — and a count that is wrong there costs
-// the whole credential rather than the end of one.
+// the floor at what a token cannot undercut, rather than at the length of a
+// token Fly.io or a ruleset writes, is what keeps a count from being wrong
+// about the shortest token Fly.io ever writes — and a count that is wrong
+// there costs the whole credential rather than the end of one.
 //
 // What the floor costs on the other side is the token cut short of it: a line
 // cut to a column limit partway through one leaves a label and a body too short

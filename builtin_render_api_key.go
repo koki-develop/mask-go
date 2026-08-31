@@ -52,8 +52,8 @@ func RenderAPIKey() Pattern { return renderAPIKey }
 // The floor fails downward in silence. Were a real body shorter than
 // twenty-eight, nothing here would be located, every case would pass and the
 // corpus could not report it either, since its keys are built to the floor and
-// move with it. What would move the number down is a key shorter than that,
-// written somewhere it can be counted.
+// move with it. What would move the number down is a shorter key written into
+// what Render publishes, or a rule that reads one.
 //
 // What the floor costs when it is right is the key cut short of it. A line cut
 // to a column limit partway through one leaves a prefix and a body too short to

@@ -371,7 +371,7 @@ func Test_StripeSecretKey_reachesTheEndOfTheRun(t *testing.T) {
 	// where its alphabet stops, so ordinary punctuation ends one and nothing
 	// written after it joins it — but a letter or a digit written straight
 	// against a key is redacted with the key, which is what buys a key of a
-	// length nobody has published being located whole.
+	// length neither Stripe nor a ruleset states being located whole.
 	//
 	// The alphabet is narrower than the Anthropic and OpenAI ones in the way
 	// that matters most here: neither the underscore nor the hyphen is in it,

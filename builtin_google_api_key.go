@@ -182,8 +182,8 @@ const (
 
 	// The counts a key is written to. Every key Google shows is thirty-nine
 	// characters and Google states no length of its own, so these are exact
-	// rather than the shortest seen — on an observation rather than a
-	// specification, which the rationale above weighs.
+	// rather than floors — on an observation rather than a specification,
+	// which the rationale above weighs.
 	googleAPIKeyBodyChars = 35
 	googleAPIKeyChars     = len(googleAPIKeyPrefix) + googleAPIKeyBodyChars
 )

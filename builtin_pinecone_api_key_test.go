@@ -390,13 +390,12 @@ func Test_PineconeAPIKey_cutShortOfTheFloor(t *testing.T) {
 }
 
 func Test_PineconeAPIKey_theNewPrefix(t *testing.T) {
-	// The two prefixes read the same body. pcsk_ is what the keys published
-	// unaltered carry and what the one published rule reads; pckey_ is what
-	// Pinecone's Admin API reference states new keys are issued with, and no
-	// key carrying it has been published for its parts to be measured. Reading
-	// it with the same floors is the wager builtin_pinecone_api_key.go names,
-	// and this is what holds the two prefixes to the same grammar rather than
-	// letting one drift.
+	// The two prefixes read the same body. pcsk_ is what Pinecone's CLI reference
+	// writes a key with and what the one published rule reads; pckey_ is what
+	// Pinecone's Admin API reference states new keys are issued with, and
+	// Pinecone writes no whole key carrying it. Reading it with the same floors
+	// is the wager builtin_pinecone_api_key.go names, and this is what holds the
+	// two prefixes to the same grammar rather than letting one drift.
 	body := "012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde"
 
 	for _, prefix := range []string{"pcsk_", "pckey_"} {

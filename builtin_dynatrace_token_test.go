@@ -58,8 +58,9 @@ func Test_DynatraceToken(t *testing.T) {
 			// What reading the letter and the digits rather than a table of
 			// prefixes buys, and what it costs. The prefix Dynatrace's OAuth
 			// page prints stands nowhere in the table its token page keeps, and
-			// is located here; so is a prefix nobody has published, which is the
-			// same wager the vendor's own expression makes.
+			// is located here; so is a prefix neither Dynatrace nor a ruleset
+			// states, which is the same wager the vendor's own expression
+			// makes.
 			name: "a prefix the published table does not list",
 			src:  "dt0s17.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
 			want: []Span{{0, 96}},

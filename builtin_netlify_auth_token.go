@@ -33,8 +33,8 @@ func NetlifyAuthToken() Pattern { return netlifyAuthToken }
 // rulesets that carry this format write the underscore, those of them that
 // state a count state thirty-six, and the two together come to the forty
 // Netlify published. That is observation agreeing with a published length and
-// not a division Netlify has stated, and a token seen without the underscore
-// is what would send it back.
+// not a division Netlify has stated, and a token Netlify or a ruleset writes
+// without the underscore is what would send it back.
 //
 // The alphabet is base62, isBase62Byte in builtin_scan.go: the letters of both
 // cases and the digits, and neither the hyphen nor the underscore base64url

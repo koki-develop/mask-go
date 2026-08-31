@@ -79,11 +79,11 @@ func DigitalOceanToken() Pattern { return digitalOceanToken }
 // DigitalOcean System Token beside the three above. DigitalOcean documents no
 // such credential, its announcement does not name it, and no published ruleset
 // reads one, so there is no prefix to write and nothing to read behind it. A
-// kind guessed at would be a candidate opened on text nobody has ever seen; a
-// kind stated is a one character change to isDigitalOceanTokenKind below on the
-// day the format is published.
-// Test_DigitalOceanToken_aKindDigitalOceanNamesNoPrefixFor pins the decision so
-// that reading one is a change somebody argues for.
+// kind guessed at would be a candidate opened on text neither DigitalOcean nor
+// a ruleset writes; a kind stated is a one character change to
+// isDigitalOceanTokenKind below on the day the format is published.
+// Test_DigitalOceanToken_aKindDigitalOceanNamesNoPrefixFor pins the decision
+// so that reading one is a change somebody argues for.
 //
 // The count is read exactly rather than as a floor, for the reason the AWS,
 // GitLab and Google scans give: a run of the alphabet longer than the count is
