@@ -207,6 +207,12 @@ func OpenAIPatterns() []Pattern { return []Pattern{openAIAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func OpenRouterPatterns() []Pattern { return []Pattern{openRouterAPIKey} }
 
+// OryPatterns returns every built-in pattern that locates a credential Ory
+// issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func OryPatterns() []Pattern { return []Pattern{oryAPIKey} }
+
 // PaddlePatterns returns every built-in pattern that locates a credential
 // Paddle issues.
 //

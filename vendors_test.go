@@ -59,6 +59,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"OnePasswordPatterns":  OnePasswordPatterns,
 	"OpenAIPatterns":       OpenAIPatterns,
 	"OpenRouterPatterns":   OpenRouterPatterns,
+	"OryPatterns":          OryPatterns,
 	"PaddlePatterns":       PaddlePatterns,
 	"PineconePatterns":     PineconePatterns,
 	"PlanetScalePatterns":  PlanetScalePatterns,

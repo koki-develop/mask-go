@@ -578,6 +578,19 @@ var builtinPatterns = []struct {
 		benchmarks: openRouterAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "ory-api-key",
+		pattern: OryAPIKey,
+		ref:     referenceOryAPIKeyFind,
+		samples: []string{
+			"ORY_API_KEY=ory_pat_0123456789abcdef0123456789abcdef",
+			"ory_apikey_0123456789ABCDEF0123456789ABCDEF",
+			"ory_wak_0123456789abcdef0123456789abcdef0",
+			"ory_pat_0123456789abcdef0123456789abcdefory_pat_0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"ory_pat_0123", "ory_apikey_0123", "ory_wak_0123"},
+		benchmarks: oryAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "paddle-api-key",
 		pattern: PaddleAPIKey,
 		ref:     referencePaddleAPIKeyFind,
