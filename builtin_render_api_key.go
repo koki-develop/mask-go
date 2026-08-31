@@ -33,22 +33,21 @@ func RenderAPIKey() Pattern { return renderAPIKey }
 // Render rule at all, so there is nothing to weigh it against and nothing that
 // disagrees with it.
 //
-// The one place Render shows a whole key is the dialog its documentation
-// screenshots, where the key is displayed in full the once and the screenshot
-// blurs the body over. A blur is no byte-for-byte mask and states no count. It
-// does say something all the same: the blurred run measures about thirty
-// characters against the pitch of the monospaced rnd_ still legible in front of
-// it, which is wider than the twenty-eight the rule reads and not narrower.
+// That count is read as a floor. A count is read exactly where the vendor wrote
+// the length down, or where it is most of what tells a value from the text
+// around it; Render wrote no length anywhere, and the four characters of the
+// prefix have already done the telling, so reading twenty-eight exactly would
+// buy a discrimination the prefix does not need. What it would cost is the day
+// Render lengthens the random part, and it would cost the whole key rather than
+// the end of one: the rule reads its twenty-eight with a delimiter behind them,
+// so a body of thirty answers neither the count nor the delimiter, and a scan
+// asking exactly would locate nothing at all while every case here passed. Read
+// as a floor, a key of any length at or above twenty-eight is redacted to the
+// end of its run.
 //
-// That is why the count is read as a floor. Read exactly, a body of thirty
-// would be no key at all — twenty-eight characters followed by two more is not
-// twenty-eight followed by a delimiter — and this pattern would locate nothing
-// while every test here passed. Read as a floor, a key of any length at or
-// above twenty-eight is redacted to the end of its run, so the two readings of
-// the length cost nothing against each other. Twenty-eight is kept as the floor
-// rather than raised to what the screenshot measures, because a floor set above
-// a real body is a credential left in the log and a blurred rectangle is no
-// place to measure one from.
+// Twenty-eight is neither raised nor lowered from what the one rule reads,
+// which is the only length anything states. Lowering it would widen the net
+// with nothing asking for the width.
 //
 // The floor fails downward in silence. Were a real body shorter than
 // twenty-eight, nothing here would be located, every case would pass and the

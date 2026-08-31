@@ -32,15 +32,30 @@ func ShippoAPIToken() Pattern { return shippoAPIToken }
 // nothing more of a token than that it opens with shippo_, which is where the
 // library decides whether to send it as one.
 //
-// So everything behind the prefixes is read off the rulesets, and three of them
+// So everything behind the prefixes is read off the rulesets, and five of them
 // carry this format at one shape: gitleaks reads shippo_live_ or shippo_test_
 // and exactly forty hexadecimal characters of either case, betterleaks reads
-// the same expression with an entropy floor beside it, and trufflehog reads the
-// same forty in lowercase alone. GitHub's secret scanning lists the credential
-// twice, as Shippo Live API Token and Shippo Test API Token, and GitLab lists
-// both as well; each publishes what it detects rather than the expression it
-// detects with, so they corroborate that live and test are the two kinds and
-// add nothing to the count.
+// the same expression with an entropy floor beside it, and trufflehog, trivy
+// and Vulnetix read the same forty in lowercase alone. GitHub's secret scanning
+// lists the credential twice, as Shippo Live API Token and Shippo Test API
+// Token, and GitLab lists both as well; each publishes what it detects rather than the expression it detects
+// with, so they corroborate that live and test are the two kinds and add
+// nothing to the count.
+//
+// Five counts the rulesets that state the format, not the rules they state it
+// in: Vulnetix states it as two, one to a prefix, and kingfisher states it
+// under betterleaks' own name rather than writing one of its own, which is why
+// it is carried below rather than counted here.
+//
+// Nor is it a count of readings taken apart from one another, and that
+// difference is worth naming, because a floor read off agreeing sources is only
+// as strong as the number of sources that looked. Some of these plainly descend: betterleaks
+// writes gitleaks' expression with a delimiter behind it and gitleaks'
+// description word for word, trivy writes gitleaks' rule id, kingfisher ships
+// betterleaks' rule, and Vulnetix generates its two out of a catalog it keeps
+// rather than writing them against tokens. For trufflehog nothing here shows
+// where the forty came from, and where the number was first read off a token is
+// published by none of them.
 //
 // That count is read as a floor. A count is read exactly where the vendor wrote
 // the length down, or where it is most of what tells a value from the text
@@ -65,7 +80,7 @@ func ShippoAPIToken() Pattern { return shippoAPIToken }
 // pins that.
 //
 // The body is read in hexadecimal of either case, which is the reading two of
-// the three rules take and the one that fails safely. Reading lowercase alone
+// the five rulesets take and the one that fails safely. Reading lowercase alone
 // would not trim a token carrying an uppercase letter but lose it: the body
 // would end at that letter, fall short of forty, and the whole credential would
 // stay in the output. The wider class costs the uppercase digest written behind
@@ -76,8 +91,8 @@ func ShippoAPIToken() Pattern { return shippoAPIToken }
 // hexadecimal behind these prefixes, so a wider class would rest on nothing.
 // What that wagers is a token whose body carried a letter past f — the body
 // would end at that letter, fall short of the floor, and nothing at all would
-// be located — and what bounds the wager is the three rules agreeing on the
-// class and parting only over its case.
+// be located — and what bounds the wager is every rule that reads this format
+// agreeing on the class and parting only over its case.
 //
 // The mode is what stands between the opening and the body, and this scan reads
 // the two names Shippo writes rather than reading that there is a name at all.
