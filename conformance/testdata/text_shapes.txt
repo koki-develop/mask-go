@@ -109,8 +109,8 @@ in:       branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
 out:      branch xapp-4f3d2c1b0a9e8d7c6b5a49382716f5e4c3b2a190
 
 case:     a password is not one of the kinds this library knows
-in:       password=hunter2
-out:      password=hunter2
+in:       password=0123456789abcdef
+out:      password=0123456789abcdef
 
 # More of the shapes a credential arrives in, and more of the kinds this
 # library leaves alone.

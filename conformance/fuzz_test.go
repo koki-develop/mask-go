@@ -40,7 +40,7 @@ func FuzzMask_customPatterns(f *testing.F) {
 		mask.AllBuiltinPatterns(),
 		mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`),
 		mask.MustRegexp("user-id", `user_id=(?P<mask>\d+)`),
-		substringPattern("shared-secret", "s3cr3t-value"),
+		substringPattern("shared-secret", "0123456789abcdef0123456789abcdef"),
 		substringPattern("one-byte", "e"),
 		substringPattern("two-bytes", "ey"),
 	)

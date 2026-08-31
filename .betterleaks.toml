@@ -46,6 +46,41 @@ regexes = [
   '''01234567-89AB-CDEF-0123-456789ABCDEF''',
 ]
 
+# The corpus writes a redaction as the pattern's name between guillemets, and a
+# rule that reads the line around a value reports the marker as the value that
+# stood there: a clone URL writes one where a token goes, a .pypirc where a
+# password goes. What is reported is the library's own output — what says the
+# value was found and taken out — rather than anything anyone wrote.
+#
+# That the marker is output is the notation's doing and not a habit. An `in`
+# field may not carry « or », which conformance/CLAUDE.md states and the corpus
+# reader holds, so the only place either character reaches a file is an `out`
+# line, and the only thing that writes one there is Mask. So this rests on the
+# shape of the value as the entries above do, and the path says which files are
+# written in that notation.
+#
+# It is written to no rule, and that is the point of it. A marker is no value
+# under the rule for a password, none under the rule for a connection URI, and
+# none under a rule the ruleset adds tomorrow; naming the two that report one
+# today would leave the third to be found by whoever hits it.
+#
+# The name between the guillemets is lowercase letters, digits and hyphens,
+# which is the convention Pattern.Name asks for and Test_builtins_name holds the
+# built-ins to. A corpus pattern of the harness's own is under nothing but that
+# example, so a name written outside those characters is reported here — which
+# is the side to fail on.
+#
+# What it gives up is a credential written as a guillemet, a name of those
+# characters and a guillemet, in a corpus file. Every pattern added inherits
+# this, which is what it is for: a built-in arrives with corpus cases whose out
+# lines carry its marker, and none of them is allowed by hand.
+[[allowlists]]
+description = "the marker a redaction is written as, which is the library's output rather than a value"
+condition = "AND"
+paths = ['''conformance/testdata/[^/]+\.txt$''']
+regexTarget = "secret"
+regexes = ['''^«[a-z0-9-]+»$''']
+
 # An age secret key cannot carry the run either, and the reason is the alphabet
 # it is written in rather than anything about where it is written. Bech32 leaves
 # 1 and B out of its character set — the first is the separator that closes the
@@ -121,6 +156,93 @@ targetRules = ["airtable-api-key"]
 paths = ['''(^|/)vendors_test\.go$''']
 regexTarget = "match"
 regexes = ['''AnthropicPatterns''']
+
+# The rule for a hardcoded password reads what stands between the quotes behind
+# the key, and one line of builtin_pypi_api_token_test.go writes a Go expression
+# where that string would go. A benchmark builds a .pypirc line by joining the
+# key, a variable holding the token and a newline, so the quote the rule opens
+# on is the one closing the first piece and the quote it closes on is the one
+# opening the last. What falls between them is the name of the variable with a
+# concatenation operator written against it on either side.
+#
+# So this is the same kind of thing as the entry above rather than the ones that
+# allow a value: there is no value here at all. What was reported reads as a
+# string only because the quotes either side of it belong to the pieces around
+# it.
+#
+# It is written to the one file for the reason the entry above is written to
+# one. The shape is Go's rather than this file's, so another test joining a line
+# that way would carry it too — and there it is reported again, wherever it has
+# moved to, for whoever wrote it to read.
+#
+# What it gives up is a secret of that exact shape written into this one test: a
+# plus sign, the characters a Go identifier is written with, and a plus sign.
+# Base64 admits the plus sign, so an encoded body fenced by two of them and
+# holding neither the slash nor a leading digit is given up with it.
+[[allowlists]]
+description = "the concatenation around a variable's name in a Go test, which the rule for a hardcoded password reads as one"
+condition = "AND"
+targetRules = ["generic-password"]
+paths = ['''(^|/)builtin_pypi_api_token_test\.go$''']
+regexTarget = "secret"
+regexes = ['''^\+[A-Za-z_][A-Za-z0-9_]*\+$''']
+
+# Three values the corpus once wrote where a key for a password goes, before
+# they were built from the ordered run the entry at the top of this file asks
+# for: hunter2 in text_shapes.txt, s3cr3t-value and something-else in
+# custom_patterns.txt. The files carry the run now and are reported nowhere, and
+# this is about the two commits that wrote them rather than about the files.
+#
+# betterleaks reads the diffs git log gives it rather than the working tree,
+# which is what the depth the workflow checks out is for: a value committed and
+# taken out again is gone from the tree and still in the history. So editing a
+# value settles what is scanned from here on and settles nothing about the
+# commit it was written in, and the commit is the only place these three are
+# still read.
+#
+# So the commits are what this is written to, where every other entry here is
+# written to a shape. A shape is the right key for a value that will be written
+# again — the ordered run is asked for of every corpus case there will ever be —
+# and the wrong one here, because these three strings are finished: the corpus
+# does not write them any more, and an entry allowing them by shape would go on
+# allowing them, so writing hunter2 back into a case tomorrow would pass. Named
+# by commit, it permits nothing going forward at all. A value written into the
+# corpus tomorrow lands in a commit no line here names and is reported as
+# before.
+#
+# The rule, the paths and the three values are asked for beside the commits, so
+# a finding in these same commits that is none of the three is reported as well.
+#
+# What it gives up is a credential that is one of these three strings exactly,
+# added to a corpus file by one of these two commits. Both are in the history of
+# a published module, so what stands in their place is that the two can be read:
+# one lays every corpus field out to a column, the other is the commit the
+# corpus arrived in.
+#
+# The commits are what makes it that narrow, and it is worth knowing how it
+# ends. A SHA names a commit as it stands, so a history rewritten — a rebase, a
+# filter, either of these two amended — leaves both names pointing at nothing.
+# This entry stops applying then, and it stops applying the way the one for
+# vendors_test.go does: nothing here fails, and the three values are reported
+# again, under whatever SHAs they were carried to, for whoever carried them
+# there to read. That is the side to fail on, and it is why the two are written
+# out rather than reached by a range or a date, either of which would follow the
+# values across a rewrite and go on allowing them.
+[[allowlists]]
+description = "the corpus values since rebuilt from the ordered run, in the two commits that wrote them"
+condition = "AND"
+targetRules = ["generic-password"]
+commits = [
+  "0003bd3d3e3fa0ded48ec6bb4ea241dc887d1011",
+  "c14e881dff80198691e72a33ec1da9ee11d29718",
+]
+paths = ['''conformance/testdata/[^/]+\.txt$''']
+regexTarget = "secret"
+regexes = [
+  '''^hunter2$''',
+  '''^s3cr3t-value$''',
+  '''^something-else$''',
+]
 
 # A fuzz corpus cannot be asked for the ordered run either. What is
 # under testdata/fuzz is written by the fuzzer, not by anyone: an input that
