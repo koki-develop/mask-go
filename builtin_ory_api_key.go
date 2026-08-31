@@ -33,15 +33,13 @@ func OryAPIKey() Pattern { return oryAPIKey }
 // The rulesets add nothing, because none of them carries this format at all:
 // gitleaks, trufflehog, kingfisher, noseyparker and betterleaks have no Ory
 // rule between them, and GitHub's list of supported secret scanning patterns
-// names no Ory credential. So everything behind the prefix is read off the keys
-// themselves — the two that have been published whole. Ory's own documentation
-// writes one where a create-identity call and an import-identities call take a
-// bearer token, and a public repository writes another where a client is
-// configured with one. Both carry ory_pat_ and thirty-two characters behind it,
-// both are written in the letters of either case and the digits, and neither
-// holds a hyphen or an underscore.
+// names no Ory credential. So everything behind the prefix is read off the one
+// key Ory writes down whole: the bearer token its create-identity and
+// import-identities calls are shown with. It carries ory_pat_ and thirty-two
+// characters behind it, written in the letters of either case and the digits,
+// with neither a hyphen nor an underscore among them.
 //
-// Two keys are what the count rests on, which is thinner than a ruleset and is
+// One key is what the count rests on, which is thinner than a ruleset and is
 // why the count is read as a floor. A count is read exactly where the vendor
 // wrote the length down or where its own generator does, and Ory does neither.
 // Were Ory to lengthen the random part, a scan asking for thirty-two exactly
@@ -60,21 +58,49 @@ func OryAPIKey() Pattern { return oryAPIKey }
 // be a body, and nothing is located: the random characters in front of the cut
 // stay in the output. Test_OryAPIKey_cutShortOfTheFloor pins that.
 //
-// The two prefixes no whole key has been published under are read with the same
-// body grammar as the one that has, and that is a wager worth naming. Ory
-// states one shape for the API keys it issues and divides them by prefix alone,
-// so ory_apikey_ and ory_wak_ are read at the length and in the alphabet the
-// ory_pat_ keys carry. The wager is bounded in the direction that matters: a
-// longer body is still located whole, and only a shorter one is missed, which
-// is what leaving the two prefixes out would do to every key carrying them.
-// Test_OryAPIKey_theThreePrefixes drives all three through the same body.
+// No whole key has been published under the other two prefixes, so the body
+// they are read with is a wager, and the two do not rest on the same thing. Ory
+// writes a workspace key once, in its guide to the CLI, cut off after six
+// characters: two digits, three lowercase letters and one uppercase. Six
+// characters state no length, and they witness which characters a body may
+// carry rather than which it may not — the exclusion this scan leans on is not
+// among the things they can show. The apikey_ spelling has not even that much,
+// and is read at the length and in the alphabet the pat_ key carries on Ory
+// stating one shape for the API keys it issues and dividing them by prefix
+// alone.
+//
+// The two halves of the wager fail differently, and only one of them fails
+// safely. Read as a floor, the length is bounded in the direction that matters:
+// a longer body is still located whole, and only a shorter one is missed, which
+// is what leaving a prefix out would do to every key carrying it. The alphabet
+// has no such bound. Were a real body to carry a hyphen or an underscore, the
+// body would end there — a first segment short of thirty-two locates nothing
+// and leaves the whole key in the output, and a longer one is located only as
+// far as the break. Test_OryAPIKey_theThreePrefixes drives all three through
+// the same body.
+//
+// The line under the one that writes a workspace key writes a project key as
+// ory_pt_, and that spelling is not read. Ory names the project key's prefixes
+// on the page that states the format and on the page that issues one, and both
+// name ory_pat_ and ory_apikey_; no other page of Ory's carries the shorter
+// spelling and none of the Go source Ory publishes does. So that block is read
+// for what a body is written in and not for what a prefix is.
+//
+// Reading it would cost more than a fourth entry besides. The word would open
+// on the byte pat opens on, where the scan stops at the first word it matches
+// on the strength of the three opening on three different bytes, which
+// Test_oryAPIKeyKinds holds them to. A word sharing a first byte would have to
+// be tried alongside pat rather than instead of it.
+// Test_OryAPIKey_theCLIGuideSpelling pins the spelling as one this scan leaves
+// alone.
 //
 // The alphabet is base62, isBase62Byte in builtin_scan.go: the letters of both
 // cases and the digits, and neither the hyphen nor the underscore base64url
-// adds. That is what both published keys are written in. Leaving the underscore
-// out is doing more work here than an alphabet usually does — it is what ends a
-// body at the next segment of a snake_case name, and it is what makes every
-// body begin where a run begins, which the account of the scan's cost rests on.
+// adds. That is what the key Ory writes down is written in. Leaving the
+// underscore out is doing more work here than an alphabet usually does — it is
+// what ends a body at the next segment of a snake_case name, and it is what
+// makes every body begin where a run begins, which the account of the scan's
+// cost rests on.
 //
 // The prefixes are read in the one case Ory writes them. A prefix is the whole
 // of what tells this format from text, so reading it in either case buys
@@ -279,9 +305,8 @@ const (
 	oryAPIKeyAnchorIndex = len(oryAPIKeyOpening)
 
 	// oryAPIKeyBodyChars is the count a body is held to, read as a floor rather
-	// than exactly. Thirty-two is what both of the keys published whole carry
-	// behind their prefix. The rationale above weighs both the reading and the
-	// number.
+	// than exactly. Thirty-two is what the key Ory writes down carries behind
+	// its prefix. The rationale above weighs both the reading and the number.
 	oryAPIKeyBodyChars = 32
 )
 

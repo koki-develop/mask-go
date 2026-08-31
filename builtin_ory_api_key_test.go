@@ -276,6 +276,54 @@ func Test_OryAPIKey_theThreePrefixes(t *testing.T) {
 	}
 }
 
+func Test_OryAPIKey_theCLIGuideSpelling(t *testing.T) {
+	// Ory names the prefixes a project API key is issued with in two places —
+	// the page on identifiable token formats and the page that issues one — and
+	// both name ory_pat_ and ory_apikey_. One line of its guide to the CLI
+	// writes a project key as ory_pt_ instead. No other page of Ory's carries
+	// that spelling and none of the Go source Ory publishes does, so the scan
+	// reads the two prefixes the format is stated in and leaves the third
+	// alone.
+	//
+	// The spelling is worth a case of its own because it reaches further into
+	// the scan than a word naming no kind does: the p opens pat, which is what
+	// a project key's prefix carries, and the character behind it is the whole
+	// of what tells the two apart.
+	//
+	// The two ways of being wrong about it fail differently, which is what this
+	// case is for. Reading the spelling is caught here: the first case below
+	// stops passing, and Test_oryAPIKeyKinds stops with it, since a fourth word
+	// would open on the byte pat opens on. Leaving out a spelling Ory does
+	// issue keys under is caught by nothing — a prefix no key carries opens no
+	// candidate, so the scan locates nothing, and nothing anywhere fails for a
+	// pattern that located nothing.
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "the spelling the cli guide writes",
+			src:  "ORY_PROJECT_API_KEY=ory_pt_0123456789abcdef0123456789abcdef",
+			want: "ORY_PROJECT_API_KEY=ory_pt_0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "the same body behind the prefix the format is stated in",
+			src:  "ORY_PROJECT_API_KEY=ory_pat_0123456789abcdef0123456789abcdef",
+			want: "ORY_PROJECT_API_KEY=****************************************",
+		},
+	}
+
+	m := New(WithPatterns(OryAPIKey()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_OryAPIKey_theOtherOryPrefixes(t *testing.T) {
 	// The prefixes Ory writes on the credentials that are not API keys, held to
 	// being left in the text. They stand under headings of their own on the
@@ -781,6 +829,9 @@ func FuzzOryAPIKey_matchesReference(f *testing.F) {
 	// is the case above: it is exactly the thirty-two characters a body is.
 	f.Add("ory_pat_0123456789abcdef01234567")
 	f.Add("key: ory_pat_0123456789abcdef0123456789abcdef01234567")
+	// The spelling one line of Ory's guide to the CLI writes a project key as,
+	// which the scan does not read.
+	f.Add("ory_pt_0123456789abcdef0123456789abcdef")
 	// The prefixes Ory writes on the credentials that are not API keys.
 	f.Add("ory_at_0123456789abcdef0123456789abcdef")
 	f.Add("ory_rt_0123456789abcdef0123456789abcdef")
