@@ -59,16 +59,16 @@ out:      key_live_«key» key_test_«key»
 patterns: func
 
 case:     a pattern built from a function
-in:       password=s3cr3t-value
+in:       password=0123456789abcdef0123456789abcdef
 out:      password=«shared-secret»
 
 case:     a value known only at run time, twice
-in:       first=s3cr3t-value second=s3cr3t-value
+in:       first=0123456789abcdef0123456789abcdef second=0123456789abcdef0123456789abcdef
 out:      first=«shared-secret» second=«shared-secret»
 
 case:     a function that finds nothing
-in:       password=something-else
-out:      password=something-else
+in:       password=0123456789ABCDEF0123456789ABCDEF
+out:      password=0123456789ABCDEF0123456789ABCDEF
 
 patterns: default-and-regexp
 

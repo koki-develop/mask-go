@@ -107,7 +107,7 @@ var customPatternSets = map[string][]mask.Pattern{
 	// A marker written in variants is one alternation with the group named in
 	// each branch, which Go admits and MustRegexp reads all of.
 	"regexp-mask-group-branches": {mask.MustRegexp("key", `key_(?:live_(?P<mask>[0-9a-f]+)|test_(?P<mask>[0-9a-f]+))`)},
-	"func":                       {substringPattern("shared-secret", "s3cr3t-value")},
+	"func":                       {substringPattern("shared-secret", "0123456789abcdef0123456789abcdef")},
 	"default-and-regexp": append(
 		mask.AllBuiltinPatterns(),
 		mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`),
