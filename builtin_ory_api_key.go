@@ -227,12 +227,12 @@ var oryAPIKey = NewPattern("ory-api-key", func(src string) ([]Span, int) {
 			continue
 		}
 
-		// The word naming the kind, and the separator that has to close it. The
-		// three words open on three different bytes, so the comparison here
-		// rejects all but one of them on its first character and at most one of
-		// them can stand at this position — which is why a word that matches
-		// and is not closed by the separator ends the search rather than
-		// letting the next word be tried.
+		// The word naming the kind, and the separator that has to close it. No
+		// word is written inside another from its start, so at most one of them
+		// can stand at this position — which is why a word that matches and is
+		// not closed by the separator ends the search rather than letting the
+		// next word be tried. The three open on three different bytes besides,
+		// which is what rejects all but one of them on its first character.
 		body := -1
 		for _, kind := range oryAPIKeyKinds {
 			if !strings.HasPrefix(src[anchor+1:], kind) {
@@ -285,8 +285,9 @@ var oryAPIKeyPrefixes = func() []string {
 // to tell a prefix from text that merely opens like one and for nothing else.
 //
 // Test_oryAPIKeyKinds holds them to opening on three different bytes, which is
-// what lets the scan stop at the first word it matches, and to being words a
-// prefix can be built from.
+// what rejects all but one of them on a byte, and to being words a prefix can
+// be built from. What lets the scan stop at the first word it matches is the
+// weaker half of that: no word is written inside another from its start.
 var oryAPIKeyKinds = []string{"pat", "apikey", "wak"}
 
 const (
