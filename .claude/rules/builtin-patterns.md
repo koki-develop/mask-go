@@ -52,6 +52,32 @@ So: state the rule and the test that holds it. Where a pattern is unusual, the
 unusual thing is written in that pattern's own file, next to the declaration it
 is about, where the next person to change that declaration is already reading.
 
+## What a grammar may rest on
+
+Two kinds of source settle a grammar, and the two do not carry the same weight.
+
+The first is the vendor's own: its documentation, the SDKs and the CLI it
+publishes, the fixtures those are tested against, and, where it is published,
+the code that issues the credential. The vendor states the prefix and often
+nothing else, while a grammar needs an alphabet and a length as well. Where the
+vendor's own implementation is public, it states them, and that is the vendor
+stating them. Where a vendor's docs mask an example, the width of the mask
+corroborates a count stated elsewhere; on its own it establishes no length,
+since a docs example may elide rather than mask byte for byte.
+
+The second is the public secret-scanning rulesets. What those carry is
+corroboration rather than authority: what someone else observed of the values,
+not what the vendor undertakes to keep issuing. Read the rules themselves rather
+than inferring them from what a ruleset does and does not fire on: a rule may be
+written to an exact length rather than a floor, so a test value of one shape
+misses a rule that exists for another.
+
+Narrow the alphabet or raise the floor on evidence, never on its absence — a
+value cut short is a credential with its tail left in the log. What the alphabet
+and the length rest on goes in the rationale, named: the next person to widen
+either needs to know whether they are reading the vendor's own format or an
+assembly of what a ruleset happened to carry.
+
 ## Weighing one before adding it
 
 `AllBuiltinPatterns` is the whole registry, so a pattern added to `builtins`
