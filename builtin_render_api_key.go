@@ -81,15 +81,15 @@ func RenderAPIKey() Pattern { return renderAPIKey }
 // the count, it drops the key a letter, a digit or an underscore is written
 // against. Asked behind that run, it drops the key an underscore is written
 // against and nothing else, the underscore being the one word character no
-// body admits.
-// Test_RenderAPIKey_reachesTheEndOfTheRun writes both keys out.
+// body admits. Test_RenderAPIKey_reachesTheEndOfTheRun writes both keys out.
 //
 // The tightening on offer in front is the demand that no letter and no digit
 // stand before the prefix. It is declined because it would reject the key
 // written inside another, whose prefix stands against the last letter of the
 // body in front of it. What declining it admits is a name whose segment closes
-// on rnd with a body behind it, and Test_RenderAPIKey_theRandomNamesThatCarryThePrefix
-// pins both that and the ordinary names the floor turns away on its own.
+// on rnd with a body behind it, and
+// Test_RenderAPIKey_theRandomNamesThatCarryThePrefix pins both that and the
+// ordinary names the floor turns away on its own.
 //
 // The byte the scan searches for is the underscore the prefix closes with, and
 // the prefix is read back from it. builtin_scan.go says why a scan searches for

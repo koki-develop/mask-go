@@ -90,15 +90,15 @@ func OnePasswordServiceAccountToken() Pattern { return onePasswordServiceAccount
 // page prints beside it names a throttle secret and a device identifier too, so
 // a token carrying those is longer again.
 //
-// So the floor is about a quarter of the token 1Password prints,
-// which is the room a floor wants — and the room is worth more here than the
-// count would be. A token is long enough that the ordinary way to meet half of
-// one is a log line or a diff cut to a column limit, and every character short
-// of the floor is a token left in the output whole. Two hundred and fifty, the
-// floor gitleaks reads, leaves a line cut at two hundred characters unredacted
-// where this scan redacts it, and what is redacted there is a whole master
-// unlock key. The cases in builtin_1password_service_account_token_test.go pin
-// both sides so that it stays a decision on the record.
+// So the floor is about a quarter of the token 1Password prints, which is the
+// room a floor wants — and the room is worth more here than the count would be.
+// A token is long enough that the ordinary way to meet half of one is a log
+// line or a diff cut to a column limit, and every character short of the floor
+// is a token left in the output whole. Two hundred and fifty, the floor
+// gitleaks reads, leaves a line cut at two hundred characters unredacted where
+// this scan redacts it, and what is redacted there is a whole master unlock
+// key. The cases in builtin_1password_service_account_token_test.go pin both
+// sides so that it stays a decision on the record.
 //
 // There is no boundary on either side of a match. A boundary in front would
 // drop the whole match rather than trim it wherever a token is written against

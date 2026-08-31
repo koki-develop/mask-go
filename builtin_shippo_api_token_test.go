@@ -308,8 +308,7 @@ func Test_ShippoAPIToken_reachesTheEndOfTheRun(t *testing.T) {
 	// is where its alphabet stops, so a hexadecimal character written straight
 	// against a token is redacted with it — which is what buys a token of a
 	// length neither Shippo nor a ruleset states being located whole. A letter
-	// past f, a
-	// hyphen and an underscore end it instead.
+	// past f, a hyphen and an underscore end it instead.
 	tests := []struct {
 		name string
 		src  string

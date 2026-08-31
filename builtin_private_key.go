@@ -209,11 +209,11 @@ func PrivateKey() Pattern { return privateKey }
 // candidate in the line above it, so without the rule each candidate reads to
 // the end of the input and the scan is quadratic — measured at six seconds for
 // a quarter of a mebibyte and fourfold again for every doubling after it, on
-// text no more contrived than a log that quoted a key. Test_privateKey_scanIsLinear
-// drives that input and the others: boundaries crowded against one another,
-// boundaries sharing one long uppercase run, a boundary written inside a header
-// value and inside a line that is no header at all, and a long body with no
-// closing boundary behind it.
+// text no more contrived than a log that quoted a key.
+// Test_privateKey_scanIsLinear drives that input and the others: boundaries
+// crowded against one another, boundaries sharing one long uppercase run, a
+// boundary written inside a header value and inside a line that is no header at
+// all, and a long body with no closing boundary behind it.
 //
 // The scan advances one byte past the start of a candidate whether that
 // candidate became a block or not, which is the default builtin_scan.go sets

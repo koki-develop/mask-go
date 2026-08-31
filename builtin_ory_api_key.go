@@ -131,8 +131,7 @@ func OryAPIKey() Pattern { return oryAPIKey }
 // the count, it drops the key a letter, a digit or an underscore is written
 // against. Asked behind that run, it drops the key an underscore is written
 // against and nothing else, the underscore being the one word character no
-// body admits.
-// Test_OryAPIKey_reachesTheEndOfTheRun writes both keys out.
+// body admits. Test_OryAPIKey_reachesTheEndOfTheRun writes both keys out.
 //
 // The tightening on offer in front is the demand that no letter and no digit
 // stand before the opening. It is declined because it would reject the key

@@ -79,8 +79,8 @@ func LinearAPIKey() Pattern { return linearAPIKey }
 // Asked behind the count, it drops the key a letter, a digit or an underscore
 // is written against. Asked behind that run, it drops the key an underscore is
 // written against and nothing else, the underscore being the one word
-// character no body admits.
-// Test_LinearAPIKey_reachesTheEndOfTheRun writes both keys out.
+// character no body admits. Test_LinearAPIKey_reachesTheEndOfTheRun writes both
+// keys out.
 //
 // The tightening on offer in front is the one the Slack and Stripe scans take:
 // to ask that no letter and no digit stand before the prefix. That is exactly
@@ -149,20 +149,19 @@ func LinearAPIKey() Pattern { return linearAPIKey }
 // The other credential that changelog names is not read, and what stops it is
 // that the entry is the only thing naming it. lin_oauth_ is stated as a prefix
 // and nothing states what stands behind one: neither ruleset above carries a
-// rule for it, Linear writes no such token down, and Linear's own
-// OAuth page still prints its example access token as sixty-four hexadecimal
-// characters with no prefix at all — which is the format the changelog says was
-// replaced. So the one thing a scan needs that an anchor does not give it, what
-// a body looks like, has never been written down for this one. A floor invented
-// for it would be a guess at exactly the part of the grammar that is load
-// bearing here, and being wrong about it locates nothing at all. What declining
-// it costs is an OAuth access token left in the output whole, which is stated
+// rule for it, Linear writes no such token down, and Linear's own OAuth page
+// still prints its example access token as sixty-four hexadecimal characters
+// with no prefix at all — which is the format the changelog says was replaced.
+// So the one thing a scan needs that an anchor does not give it, what a body
+// looks like, has never been written down for this one. A floor invented for it
+// would be a guess at exactly the part of the grammar that is load bearing
+// here, and being wrong about it locates nothing at all. What declining it
+// costs is an OAuth access token left in the output whole, which is stated
 // rather than hidden: Test_LinearAPIKey_theOtherPrefix pins the decision, so
 // that reading the second prefix is a change somebody argues for rather than
-// one somebody notices afterwards. GitHub's secret
-// scanning does list a Linear OAuth access token beside the API key, under the
-// token identifier linear_oauth_access_token, and publishes an expression for
-// neither.
+// one somebody notices afterwards. GitHub's secret scanning does list a Linear
+// OAuth access token beside the API key, under the token identifier
+// linear_oauth_access_token, and publishes an expression for neither.
 //
 // The client secret an OAuth app is configured with is not read either. The one
 // ruleset reading it reads thirty-two hexadecimal characters where the word

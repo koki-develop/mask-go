@@ -28,11 +28,11 @@ func ReplicateAPIToken() Pattern { return replicateAPIToken }
 // What Replicate states about the format is one sentence, and what is unusual
 // about it is that it states a whole count and not only a prefix: an API token
 // is forty characters and always opens with r8_. The HTTP reference states the
-// same count a second way, by printing a token masked to its own length — r8_Hw and thirty-five asterisks, which is
-// forty characters. Neither page says what alphabet the thirty-seven behind the
-// prefix are written in, and neither do the client libraries, which read the
-// token out of the environment and send it as a bearer credential without
-// looking at it.
+// same count a second way, by printing a token masked to its own length — r8_Hw
+// and thirty-five asterisks, which is forty characters. Neither page says what
+// alphabet the thirty-seven behind the prefix are written in, and neither do
+// the client libraries, which read the token out of the environment and send it
+// as a bearer credential without looking at it.
 //
 // So the count below is the vendor's and the alphabet below is not, and the
 // rulesets are where the alphabet comes from. betterleaks reads r8_ and

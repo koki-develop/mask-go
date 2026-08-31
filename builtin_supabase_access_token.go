@@ -23,17 +23,18 @@ func SupabaseAccessToken() Pattern { return supabaseAccessToken }
 // What Supabase states about this format it states in the code that reads it.
 // The CLI is published under MIT and validates a token before any Management API
 // call, against one expression: ^sbp_(oauth_)?[a-f0-9]{40}$. It is written three
-// times in that repository and in two languages — apps/cli/src/next/auth/token.ts,
-// the legacy path beside it at apps/cli/src/legacy/auth/legacy-access-token.ts,
-// and the Go CLI's apps/cli-go/internal/utils/access_token.go — character for
-// character the same in all three, which is a stronger statement than one
-// declaration would be: the expression has survived a rewrite of the tool around
-// it. The unit tests beside the first name each half of it, a token of forty
-// lowercase hexadecimal digits and one with oauth_ in front of them accepted,
-// thirty-nine and forty-one rejected on both forms, uppercase rejected on both,
-// a letter past f rejected, a token with no prefix rejected. So the prefix, the
-// alphabet and the count are read off the vendor's own statement of what a token
-// is rather than off the tokens it produced.
+// times in that repository and in two languages —
+// apps/cli/src/next/auth/token.ts, the legacy path beside it at
+// apps/cli/src/legacy/auth/legacy-access-token.ts, and the Go CLI's
+// apps/cli-go/internal/utils/access_token.go — character for character the same
+// in all three, which is a stronger statement than one declaration would be:
+// the expression has survived a rewrite of the tool around it. The unit tests
+// beside the first name each half of it, a token of forty lowercase hexadecimal
+// digits and one with oauth_ in front of them accepted, thirty-nine and
+// forty-one rejected on both forms, uppercase rejected on both, a letter past f
+// rejected, a token with no prefix rejected. So the prefix, the alphabet and
+// the count are read off the vendor's own statement of what a token is rather
+// than off the tokens it produced.
 //
 // It is a weaker source than Grafana's generator and a stronger one than an
 // example, and it is worth being exact about which. What mints a token is the

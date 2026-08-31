@@ -41,12 +41,12 @@ out:      aws sts get-access-key-info --access-key-id «aws-access-key-id»
 # characters — and the pattern's own file says why that is read as the API's
 # input filter rather than as the format. Twenty is what every access key ID in
 # AWS's documentation is. Unlike the GitHub bodies, which are read as floors,
-# it is used here as a count: nineteen characters are not
-# a key, and twenty-four are a key and four
-# characters that belong to no credential. The second of those is the price of
-# having no boundary behind the match, and the case below is where it is
-# written down — a boundary there would drop this key rather than trim it, and
-# a real key written against an uppercase letter would come through whole.
+# it is used here as a count: nineteen characters are not a key, and twenty-four
+# are a key and four characters that belong to no credential. The second of
+# those is the price of having no boundary behind the match, and the case below
+# is where it is written down — a boundary there would drop this key rather than
+# trim it, and a real key written against an uppercase letter would come through
+# whole.
 
 case:     a body of sixteen characters is a key
 in:       AKIA0123456789ABCDEF

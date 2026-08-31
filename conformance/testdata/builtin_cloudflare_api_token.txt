@@ -76,10 +76,10 @@ out:      cfut_0123456789abcdef_123456789abcdef0123456789abcdef
 
 # The lengths. Forty is what Cloudflare's page on token formats writes, and both
 # forty and eight are what the Credentials and Secrets row of its predefined DLP
-# profiles writes, so neither is read off a value somebody was shown. Both are read as
-# counts and not as floors, which cuts both ways: a body one character short is
-# located nowhere, and a run one character longer is a token with a character
-# written after it.
+# profiles writes, so neither is read off a value somebody was shown. Both are
+# read as counts and not as floors, which cuts both ways: a body one character
+# short is located nowhere, and a run one character longer is a token with a
+# character written after it.
 
 case:     a body of forty-eight characters is a token
 in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdef

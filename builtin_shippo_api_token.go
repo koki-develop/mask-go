@@ -119,8 +119,8 @@ func ShippoAPIToken() Pattern { return shippoAPIToken }
 // Asked behind the count, it drops the token a letter, a digit or an
 // underscore is written against. Asked behind that run, it drops the token a
 // letter past f or an underscore is written against, those being the word
-// characters no body admits.
-// Test_ShippoAPIToken_reachesTheEndOfTheRun writes all three out.
+// characters no body admits. Test_ShippoAPIToken_reachesTheEndOfTheRun writes
+// all three out.
 //
 // The tokens Shippo issued before this format are not read. The release note
 // says existing implementations with old tokens go on working, and no Shippo

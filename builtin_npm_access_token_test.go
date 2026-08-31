@@ -274,10 +274,9 @@ func Test_NPMAccessToken_reachesTheEndOfTheRun(t *testing.T) {
 	// is where its alphabet stops, so a letter or a digit written straight
 	// against a token is redacted with it — which is what buys a token of a
 	// length neither npm nor a ruleset states being located whole. The
-	// alphabet is base62
-	// and not base64url, so the two characters that separate them, the hyphen
-	// and the underscore, end a token here where they would carry one on in the
-	// OpenAI and Anthropic scans.
+	// alphabet is base62 and not base64url, so the two characters that separate
+	// them, the hyphen and the underscore, end a token here where they would carry
+	// one on in the OpenAI and Anthropic scans.
 	tests := []struct {
 		name string
 		src  string

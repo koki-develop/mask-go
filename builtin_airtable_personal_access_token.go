@@ -52,15 +52,16 @@ func AirtablePersonalAccessToken() Pattern { return airtablePersonalAccessToken 
 // counted off examples of this one.
 //
 // The rulesets agree on the whole shape and were written from tokens rather
-// than from either of those. gitleaks reads \b(pat[[:alnum:]]{14}\.[a-f0-9]{64})\b
-// and nothing else; trufflehog reads the same expression behind an airtable
-// keyword and verifies what it finds against the API; kingfisher reads
-// pat[A-Za-z0-9]{14}\.[a-f0-9]{64} under an entropy floor and a demand for two
-// digits, an uppercase letter and a lowercase one. noseyparker reads none of
-// it. Between trufflehog's tests and kingfisher's example four whole tokens are
-// published, and every one of them is eighty-two characters divided the way the
-// three expressions divide it — one of them carrying no digit in its identifier
-// at all, which is a token kingfisher's own demand for two would decline.
+// than from either of those. gitleaks reads
+// \b(pat[[:alnum:]]{14}\.[a-f0-9]{64})\b and nothing else; trufflehog reads the
+// same expression behind an airtable keyword and verifies what it finds against
+// the API; kingfisher reads pat[A-Za-z0-9]{14}\.[a-f0-9]{64} under an entropy
+// floor and a demand for two digits, an uppercase letter and a lowercase one.
+// noseyparker reads none of it. Between trufflehog's tests and kingfisher's
+// example four whole tokens are published, and every one of them is eighty-two
+// characters divided the way the three expressions divide it — one of them
+// carrying no digit in its identifier at all, which is a token kingfisher's own
+// demand for two would decline.
 //
 // Both counts are therefore read exactly, and the vendor's sentence about
 // length is what the decision has to be weighed against rather than what
@@ -86,8 +87,9 @@ func AirtablePersonalAccessToken() Pattern { return airtablePersonalAccessToken 
 // lowercase, the secret carried inside the OAuth access token is lowercase, and
 // lowercase is what a hexadecimal encoder settles once for all of its output
 // rather than a thing a generator varies between tokens. All three rulesets
-// read the lowercase class alone. Test_AirtablePersonalAccessToken_anUppercaseSecret
-// pins the decision so that widening it is a change somebody argues for.
+// read the lowercase class alone.
+// Test_AirtablePersonalAccessToken_anUppercaseSecret pins the decision so that
+// widening it is a change somebody argues for.
 //
 // The byte test for the secret stays in this file rather than joining the
 // shared ones. What is shared in builtin_scan.go is an alphabet a format is
