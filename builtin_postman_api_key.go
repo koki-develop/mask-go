@@ -161,7 +161,7 @@ func PostmanAPIKey() Pattern { return postmanAPIKey }
 // grammar as a regular expression, spelling the prefix, both counts, the
 // hyphen between them and the alphabet again so that the two are changed
 // together, and the fuzz target beside it holds this scan to that expression.
-var postmanAPIKey = NewPattern("postman-api-key", func(src string) ([]Span, int) {
+var postmanAPIKey = newBuiltin("postman-api-key", &postmanAPIKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

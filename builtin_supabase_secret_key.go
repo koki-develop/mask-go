@@ -141,7 +141,7 @@ func SupabaseSecretKey() Pattern { return supabaseSecretKey }
 // the grammar as a regular expression, spelling the prefix, the two counts, the
 // separator and the character class again so that the two are changed together,
 // and the fuzz target beside it holds this scan to that expression.
-var supabaseSecretKey = NewPattern("supabase-secret-key", func(src string) ([]Span, int) {
+var supabaseSecretKey = newBuiltin("supabase-secret-key", &supabaseSecretKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

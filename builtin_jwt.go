@@ -102,7 +102,7 @@ func opensJOSEHeaderAt(src string, i int) (opens, open bool) {
 	return opensJOSEHeader(src[third]), false
 }
 
-var jsonWebToken = NewPattern("jwt", func(src string) ([]Span, int) {
+var jsonWebToken = newBuiltin("jwt", &jwtHeaderTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// A header is a run of base64url characters, and every candidate crowded

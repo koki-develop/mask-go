@@ -90,7 +90,7 @@ func ShopifyAppSecretKey() Pattern { return shopifyAppSecretKey }
 // the character class again — including the half this scan borrows, since a
 // reference sharing a declaration with the scan it checks could not disagree
 // with it and the fuzz target beside it would compare a rule with itself.
-var shopifyAppSecretKey = NewPattern("shopify-app-secret-key", func(src string) ([]Span, int) {
+var shopifyAppSecretKey = newBuiltin("shopify-app-secret-key", &shopifyAppSecretKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

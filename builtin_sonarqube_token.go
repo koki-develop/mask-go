@@ -154,7 +154,7 @@ func SonarQubeToken() Pattern { return sonarQubeToken }
 // repetition is exact, so the machine an engine builds is read once and stops,
 // and every prefix opens with the same two characters for an engine to search
 // the text for.
-var sonarQubeToken = NewPattern("sonarqube-token", func(src string) ([]Span, int) {
+var sonarQubeToken = newBuiltin("sonarqube-token", &sonarQubeTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

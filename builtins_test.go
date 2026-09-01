@@ -1435,6 +1435,138 @@ func Test_builtins_retainSettles(t *testing.T) {
 	}
 }
 
+// checkPrefilter holds p to what declaring its openings claims, on a src whose
+// three-byte pieces turn those openings away: it locates nothing there, and
+// settles exactly where the openings alone leave it. A pattern declaring none
+// is never passed over and there is nothing here to hold it to.
+//
+// It reports whether src was one the openings were turned away on, which is the
+// only kind of input it holds anything on. A caller driving a corpus of its own
+// counts those, since a check that reaches its claim on none of its inputs
+// passes while saying nothing; a target handed one text at a time cannot, since
+// a text every pattern admits is a text this has nothing to say about and no
+// defect at all.
+//
+// The filter is handed in rather than built here, because a caller asking every
+// pattern about one text would otherwise build the same filter once a pattern.
+//
+// It marks itself no helper, alone among the checks here. A corpus of a million
+// inputs asked of every built-in is sixty-five million calls, and t.Helper at
+// that count costs several times the whole of the checking beside it. What a
+// helper buys is the caller's line in a failure, and every failure here names
+// the pattern and writes the input out, so the line it reports instead is the
+// one place either is spelled.
+//
+// It is what Test_builtins_prefilterAgreesWithFind drives over the inputs the
+// registry knows about and FuzzBuiltins_retain over generated text, the way
+// checkRetain is shared between a test and a target.
+func checkPrefilter(t *testing.T, p Pattern, src string, g *grams) bool {
+	b, ok := p.(*builtin)
+	if !ok {
+		return false
+	}
+	if b.tail.possible(g) {
+		return false
+	}
+	spans, retain := b.Find(src)
+	if len(spans) != 0 {
+		t.Errorf("%s: Find(%q) located %v, where its openings are turned away", b.Name(), src, spans)
+	}
+	if want := b.tail.start(src); retain != want {
+		t.Errorf("%s: Find(%q) settled %d, where its openings alone settle %d", b.Name(), src, retain, want)
+	}
+	return true
+}
+
+func Test_builtins_prefilterAgreesWithFind(t *testing.T) {
+	// checkPrefilter above is the claim; this drives it over the inputs the
+	// registry knows about, and it is the whole of what makes a Masker safe to
+	// act on that claim. A scan opening a candidate on something its own
+	// prefixTail does not carry would have its values passed over rather than
+	// redacted, and no other test here would report it: every one of them calls
+	// Find directly.
+	//
+	// Every sample and every anchor the registry knows about is driven against
+	// every pattern, cut at every offset. A pattern is asked about the openings
+	// of the others as well as its own, since what breaks this is text one
+	// pattern's filter admits and another's turns away.
+	var corpus []string
+	for _, b := range builtinPatterns {
+		for _, src := range append(builtinInputs(b.samples), b.anchors...) {
+			for cut := range len(src) + 1 {
+				corpus = append(corpus, src[:cut])
+			}
+		}
+	}
+
+	// The other half of the corpus, and the half a sample cannot be: a piece of
+	// an opening standing at the end of the input with a character behind it
+	// that no prefix of that pattern carries there. It is the one input that
+	// separates what the openings settle from what the scan settles — a scan
+	// reading its opening forward opens a candidate on the piece and is pinned
+	// at it, while the whole prefixes stand nowhere in the text and settle it
+	// further along. Every sample and every anchor is text something was meant
+	// to be located in, so none of them is written that way.
+	//
+	// The pieces are read out of the tails rather than written out here, so
+	// that a prefix added anywhere in the registry is a prefix this asks about.
+	// The characters behind them are a handful that no vendor writes a kind or
+	// a body with, and one of them, the space, closes a word.
+	const lead = "a line of prose, and nothing else at all: "
+	for _, b := range builtinPatterns {
+		s, ok := b.pattern().(*builtin)
+		if !ok {
+			continue
+		}
+		for _, prefix := range s.tail.prefixes {
+			for k := 1; k <= len(prefix); k++ {
+				for _, c := range []string{"0", "z", "Z", "_", "-", ".", " "} {
+					corpus = append(corpus, prefix[:k]+c, lead+prefix[:k]+c)
+				}
+			}
+		}
+	}
+
+	// The corpus is walked once and every pattern asked about each input, the
+	// other way round from the tests beside this one. What decides it is the
+	// filter: it belongs to the input rather than to the pattern, so a pattern
+	// on the outside would have the whole corpus filtered once per pattern.
+	patterns := make([]Pattern, len(builtinPatterns))
+	for i, b := range builtinPatterns {
+		patterns[i] = b.pattern()
+	}
+
+	// Counted rather than assumed: every check passes on an input the openings
+	// admit, by having nothing to say about it. A filter that stopped turning
+	// anything away — a hash widened, a prefix shortened past what one can be
+	// read from — would leave this whole test green over a Masker passing
+	// nothing over. The counts are kept by position rather than by name, since
+	// naming them here is a hash of a string at every input of every pattern.
+	turnedAway := make([]int, len(patterns))
+	for _, src := range corpus {
+		g := newGrams(src)
+		for i, p := range patterns {
+			if checkPrefilter(t, p, src, &g) {
+				turnedAway[i]++
+			}
+		}
+	}
+
+	for i, p := range patterns {
+		// A pattern whose openings are no literal declares none, and one whose
+		// openings are too short to be read declares openings a filter cannot
+		// tell anything about. Neither is ever passed over, so there is
+		// nothing here to hold either to.
+		if filterableTail(p) == nil {
+			continue
+		}
+		if turnedAway[i] == 0 {
+			t.Errorf("%s: its openings were turned away on none of the %d inputs, so nothing was checked of it",
+				p.Name(), len(corpus))
+		}
+	}
+}
+
 func Test_builtins_retainIsNotBeyondTheInput(t *testing.T) {
 	// checkRetain reports this too, but only for a pattern whose samples reach
 	// the offset it got wrong. Every input the registry knows about is driven

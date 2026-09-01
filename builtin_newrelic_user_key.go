@@ -184,7 +184,7 @@ func NewRelicUserKey() Pattern { return newRelicUserKey }
 // grammar as a regular expression, spelling the prefixes, the floor and the two
 // alphabets again so that the two are changed together, and the fuzz target
 // beside it holds this scan to that expression.
-var newRelicUserKey = NewPattern("newrelic-user-key", func(src string) ([]Span, int) {
+var newRelicUserKey = newBuiltin("newrelic-user-key", &newRelicUserKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

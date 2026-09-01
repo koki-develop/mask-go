@@ -34,7 +34,7 @@ func GitHubToken() Pattern { return githubToken }
 // scan locates may hold the start of the next one, so the grammar is tried at
 // every byte rather than resumed past a match, which would step over the token
 // inside it.
-var githubToken = NewPattern("github-token", func(src string) ([]Span, int) {
+var githubToken = newBuiltin("github-token", &githubTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

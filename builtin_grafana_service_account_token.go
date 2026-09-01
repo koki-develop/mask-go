@@ -215,7 +215,7 @@ func GrafanaServiceAccountToken() Pattern { return grafanaServiceAccountToken }
 // expression, spelling the prefix, both counts, the separator and both
 // character classes again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that expression.
-var grafanaServiceAccountToken = NewPattern("grafana-service-account-token", func(src string) ([]Span, int) {
+var grafanaServiceAccountToken = newBuiltin("grafana-service-account-token", &grafanaServiceAccountTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

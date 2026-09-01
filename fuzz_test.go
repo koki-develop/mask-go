@@ -155,7 +155,10 @@ func normalizeCut(src string, cut int) int {
 }
 
 // FuzzBuiltins_retain holds every built-in to what Pattern.Find promises of the
-// offset it reports, on a text and a place to cut it.
+// offset it reports, on a text and a place to cut it, and to what a built-in
+// declaring its openings claims about the same offset — checkPrefilter
+// (builtins_test.go) says what that is. The two are driven together because the
+// text that finds either wrong is the same text.
 //
 // One target for the whole registry rather than one to a pattern, which is what
 // the per-pattern targets beside each scan are for. The inputs that find this
@@ -175,8 +178,10 @@ func FuzzBuiltins_retain(f *testing.F) {
 	patterns := AllBuiltinPatterns()
 	f.Fuzz(func(t *testing.T, src string, cut int) {
 		cut = normalizeCut(src, cut)
+		g := newGrams(src)
 		for _, p := range patterns {
 			checkRetain(t, p, src, cut)
+			checkPrefilter(t, p, src, &g)
 		}
 	})
 }

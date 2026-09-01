@@ -244,7 +244,7 @@ func PrivateKey() Pattern { return privateKey }
 // rather than built on a regular expression, and not by preference: the closing
 // boundary has to name the label the opening one named, which is a back
 // reference, and RE2 has none. Its own comment says so.
-var privateKey = NewPattern("private-key", func(src string) ([]Span, int) {
+var privateKey = newBuiltin("private-key", &privateKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the opening boundary

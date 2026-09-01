@@ -175,7 +175,7 @@ func PostHogPersonalAPIKey() Pattern { return postHogPersonalAPIKey }
 // keeps the grammar as a regular expression, spelling the prefix, the floor and
 // the alphabet again so that the two are changed together, and the fuzz target
 // beside it holds this scan to that expression.
-var postHogPersonalAPIKey = NewPattern("posthog-personal-api-key", func(src string) ([]Span, int) {
+var postHogPersonalAPIKey = newBuiltin("posthog-personal-api-key", &postHogPersonalAPIKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

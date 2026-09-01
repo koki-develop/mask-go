@@ -154,7 +154,7 @@ func HuggingFaceUserAccessToken() Pattern { return huggingFaceUserAccessToken }
 // expression, spelling the prefix, the count and the alphabet again so that the
 // two are changed together, and the fuzz target beside it holds this scan to
 // that expression.
-var huggingFaceUserAccessToken = NewPattern("huggingface-user-access-token", func(src string) ([]Span, int) {
+var huggingFaceUserAccessToken = newBuiltin("huggingface-user-access-token", &huggingFaceUserAccessTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

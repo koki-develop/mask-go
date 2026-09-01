@@ -210,7 +210,7 @@ func CloudflareAPIToken() Pattern { return cloudflareAPIToken }
 // grammar as a regular expression, spelling both prefixes, both counts and both
 // character classes again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that expression.
-var cloudflareAPIToken = NewPattern("cloudflare-api-token", func(src string) ([]Span, int) {
+var cloudflareAPIToken = newBuiltin("cloudflare-api-token", &cloudflareAPITokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

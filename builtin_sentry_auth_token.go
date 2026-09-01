@@ -170,7 +170,7 @@ func SentryAuthToken() Pattern { return sentryAuthToken }
 // grammar again, spelled out at one position, with the prefixes, the counts,
 // the alphabets and the padding rule written afresh so that the two are changed
 // together, and the fuzz target beside it holds this scan to it.
-var sentryAuthToken = NewPattern("sentry-auth-token", func(src string) ([]Span, int) {
+var sentryAuthToken = newBuiltin("sentry-auth-token", &sentryAuthTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

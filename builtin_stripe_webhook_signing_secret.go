@@ -196,7 +196,7 @@ func StripeWebhookSigningSecret() Pattern { return stripeWebhookSigningSecret }
 // expression, spelling the prefix, the floor and the alphabet again so that the
 // two are changed together, and the fuzz target beside it holds this scan to
 // that expression.
-var stripeWebhookSigningSecret = NewPattern("stripe-webhook-signing-secret", func(src string) ([]Span, int) {
+var stripeWebhookSigningSecret = newBuiltin("stripe-webhook-signing-secret", &stripeWebhookSigningSecretTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

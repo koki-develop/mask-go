@@ -190,7 +190,7 @@ func FlyIOAccessToken() Pattern { return flyIOAccessToken }
 // one arithmetic over the two of them together: an expression saying it needs
 // three alternations differing only in where the floor falls, which is three
 // counts to keep right where the walk has one.
-var flyIOAccessToken = NewPattern("fly-io-access-token", func(src string) ([]Span, int) {
+var flyIOAccessToken = newBuiltin("fly-io-access-token", &flyIOAccessTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

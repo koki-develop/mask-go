@@ -189,7 +189,7 @@ func PineconeAPIKey() Pattern { return pineconeAPIKey }
 // separator and the alphabet out so that the two are changed together, and the
 // fuzz target beside it holds this scan to that walk. It is written out rather
 // than built on an expression, and weighs the two where it stands.
-var pineconeAPIKey = NewPattern("pinecone-api-key", func(src string) ([]Span, int) {
+var pineconeAPIKey = newBuiltin("pinecone-api-key", &pineconeAPIKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

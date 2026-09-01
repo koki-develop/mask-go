@@ -405,6 +405,34 @@ be written wide enough to reach the limit.
 `LookBehind` on the text they are driven with, which is the same rule over the
 inputs that exist rather than over the ones a change makes possible.
 
+### Declaring the openings, and when not to
+
+A `Masker` holds many patterns and hands each of them the same text, so it walks
+that text once and turns away the patterns whose openings it cannot hold —
+`grams` in `builtin_scan.go` says how. A pattern turned away is not run at all,
+and what stands in for its answer is what its `prefixTail` alone settles.
+
+Which side of that a pattern is on is a decision made where it is declared.
+`newBuiltin` states the openings, taking the `prefixTail` the scan already
+settles its tail by; `NewPattern` states none and is run over every text.
+
+**Declare the openings only where the tail carries every opening a candidate is
+read back from.** The two must be the same set of literals. A scan that opens a
+candidate on something narrower than a whole prefix — the byte its prefixes
+begin with and an anchor behind it, or an opening it then reads a kind forward
+from — is pinned by candidates its tail knows nothing about, so it settles less
+than its tail does and must be declared with `NewPattern`. A scan doing that
+says so in its own file, beside the declaration, in the terms this section is
+written in.
+
+Getting it wrong is not a slower `Mask`. A pattern whose openings the filter
+turns away on text it can locate a value in is a credential left in the output;
+one whose tail settles further than the scan does releases text the scan meant
+to hold. `Test_builtins_prefilterAgreesWithFind` holds every pattern declaring
+openings to both halves of that, on the samples and anchors of the whole
+registry and on a piece of every declared prefix followed by a character no
+prefix carries there, and `FuzzBuiltins_retain` holds it on generated text.
+
 ## Linearity
 
 `Masker.locate` and every built-in scanner are deliberately linear-time and

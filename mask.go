@@ -30,7 +30,43 @@ import (
 type Masker struct {
 	patterns []Pattern
 	redactor Redactor
+
+	// tails are the openings of the patterns above, one entry apiece and nil
+	// where a pattern states none or states none this can read. locate reads
+	// them to pass over the patterns its input cannot hold an opening of;
+	// grams (builtin_scan.go) says why that is most of them on most text.
+	//
+	// They are gathered here rather than asked of each pattern in the loop
+	// because asking is a type assertion, and a Masker holding the whole
+	// registry would pay one per pattern per call to answer a question that
+	// was settled when it was made.
+	//
+	// It is empty where the Masker holds too few patterns stating openings for
+	// a filter to be worth building, and that emptiness is what locate reads to
+	// build none: a tail must never be read without the filter that answers it,
+	// since an empty filter turns every opening away and would have the pattern
+	// passed over on text it locates values in.
+	tails []*prefixTail
 }
+
+// gramsWorthIt is the least number of patterns stating openings a Masker must
+// hold for it to build a grams filter at all.
+//
+// The filter is one walk of the input, and what it saves is the walks of the
+// patterns it turns away. Those are not the same walk: a scan looks for one
+// byte with strings.Index, which reads a word of the input at a time, where the
+// filter reads three bytes at every byte and hashes them, and the difference
+// between the two is most of an order of magnitude. So a Masker holding a
+// handful of patterns pays more for the filter than the scans it saves, however
+// many of them it turns away, and one holding the registry saves many times it.
+//
+// The number is where the two cross, measured rather than reasoned about:
+// BenchmarkPrefilter_Patterns (benchmark_test.go) times a Masker of each number
+// of such patterns over a line holding no value, with the filter and without
+// it, and this is the smallest number at which the filter wins there — nine is
+// a wash and eight is a loss. A caller reaching for one vendor's accessor is on
+// the near side of it and pays nothing.
+const gramsWorthIt = 10
 
 // New returns a Masker that scans with the patterns given to WithPatterns and
 // redacts what it locates with the redactor given to WithRedactor, which
@@ -45,7 +81,24 @@ func New(opts ...Option) *Masker {
 	if o.redactor == nil {
 		o.redactor = Fill('*')
 	}
-	return &Masker{patterns: o.patterns, redactor: o.redactor}
+	m := &Masker{patterns: o.patterns, redactor: o.redactor}
+	// filterableTail (builtin_scan.go) is what leaves a pattern out of both the
+	// count and the table: openings a filter cannot read are openings it says
+	// yes to whatever the text is, and asking about those is a lookup at every
+	// call for an answer settled here.
+	filterable := 0
+	for _, p := range o.patterns {
+		if filterableTail(p) != nil {
+			filterable++
+		}
+	}
+	if filterable >= gramsWorthIt {
+		m.tails = make([]*prefixTail, len(o.patterns))
+		for i, p := range o.patterns {
+			m.tails[i] = filterableTail(p)
+		}
+	}
+	return m
 }
 
 // Mask returns src with every located value redacted.
@@ -108,6 +161,14 @@ type locations struct {
 // locate returns what every pattern finds in src beginning at or after from,
 // and how far along src they leave settled.
 //
+// Not every pattern is run. A built-in declares the openings its candidates are
+// read back from, and grams (builtin_scan.go) says how one walk of src answers
+// for the whole registry which of those openings src cannot hold. A pattern
+// turned away there locates nothing in src, so what stands in for its answer is
+// where its openings alone leave src settled — which is what its scan would
+// have reported having found nothing, and what
+// Test_builtins_prefilterAgreesWithFind holds every one of them to.
+//
 // What a pattern reports is clamped into src rather than trusted: a Pattern is
 // written by a caller, and one answering past either end would otherwise
 // release text no pattern has read, or hold a stream that nothing will ever
@@ -134,7 +195,30 @@ type locations struct {
 func (m *Masker) locate(src string, from int) locations {
 	var all []located
 	found := locations{retain: len(src)}
+
+	// What the patterns share about src, worked out once. A pattern whose
+	// openings this turns away locates nothing in src, so what is left to ask
+	// of it is where its openings leave the tail settled, which is what its
+	// scan would have answered having found nothing.
+	var g grams
+	if len(m.tails) > 0 {
+		g = newGrams(src)
+	}
+
 	for i, p := range m.patterns {
+		// The bound is what says whether a filter was built at all: a Masker
+		// building none holds no tails, so this is nil at every pattern and
+		// every one of them is handed the text.
+		var t *prefixTail
+		if i < len(m.tails) {
+			t = m.tails[i]
+		}
+		if t != nil && !t.possible(&g) {
+			if r := t.start(src); r < found.retain {
+				found.retain, found.holder = r, p
+			}
+			continue
+		}
 		spans, r := p.Find(src)
 		if r = min(max(r, 0), len(src)); r < found.retain {
 			found.retain, found.holder = r, p

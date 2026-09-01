@@ -162,7 +162,7 @@ func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 // grammar as a regular expression, spelling the prefix, the count and the
 // character class again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that expression.
-var openRouterAPIKey = NewPattern("openrouter-api-key", func(src string) ([]Span, int) {
+var openRouterAPIKey = newBuiltin("openrouter-api-key", &openRouterAPIKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

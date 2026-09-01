@@ -112,6 +112,16 @@ func AWSAccessKeyID() Pattern { return awsAccessKeyID }
 // scan to that expression. The count is written as an exact repetition rather
 // than a floor, which is what keeps the expression cheap enough to fuzz with:
 // an engine reads a machine that wide once and stops.
+//
+// The scan declares no openings to a Masker, which grams (builtin_scan.go) says
+// a built-in does so as to be passed over on text that can hold none of them. A
+// candidate here opens on the byte both prefixes begin with and the anchor two
+// characters behind it rather than on a prefix, so text spelling neither of them
+// — XAI_API is one — opens a candidate all the same, and an input ending inside
+// that candidate is pinned at it. What the prefixes alone settle is further
+// along, so a Masker answering for this scan would release those bytes: no value
+// stands in them, but the bytes are the scan's own to hold and reading a
+// candidate here is cheap enough that they are not worth taking from it.
 var awsAccessKeyID = NewPattern("aws-access-key-id", func(src string) ([]Span, int) {
 	var spans []Span
 

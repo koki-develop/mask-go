@@ -158,7 +158,7 @@ func CloudflareAPIKey() Pattern { return cloudflareAPIKey }
 // grammar as a regular expression, spelling the prefix, both counts and both
 // character classes again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that expression.
-var cloudflareAPIKey = NewPattern("cloudflare-api-key", func(src string) ([]Span, int) {
+var cloudflareAPIKey = newBuiltin("cloudflare-api-key", &cloudflareAPIKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

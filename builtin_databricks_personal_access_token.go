@@ -178,7 +178,7 @@ func DatabricksPersonalAccessToken() Pattern { return databricksPersonalAccessTo
 // regular expression, spelling the prefix, the count, the alphabet and the tail
 // again so that the two are changed together, and the fuzz target beside it
 // holds this scan to that expression.
-var databricksPersonalAccessToken = NewPattern("databricks-personal-access-token", func(src string) ([]Span, int) {
+var databricksPersonalAccessToken = newBuiltin("databricks-personal-access-token", &databricksPersonalAccessTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

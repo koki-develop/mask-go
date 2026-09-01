@@ -163,7 +163,7 @@ func DockerPersonalAccessToken() Pattern { return dockerPersonalAccessToken }
 // scan to that expression. An expression is affordable here: the repetition is
 // exact, so the machine an engine builds is read once and stops, and the nine
 // character literal in front of it is what an engine searches the text for.
-var dockerPersonalAccessToken = NewPattern("docker-personal-access-token", func(src string) ([]Span, int) {
+var dockerPersonalAccessToken = newBuiltin("docker-personal-access-token", &dockerPersonalAccessTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

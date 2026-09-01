@@ -207,7 +207,7 @@ func CratesIOToken() Pattern { return cratesIOToken }
 // an expression, and it says there what settled that: the opening is written in
 // the same alphabet as the body behind it, so every position of a run of that
 // alphabet is a candidate an engine hands the rest of the input to.
-var cratesIOToken = NewPattern("crates-io-token", func(src string) ([]Span, int) {
+var cratesIOToken = newBuiltin("crates-io-token", &cratesIOTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

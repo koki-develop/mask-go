@@ -197,7 +197,7 @@ func SupabaseAccessToken() Pattern { return supabaseAccessToken }
 // expression, spelling the prefix, the marker, the count and the character class
 // again so that the two are changed together, and the fuzz target beside it
 // holds this scan to that expression.
-var supabaseAccessToken = NewPattern("supabase-access-token", func(src string) ([]Span, int) {
+var supabaseAccessToken = newBuiltin("supabase-access-token", &supabaseAccessTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

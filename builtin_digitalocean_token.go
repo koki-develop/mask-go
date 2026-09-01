@@ -222,7 +222,7 @@ func DigitalOceanToken() Pattern { return digitalOceanToken }
 // and the opening is two letters of which the second is written in no body, so
 // a run of the body's alphabet holds no candidate at all and an engine searching
 // for that literal walks its machine almost nowhere.
-var digitalOceanToken = NewPattern("digitalocean-token", func(src string) ([]Span, int) {
+var digitalOceanToken = newBuiltin("digitalocean-token", &digitalOceanTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

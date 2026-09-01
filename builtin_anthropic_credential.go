@@ -192,7 +192,7 @@ func AnthropicCredential() Pattern { return anthropicCredential }
 // same grammar with no cursor in it, spelling the prefix, the kind, the
 // separator, the floor and the alphabet again so that the two are changed
 // together, and the fuzz target beside it holds this scan to that statement.
-var anthropicCredential = NewPattern("anthropic-credential", func(src string) ([]Span, int) {
+var anthropicCredential = newBuiltin("anthropic-credential", &anthropicCredentialTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

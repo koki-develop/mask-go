@@ -204,7 +204,7 @@ func HerokuAPIToken() Pattern { return herokuAPIToken }
 // stops at — and what pays for it is the prefix being five characters, which an
 // engine searches the text for as a literal and finds nowhere in a run that
 // does not spell it.
-var herokuAPIToken = NewPattern("heroku-api-token", func(src string) ([]Span, int) {
+var herokuAPIToken = newBuiltin("heroku-api-token", &herokuAPITokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

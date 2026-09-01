@@ -2,6 +2,7 @@ package mask
 
 import (
 	"io"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -107,27 +108,33 @@ func BenchmarkWriter(b *testing.B) {
 	m := New(WithPatterns(AllBuiltinPatterns()...))
 	for _, bm := range maskerMaskBenchmarks() {
 		b.Run(bm.name, func(b *testing.B) {
-			found := m.locate(bm.src, 0).found
-			if got := len(found); got != bm.spans {
-				b.Fatalf("the line holds %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
-			}
-
-			line := []byte(bm.src + "\n")
-			w := NewWriter(io.Discard, m)
-			defer func() {
-				if err := w.Close(); err != nil {
-					b.Fatalf("Close() = %v", err)
-				}
-			}()
-
-			b.SetBytes(int64(len(line)))
-			b.ReportAllocs()
-			for b.Loop() {
-				if _, err := w.Write(line); err != nil {
-					b.Fatalf("Write() = %v", err)
-				}
-			}
+			benchmarkWrite(b, m, bm)
 		})
+	}
+}
+
+// benchmarkWrite times a Writer over m on one case, holding the case to the
+// redactions it says it holds first, as the bodies below do.
+func benchmarkWrite(b *testing.B, m *Masker, bm benchmarkCase) {
+	found := m.locate(bm.src, 0).found
+	if got := len(found); got != bm.spans {
+		b.Fatalf("the line holds %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
+	}
+
+	line := []byte(bm.src + "\n")
+	w := NewWriter(io.Discard, m)
+	defer func() {
+		if err := w.Close(); err != nil {
+			b.Fatalf("Close() = %v", err)
+		}
+	}()
+
+	b.SetBytes(int64(len(line)))
+	b.ReportAllocs()
+	for b.Loop() {
+		if _, err := w.Write(line); err != nil {
+			b.Fatalf("Write() = %v", err)
+		}
 	}
 }
 
@@ -230,17 +237,22 @@ type benchmarkCase struct {
 // pattern reported them, and BenchmarkMasker_Mask above measures that.
 func benchmarkFind(b *testing.B, find func(string) ([]Span, int), cases []benchmarkCase) {
 	for _, bm := range cases {
-		b.Run(bm.name, func(b *testing.B) {
-			spans, _ := find(bm.src)
-			if got := len(spans); got != bm.spans {
-				b.Fatalf("Find located %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
-			}
-			b.SetBytes(int64(len(bm.src)))
-			b.ReportAllocs()
-			for b.Loop() {
-				_, _ = find(bm.src)
-			}
-		})
+		b.Run(bm.name, func(b *testing.B) { timeFind(b, find, bm) })
+	}
+}
+
+// timeFind is benchmarkFind over one case, without the name: a caller timing
+// one case two ways has named it already, and naming it again leaves the arms
+// under a name written twice.
+func timeFind(b *testing.B, find func(string) ([]Span, int), bm benchmarkCase) {
+	spans, _ := find(bm.src)
+	if got := len(spans); got != bm.spans {
+		b.Fatalf("Find located %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
+	}
+	b.SetBytes(int64(len(bm.src)))
+	b.ReportAllocs()
+	for b.Loop() {
+		_, _ = find(bm.src)
 	}
 }
 
@@ -250,16 +262,150 @@ func benchmarkFind(b *testing.B, find func(string) ([]Span, int), cases []benchm
 // between them located.
 func benchmarkMask(b *testing.B, m *Masker, cases []benchmarkCase) {
 	for _, bm := range cases {
+		b.Run(bm.name, func(b *testing.B) { timeMask(b, m, bm) })
+	}
+}
+
+// timeMask is benchmarkMask over one case, without the name, for the reason
+// timeFind gives.
+func timeMask(b *testing.B, m *Masker, bm benchmarkCase) {
+	found := m.locate(bm.src, 0).found
+	if got := len(found); got != bm.spans {
+		b.Fatalf("Mask redacted %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
+	}
+	b.SetBytes(int64(len(bm.src)))
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = m.Mask(bm.src)
+	}
+}
+
+// What the prefilter is worth, measured with both arrangements of locate in one
+// binary rather than by comparing two runs of it.
+//
+// A Masker holding none of the openings of its patterns hands every pattern the
+// whole of the text, and each of them walks it looking for one byte of what its
+// candidates open with; one holding them walks the text once itself and hands
+// it to almost none of them. The benchmarks below alternate the two at every
+// -count, so that the machine, the code layout and the inputs are the same for
+// both and the ratio is the whole of what is read off them.
+
+// maskerPrefiltered returns a Masker scanning with the patterns of m and
+// redacting with its redactor, reading the openings of those patterns or
+// holding them back whatever their number.
+//
+// It copies m rather than building a Masker of its own, so that a field added
+// to a Masker later comes along and the two arrangements go on differing in the
+// prefilter alone. Whatever their number, because gramsWorthIt is the number
+// under measurement here: New settles it for a caller, and a benchmark asking
+// what it should be settles nothing by asking New.
+func maskerPrefiltered(m *Masker, on bool) *Masker {
+	c := *m
+	c.tails = nil
+	if on {
+		c.tails = make([]*prefixTail, len(m.patterns))
+		for i, p := range m.patterns {
+			c.tails[i] = filterableTail(p)
+		}
+	}
+	return &c
+}
+
+// BenchmarkPrefilter_Mask times the cases BenchmarkMasker_Mask drives with the
+// openings of the patterns read and with them held back.
+func BenchmarkPrefilter_Mask(b *testing.B) {
+	m := New(WithPatterns(AllBuiltinPatterns()...))
+	for _, bm := range maskerMaskBenchmarks() {
 		b.Run(bm.name, func(b *testing.B) {
-			found := m.locate(bm.src, 0).found
-			if got := len(found); got != bm.spans {
-				b.Fatalf("Mask redacted %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
-			}
-			b.SetBytes(int64(len(bm.src)))
-			b.ReportAllocs()
-			for b.Loop() {
-				_ = m.Mask(bm.src)
+			for _, arm := range prefilterArms(m) {
+				b.Run(arm.name, func(b *testing.B) { timeMask(b, arm.masker, bm) })
 			}
 		})
+	}
+}
+
+// BenchmarkPrefilter_Writer times the same cases through a Writer, a line at a
+// time, with the openings read and with them held back.
+func BenchmarkPrefilter_Writer(b *testing.B) {
+	m := New(WithPatterns(AllBuiltinPatterns()...))
+	for _, bm := range maskerMaskBenchmarks() {
+		b.Run(bm.name, func(b *testing.B) {
+			for _, arm := range prefilterArms(m) {
+				b.Run(arm.name, func(b *testing.B) { benchmarkWrite(b, arm.masker, bm) })
+			}
+		})
+	}
+}
+
+// BenchmarkPrefilter_Patterns times a Masker of each size over a line holding
+// no value, with the openings read and with them held back. It is what
+// gramsWorthIt (mask.go) is set from: the filter is one walk of the input
+// whatever the Masker holds, so the size at which the arms cross is the size
+// below which New must not build one.
+//
+// The size counted is the number of patterns stating openings, which is what
+// New counts and what the filter is paid for by. Counting the registry instead
+// would put the crossover at whatever proportion of it happens to state
+// openings, and would move under the constant every time a pattern was added
+// that states none.
+func BenchmarkPrefilter_Patterns(b *testing.B) {
+	var filterable []Pattern
+	for _, p := range AllBuiltinPatterns() {
+		if filterableTail(p) != nil {
+			filterable = append(filterable, p)
+		}
+	}
+	bm := maskerMaskBenchmarks()[0]
+	for _, n := range []int{1, 2, 4, 6, 8, 9, 10, 11, 12, 16, 24, 32, len(filterable)} {
+		m := New(WithPatterns(filterable[:n]...))
+		b.Run(strconv.Itoa(n), func(b *testing.B) {
+			for _, arm := range prefilterArms(m) {
+				b.Run(arm.name, func(b *testing.B) { timeMask(b, arm.masker, bm) })
+			}
+		})
+	}
+}
+
+// prefilterArms are the two arrangements of m the benchmarks above alternate,
+// named for what separates them rather than for which came first, so that a
+// filter changed again leaves the names meaning what they say.
+func prefilterArms(m *Masker) []struct {
+	name   string
+	masker *Masker
+} {
+	return []struct {
+		name   string
+		masker *Masker
+	}{
+		{"unfiltered", maskerPrefiltered(m, false)},
+		{"filtered", maskerPrefiltered(m, true)},
+	}
+}
+
+// Test_maskerPrefiltered holds the two arrangements to masking the same text
+// the same way and settling it at the same offset, so that what the benchmarks
+// compare is one computation done two ways rather than two computations.
+func Test_maskerPrefiltered(t *testing.T) {
+	m := New(WithPatterns(AllBuiltinPatterns()...))
+	filtered, unfiltered := maskerPrefiltered(m, true), maskerPrefiltered(m, false)
+
+	var srcs []string
+	for _, b := range builtinPatterns {
+		srcs = append(srcs, append(builtinInputs(b.samples), b.anchors...)...)
+	}
+	for _, c := range maskerMaskBenchmarks() {
+		srcs = append(srcs, c.src)
+	}
+
+	for _, src := range srcs {
+		for cut := range len(src) + 1 {
+			src := src[:cut]
+			if got, want := filtered.locate(src, 0).retain, unfiltered.locate(src, 0).retain; got != want {
+				t.Errorf("locate(%q) settled %d, where the same patterns unfiltered settle %d", src, got, want)
+			}
+			if got, want := filtered.Mask(src), unfiltered.Mask(src); got != want {
+				t.Errorf("Mask(%q) = %q, where the same patterns unfiltered give %q", src, got, want)
+			}
+		}
 	}
 }

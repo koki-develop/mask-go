@@ -179,7 +179,7 @@ func BuildkiteToken() Pattern { return buildkiteToken }
 // grammar with no cursor in it, spelling the opening, the kinds, the separator,
 // the floor and the alphabet again so that the two are changed together, and the
 // fuzz target beside it holds this scan to that statement.
-var buildkiteToken = NewPattern("buildkite-token", func(src string) ([]Span, int) {
+var buildkiteToken = newBuiltin("buildkite-token", &buildkiteTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

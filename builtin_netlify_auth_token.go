@@ -149,7 +149,7 @@ func NetlifyAuthToken() Pattern { return netlifyAuthToken }
 // grammar as a regular expression, spelling the opening, the kinds, the
 // separator, the floor and the alphabet again so that the two are changed
 // together, and the fuzz target beside it holds this scan to that expression.
-var netlifyAuthToken = NewPattern("netlify-auth-token", func(src string) ([]Span, int) {
+var netlifyAuthToken = newBuiltin("netlify-auth-token", &netlifyAuthTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

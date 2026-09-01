@@ -122,7 +122,7 @@ func GoogleAPIKey() Pattern { return googleAPIKey }
 // this scan to that expression. The count is written as an exact repetition
 // rather than a floor, which is what keeps the expression cheap enough to fuzz
 // with: an engine reads a machine that wide once and stops.
-var googleAPIKey = NewPattern("google-api-key", func(src string) ([]Span, int) {
+var googleAPIKey = newBuiltin("google-api-key", &googleAPIKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the
