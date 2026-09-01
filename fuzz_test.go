@@ -8,9 +8,9 @@ import (
 )
 
 // The fuzzing that belongs to no one pattern: the targets that drive a Masker,
-// and the body the per-pattern targets share. A pattern's own target lives with
-// the pattern, in the builtin_<name>_test.go beside it, so that this file does
-// not grow with every pattern added.
+// and the bodies fuzz targets share, wherever those targets stand. A pattern's
+// own target lives with the pattern, in the builtin_<name>_test.go beside it,
+// so that this file does not grow with every pattern added.
 
 // reportedSpans reads the spans a fuzz input asks the pattern to report: two
 // signed sixteen bit offsets a span, most significant byte first. Anything left
@@ -142,6 +142,18 @@ func fuzzAgainstReference(f *testing.F, find func(string) ([]Span, int), ref fun
 	})
 }
 
+// normalizeCut folds an int a fuzzer handed a target into a place in src, which
+// is what every target taking a cut reads one as. A fuzzer reaching such a
+// target with any int at all would otherwise spend its run on the panic rather
+// than on the grammars.
+//
+// A text of n bytes has n+1 places in it, and an empty text the one place in
+// front of nothing, which is what the arithmetic below returns for it.
+func normalizeCut(src string, cut int) int {
+	n := len(src) + 1
+	return ((cut % n) + n) % n
+}
+
 // FuzzBuiltins_retain holds every built-in to what Pattern.Find promises of the
 // offset it reports, on a text and a place to cut it.
 //
@@ -162,14 +174,7 @@ func FuzzBuiltins_retain(f *testing.F) {
 
 	patterns := AllBuiltinPatterns()
 	f.Fuzz(func(t *testing.T, src string, cut int) {
-		// A cut is a place in src, and a fuzzer reaching this with any int at
-		// all would otherwise spend its run on the panic rather than on the
-		// grammars.
-		if len(src) == 0 {
-			cut = 0
-		} else {
-			cut = ((cut % (len(src) + 1)) + len(src) + 1) % (len(src) + 1)
-		}
+		cut = normalizeCut(src, cut)
 		for _, p := range patterns {
 			checkRetain(t, p, src, cut)
 		}
@@ -192,11 +197,7 @@ func FuzzPatterns_lookBehind(f *testing.F) {
 
 	patterns := append(lookBehindPatterns(), AllBuiltinPatterns()...)
 	f.Fuzz(func(t *testing.T, src string, cut int) {
-		if len(src) == 0 {
-			cut = 0
-		} else {
-			cut = ((cut % (len(src) + 1)) + len(src) + 1) % (len(src) + 1)
-		}
+		cut = normalizeCut(src, cut)
 		for _, p := range patterns {
 			checkLookBehind(t, p, src, cut)
 		}

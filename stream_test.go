@@ -712,11 +712,7 @@ func FuzzWriter_matchesMask(f *testing.F) {
 
 	m := New(WithPatterns(AllBuiltinPatterns()...), WithRedactor(Fixed("[REDACTED]")))
 	f.Fuzz(func(t *testing.T, src string, cut int) {
-		if len(src) == 0 {
-			cut = 0
-		} else {
-			cut = ((cut % (len(src) + 1)) + len(src) + 1) % (len(src) + 1)
-		}
+		cut = normalizeCut(src, cut)
 		want := m.Mask(src)
 		if got := throughWriter(t, m, []string{src[:cut], src[cut:]}); got != want {
 			t.Fatalf("writing %q cut at %d gave %q, Mask gives %q", src, cut, got, want)

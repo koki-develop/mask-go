@@ -22,11 +22,12 @@ the cases it is benchmarked on. `builtins.go` is the registry alone,
 `isBase64URLByte`, `base64URLRunEnd`, `isBase62Byte`, `base62RunEnd`,
 `prefixTail`), `builtins_test.go` holds what every built-in is held to and the
 body the per-pattern linearity tests share, `fuzz_test.go` holds targets driven
-with the whole registry rather than with one pattern, and the body the
-per-pattern targets share, `benchmark_test.go` holds the benchmarks,
-`source_test.go` holds the rules about how this package is written rather than
-about what it computes, read out of the syntax tree, and `readme_test.go` holds
-`README.md`'s counts and its table of accessors to what the package declares.
+with the whole registry rather than with one pattern, and the bodies fuzz
+targets share wherever those targets stand, `benchmark_test.go` holds the
+benchmarks, `source_test.go` holds the rules about how this package is written
+rather than about what it computes, read out of the syntax tree, and
+`readme_test.go` holds `README.md`'s counts and its table of accessors to what
+the package declares.
 `stream.go` and `stream_test.go` are the masking of text arriving a piece at a
 time, which is a `Reader` and a `Writer` over a `Masker` and belongs to none of
 the patterns. `pattern.go` is what a caller implements — `Span`, `LookBehind`,
