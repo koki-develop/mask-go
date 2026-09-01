@@ -531,6 +531,14 @@ func gitLabTokenClassicEnd(k *gitLabTokenKind, src string, body, runEnd int) (in
 // admits — nothing a reader can read is drawn in by the difference, and a scan
 // keyed on hexadecimal alone would lose the token the day an id is rendered any
 // other way.
+//
+// It holds the same characters as isBase62Byte, which is the alphabet a body is
+// written in, and is written apart from it because the two answer different
+// questions: one is what a body may carry, the other is what GitLab's
+// expression admits in a counted field. What the shared alphabet rests on is a
+// run stopping where the next prefix begins, which a partition id read by
+// counting rests on not at all — so narrowing it there would silently narrow
+// what GitLab may write an id with, which is a change nothing would report.
 func isGitLabTokenPartitionByte(c byte) bool {
 	return '0' <= c && c <= '9' || 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z'
 }
