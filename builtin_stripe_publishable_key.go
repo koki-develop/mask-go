@@ -133,7 +133,7 @@ func StripePublishableKey() Pattern { return stripePublishableKey }
 // states the same grammar the plain way, spelling the prefixes, the floor and
 // the two character classes again so that the two are changed together, and the
 // fuzz target beside it holds this scan to that statement.
-var stripePublishableKey = NewPattern("stripe-publishable-key", func(src string) ([]Span, int) {
+var stripePublishableKey = newBuiltin("stripe-publishable-key", &stripePublishableKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

@@ -197,7 +197,7 @@ func GitLabToken() Pattern { return gitLabToken }
 // a hundred and forty thousand executions a second, which is where this
 // package's targets built on a written-out reference run, so the expression is
 // kept.
-var gitLabToken = NewPattern("gitlab-token", func(src string) ([]Span, int) {
+var gitLabToken = newBuiltin("gitlab-token", &gitLabTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

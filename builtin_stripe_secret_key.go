@@ -270,7 +270,7 @@ func StripeSecretKey() Pattern { return stripeSecretKey }
 // same grammar the plain way, spelling the prefixes, the floor and the two
 // character classes again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that statement.
-var stripeSecretKey = NewPattern("stripe-secret-key", func(src string) ([]Span, int) {
+var stripeSecretKey = newBuiltin("stripe-secret-key", &stripeSecretKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

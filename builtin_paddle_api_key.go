@@ -133,7 +133,7 @@ func PaddleAPIKey() Pattern { return paddleAPIKey }
 // builds for a candidate is read once and stops, and what an engine searches
 // the text for is the four character literal in front of the alternation, which
 // no segment can hold — the underscore closing it is written in none of them.
-var paddleAPIKey = NewPattern("paddle-api-key", func(src string) ([]Span, int) {
+var paddleAPIKey = newBuiltin("paddle-api-key", &paddleAPIKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

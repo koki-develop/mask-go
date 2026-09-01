@@ -145,6 +145,17 @@ func DopplerAuthToken() Pattern { return dopplerAuthToken }
 // branch opens on the same three character literal of which the last is written
 // in neither alphabet — so a run of either is a place no search stops, and an
 // engine skips the runs this library is handed most of.
+//
+// The scan declares no openings to a Masker, which grams (builtin_scan.go) says
+// a built-in does so as to be passed over on text that can hold none of them. A
+// candidate here opens on dopplerAuthTokenOpening and reads the kind forward
+// from it, so dp. and a character no kind of this vendor's opens with — dp.0 is
+// one — opens a candidate the input can end inside, and the scan is pinned at
+// it. What the whole prefixes settle is further along, so a Masker answering for
+// this scan would release those bytes: no value stands in them, but the bytes
+// are the scan's own to hold and the opening is three characters, of which the
+// last is written in neither alphabet, so what a line of prose costs this scan
+// is already almost nothing.
 var dopplerAuthToken = NewPattern("doppler-auth-token", func(src string) ([]Span, int) {
 	var spans []Span
 

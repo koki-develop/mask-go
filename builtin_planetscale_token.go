@@ -205,7 +205,7 @@ func PlanetScaleToken() Pattern { return planetScaleToken }
 // what pays for it is the opening being seven characters, which an engine
 // searches the text for as a literal and finds nowhere in a run that does not
 // spell it.
-var planetScaleToken = NewPattern("planetscale-token", func(src string) ([]Span, int) {
+var planetScaleToken = newBuiltin("planetscale-token", &planetScaleTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

@@ -192,7 +192,7 @@ func AirtablePersonalAccessToken() Pattern { return airtablePersonalAccessToken 
 // machine an engine builds is read once and stops, and the opening is a literal
 // an engine searches the text for rather than a class it would have to walk its
 // machine at every byte for.
-var airtablePersonalAccessToken = NewPattern("airtable-personal-access-token", func(src string) ([]Span, int) {
+var airtablePersonalAccessToken = newBuiltin("airtable-personal-access-token", &airtablePersonalAccessTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

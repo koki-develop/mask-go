@@ -162,7 +162,7 @@ func NeonAPIKey() Pattern { return neonAPIKey }
 // alphabet out so that the two are changed together, and the fuzz target beside
 // it holds this scan to that walk. Why it is a walk rather than the expression
 // the grammar states compactly as is written there.
-var neonAPIKey = NewPattern("neon-api-key", func(src string) ([]Span, int) {
+var neonAPIKey = newBuiltin("neon-api-key", &neonAPIKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

@@ -83,7 +83,7 @@ func SupabasePublishableKey() Pattern { return supabasePublishableKey }
 // way, spelling the prefix, the two counts, the separator and the character
 // class again so that the two are changed together, and the fuzz target beside
 // it holds this scan to that statement.
-var supabasePublishableKey = NewPattern("supabase-publishable-key", func(src string) ([]Span, int) {
+var supabasePublishableKey = newBuiltin("supabase-publishable-key", &supabasePublishableKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

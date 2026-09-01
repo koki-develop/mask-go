@@ -212,7 +212,7 @@ func SlackToken() Pattern { return slackToken }
 // implementation of these rules, spelling the prefixes, the count and the
 // character classes again so that the two are changed together, and the fuzz
 // target beside it holds this scan to it.
-var slackToken = NewPattern("slack-token", func(src string) ([]Span, int) {
+var slackToken = newBuiltin("slack-token", &slackTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

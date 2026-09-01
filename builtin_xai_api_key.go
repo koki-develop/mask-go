@@ -220,7 +220,7 @@ func XAIAPIKey() Pattern { return xaiAPIKey }
 // regular expression, spelling the openings, the floor and the alphabet again
 // so that the two are changed together, and the fuzz target beside it holds
 // this scan to that expression.
-var xaiAPIKey = NewPattern("xai-api-key", func(src string) ([]Span, int) {
+var xaiAPIKey = newBuiltin("xai-api-key", &xaiAPIKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

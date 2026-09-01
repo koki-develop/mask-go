@@ -1,5 +1,7 @@
 package mask
 
+import "slices"
+
 // What more than one built-in scan reads. A pattern keeps its own grammar in
 // its own file; only what a second pattern has come to need is moved here, so
 // that a scan borrowing from another is borrowing something named as shared
@@ -201,7 +203,35 @@ type prefixTail struct {
 	// handful out of two hundred and fifty-six, and the last byte of a line of
 	// prose is almost never one of them.
 	bytes [4]uint64
+
+	// opens is two three-byte pieces of each prefix, where they stand in a
+	// grams filter, and it is what lets a Masker pass over this pattern
+	// altogether. A prefix standing in a text has every three-byte piece of
+	// itself standing there, so a text whose filter is missing either piece of
+	// a prefix holds no such prefix, and a text missing a piece of every
+	// prefix leaves the scan reading them nothing to find.
+	//
+	// Two pieces and not one because which end of a prefix is the rare one
+	// differs between them, and the wrong end filters nothing. A prefix opens
+	// on the vendor's own name, which is a word the host names, the paths and
+	// the message around them are written with — git, sec, --- — and it closes
+	// on the separator and whatever is written against it, which prose does
+	// not spell. Neither end is reliably the better one, so both are asked and
+	// the prefix has to carry both.
+	//
+	// It is empty where a prefix shorter than three bytes is among them, and
+	// possible then says yes to everything: two bytes of an opening are a pair
+	// of letters, which an ordinary line is full of, and a filter that turns
+	// nothing away is worse than none at all.
+	opens []gramPair
 }
+
+// gramPair is where the first and the last three bytes of one prefix stand in a
+// grams filter. They are the same piece where the prefix is three bytes long,
+// and the filter is then asked about that piece twice: two reads of the one
+// word, which keeps the table one shape and is cheaper than a second shape to
+// branch on.
+type gramPair struct{ last, first uint32 }
 
 // newPrefixTail returns a prefixTail over prefixes. A scan builds one once,
 // beside its prefixes, rather than at every call.
@@ -212,7 +242,39 @@ func newPrefixTail(prefixes ...string) prefixTail {
 			t.bytes[p[i]>>6] |= 1 << (p[i] & 63)
 		}
 	}
+	t.opens = make([]gramPair, 0, len(prefixes))
+	for _, p := range prefixes {
+		if len(p) < 3 {
+			t.opens = nil
+			break
+		}
+		o := gramPair{
+			last:  gramHash(p[len(p)-3], p[len(p)-2], p[len(p)-1]),
+			first: gramHash(p[0], p[1], p[2]),
+		}
+		if !slices.Contains(t.opens, o) {
+			t.opens = append(t.opens, o)
+		}
+	}
 	return t
+}
+
+// possible reports whether a text whose three-byte pieces are g may hold any of
+// the prefixes, which is what decides whether the scan reading them is run over
+// that text at all. It says yes where it cannot tell, for the reason grams
+// gives: a pattern passed over is a value left in the output.
+func (t *prefixTail) possible(g *grams) bool {
+	for _, o := range t.opens {
+		// The closing piece is asked about first: it is the one carrying the
+		// separator, so it is the one an ordinary line is least likely to
+		// hold, and the prefix it turns away costs a single lookup.
+		if g[o.last>>6]&(1<<(o.last&63)) != 0 && g[o.first>>6]&(1<<(o.first&63)) != 0 {
+			return true
+		}
+	}
+	// An empty table is a pattern this cannot tell anything about, and the
+	// walk above has just as truthfully found nothing in it.
+	return len(t.opens) == 0
 }
 
 // start returns where the longest of the prefixes standing at the end of src
@@ -248,4 +310,125 @@ func (t *prefixTail) walk(src string, last byte) int {
 		}
 	}
 	return start
+}
+
+// builtin is a built-in pattern: the scan, the name it reports and the openings
+// it reads its candidates back from.
+//
+// The openings are here rather than kept to the scan because they are what a
+// Masker needs before it runs the scan: it holds the whole registry, hands
+// every one of them the same text, and grams says how the openings let it hand
+// that text to almost none of them. A pattern says which openings are its own
+// where it is declared, in the prefixTail it already settles the tail of its
+// input by, so the two cannot come apart.
+//
+// A scan whose openings are no literal, or whose tail is settled by a walk
+// rather than by that table, declares itself with NewPattern instead and is run
+// over every text. Test_builtins_prefilterAgreesWithFind (builtins_test.go)
+// holds the ones declared here to what being passed over claims about them.
+type builtin struct {
+	name string
+	tail *prefixTail
+	find func(src string) (spans []Span, retain int)
+}
+
+// filterableTail returns the openings a Masker may pass p over on, and nil
+// where there are none it can read: a pattern that is no built-in, or one whose
+// openings are too short for a filter to tell anything about.
+//
+// It is one function rather than the test written out at each of the places
+// that asks it — a Masker settling whether to build a filter at all, a Masker
+// filling the table it reads, and the benchmarks timing both arrangements. The
+// benchmark is the one that makes it matter: it is what gramsWorthIt is set
+// from, so a condition added here and not there would tune the constant against
+// a Masker New never builds.
+func filterableTail(p Pattern) *prefixTail {
+	b, ok := p.(*builtin)
+	if !ok || len(b.tail.opens) == 0 {
+		return nil
+	}
+	return b.tail
+}
+
+// newBuiltin returns a built-in pattern reporting name, scanning with find and
+// reading its candidates back from the openings of tail.
+func newBuiltin(name string, tail *prefixTail, find func(src string) (spans []Span, retain int)) Pattern {
+	return &builtin{name: name, tail: tail, find: find}
+}
+
+// Name reports the name the pattern was declared with.
+func (p *builtin) Name() string { return p.name }
+
+// Find runs the scan over src.
+func (p *builtin) Find(src string) ([]Span, int) { return p.find(src) }
+
+// gramWords is how wide the filter below is, in words of sixty-four bits. Two
+// thousand and forty-eight bits is a quarter of a kilobyte on the stack of the
+// call that builds it, which is small enough to be zeroed for an input of a
+// single line and wide enough that a line of prose leaves all but a few
+// hundredths of it clear.
+const gramWords = 32
+
+// gramShift is how many bits of a hash a filter of gramWords words reads: the
+// top bits of the product below, which are the ones a multiplication spreads
+// best. The declaration under it holds the two together, since a width changed
+// without the shift beside it leaves most of the filter unreachable or the hash
+// reaching past its end.
+const gramShift = 11
+
+var _ [gramWords * 64]struct{} = [1 << gramShift]struct{}{}
+
+// gramMix is the multiplier the hash below is built on, the odd constant near
+// 2^32 divided by the golden ratio: it spreads three consecutive bytes over the
+// whole width of the word before the top bits of it are read.
+const gramMix = 2654435761
+
+// grams is what a Masker works out once about the text it is about to hand to
+// its patterns: a Bloom filter over every three consecutive bytes of it.
+//
+// What it is for is the cost of a pattern that cannot match. Every scan walks
+// the whole input looking for one byte of what its candidates open with, so a
+// Masker holding the whole registry walks the same line once a pattern — and on
+// an ordinary line of a log almost none of them can match anything, because
+// almost none of the openings a vendor writes a credential with is written
+// there at all. A filter built in one walk answers that for every pattern at
+// once: an opening standing in the text has each of its three-byte pieces
+// standing there too, so an opening whose first three bytes are absent from the
+// filter is absent from the text, and the scan looking for it has nothing to
+// find.
+//
+// The filter answers absence and only absence. Two different pieces of text can
+// set the same bit, so a piece it reports present may be present nowhere, and
+// the pattern asking about it is then scanned as it would have been anyway. A
+// piece it reports absent is absent, which is the direction a redaction rests
+// on: a pattern passed over is a value left in the output, and passing one over
+// wrongly is the one failure this must not have.
+//
+// Three bytes rather than one is what makes it worth building. A single byte of
+// an opening is a letter, and the letters an ordinary line is written with are
+// the letters a vendor names a prefix in; three of them in a row are not, so
+// three is where the filter stops being a coin toss and starts turning nearly
+// the whole registry away.
+type grams [gramWords]uint64
+
+// newGrams returns the filter over every three consecutive bytes of src.
+//
+// The three bytes are read afresh at each position rather than carried along
+// from the position before it. Carrying them makes the loop a chain of shifts
+// each waiting on the one behind it, where three reads at fixed distances wait
+// on nothing and the processor runs as many of them at once as it has room
+// for — and this walk is the one this whole filter has to be cheaper than.
+func newGrams(src string) grams {
+	var g grams
+	for i := 0; i+2 < len(src); i++ {
+		h := gramHash(src[i], src[i+1], src[i+2])
+		g[h>>6] |= 1 << (h & 63)
+	}
+	return g
+}
+
+// gramHash returns where the three bytes a, b and c stand in a grams filter.
+func gramHash(a, b, c byte) uint32 {
+	w := uint32(a)<<16 | uint32(b)<<8 | uint32(c)
+	return (w * gramMix) >> (32 - gramShift)
 }

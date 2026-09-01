@@ -172,7 +172,7 @@ func PulumiAccessToken() Pattern { return pulumiAccessToken }
 // grammar as a regular expression, spelling the prefix, the count and the
 // character class again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that expression.
-var pulumiAccessToken = NewPattern("pulumi-access-token", func(src string) ([]Span, int) {
+var pulumiAccessToken = newBuiltin("pulumi-access-token", &pulumiAccessTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

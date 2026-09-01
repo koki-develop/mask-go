@@ -135,7 +135,7 @@ func OpenAIAPIKey() Pattern { return openAIAPIKey }
 // a regular expression, spelling the prefix, the marker and the alphabet again
 // so that the two are changed together, and the fuzz target beside it holds
 // this scan to that expression.
-var openAIAPIKey = NewPattern("openai-api-key", func(src string) ([]Span, int) {
+var openAIAPIKey = newBuiltin("openai-api-key", &openAIAPIKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

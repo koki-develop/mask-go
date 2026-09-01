@@ -20,12 +20,14 @@ only that scan reads, its behaviour tables, its reference, its fuzz target and
 the cases it is benchmarked on. `builtins.go` is the registry alone,
 `builtin_scan.go` holds what more than one scan reads (`segments`,
 `isBase64URLByte`, `base64URLRunEnd`, `isBase62Byte`, `base62RunEnd`,
-`prefixTail`), `builtins_test.go` holds what every built-in is held to and the
-body the per-pattern linearity tests share, `fuzz_test.go` holds targets driven
-with the whole registry rather than with one pattern, and the bodies fuzz
-targets share wherever those targets stand, `benchmark_test.go` holds the
-benchmarks, `source_test.go` holds the rules about how this package is written
-rather than about what it computes, read out of the syntax tree, and
+`prefixTail`) and what a `Masker` reads of every scan at once — `builtin`, the
+type a built-in is declared with, and the `grams` filter a `Masker` turns most
+of the registry away by — `builtins_test.go` holds what every built-in is held
+to and the body the per-pattern linearity tests share, `fuzz_test.go` holds
+targets driven with the whole registry rather than with one pattern, and the
+bodies fuzz targets share wherever those targets stand, `benchmark_test.go`
+holds the benchmarks, `source_test.go` holds the rules about how this package
+is written rather than about what it computes, read out of the syntax tree, and
 `readme_test.go` holds `README.md`'s counts and its table of accessors to what
 the package declares.
 `stream.go` and `stream_test.go` are the masking of text arriving a piece at a
@@ -89,6 +91,11 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   and that is what a change to a scan is compared against, since a regression in
   one is divided in the first by however many patterns the registry holds.
   `go test -bench Builtins/jwt -benchmem .` runs one of them.
+  The `BenchmarkPrefilter_*` family drives the same cases with the openings of
+  the patterns read and with them held back, both arrangements under one
+  binary, which is how a change to the filter is measured rather than by
+  comparing two runs; `BenchmarkPrefilter_Patterns` is what `gramsWorthIt`
+  (`mask.go`) is set from.
 - `golangci-lint run` — lint (no config file; defaults, which hold nothing to
   formatting).
 - `gofmt -l .` — formatting, reported rather than applied. The pre-commit hook

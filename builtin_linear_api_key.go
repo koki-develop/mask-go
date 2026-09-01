@@ -174,7 +174,7 @@ func LinearAPIKey() Pattern { return linearAPIKey }
 // a regular expression, spelling the prefix, the floor and the alphabet again
 // so that the two are changed together, and the fuzz target beside it holds
 // this scan to that expression.
-var linearAPIKey = NewPattern("linear-api-key", func(src string) ([]Span, int) {
+var linearAPIKey = newBuiltin("linear-api-key", &linearAPIKeyTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

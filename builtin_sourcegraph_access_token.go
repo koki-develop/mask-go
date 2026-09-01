@@ -165,7 +165,7 @@ func SourcegraphAccessToken() Pattern { return sourcegraphAccessToken }
 // identifiers, the counts and the character class again so that the two are
 // changed together, and the fuzz target beside it holds this scan to that
 // expression.
-var sourcegraphAccessToken = NewPattern("sourcegraph-access-token", func(src string) ([]Span, int) {
+var sourcegraphAccessToken = newBuiltin("sourcegraph-access-token", &sourcegraphAccessTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

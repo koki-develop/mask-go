@@ -163,7 +163,7 @@ func DatabricksOAuthClientSecret() Pattern { return databricksOAuthClientSecret 
 // expression, spelling the prefix, the count and the alphabet again so that the
 // two are changed together, and the fuzz target beside it holds this scan to
 // that expression.
-var databricksOAuthClientSecret = NewPattern("databricks-oauth-client-secret", func(src string) ([]Span, int) {
+var databricksOAuthClientSecret = newBuiltin("databricks-oauth-client-secret", &databricksOAuthClientSecretTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of the prefix standing at

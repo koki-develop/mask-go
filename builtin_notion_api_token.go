@@ -235,7 +235,7 @@ func NotionAPIToken() Pattern { return notionAPIToken }
 // beside it holds this scan to that statement. It is written out rather than
 // built on a regular expression, and its own comment says what an alternation
 // of two literals costs an engine and what that cost did to the fuzzing.
-var notionAPIToken = NewPattern("notion-api-token", func(src string) ([]Span, int) {
+var notionAPIToken = newBuiltin("notion-api-token", &notionAPITokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the

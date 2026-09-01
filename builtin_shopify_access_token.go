@@ -193,7 +193,7 @@ func ShopifyAccessToken() Pattern { return shopifyAccessToken }
 // which none is written in a body, so a run of the body's alphabet holds no
 // candidate at all and an engine searching for that literal walks its machine
 // almost nowhere.
-var shopifyAccessToken = NewPattern("shopify-access-token", func(src string) ([]Span, int) {
+var shopifyAccessToken = newBuiltin("shopify-access-token", &shopifyAccessTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the
