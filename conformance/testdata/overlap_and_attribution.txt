@@ -1,8 +1,8 @@
 # How values that overlap are resolved, and which pattern the redaction is
 # attributed to.
 #
-# No built-in pattern states these rules. Two of them do overlap, and one value
-# does contain another — a stateless installation token carries a JWT, and the
+# No built-in pattern states these rules. Built-ins do overlap all the same, and
+# one value does contain another — a stateless installation token carries a JWT, and the
 # signature of a JWT swallows a token written after it — and a case somewhere in
 # the corpus covers one span with two of them, which is the rule reading the
 # order they were added in. TestCorpus_attributionIsExercised counts the cases

@@ -666,6 +666,12 @@ func Test_oryAPIKeyKinds(t *testing.T) {
 	if len(oryAPIKeyKinds) == 0 {
 		t.Fatal("the pattern names no kind, so it locates nothing")
 	}
+
+	// The count builtin_ory_api_key.go states in prose, held here so that a kind
+	// added fails where the sentence naming the number can be found.
+	if got, want := len(oryAPIKeyKinds), 3; got != want {
+		t.Errorf("the table names %d kind(s) and builtin_ory_api_key.go says %d", got, want)
+	}
 	for _, kind := range oryAPIKeyKinds {
 		if kind == "" {
 			t.Fatal("a kind is empty, so its prefix is the opening and the separators alone")

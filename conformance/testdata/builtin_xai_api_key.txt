@@ -7,6 +7,11 @@
 # brings a key to the eighty-four characters the key xAI prints whole is, and
 # the management infix behind that prefix to the ninety osv-scalibr reads a
 # management key at.
+#
+# The cases under the heading about the demands beyond the grammar carry no
+# ordered run at all. A body of eighty zeros and a body of eighty letters are
+# what an entropy floor and a rule asking for two digits would turn away, and
+# the shape of each is the whole of what those cases state.
 
 patterns: xai-api-key
 

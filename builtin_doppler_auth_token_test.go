@@ -605,6 +605,11 @@ func Test_DopplerAuthToken_scanIsLinear(t *testing.T) {
 // characters of one released: builtin_scan.go says what a table free to
 // disagree with the kinds would cost.
 func Test_dopplerAuthTokenPrefixes(t *testing.T) {
+	// The count builtin_doppler_auth_token.go states in prose, held here so that
+	// a kind added fails where the sentence naming the number can be found.
+	if got, want := len(dopplerAuthTokenKinds), 7; got != want {
+		t.Errorf("the table names %d kind(s) and builtin_doppler_auth_token.go says %d", got, want)
+	}
 	if got, want := len(dopplerAuthTokenPrefixes), len(dopplerAuthTokenKinds); got != want {
 		t.Fatalf("the scan carries %d prefix(es) for %d kind(s)", got, want)
 	}

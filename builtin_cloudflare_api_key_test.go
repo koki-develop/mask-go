@@ -375,15 +375,15 @@ func Test_CloudflareAPIKey_checksumIsNotVerified(t *testing.T) {
 }
 
 func Test_CloudflareAPIKey_aDigestBehindThePrefix(t *testing.T) {
-	// The collision every prefix in this package leaves is a digest written
-	// behind it, and this format pays it rather than ruling it out. The
-	// hexadecimal digits are letters and digits, and every character of a digest
-	// is hexadecimal, so a digest satisfies the secret's alphabet and the
-	// checksum's class alike. builtin_cloudflare_api_key.go weighs it: the
-	// vendor's format is a prefix and forty-eight characters whose last eight
-	// are hexadecimal, so a scan declining a digest behind this prefix declines
-	// the keys whose secret is written in the same sixteen characters — which
-	// the keys the rest of this file is built from are.
+	// The collision a prefix invites is a digest written behind it, and this
+	// format pays it rather than ruling it out. The hexadecimal digits are
+	// letters and digits, and every character of a digest is hexadecimal, so a
+	// digest satisfies the secret's alphabet and the checksum's class alike.
+	// builtin_cloudflare_api_key.go weighs it: the vendor's format is a prefix
+	// and forty-eight characters whose last eight are hexadecimal, so a scan
+	// declining a digest behind this prefix declines the keys whose secret is
+	// written in the same sixteen characters — which the keys the rest of this
+	// file is built from are.
 	tests := []struct {
 		name string
 		src  string

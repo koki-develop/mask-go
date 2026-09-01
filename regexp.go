@@ -25,13 +25,20 @@ import (
 // named "mask" that took part in the match is redacted. A match where none of
 // them did is redacted nowhere.
 //
-// Where the expression has a ceiling on its width, every match it admits is
-// located, including the ones that begin inside another: forty characters of
-// hexadecimal written against forty more are redacted whole, where Go's FindAll
-// resumes past each match it takes and would leave the second forty. What that
-// costs is a second run of the expression at each position inside a match where
-// one could open — nothing where matches are rare, and what a caller pays for
-// an expression matching densely and never far.
+// Where the expression has a ceiling on its width, and any group named "mask"
+// stands nearer the beginning of a match than LookBehind with a rune's width to
+// spare, every match it admits is located, including the ones that begin inside
+// another: forty characters of hexadecimal written against forty more are
+// redacted whole, where Go's FindAll resumes past each match it takes and would
+// leave the second forty. What that costs is a second run of the expression at
+// each position inside a match where one could open — nothing where matches are
+// rare, and what a caller pays for an expression matching densely and never
+// far.
+//
+// Streaming asks less than those two conditions do: an expression with no
+// ceiling on its width but a literal to open with settles enough for a window,
+// so a pattern can be masked a piece at a time and still be matched the plain
+// way here.
 //
 // What such a pattern settles, in the sense Pattern.Find gives the word, is
 // worked out from expr two ways. A match can be no wider than the expression

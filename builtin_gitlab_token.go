@@ -189,6 +189,14 @@ func GitLabToken() Pattern { return gitLabToken }
 // regular expression, spelling the prefixes, the counts, the alphabets and the
 // two routable forms again so that the two are changed together, and the fuzz
 // target beside it holds this scan to that expression.
+//
+// Both of the shapes an expression has been too slow to fuzz with stand in it:
+// the routable alternative spells its floor as a counted repetition, and every
+// prefix is written in the alphabet its own body is. So what they cost here was
+// measured rather than supposed. FuzzGitLabToken_matchesReference runs at about
+// a hundred and forty thousand executions a second, which is where this
+// package's targets built on a written-out reference run, so the expression is
+// kept.
 var gitLabToken = NewPattern("gitlab-token", func(src string) ([]Span, int) {
 	var spans []Span
 

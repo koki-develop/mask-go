@@ -58,6 +58,11 @@ func AgeSecretKey() Pattern { return ageSecretKey }
 // and the prefix in front of it — fifteen characters of capitals and hyphens —
 // is not something prose arrives at.
 //
+// The scan keeps no cursor and needs none: a candidate reads at most
+// seventy-seven bytes and stops — nineteen of prefix at the wider kind and
+// fifty-eight of body — which bounds what it reads with no state to be wrong
+// about.
+//
 // referenceAgeSecretKey in builtin_age_secret_key_test.go keeps the grammar as
 // a regular expression, spelling the prefixes, the count and the alphabet again
 // so that the two are changed together, and the fuzz target beside it holds

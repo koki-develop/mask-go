@@ -23,13 +23,8 @@ fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
 // GITHUB_TOKEN=****************************************
 ```
 
-## Patterns
-
-A `Masker` scans only with the patterns it is given. `AllBuiltinPatterns()`
-returns every built-in pattern, and grows as patterns are added.
-
-Each vendor also has an accessor of its own, for a caller who wants some of them
-and not all:
+A `Masker` scans only with the patterns it is given. Every vendor also has an
+accessor of its own, for a caller who wants some of them and not all:
 
 ```go
 m := mask.New(mask.WithPatterns(slices.Concat(
@@ -37,6 +32,8 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 	mask.GitHubPatterns(),
 )...))
 ```
+
+## Built-in patterns
 
 The 64 built-in patterns cover 53 vendors and locate 160 kinds of credential:
 
@@ -98,12 +95,13 @@ The 64 built-in patterns cover 53 vendors and locate 160 kinds of credential:
 | `SupabasePatterns() []Pattern` | Supabase personal access tokens, Supabase OAuth access tokens, Supabase publishable API keys, Supabase secret API keys |
 | `XAIPatterns() []Pattern` | xAI API keys, xAI management API keys |
 
-`MustRegexp` builds a pattern from a regular expression, and `Regexp` the same
-for one that arrives at run time:
+## Custom patterns
+
+`MustRegexp` builds a pattern from a regular expression, `Regexp` the same for
+one that arrives at run time, and `NewPattern` one from a function:
 
 ```go
 p := mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`)
-// or p, err := mask.Regexp("internal-token", expr)
 
 m := mask.New(mask.WithPatterns(p))
 
@@ -111,38 +109,8 @@ fmt.Println(m.Mask("token: INT-0123456789abcdef0123456789abcdef"))
 // token: ************************************
 ```
 
-Every match is located, including one that begins inside another: forty
-characters of hexadecimal written against forty more are redacted whole.
-
-`NewPattern` builds one from a function. Here, a value known only at run time:
-
-```go
-secret := "s3cr3t-value"
-
-p := mask.NewPattern("shared-secret", func(src string) ([]mask.Span, int) {
-	var spans []mask.Span
-	for i := 0; ; {
-		j := strings.Index(src[i:], secret)
-		if j < 0 {
-			break
-		}
-		spans = append(spans, mask.Span{Start: i + j, End: i + j + len(secret)})
-		i += j + 1
-	}
-	return spans, max(0, len(src)-len(secret)+1)
-})
-
-m := mask.New(mask.WithPatterns(p))
-
-fmt.Println(m.Mask("password=s3cr3t-value"))
-// password=************
-```
-
-The second result says how far along `src` the answer can no longer change if
-more text follows. `Mask` ignores it and [Streaming](#streaming) is what it is
-for; returning `0` is always correct.
-
-The `Pattern` interface can also be implemented directly.
+Write a counted repetition rather than `+` or `*` for a pattern a stream is to
+mask with. The `Pattern` interface can also be implemented directly.
 
 ## Streaming
 
@@ -158,8 +126,7 @@ log.SetOutput(w)
 ```
 
 Only a tail that could still be the beginning of a value is held, so an ordinary
-line goes straight through. `Close` releases whatever is left.
-
+line goes straight through — and `Close` is what releases the last of it.
 `NewReader` masks in the other direction:
 
 ```go
@@ -168,20 +135,10 @@ body, err := io.ReadAll(mask.NewReader(resp.Body, m))
 
 ## Redactors
 
-A redactor decides what a located value is redacted to. `Fill` repeats one rune
-for every rune of the original, and is the default as `Fill('*')`:
-
-```go
-m := mask.New(
-	mask.WithPatterns(mask.AllBuiltinPatterns()...),
-	mask.WithRedactor(mask.Fill('#')),
-)
-
-fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
-// GITHUB_TOKEN=########################################
-```
-
-`Fixed` replaces the value with a constant, so its length does not survive:
+A redactor decides what a located value is redacted to. The default is
+`Fill('*')`, which keeps the length of the original; `Fixed` replaces it with a
+constant, and `NewRedactor` builds one from a function that can vary by the
+pattern that located the value:
 
 ```go
 m := mask.New(
@@ -191,21 +148,6 @@ m := mask.New(
 
 fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
 // GITHUB_TOKEN=[REDACTED]
-```
-
-`NewRedactor` builds one from a function, which can vary by the pattern that
-located the value:
-
-```go
-m := mask.New(
-	mask.WithPatterns(mask.AllBuiltinPatterns()...),
-	mask.WithRedactor(mask.NewRedactor(func(m mask.Match) string {
-		return "[" + strings.ToUpper(m.Pattern.Name()) + "]"
-	})),
-)
-
-fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
-// GITHUB_TOKEN=[GITHUB-TOKEN]
 ```
 
 ## License

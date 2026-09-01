@@ -387,11 +387,11 @@ out:      GITHUB_TOKEN=«github-token»
 #
 # The scan reads that underscore as one more character of the body and asks
 # nothing else of it: it counts what the body holds and never asks where the
-# underscore falls in it. The two cases below say so: both are written with a
-# first run of twenty-one characters, which no token GitHub issues has, and
-# they part on the count alone — the one whose second run is fifty-nine comes
-# to eighty-one and is not a token, and the one whose second run is sixty comes
-# to eighty-two and is. The count is what decides, as it does for the pair at
+# underscore falls in it. The pair of cases whose first run is twenty-one
+# characters, a length no token GitHub issues has, says so: they part on the
+# count alone — the one whose second run is fifty-nine comes to eighty-one and
+# is not a token, and the one whose second run is sixty comes to eighty-two and
+# is. The count is what decides, as it does for the pair at
 # the top of this file, and the lengths of the runs decide nothing.
 
 case:     a fine grained token in an environment assignment

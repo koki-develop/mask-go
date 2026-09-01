@@ -530,6 +530,12 @@ func Test_buildkiteTokenKinds(t *testing.T) {
 	if len(buildkiteTokenKinds) == 0 {
 		t.Fatal("the pattern names no kind, so it locates nothing")
 	}
+
+	// The count builtin_buildkite_token.go states in prose, held here so that a
+	// kind added fails where the sentence naming the number can be found.
+	if got, want := len(buildkiteTokenKinds), 10; got != want {
+		t.Errorf("the table names %d kind(s) and builtin_buildkite_token.go says %d", got, want)
+	}
 	for i, kind := range buildkiteTokenKinds {
 		if kind == "" {
 			t.Errorf("the table holds an empty acronym at %d", i)

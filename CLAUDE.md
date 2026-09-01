@@ -21,20 +21,25 @@ the cases it is benchmarked on. `builtins.go` is the registry alone,
 `builtin_scan.go` holds what more than one scan reads (`segments`,
 `isBase64URLByte`, `base64URLRunEnd`, `isBase62Byte`, `base62RunEnd`,
 `prefixTail`), `builtins_test.go` holds what every built-in is held to and the
-body the per-pattern linearity tests share, `fuzz_test.go` holds the `Masker`
-targets and the body the per-pattern targets share, `benchmark_test.go` holds
-every benchmark there is, and `source_test.go` holds the rules about how this
-package is written rather than about what it computes, read out of the syntax
-tree. `stream.go` and `stream_test.go` are the masking of text arriving a piece
-at a time, which is a `Reader` and a `Writer` over a `Masker` and belongs to
-none of the patterns. `pattern.go` is what a caller implements — `Span`,
-`LookBehind`, `Pattern` and `NewPattern` — and `regexp.go` is `Regexp`,
-`MustRegexp` and the machinery behind them, which reads `LookBehind` from
-`pattern.go` and `newPrefixTail` from `builtin_scan.go` for what it settles, and
-nothing else of the rest.
+body the per-pattern linearity tests share, `fuzz_test.go` holds targets driven
+with the whole registry rather than with one pattern, and the body the
+per-pattern targets share, `benchmark_test.go` holds the benchmarks,
+`source_test.go` holds the rules about how this package is written rather than
+about what it computes, read out of the syntax tree, and `readme_test.go` holds
+`README.md`'s counts and its table of accessors to what the package declares.
+`stream.go` and `stream_test.go` are the masking of text arriving a piece at a
+time, which is a `Reader` and a `Writer` over a `Masker` and belongs to none of
+the patterns. `pattern.go` is what a caller implements — `Span`, `LookBehind`,
+`Pattern` and `NewPattern` — and `regexp.go` is `Regexp`, `MustRegexp` and the
+machinery behind them, which reads `LookBehind` from `pattern.go` and
+`newPrefixTail` from `builtin_scan.go` for what it settles, and nothing else of
+the rest.
 Adding a pattern should touch the registry, the vendor accessor, the property
-table, two new files and the conformance corpus — nothing else. Keep it that
-way rather than letting a shared `builtin.go` grow back.
+table, the README table, two new files and the conformance corpus — nothing
+else. `.claude/rules/builtin-patterns.md` counts those declarations, names the
+sixth a pattern brings when its vendor is new to the package, and says what
+stands in the accessor's place for a pattern belonging to no vendor. Keep it
+that way rather than letting a shared `builtin.go` grow back.
 
 `vendors.go` is the vendor accessors alone, one `<Vendor>Patterns` apiece, with
 `vendors_test.go` holding them and the registry to naming the same patterns.
@@ -63,9 +68,10 @@ pkg.go.dev, or converting spans on every `Find`, which allocates.
 
 Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
 
-- `go test ./...` — tests. Run it without `-race` as well as with: the tests
-  holding `Mask` to allocating nothing stand down under the race detector, so
-  the two runs do not cover the same thing, and CI does both.
+- `go test ./...` — tests. Run it without `-race` as well as with: holding
+  `Mask` to allocating nothing cannot be measured under the race detector,
+  which allocates on paths that otherwise do not, so that measurement stands
+  down there and the two runs do not cover the same thing. CI does both.
 - `go test ./conformance -update` — regenerate the conformance corpus and check
   it in the same run (`conformance/CLAUDE.md`).
 - `go test -fuzz FuzzJWT_matchesReference .` — fuzzing. The root package has
@@ -96,9 +102,22 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
 ## Tests
 
 - Table-driven, one `name` per case, and each case writes out its own data
-  literally rather than sharing fixtures or computing it.
+  literally rather than sharing fixtures or computing it. What that guards is
+  a case's power to disagree with the scan: an input or an expectation built
+  from a declaration the scan reads moves with that declaration and reports
+  nothing when it changes, which is the defect
+  `Test_references_shareNoDeclarationWithTheScans` keeps out of the references.
+  Arithmetic over a value the test itself wrote down is not that. Nor is a test
+  the rules ask to be built from the scan's declarations — a `LookBehind` test
+  builds the widest reading out of them by design.
 - Behaviour that differs under the race detector is branched on `raceEnabled`
-  (`race_test.go` / `norace_test.go`), not skipped.
+  (`race_test.go` / `norace_test.go`) rather than skipped, wherever the
+  property still holds at another scale: a quadratic stream is quadratic at
+  either size, so what moves is the size or the limit and the test goes on
+  running. Skip only where the detector destroys the measurement rather than
+  moving it, as it does for allocation counts, and say at the skip which of the
+  two it is — a skipped test covers nothing, and the run without `-race` is
+  then the only one holding it.
 - Count before writing "every", "only", "the one" or "all of them", in a
   comment or in a test name, and where the count is worth keeping have a test
   do the counting rather than the prose. A claim about the set is as easy to
@@ -155,4 +174,8 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   rather than on the variable, which is why the rule is about functions alone.
 - `Pattern` and `Redactor` implementations must be safe for concurrent use.
 - Published library: any change to an exported name, signature or behaviour is
-  breaking. Keep `README.md` in sync with the exported API.
+  breaking. `README.md` is what a reader needs to decide on the library and to
+  start using it, and no more: pkg.go.dev is the reference, so semantics belong
+  in the doc comments rather than there. What it carries that nothing else does
+  is the table of accessors and the counts above it, and `readme_test.go` holds
+  those to what the package declares.

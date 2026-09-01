@@ -3,8 +3,11 @@ package mask
 // Span is a half-open byte range [Start, End) within the scanned text. Offsets
 // are zero-based, and Start must be less than End.
 type Span struct {
+	// Start is the offset of the first byte of the value.
 	Start int
-	End   int
+
+	// End is the offset one past its last byte.
+	End int
 }
 
 // LookBehind is how far in front of a value a Pattern may read: the bytes from

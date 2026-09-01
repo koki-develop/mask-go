@@ -521,6 +521,13 @@ func Test_gitLabTokenKinds(t *testing.T) {
 	if len(gitLabTokenKinds) == 0 {
 		t.Fatal("no kind is documented, so the pattern locates nothing")
 	}
+
+	// The count builtin_gitlab_token.go states in prose, held here so that a
+	// kind added fails where the sentence naming the number can be found.
+	if got, want := len(gitLabTokenKinds), 12; got != want {
+		t.Errorf("the table names %d kind(s) and builtin_gitlab_token.go says %d", got, want)
+	}
+
 	for _, k := range gitLabTokenKinds {
 		t.Run(k.prefix, func(t *testing.T) {
 			if len(k.prefix) < 3 {

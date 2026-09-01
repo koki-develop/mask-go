@@ -402,12 +402,11 @@ func Test_SupabaseAccessToken_noTokenBeginsInsideAnother(t *testing.T) {
 }
 
 func Test_SupabaseAccessToken_aDigestBehindThePrefix(t *testing.T) {
-	// The collision every prefix in this package leaves, and the one this format
-	// pays for where the Grafana one rules it out. There the character
-	// thirty-two past the prefix has to be the underscore dividing a secret from
-	// its checksum and no digest holds one; here there is nothing behind the
-	// prefix but the run, and forty lowercase hexadecimal characters are a SHA-1
-	// as readily as a token.
+	// The collision a prefix invites, and the one this format pays for where the
+	// Grafana one rules it out. There the character thirty-two past the prefix
+	// has to be the underscore dividing a secret from its checksum and no digest
+	// holds one; here there is nothing behind the prefix but the run, and forty
+	// lowercase hexadecimal characters are a SHA-1 as readily as a token.
 	//
 	// Redacting one is right for the reason the count is read at all: the prefix
 	// and forty lowercase hexadecimal digits are the vendor's format exactly, so
@@ -664,11 +663,16 @@ var referenceSupabaseAccessToken = regexp.MustCompile(`sbp_(?:oauth_)?[0-9a-f]{4
 // FindAllStringIndex resumes past a match, and here that would report the same
 // spans: no token is written inside another, so nothing stands between the end
 // of a match and the next candidate. It is written this way all the same,
-// because it is the scan's own resumption and a reference restating the scan's
-// rules is what the target compares. Asking at every byte costs this one
-// nothing beyond a constant: every candidate reads at most fifty characters,
-// here as in the scan, so neither has a run to walk and there is no cursor for
-// either to be wrong about.
+// because asking at every byte is the shorter rule the scan's two resumptions
+// are held to. This one takes neither of the steps the scan takes: the scan
+// resumes a byte past the anchor where a candidate carried no prefix, and past
+// the prefix and whatever marker stood behind it where one did, and
+// builtin_supabase_access_token.go argues both. A reference resuming where the
+// scan resumes would compare each of those skips with itself, and the target
+// would go on passing however far either was widened. Asking at every byte
+// costs this one nothing beyond a constant: every candidate reads at most fifty
+// characters, here as in the scan, so neither has a run to walk and there is no
+// cursor for either to be wrong about.
 func referenceSupabaseAccessTokenFind(src string) []Span {
 	var spans []Span
 	for i := 0; i < len(src); {

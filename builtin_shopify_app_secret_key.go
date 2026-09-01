@@ -81,6 +81,10 @@ func ShopifyAppSecretKey() Pattern { return shopifyAppSecretKey }
 // until a partner regenerates them.
 // Test_ShopifyAppSecretKey_theKeyFormatItReplaced pins the decision.
 //
+// The scan keeps no cursor and needs none: a candidate reads at most
+// thirty-eight bytes and stops, six of prefix and thirty-two of body, which
+// bounds what it reads with no state to be wrong about.
+//
 // referenceShopifyAppSecretKey in builtin_shopify_app_secret_key_test.go keeps
 // the grammar as a regular expression, spelling the whole prefix, the count and
 // the character class again — including the half this scan borrows, since a

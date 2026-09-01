@@ -165,17 +165,17 @@ case:     a candidate whose body opens with a prefix
 in:       cfk_cfk_0123456789abcdef0123456789abcdef0123456789abcdef
 out:      cfk_«cloudflare-api-key»
 
-# A digest written behind the prefix, which every prefix in this package leaves
-# as a collision and which this one pays rather than avoids. Hexadecimal digits
-# are letters and digits and every character of a digest is hexadecimal, so a
-# digest satisfies the secret's alphabet and the checksum's class alike:
-# forty-eight characters of a SHA-256 are a body and the sixteen left over stay
-# in the text. Redacting it is right rather than a fault: the vendor's format is
-# a prefix and forty-eight characters whose last eight are hexadecimal, so a scan
-# declining a digest behind this prefix declines the keys whose secret is written
-# in the same sixteen characters — which every key in this file is. The shorter
-# digests are turned away by the counts, and a digest on its own carries no
-# underscore and so holds no prefix to be found in.
+# A digest written behind the prefix, which a prefix invites as a collision
+# and which this one pays rather than avoids. Hexadecimal digits are letters
+# and digits and every character of a digest is hexadecimal, so a digest
+# satisfies the secret's alphabet and the checksum's class alike: forty-eight
+# characters of a SHA-256 are a body and the sixteen left over stay in the
+# text. Redacting it is right rather than a fault: the vendor's format is a
+# prefix and forty-eight characters whose last eight are hexadecimal, so a
+# scan declining a digest behind this prefix declines the keys whose secret is
+# written in the same sixteen characters — which every key in this file is.
+# The shorter digests are turned away by the counts, and a digest on its own
+# carries no underscore and so holds no prefix to be found in.
 
 case:     a sha256 behind the prefix
 in:       cfk_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef

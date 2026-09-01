@@ -342,16 +342,16 @@ var stripeSecretKey = NewPattern("stripe-secret-key", func(src string) ([]Span, 
 // two where a key carries one.
 //
 // They are ordered longest first, and here that is a rule rather than the
-// courtesy it is in the Slack and GitLab tables. sk_org_ is a prefix of
-// sk_org_live_ and of sk_org_test_, so the two of them match wherever it does,
-// and the scan takes the first entry that matches: read the other way round, an
-// organization key written in the three segment shape would be given a body of
-// four characters and located nowhere. Test_stripeSecretKeyPrefixes holds the
-// order, and holds every entry to carrying the anchor at the index the scan
-// finds a candidate by, to closing with a character no body is written with,
-// and to opening with characters a word is made of — which is what lets a
-// snake_case name close on a key type, and so what the byte in front of a
-// prefix is read for.
+// courtesy such an order usually is. sk_org_ is a prefix of sk_org_live_ and
+// of sk_org_test_, so the two of them match wherever it does, and the scan
+// takes the first entry that matches: read the other way round, an
+// organization key written in the three segment shape would be given a body
+// of four characters and located nowhere. Test_stripeSecretKeyPrefixes holds
+// the order, and holds every entry to carrying the anchor at the index the
+// scan finds a candidate by, to closing with a character no body is written
+// with, and to opening with characters a word is made of — which is what
+// lets a snake_case name close on a key type, and so what the byte in front
+// of a prefix is read for.
 var stripeSecretKeyPrefixes = [...]string{
 	// Organization keys, if the mode is written as a segment of its own.
 	"sk_org_live_",

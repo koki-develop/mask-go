@@ -9,6 +9,10 @@
 # The two forms are one pattern because neither is published by design, both
 # authenticate the same endpoints, and a caller with reason to redact one has the
 # same reason for the other.
+#
+# The cases about a body of one class alone carry no ordered run. A body of
+# letters and a body of digits are what say the alphabet holds both, and neither
+# can be written from a run that carries the other.
 
 patterns: crates-io-token
 

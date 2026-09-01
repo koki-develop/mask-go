@@ -140,16 +140,16 @@ case:     two keys separated by a space
 in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk-or-v1-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
 out:      «openrouter-api-key» «openrouter-api-key»
 
-# A digest written behind the prefix, which every prefix in this package leaves
-# as a collision and which this one pays rather than avoids. Sixty-four
-# hexadecimal digits are a SHA-256, so the shape this pattern reads and the
-# shape a digest is are the same shape — where the Grafana format has an
-# underscore dividing its secret from its checksum to turn a digest away with,
-# this one has nothing. Redacting it is right rather than a fault in it: a key
-# OpenRouter issued is sixty-four hexadecimal digits behind this prefix, so a
-# scan declining a digest behind this prefix declines every key there is. The
-# shorter digests are turned away by the count, and a digest on its own carries
-# no hyphen and so holds no prefix to be found at.
+# A digest written behind the prefix, which a prefix invites as a collision
+# and which this one pays rather than avoids. Sixty-four hexadecimal digits
+# are a SHA-256, so the shape this pattern reads and the shape a digest is are
+# the same shape — where the Grafana format has an underscore dividing its
+# secret from its checksum to turn a digest away with, this one has nothing.
+# Redacting it is right rather than a fault in it: a key OpenRouter issued is
+# sixty-four hexadecimal digits behind this prefix, so a scan declining a
+# digest behind this prefix declines every key there is. The shorter digests
+# are turned away by the count, and a digest on its own carries no hyphen and
+# so holds no prefix to be found at.
 
 case:     a sha256 behind the prefix
 in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef

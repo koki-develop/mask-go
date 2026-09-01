@@ -566,9 +566,9 @@ func Test_stripeSecretKeyPrefixes(t *testing.T) {
 	// anchor, must all be ones a word is made of: that is what lets a snake_case
 	// name close on a key type, and so what the byte in front of a prefix is
 	// read for at all. And the entries are ordered longest first, which here is
-	// a rule and not the courtesy it is in the Slack and GitLab tables: sk_org_
-	// matches wherever sk_org_live_ does, and the scan takes the first entry
-	// that matches.
+	// a rule rather than the courtesy such an order usually is: sk_org_ matches
+	// wherever sk_org_live_ does, and the scan takes the first entry that
+	// matches.
 	if len(stripeSecretKeyPrefixes) == 0 {
 		t.Fatal("the pattern carries no prefix, so it locates nothing")
 	}

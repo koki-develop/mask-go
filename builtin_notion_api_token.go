@@ -120,13 +120,13 @@ func NotionAPIToken() Pattern { return notionAPIToken }
 // with are among the commonest in prose and the character it closes with is
 // not.
 //
-// A candidate is therefore read backwards from its anchor, which no other scan
-// here does and which two properties of the table make safe. No prefix carries
-// the anchor anywhere but at its last character, so at most one of them stands
-// in front of any given underscore; and no prefix is the suffix of another, so
-// the order the table is written in decides nothing. Test_notionAPITokenPrefixes
-// holds both, and holds every character in front of an anchor to being one a
-// body is written with — which is what lets a token be written inside another,
+// A candidate is therefore read backwards from its anchor, which two
+// properties of the table make safe. No prefix carries the anchor anywhere
+// but at its last character, so at most one of them stands in front of any
+// given underscore; and no prefix is the suffix of another, so the order the
+// table is written in decides nothing. Test_notionAPITokenPrefixes holds
+// both, and holds every character in front of an anchor to being one a body
+// is written with — which is what lets a token be written inside another,
 // below.
 //
 // Reading backwards is also what makes the order of the spans worth an
@@ -281,14 +281,15 @@ var notionAPIToken = NewPattern("notion-api-token", func(src string) ([]Span, in
 // notionAPITokenPrefixes are the prefixes this pattern reads: the one Notion
 // issues today, and the one it issued until September 2024 and has not revoked.
 //
-// They are written longest first as a courtesy rather than as a rule, as the
-// Slack and GitLab tables are and unlike stripeSecretKeyPrefixes. No two of
-// them match at the same anchor: each closes with the anchor and carries it
-// nowhere else, and neither is the suffix of the other, so at most one stands
-// in front of any underscore whichever order they are tried in.
-// Test_notionAPITokenPrefixes holds them to all of that, and to carrying
-// nothing in front of the anchor but characters a body is written with — which
-// is what lets one token be written inside another.
+// They are written longest first as a courtesy rather than as a rule, unlike
+// stripeSecretKeyPrefixes, where one entry is a prefix of another and the
+// order is what decides between them. No two of them match at the same
+// anchor: each closes with the anchor and carries it nowhere else, and
+// neither is the suffix of the other, so at most one stands in front of any
+// underscore whichever order they are tried in. Test_notionAPITokenPrefixes
+// holds them to all of that, and to carrying nothing in front of the anchor
+// but characters a body is written with — which is what lets one token be
+// written inside another.
 var notionAPITokenPrefixes = [...]string{
 	"secret_", // until 25 September 2024, and still valid
 	"ntn_",    // since

@@ -9,6 +9,7 @@ paths:
   - "mask_test.go"
   - "fuzz_test.go"
   - "source_test.go"
+  - "readme_test.go"
   - "conformance/**"
 ---
 
@@ -167,16 +168,28 @@ between accessors is the vendor's, and it moves only when a vendor does.
 
 ## The declarations a pattern arrives with
 
-Four, and no more: the pattern in `builtins` (`builtins.go`), its vendor's
-accessor (`vendors.go`), an entry in `builtinPatterns` (`builtins_test.go`), and
-cases in the conformance corpus (`conformance/CLAUDE.md`). Everything else is
-derived from one of them.
+Five, and no more: the pattern in `builtins` (`builtins.go`), its vendor's
+accessor (`vendors.go`), an entry in `builtinPatterns` (`builtins_test.go`),
+cases in the conformance corpus (`conformance/CLAUDE.md`), and a row in the
+table of `README.md`. Everything else is derived from one of them.
 
-A pattern arriving with a vendor no accessor covers brings a fifth, that
-accessor's entry in `vendorAccessors` (`vendors_test.go`). Without it the
-accessor is held to nothing —
+The README row is a declaration rather than documentation kept in step: it
+states what the pattern locates in the vendor's own words, and nothing in the
+package carries that. `Test_README_countsWhatItClaims` and
+`Test_README_namesEveryAccessor` (`readme_test.go`) hold the row and the counts
+above the table against what the package declares.
+
+Two variations. A pattern arriving with a vendor no accessor covers brings a
+sixth, that accessor's entry in `vendorAccessors` (`vendors_test.go`); without
+it the accessor is held to nothing —
 `Test_vendorAccessors_nameEveryAccessorDeclared` reads the declarations out of
-the syntax tree and fails for exactly that reason.
+the syntax tree and fails for exactly that reason. A pattern naming a format
+rather than a vendor's credential still brings five: it has no accessor to add,
+so the second of them is an entry in `patternsWithNoVendor` (`vendors_test.go`)
+instead, which is how it says the absence was meant.
+`Test_vendorAccessors_coverEveryBuiltin` fails without it, and
+`Test_README_namesEveryAccessor` holds that table to the accessors no vendor
+returns.
 
 `builtins` is what `AllBuiltinPatterns` reports, one name to a line.
 `builtinPatterns` is what holds a pattern to the properties every built-in

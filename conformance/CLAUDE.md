@@ -39,14 +39,21 @@ out:  GITHUB_TOKEN=«github-token»
 - `in` may not hold `«` or `»`. Escapes are `\n`, `\r`, `\t`, `\\` and `\xNN`; a
   field is read with the space around it trimmed, so whitespace at either end
   has to be escaped.
-- Credentials are built from the ordered run `0123456789abcdef`, in the case
-  the kind of credential is written in: `0123456789ABCDEF` where its alphabet
-  is uppercase, as an AWS access key ID's is. The betterleaks allowlist covers
-  `conformance/testdata/*.txt` on that condition alone, so a value written any
-  other way fails the secret scan. Where the credential's own alphabet cannot
-  carry the run — an age secret key is written in Bech32, which holds neither
-  `1` nor `B` — the value is built from the run with the characters that
-  alphabet leaves out taken away, and the file writes out which run that left.
+- Credentials are built from ordered characters, opening on the run
+  `0123456789abcdef` and carrying on through the alphabet where a body is
+  longer than sixteen — back to `0` once the alphabet runs out, so a hexadecimal
+  body repeats those sixteen where a base62 one runs to `z` first — in the case
+  the kind of credential is written in:
+  `0123456789ABCDEF` where its alphabet is uppercase, as an AWS access key
+  ID's is. The betterleaks allowlist covers `conformance/testdata/*.txt` on
+  that condition alone, so a value written any other way fails the secret
+  scan. Where the credential's own alphabet cannot carry the run — an age
+  secret key is written in Bech32, which holds neither `1` nor `B` — the value
+  is built from the run with the characters that alphabet leaves out taken
+  away, and the file writes out which run that left. A case turning on
+  something the run cannot state — a body of one repeated character, a body of
+  one class alone — carries no run, and the file's own header says which cases
+  those are.
 
 ## What a comment may say
 

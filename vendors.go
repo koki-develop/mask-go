@@ -35,7 +35,7 @@ func AirtablePatterns() []Pattern { return []Pattern{airtablePersonalAccessToken
 // Anthropic issues.
 //
 // The returned slice is freshly allocated and may be modified by the caller.
-func AnthropicPatterns() []Pattern { return []Pattern{anthropicAPIKey} }
+func AnthropicPatterns() []Pattern { return []Pattern{anthropicCredential} }
 
 // AWSPatterns returns every built-in pattern that locates a credential AWS
 // issues.

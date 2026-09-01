@@ -86,9 +86,9 @@ var builtinPatterns = []struct {
 		benchmarks: airtablePersonalAccessTokenFindBenchmarks,
 	},
 	{
-		name:    "anthropic-api-key",
-		pattern: AnthropicAPIKey,
-		ref:     referenceAnthropicAPIKeyFind,
+		name:    "anthropic-credential",
+		pattern: AnthropicCredential,
+		ref:     referenceAnthropicCredentialFind,
 		samples: []string{
 			"ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
 			"sk-ant-admin01-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
@@ -97,7 +97,7 @@ var builtinPatterns = []struct {
 			"sk-ant-a-sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
 		},
 		anchors:    []string{"sk-ant-"},
-		benchmarks: anthropicAPIKeyFindBenchmarks,
+		benchmarks: anthropicCredentialFindBenchmarks,
 	},
 	{
 		name:    "aws-access-key-id",

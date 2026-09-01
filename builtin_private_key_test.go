@@ -514,6 +514,13 @@ func Test_PrivateKey_everyLineBreakSpelling(t *testing.T) {
 		"an escaped carriage return and line feed": `\r\n`,
 	}
 
+	// Every spelling, which is what the name claims and what the cases above
+	// cannot say on their own: a fifth added to privateKeyLineBreaks would
+	// leave them passing and the name false.
+	if got, want := len(breaks), len(privateKeyLineBreaks); got != want {
+		t.Fatalf("%d spelling(s) are written out here and the scan reads %d", got, want)
+	}
+
 	p := PrivateKey()
 	for name, br := range breaks {
 		t.Run(name, func(t *testing.T) {

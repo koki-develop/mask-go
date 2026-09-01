@@ -86,13 +86,19 @@ would.
 - `go test -bench . -benchmem` against `main` if `builtin_scan.go` or another
   scan's shared declarations moved.
 - `golangci-lint run` and `betterleaks git`.
-- `README.md` is in step with the change: its table is one row a vendor, so a
-  pattern for a vendor already there may only widen that row's list, while a new
-  vendor adds one. A vendor whose patterns a caller now has to choose between
-  wants a sentence saying what the choice is.
+- `README.md` is in step with the change: its table is one row an accessor — a
+  row a vendor, and a row apiece for the patterns of `patternsWithNoVendor`,
+  which name a format and sit under no vendor accessor. So a pattern for a
+  vendor already there may only widen that row's list, while a new vendor or a
+  new format-named pattern adds a row. A vendor whose patterns a caller now has
+  to choose between wants a sentence saying what the choice is.
 - A Locates column is names alone: one comma separated item a kind, and no
   prose about them. A kind is named as its vendor names it — a phrase shortened
   to fit that shape is how the table comes to name a credential nobody issues.
 - The sentence above that table counts the built-in patterns, those kinds and
-  the vendors, and nothing checks it: correct all three here. The vendor count
-  moves only where the vendor is new.
+  the vendors: correct all three here. The vendor count moves only where the
+  vendor is new. `Test_README_countsWhatItClaims` (`readme_test.go`) holds the
+  first two against what the package declares, so a pattern or a vendor left
+  uncounted fails under a plain `go test`. The count of kinds is held against
+  the table's own rows and nothing else, since no declaration carries them, so a
+  row widened without the sentence corrected is a reviewer's to catch.

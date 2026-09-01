@@ -421,6 +421,57 @@ func Test_githubTokenSeparator(t *testing.T) {
 		t.Errorf("the separator %q belongs to the alphabet a classic body is written in, so two candidates could read the same run",
 			byte(githubTokenSeparator))
 	}
+
+	// The other side of the same character, which is why one of these forms
+	// keeps a cursor and the other needs none. A fine grained body admits the
+	// separator, so a whole prefix can be written inside one and a run can hold
+	// a candidate for every character of a prefix it has; were that to stop
+	// being true, the cursor Test_GitHubToken_scanIsLinear drives would be
+	// saving nothing and the input crafted against it would stop crowding.
+	if !isGitHubPATByte(githubTokenSeparator) {
+		t.Errorf("the separator %q is no longer read as a character of a fine grained body, so that form no longer needs the cursor it keeps",
+			byte(githubTokenSeparator))
+	}
+}
+
+func Test_GitHubToken_scanIsLinear(t *testing.T) {
+	// Rejecting a candidate resumes one byte along, so a line dense in prefixes
+	// holds a candidate for every character of a prefix it has. This scan keeps
+	// two run cursors between candidates, and each of them is what stops a run
+	// from being walked once per candidate sitting in it. Neither may ever
+	// answer for a position in front of one it has already given, and neither
+	// can be read from outside the scan: what would find either wrong is an
+	// input that crowds candidates into one run, which is what is driven here.
+	// The bound is far above a linear scan and far below a quadratic one.
+	//
+	// The generic guard in builtins_test.go repeats each sample and its first
+	// half, so the closest two candidates come to each other there is half a
+	// token. The crowding a line can actually carry stays here.
+	sources := map[string]string{
+		// The header run of a stateless token. The J is what carries these past
+		// the anchor and into the run: ey and it are the base64url of a brace
+		// and the quote a member name opens with, which is the shape
+		// opensJOSEHeaderAt asks for, and a unit written ey and anything at all
+		// is turned away in front of the cursor and measures nothing. Every
+		// character of the unit is one base64url admits, so the run behind the
+		// first header reaches the end of the input and every candidate behind
+		// it asks about that same run. Working it out again at each of them is
+		// quadratic.
+		"stateless candidates sharing one header run": strings.Repeat("ghs_a_eyJ", 150000),
+		// The cursor is shared by every kind isGitHubStatelessKind admits, so
+		// this is the input above under another name.
+		"the same run under the other stateless kind": strings.Repeat("ghu_a_eyJ", 150000),
+		// The body run of a fine grained token. The prefix is written in the
+		// alphabet the body is, so every eleven characters open a candidate and
+		// each of them reads the run to its end.
+		"fine grained prefixes crowded in one body run": strings.Repeat(githubPATPrefix, 100000),
+		// The form that keeps no cursor, driven for the same crowding: the
+		// separator belongs to no classic body, so these runs cannot overlap
+		// and reading all of them comes to the length of the input.
+		"classic prefixes crowded": strings.Repeat("ghp_", 250000),
+	}
+
+	checkScanIsLinear(t, GitHubToken(), sources)
 }
 
 // referenceGitHubTokenAt reports where a GitHub token written at start ends,

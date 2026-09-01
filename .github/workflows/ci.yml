@@ -30,9 +30,9 @@ jobs:
         with:
           cache: save
       # Without the detector, deliberately. The race detector allocates on
-      # paths that otherwise do not, so the tests that hold this library to
-      # allocating nothing stand down under it; without a run of its own they
-      # would never run at all.
+      # paths that otherwise do not, so what holds this library to allocating
+      # nothing stands down under it; without a run of its own it would never
+      # run at all.
       - run: go test ./...
 
   # The run under the detector is a job a package rather than one job over them

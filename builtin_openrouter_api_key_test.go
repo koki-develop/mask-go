@@ -324,14 +324,14 @@ func Test_OpenRouterAPIKey_leavesWhatFollowsAlone(t *testing.T) {
 }
 
 func Test_OpenRouterAPIKey_aDigestBehindThePrefix(t *testing.T) {
-	// The collision every prefix in this package leaves is a digest written
-	// behind it, and here the count is a SHA-256's count exactly, so the shape
-	// this pattern reads and the shape a digest is are the same shape.
-	// builtin_openrouter_api_key.go pays it rather than avoiding it: a key
-	// OpenRouter issued is sixty-four hexadecimal digits behind this prefix, so
-	// a scan declining a digest behind this prefix declines every key there is.
-	// Where the Grafana format has an underscore dividing its secret from its
-	// checksum to turn a digest away with, this one has nothing.
+	// The collision a prefix invites is a digest written behind it, and here the
+	// count is a SHA-256's count exactly, so the shape this pattern reads and
+	// the shape a digest is are the same shape. builtin_openrouter_api_key.go
+	// pays it rather than avoiding it: a key OpenRouter issued is sixty-four
+	// hexadecimal digits behind this prefix, so a scan declining a digest behind
+	// this prefix declines every key there is. Where the Grafana format has an
+	// underscore dividing its secret from its checksum to turn a digest away
+	// with, this one has nothing.
 	//
 	// The keys the rest of this file is written with are exactly that shape,
 	// which is why the decision is pinned here rather than left to be read off

@@ -524,6 +524,12 @@ func Test_netlifyAuthTokenKinds(t *testing.T) {
 	if netlifyAuthTokenKinds == "" {
 		t.Fatal("the pattern names no kind, so it locates nothing")
 	}
+
+	// The count builtin_netlify_auth_token.go states in prose, held here so that
+	// a kind added fails where the sentence naming the number can be found.
+	if got, want := len(netlifyAuthTokenKinds), 5; got != want {
+		t.Errorf("the table names %d kind(s) and builtin_netlify_auth_token.go says %d", got, want)
+	}
 	seen := map[byte]bool{}
 	for i := range len(netlifyAuthTokenKinds) {
 		c := netlifyAuthTokenKinds[i]

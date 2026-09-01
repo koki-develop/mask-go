@@ -114,10 +114,7 @@ func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 // afresh at every byte, so a key nested inside another is one it would find
 // and this scan would not, and the fuzz target between them is what holds the
 // claim. That is the Stripe reference's arrangement and it is here for the
-// Stripe reference's reason. The Supabase and RubyGems references ask at every
-// byte too and say a different thing by it — that each restates its scan's own
-// resumption rather than a shorter rule agreeing with it — where this one is
-// written to restate nothing the scan claims.
+// Stripe reference's reason.
 //
 // The scan keeps no cursor and needs none: a candidate reads at most
 // seventy-three bytes and stops, which bounds what it reads with no state to
@@ -145,9 +142,9 @@ func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 //
 // The OpenAI and Anthropic patterns read sk- as well, and neither locates what
 // this one does. An OpenAI key is a run carrying the eight characters
-// T3BlbkFJ, which hexadecimal cannot spell, and an Anthropic key names its
-// kind between sk-ant- and its body. This pattern in turn locates neither of
-// theirs, since sixty-four hexadecimal digits are not what either writes
+// T3BlbkFJ, which hexadecimal cannot spell, and an Anthropic credential names
+// its kind between sk-ant- and its body. This pattern in turn locates neither
+// of theirs, since sixty-four hexadecimal digits are not what either writes
 // behind its own prefix. What does reach both is an OpenRouter key written
 // straight in front of base64url text carrying the OpenAI marker: the key is
 // seventy-three characters and the OpenAI run is everything from the same sk-

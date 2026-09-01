@@ -30,7 +30,7 @@ func AllBuiltinPatterns() []Pattern {
 var builtins = []Pattern{
 	ageSecretKey,
 	airtablePersonalAccessToken,
-	anthropicAPIKey,
+	anthropicCredential,
 	awsAccessKeyID,
 	awsSecretAccessKey,
 	buildkiteToken,

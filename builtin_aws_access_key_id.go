@@ -102,10 +102,16 @@ func AWSAccessKeyID() Pattern { return awsAccessKeyID }
 // ASIAPACIFICSOUTHEAST, which is twenty characters exactly, so it buys part of
 // the case at the price of every key written against a capital.
 //
+// The scan keeps no cursor and needs none: a candidate reads at most twenty
+// bytes and stops, four of prefix and sixteen of body, which bounds what it
+// reads with no state to be wrong about.
+//
 // referenceAWSAccessKeyID in builtin_aws_access_key_id_test.go keeps the
 // grammar as a regular expression, spelling the prefixes and the count again so
 // that the two are changed together, and the fuzz target beside it holds this
-// scan to that expression.
+// scan to that expression. The count is written as an exact repetition rather
+// than a floor, which is what keeps the expression cheap enough to fuzz with:
+// an engine reads a machine that wide once and stops.
 var awsAccessKeyID = NewPattern("aws-access-key-id", func(src string) ([]Span, int) {
 	var spans []Span
 

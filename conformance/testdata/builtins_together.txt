@@ -40,7 +40,7 @@ out:      «github-token» and «jwt»
 
 case:     every kind of credential this library knows
 in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef AKIA0123456789ABCDEF ASIA0123456789ABCDEF aws_secret_access_key=0123456789abcdef0123456789abcdef01234567 xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn glpat-0123456789abcdefghij AIza0123456789abcdefghijklmnopqrstuvwxy sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde sk_live_0123456789abcdef01234567 pk_live_0123456789abcdef01234567 whsec_0123456789abcdef0123456789abcdef pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef npm_0123456789abcdefghijklmnopqrstuvwxyz SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 ntn_0123456789abcdef0123456789abcdef0123456789abcd hvs.0123456789abcdef01234567 glsa_0123456789abcdef0123456789abcdef_01234567 sbp_0123456789abcdef0123456789abcdef01234567 sb_publishable_0123456789abcdef012345_01234567 sb_secret_0123456789abcdef012345_01234567 rubygems_0123456789abcdef0123456789abcdef0123456789abcdef cfut_0123456789abcdef0123456789abcdef0123456789abcdef cfk_0123456789abcdef0123456789abcdef0123456789abcdef hf_0123456789abcdef0123456789abcdef01 cio0123456789abcdef0123456789abcdef cio_tp_0123456789abcdef0123456789abcdef dapi0123456789abcdef0123456789abcdef dose0123456789abcdef0123456789abcdef dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01 pul-0123456789abcdef0123456789abcdef01234567 sgp_0123456789abcdef_0123456789abcdef0123456789abcdef01234567 pscale_tkn_0123456789abcdef0123456789abcdef0123456789a pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab dp.st.dev.0123456789abcdef0123456789abcdef0123456789a shpat_0123456789abcdef0123456789abcdef shpss_0123456789abcdef0123456789abcdef CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567 CCIPRJ_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567 AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02 ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc dckr_pat_0123456789abcdef0123456789a r8_0123456789abcdef0123456789abcdef01234 re_01234567_0123456789abcdef01234567 pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012 squ_0123456789abcdef0123456789abcdef01234567 dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef phx_0123456789abcdefghijklmnopqrstuvwxyz01234 NRAK-0123456789ABCDEFGHIJKLMNOPQ fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef 0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012 bkua_0123456789abcdef0123456789abcdef01234567 napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde nfp_0123456789abcdefghijklmnopqrstuvwxyz ory_pat_0123456789abcdef0123456789abcdef rnd_0123456789abcdef0123456789ab shippo_live_0123456789abcdef0123456789abcdef01234567 -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----
-out:      «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» aws_secret_access_key=«aws-secret-access-key» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «openrouter-api-key» «anthropic-api-key» «stripe-secret-key» «stripe-publishable-key» «stripe-webhook-signing-secret» «pypi-api-token» «npm-access-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token» «hashicorp-vault-token» «grafana-service-account-token» «supabase-access-token» «supabase-publishable-key» «supabase-secret-key» «rubygems-api-key» «cloudflare-api-token» «cloudflare-api-key» «huggingface-user-access-token» «crates-io-token» «crates-io-token» «databricks-personal-access-token» «databricks-oauth-client-secret» «digitalocean-token» «postman-api-key» «pulumi-access-token» «sourcegraph-access-token» «planetscale-token» «airtable-personal-access-token» «heroku-api-token» «doppler-auth-token» «shopify-access-token» «shopify-app-secret-key» «circleci-api-token» «circleci-api-token» «age-secret-key» «1password-service-account-token» «docker-personal-access-token» «replicate-api-token» «resend-api-key» «paddle-api-key» «sonarqube-token» «dynatrace-token» «groq-api-key» «xai-api-key» «posthog-personal-api-key» «newrelic-user-key» «fly-io-access-token» «hcp-terraform-api-token» «buildkite-token» «neon-api-key» «pinecone-api-key» «netlify-auth-token» «ory-api-key» «render-api-key» «shippo-api-token» «private-key»
+out:      «github-token» «github-token» «jwt» «aws-access-key-id» «aws-access-key-id» aws_secret_access_key=«aws-secret-access-key» «slack-token» «gitlab-token» «google-api-key» «openai-api-key» «openrouter-api-key» «anthropic-credential» «stripe-secret-key» «stripe-publishable-key» «stripe-webhook-signing-secret» «pypi-api-token» «npm-access-token» «sendgrid-api-key» «sentry-auth-token» «linear-api-key» «notion-api-token» «hashicorp-vault-token» «grafana-service-account-token» «supabase-access-token» «supabase-publishable-key» «supabase-secret-key» «rubygems-api-key» «cloudflare-api-token» «cloudflare-api-key» «huggingface-user-access-token» «crates-io-token» «crates-io-token» «databricks-personal-access-token» «databricks-oauth-client-secret» «digitalocean-token» «postman-api-key» «pulumi-access-token» «sourcegraph-access-token» «planetscale-token» «airtable-personal-access-token» «heroku-api-token» «doppler-auth-token» «shopify-access-token» «shopify-app-secret-key» «circleci-api-token» «circleci-api-token» «age-secret-key» «1password-service-account-token» «docker-personal-access-token» «replicate-api-token» «resend-api-key» «paddle-api-key» «sonarqube-token» «dynatrace-token» «groq-api-key» «xai-api-key» «posthog-personal-api-key» «newrelic-user-key» «fly-io-access-token» «hcp-terraform-api-token» «buildkite-token» «neon-api-key» «pinecone-api-key» «netlify-auth-token» «ory-api-key» «render-api-key» «shippo-api-token» «private-key»
 
 # The two halves of an AWS access key, which are two patterns rather than one:
 # the ID is an identifier a log is kept for and the secret is what authenticates
@@ -371,23 +371,23 @@ out:      OPENAI_API_KEY=«openai-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-
 
 case:     an anthropic api key beside a github token and a jwt
 in:       anthropic=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:      anthropic=«anthropic-api-key» github=«github-token» jwt=«jwt»
+out:      anthropic=«anthropic-credential» github=«github-token» jwt=«jwt»
 
 case:     an anthropic api key and an openai api key on one line
 in:       ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde OPENAI_API_KEY=sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
-out:      ANTHROPIC_API_KEY=«anthropic-api-key» OPENAI_API_KEY=«openai-api-key»
+out:      ANTHROPIC_API_KEY=«anthropic-credential» OPENAI_API_KEY=«openai-api-key»
 
 case:     an anthropic api key whose body carries the marker an openai key is read by
 in:       sk-ant-api03-0123456789abcdef0123456789abcdef0123456789aT3BlbkFJ3456789abcdef0123456789abcdef0123456789abcde
-out:      «anthropic-api-key»
+out:      «anthropic-credential»
 
 case:     a google api key inside an anthropic api key body
 in:       sk-ant-api03-AIza0123456789abcdefghijklmnopqrstuvwxy789abcdef0123456789abcdef0123456789abcdef0123456789abcde
-out:      «anthropic-api-key»
+out:      «anthropic-credential»
 
 case:     an access key id written straight after an anthropic api key
 in:       sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdeAKIA0123456789ABCDEF
-out:      «anthropic-api-key»
+out:      «anthropic-credential»
 
 case:     an anthropic api key inside the signature of a jwt
 in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
@@ -395,11 +395,11 @@ out:      «jwt»
 
 case:     a jwt directly after an anthropic api key, which the dot keeps apart
 in:       sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
-out:      «anthropic-api-key».«jwt»
+out:      «anthropic-credential».«jwt»
 
 case:     an environment file holding an anthropic api key among the others
 in:       ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde\nAWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF\nGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
-out:      ANTHROPIC_API_KEY=«anthropic-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
+out:      ANTHROPIC_API_KEY=«anthropic-credential»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A PyPI API token beside the others, and inside them. Behind its prefix a
 # token is base64url read to the end of its run, as an OpenAI or an Anthropic
@@ -901,10 +901,12 @@ out:      «notion-api-token»«stripe-secret-key»
 # two cases the Vault file states as its own over-matching open the block: the
 # Vault pattern reaches the tail of a JWT and of a SendGrid key from the dot
 # onward, the pattern that issued the value reaches the value whole, and the two
-# spans merge into it. The cases after them are the values a Vault body can hold
-# and the tokens written against either end of one, where a body read to the end
-# of its run reaches into what follows and a base62 body reaches into a Vault
-# prefix. Every one of them comes out as a single redaction.
+# spans merge into it. Then the values a Vault body can hold and the tokens
+# written against either end of one, where a body read to the end of its run
+# reaches into what follows and a base62 body reaches into a Vault prefix: each
+# of those comes out as a single redaction. The block closes on a Vault token
+# standing beside other credentials rather than inside them, which keeps a
+# redaction of its own for each.
 
 case:     a jwt whose payload closes on a vault prefix
 in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQhvs.0123456789abcdef01234567
@@ -1057,8 +1059,9 @@ out:      SUPABASE_ACCESS_TOKEN=«supabase-access-token»\nAWS_ACCESS_KEY_ID=«a
 # naming its kind, so the third character is what decides between them; the anon
 # key those project keys replaced is a JWT signed with the project's secret,
 # which the JWT pattern reads. The first case is what a project's environment
-# file looks like with all four in it, and the three after it are the prefixes
-# written against one another with nothing between.
+# file looks like with all four in it. Then the prefixes written against one
+# another with nothing between, and last a secret key standing inside the
+# signature of a JWT, where the JWT reaches further and takes the key with it.
 
 case:     an access token, an anon key and both project keys in one environment file
 in:       SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567\nSUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.0123456789abcdef\nSUPABASE_PUBLISHABLE_KEY=sb_publishable_0123456789abcdef012345_01234567\nSUPABASE_SECRET_KEY=sb_secret_0123456789abcdef012345_01234567
@@ -1170,8 +1173,9 @@ out:      «rubygems-api-key» «stripe-secret-key»
 # an OpenAI key and an Anthropic key do, and what tells the three apart is what
 # stands behind that: sixty-four hexadecimal digits behind sk-or-v1- here, the
 # eight characters T3BlbkFJ inside a run there, and a kind named between sk-ant-
-# and its body for the third. The first three cases are the three written on one
-# line, each keeping a redaction of its own.
+# and its body for the third. The first of the cases below writes an OpenRouter
+# key beside a GitHub token and a JWT; the ones after it pair it with an OpenAI
+# key and with an Anthropic key. Each value keeps a redaction of its own.
 #
 # Then the two shapes where a key and something else cover one stretch of text.
 # A key written in front of the OpenAI marker is inside an OpenAI run — every
@@ -1198,7 +1202,7 @@ out:      OPENROUTER_API_KEY=«openrouter-api-key» OPENAI_API_KEY=«openai-api-
 
 case:     an openrouter key and an anthropic api key on one line
 in:       OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
-out:      OPENROUTER_API_KEY=«openrouter-api-key» ANTHROPIC_API_KEY=«anthropic-api-key»
+out:      OPENROUTER_API_KEY=«openrouter-api-key» ANTHROPIC_API_KEY=«anthropic-credential»
 
 case:     an openrouter key in front of the marker an openai key is read by
 in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefT3BlbkFJ0123456789abcdef

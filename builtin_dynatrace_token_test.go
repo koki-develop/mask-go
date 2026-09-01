@@ -467,12 +467,12 @@ func Test_DynatraceToken_theTokenFormatItReplaced(t *testing.T) {
 }
 
 func Test_DynatraceToken_aDigestBehindThePrefix(t *testing.T) {
-	// The collision every prefix in this package leaves is a digest written
-	// behind it, and this format rules it out twice over rather than paying for
-	// it. A digest carries no full stop, so the prefix and the sixty-four
-	// characters of a SHA-256 hold nothing at the twenty-fifth character but
-	// more of the digest; and a digest is written in lowercase hexadecimal,
-	// where both portions here are uppercase.
+	// The collision a prefix invites is a digest written behind it, and this
+	// format rules it out twice over rather than paying for it. A digest carries
+	// no full stop, so the prefix and the sixty-four characters of a SHA-256
+	// hold nothing at the twenty-fifth character but more of the digest; and a
+	// digest is written in lowercase hexadecimal, where both portions here are
+	// uppercase.
 	//
 	// The second case is that digest upper-cased, which is turned away by the
 	// separator alone, and the third is a digest with no prefix in front of it,

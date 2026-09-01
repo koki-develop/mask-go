@@ -112,10 +112,16 @@ func GoogleAPIKey() Pattern { return googleAPIKey }
 // all. The tables in builtin_google_api_key_test.go and the corpus beside it
 // pin that behaviour so it cannot move unnoticed.
 //
+// The scan keeps no cursor and needs none: a candidate reads at most
+// thirty-nine bytes and stops, four of prefix and thirty-five of body, which
+// bounds what it reads with no state to be wrong about.
+//
 // referenceGoogleAPIKey in builtin_google_api_key_test.go keeps the grammar as
 // a regular expression, spelling the prefix, the count and the alphabet again
 // so that the two are changed together, and the fuzz target beside it holds
-// this scan to that expression.
+// this scan to that expression. The count is written as an exact repetition
+// rather than a floor, which is what keeps the expression cheap enough to fuzz
+// with: an engine reads a machine that wide once and stops.
 var googleAPIKey = NewPattern("google-api-key", func(src string) ([]Span, int) {
 	var spans []Span
 

@@ -496,11 +496,11 @@ func Test_PlanetScaleToken_aHyphenInTheBody(t *testing.T) {
 }
 
 func Test_PlanetScaleToken_aBase64URLRunBehindTheOpening(t *testing.T) {
-	// The collision every prefix in this package leaves is whatever its own
-	// alphabet is written straight behind it, and here that alphabet is the one
-	// a JWT segment, a web push key and a routable payload are written in. So a
-	// prefix and forty-three characters of an encoded blob is a token character
-	// for character, and the whole of it is redacted.
+	// The collision a prefix invites is whatever its own alphabet is written
+	// straight behind it, and here that alphabet is the one a JWT segment, a web
+	// push key and a routable payload are written in. So a prefix and
+	// forty-three characters of an encoded blob is a token character for
+	// character, and the whole of it is redacted.
 	//
 	// That is the answer rather than a fault in it: the vendor's format is that
 	// prefix and that many of those characters, and no part of it is left for a

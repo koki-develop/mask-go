@@ -356,11 +356,10 @@ func Test_RubyGemsAPIKey_noKeyBeginsInsideAnother(t *testing.T) {
 }
 
 func Test_RubyGemsAPIKey_aDigestBehindThePrefix(t *testing.T) {
-	// The collision every prefix in this package leaves, and the one this
-	// format pays for rather than ruling out. The Grafana format turns a digest
-	// away with the underscore dividing its secret from its checksum; here
-	// everything behind the prefix is one class, and a lowercase digest is
-	// written in it.
+	// The collision a prefix invites, and the one this format pays for rather
+	// than ruling out. The Grafana format turns a digest away with the
+	// underscore dividing its secret from its checksum; here everything behind
+	// the prefix is one class, and a lowercase digest is written in it.
 	//
 	// What the count turns away is the two digests shorter than it. What it does
 	// not turn away is the SHA-256, which is longer: with no boundary behind a

@@ -121,14 +121,17 @@ func Test_AWSSecretAccessKey(t *testing.T) {
 			// The count itself, from the side that is located. The case one
 			// space further along is in Test_AWSSecretAccessKey_noMatch, and
 			// the two are what hold the count to being the count.
+			//
+			// Sixteen is spelled here rather than read from
+			// awsSecretAccessKeySpaceMax, and the span is written out rather
+			// than worked out from it: a case built from the number it is about
+			// moves with that number and reports nothing when it changes, which
+			// is the one thing this case exists to catch.
 			name: "as many spaces either side of the assignment as are read",
 			src: "aws_secret_access_key" +
-				strings.Repeat(" ", awsSecretAccessKeySpaceMax) + "=" +
-				strings.Repeat(" ", awsSecretAccessKeySpaceMax) + awsSecretAccessKeyTestValue,
-			want: []Span{{
-				len("aws_secret_access_key") + 2*awsSecretAccessKeySpaceMax + 1,
-				len("aws_secret_access_key") + 2*awsSecretAccessKeySpaceMax + 1 + awsSecretAccessKeyChars,
-			}},
+				strings.Repeat(" ", 16) + "=" +
+				strings.Repeat(" ", 16) + awsSecretAccessKeyTestValue,
+			want: []Span{{54, 94}},
 		},
 		{
 			// The other side of leaving padding out of the alphabet. It ends a
@@ -240,9 +243,11 @@ func Test_AWSSecretAccessKey_noMatch(t *testing.T) {
 		},
 		{
 			// The run of spaces is counted, so a name further in front of a
-			// value than the count reaches says nothing about it.
+			// value than the count reaches says nothing about it. Seventeen is
+			// spelled here for the reason sixteen is spelled in the case this
+			// one is paired with, in Test_AWSSecretAccessKey.
 			name: "more spaces than the assignment reads",
-			src:  "aws_secret_access_key=" + strings.Repeat(" ", awsSecretAccessKeySpaceMax+1) + awsSecretAccessKeyTestValue,
+			src:  "aws_secret_access_key=" + strings.Repeat(" ", 17) + awsSecretAccessKeyTestValue,
 		},
 		{
 			name: "a word ending in the last word of a name",
@@ -268,7 +273,11 @@ func Test_AWSSecretAccessKey_noMatch(t *testing.T) {
 }
 
 func Test_AWSSecretAccessKey_inContext(t *testing.T) {
-	stars := strings.Repeat("*", awsSecretAccessKeyChars)
+	// Forty is spelled here rather than read from awsSecretAccessKeyChars. What
+	// these cases state is how much of a line comes back redacted, and an
+	// expectation worked out from the count the scan reads comes back agreeing
+	// with that count whatever it is changed to.
+	stars := strings.Repeat("*", 40)
 
 	tests := []struct {
 		name string

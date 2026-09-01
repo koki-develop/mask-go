@@ -22,7 +22,7 @@ import (
 // the scan reads — a floor, unlike the runs the OpenAI cases stand in for, so a
 // body shortened for readability would leave a case holding no key at all.
 
-func Test_AnthropicAPIKey(t *testing.T) {
+func Test_AnthropicCredential(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -96,14 +96,14 @@ func Test_AnthropicAPIKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := AnthropicAPIKey().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := AnthropicCredential().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_AnthropicAPIKey_noMatch(t *testing.T) {
+func Test_AnthropicCredential_noMatch(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -120,7 +120,7 @@ func Test_AnthropicAPIKey_noMatch(t *testing.T) {
 			// Ninety-four characters where the pattern asks for ninety-five.
 			// This is the shape a line cut to a column limit leaves, and the
 			// characters in front of the cut stay in the text: the far side of
-			// reading a floor, which builtin_anthropic_api_key.go weighs.
+			// reading a floor, which builtin_anthropic_credential.go weighs.
 			name: "a body one character too short",
 			src:  "sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd",
 		},
@@ -207,14 +207,14 @@ func Test_AnthropicAPIKey_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := AnthropicAPIKey().Find(tt.src); len(got) != 0 {
+			if got, _ := AnthropicCredential().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
 	}
 }
 
-func Test_AnthropicAPIKey_inContext(t *testing.T) {
+func Test_AnthropicCredential_inContext(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -260,7 +260,7 @@ func Test_AnthropicAPIKey_inContext(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(AnthropicAPIKey()))
+	m := New(WithPatterns(AnthropicCredential()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -270,7 +270,7 @@ func Test_AnthropicAPIKey_inContext(t *testing.T) {
 	}
 }
 
-func Test_AnthropicAPIKey_nextToWordCharacters(t *testing.T) {
+func Test_AnthropicCredential_nextToWordCharacters(t *testing.T) {
 	// A word boundary in front of the pattern would not trim these matches but
 	// drop them, letting the key through whole.
 	tests := []struct {
@@ -290,7 +290,7 @@ func Test_AnthropicAPIKey_nextToWordCharacters(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(AnthropicAPIKey()))
+	m := New(WithPatterns(AnthropicCredential()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -300,7 +300,7 @@ func Test_AnthropicAPIKey_nextToWordCharacters(t *testing.T) {
 	}
 }
 
-func Test_AnthropicAPIKey_reachesTheEndOfTheRun(t *testing.T) {
+func Test_AnthropicCredential_reachesTheEndOfTheRun(t *testing.T) {
 	// The far side of reading a floor rather than a count. Where a key ends is
 	// where its alphabet stops, so ordinary punctuation ends one and nothing
 	// written after it joins it — but a character of the key's own alphabet
@@ -336,7 +336,7 @@ func Test_AnthropicAPIKey_reachesTheEndOfTheRun(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(AnthropicAPIKey()))
+	m := New(WithPatterns(AnthropicCredential()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -346,7 +346,7 @@ func Test_AnthropicAPIKey_reachesTheEndOfTheRun(t *testing.T) {
 	}
 }
 
-func Test_AnthropicAPIKey_cutShortOfTheFloor(t *testing.T) {
+func Test_AnthropicCredential_cutShortOfTheFloor(t *testing.T) {
 	// What the floor costs, held to being left in the text rather than
 	// redacted. A line cut to a column limit partway through a key leaves a
 	// prefix, a kind and a body too short to be one, and the random characters
@@ -371,7 +371,7 @@ func Test_AnthropicAPIKey_cutShortOfTheFloor(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(AnthropicAPIKey()))
+	m := New(WithPatterns(AnthropicCredential()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.src {
@@ -381,7 +381,7 @@ func Test_AnthropicAPIKey_cutShortOfTheFloor(t *testing.T) {
 	}
 }
 
-func Test_AnthropicAPIKey_insideAnOpaqueRun(t *testing.T) {
+func Test_AnthropicCredential_insideAnOpaqueRun(t *testing.T) {
 	// What this pattern redacts that nobody issued. The prefix is seven
 	// characters of an alphabet of sixty-four, so a long enough base64url value
 	// carries it, and where a kind, a separator and ninety-five characters
@@ -391,7 +391,7 @@ func Test_AnthropicAPIKey_insideAnOpaqueRun(t *testing.T) {
 	// The cases are held to being redacted rather than to being spared. What
 	// is taken is a stretch of a value already opaque to a reader, and the
 	// only tightening on offer is the table of kind names;
-	// builtin_anthropic_api_key.go sets out why this scan does not read it.
+	// builtin_anthropic_credential.go sets out why this scan does not read it.
 	// What the table is for is that the cases move with the scan: one of them
 	// ceasing to be located means the grammar changed, and that is a decision
 	// to be taken rather than noticed afterwards.
@@ -415,7 +415,7 @@ func Test_AnthropicAPIKey_insideAnOpaqueRun(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(AnthropicAPIKey()))
+	m := New(WithPatterns(AnthropicCredential()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -425,36 +425,36 @@ func Test_AnthropicAPIKey_insideAnOpaqueRun(t *testing.T) {
 	}
 }
 
-func Test_anthropicAPIKeyPrefix(t *testing.T) {
+func Test_anthropicCredentialPrefix(t *testing.T) {
 	// The scan resumes one byte past the start of a candidate because a key can
 	// begin inside the body of the one before it, and that holds only while
 	// every character of the prefix is one a body may be written in. A prefix
 	// carrying a character outside the alphabet would make the two impossible
 	// to nest, and the case above pinning the nesting would stand for nothing —
 	// which is not a failure anything else here reports.
-	if anthropicAPIKeyPrefix == "" {
+	if anthropicCredentialPrefix == "" {
 		t.Fatal("the pattern carries no prefix, so it locates nothing")
 	}
-	for i := range len(anthropicAPIKeyPrefix) {
-		if c := anthropicAPIKeyPrefix[i]; !isBase64URLByte(c) {
+	for i := range len(anthropicCredentialPrefix) {
+		if c := anthropicCredentialPrefix[i]; !isBase64URLByte(c) {
 			t.Errorf("the prefix holds %q, which no body may be written with", c)
 		}
 	}
 }
 
-// Test_anthropicAPIKeyAnchor holds the prefix to carrying the byte the scan
+// Test_anthropicCredentialAnchor holds the prefix to carrying the byte the scan
 // searches the input for at the index it reads a candidate back from.
 // builtin_scan.go says why that is held here rather than left to the targets.
-func Test_anthropicAPIKeyAnchor(t *testing.T) {
-	if anthropicAPIKeyAnchorIndex >= len(anthropicAPIKeyPrefix) {
-		t.Fatalf("the anchor stands at %d, the prefix is %d characters", anthropicAPIKeyAnchorIndex, len(anthropicAPIKeyPrefix))
+func Test_anthropicCredentialAnchor(t *testing.T) {
+	if anthropicCredentialAnchorIndex >= len(anthropicCredentialPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", anthropicCredentialAnchorIndex, len(anthropicCredentialPrefix))
 	}
-	if c := anthropicAPIKeyPrefix[anthropicAPIKeyAnchorIndex]; c != anthropicAPIKeyAnchor {
-		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(anthropicAPIKeyAnchor))
+	if c := anthropicCredentialPrefix[anthropicCredentialAnchorIndex]; c != anthropicCredentialAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(anthropicCredentialAnchor))
 	}
 }
 
-func Test_anthropicAPIKeyPrefix_bodyNeverMovesBack(t *testing.T) {
+func Test_anthropicCredentialPrefix_bodyNeverMovesBack(t *testing.T) {
 	// The scan keeps one run cursor for every candidate and reuses it wherever
 	// a body begins inside the run already read. That is sound only while a
 	// body never begins in front of the body of the candidate before it: were
@@ -469,42 +469,42 @@ func Test_anthropicAPIKeyPrefix_bodyNeverMovesBack(t *testing.T) {
 	// carries nothing like it, so the later candidate cannot begin before that
 	// kind has ended. Everything else about the two follows, which is why this
 	// is what is checked rather than the pair of consequences.
-	if anthropicAPIKeyPrefix == "" {
+	if anthropicCredentialPrefix == "" {
 		t.Fatal("the pattern carries no prefix, so there is no candidate to reason about")
 	}
-	if c := anthropicAPIKeyPrefix[len(anthropicAPIKeyPrefix)-1]; isAnthropicAPIKeyKindByte(c) {
+	if c := anthropicCredentialPrefix[len(anthropicCredentialPrefix)-1]; isAnthropicCredentialKindByte(c) {
 		t.Errorf("the prefix closes with %q, which a kind may be written with, so a candidate can begin inside the kind of the one before it", c)
 	}
 }
 
-func Test_anthropicAPIKeySeparator(t *testing.T) {
+func Test_anthropicCredentialSeparator(t *testing.T) {
 	// The separator divides the kind from the body, so it has to be a character
 	// a kind cannot hold — otherwise the walk over a kind would run straight
 	// through it and no candidate would ever have a body — and one a body can,
 	// since a body carries hyphens of its own and only the first behind the
 	// prefix divides the two.
-	if isAnthropicAPIKeyKindByte(anthropicAPIKeySeparator) {
-		t.Errorf("the separator %q is a character a kind may be written with, so nothing closes a kind", anthropicAPIKeySeparator)
+	if isAnthropicCredentialKindByte(anthropicCredentialSeparator) {
+		t.Errorf("the separator %q is a character a kind may be written with, so nothing closes a kind", anthropicCredentialSeparator)
 	}
-	if !isBase64URLByte(anthropicAPIKeySeparator) {
-		t.Errorf("the separator %q is no character a body may be written with", anthropicAPIKeySeparator)
+	if !isBase64URLByte(anthropicCredentialSeparator) {
+		t.Errorf("the separator %q is no character a body may be written with", anthropicCredentialSeparator)
 	}
 }
 
-func Test_isAnthropicAPIKeyKindByte(t *testing.T) {
+func Test_isAnthropicCredentialKindByte(t *testing.T) {
 	// The alphabet a kind is written in, stated over every byte rather than by
 	// example: the lowercase letters and the digits, and neither the hyphen nor
 	// the underscore a body admits.
 	for c := range 256 {
 		b := byte(c)
 		want := '0' <= b && b <= '9' || 'a' <= b && b <= 'z'
-		if got := isAnthropicAPIKeyKindByte(b); got != want {
-			t.Errorf("isAnthropicAPIKeyKindByte(%q) = %v, want %v", b, got, want)
+		if got := isAnthropicCredentialKindByte(b); got != want {
+			t.Errorf("isAnthropicCredentialKindByte(%q) = %v, want %v", b, got, want)
 		}
 	}
 }
 
-func Test_anthropicAPIKeyBodyAt(t *testing.T) {
+func Test_anthropicCredentialBodyAt(t *testing.T) {
 	// Where a body begins, and where the scan is told there is none. The count
 	// the body then runs to is the scan's to measure against the run, so what
 	// is stated here is only the division the prefix and the kind make.
@@ -552,14 +552,14 @@ func Test_anthropicAPIKeyBodyAt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := anthropicAPIKeyBodyAt(tt.src, 0); got != tt.want {
-				t.Errorf("anthropicAPIKeyBodyAt(%q, 0) = %d, want %d", tt.src, got, tt.want)
+			if got, _ := anthropicCredentialBodyAt(tt.src, 0); got != tt.want {
+				t.Errorf("anthropicCredentialBodyAt(%q, 0) = %d, want %d", tt.src, got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_AnthropicAPIKey_scanIsLinear(t *testing.T) {
+func Test_AnthropicCredential_scanIsLinear(t *testing.T) {
 	// Rejecting a candidate resumes one byte along, so a run dense in prefixes
 	// holds a candidate for every nine characters it has. Two things a
 	// candidate reads are walks over the rest of the input rather than bounded
@@ -590,10 +590,10 @@ func Test_AnthropicAPIKey_scanIsLinear(t *testing.T) {
 		"a body that runs the length of the line": "sk-ant-a-" + strings.Repeat("a", 1800000),
 	}
 
-	checkScanIsLinear(t, AnthropicAPIKey(), sources)
+	checkScanIsLinear(t, AnthropicCredential(), sources)
 }
 
-// referenceAnthropicAPIKeyFind locates keys the plain way: every position in
+// referenceAnthropicCredentialFind locates keys the plain way: every position in
 // turn, the prefix tried at it, the kind behind that walked to its end and the
 // body walked to the end of its run, with no cursor and nothing remembered
 // between candidates. The prefix, the separator, the floor and the two
@@ -625,9 +625,9 @@ func Test_AnthropicAPIKey_scanIsLinear(t *testing.T) {
 // scan, at that size. That is the price of a reference with no cursor to be
 // wrong about, and the reason the seeds below keep such a run under two hundred
 // bytes rather than inviting the mutator to grow it. Test_builtins_scanIsLinear
-// and Test_AnthropicAPIKey_scanIsLinear are where the cost the scan pays is
+// and Test_AnthropicCredential_scanIsLinear are where the cost the scan pays is
 // held down.
-func referenceAnthropicAPIKeyFind(src string) []Span {
+func referenceAnthropicCredentialFind(src string) []Span {
 	const (
 		prefix    = "sk-ant-"
 		separator = '-'
@@ -667,12 +667,12 @@ func referenceAnthropicAPIKeyFind(src string) []Span {
 	return spans
 }
 
-// FuzzAnthropicAPIKey_matchesReference guards the hand-written scan: the prefix
+// FuzzAnthropicCredential_matchesReference guards the hand-written scan: the prefix
 // it searches for, the alphabet it reads a kind in, the separator it asks that
 // kind to be closed by, the floor it holds a body to, the alphabet it reads
 // that body in, the run it remembers between candidates and the byte it resumes
 // at may none of them change which keys are located.
-func FuzzAnthropicAPIKey_matchesReference(f *testing.F) {
+func FuzzAnthropicCredential_matchesReference(f *testing.F) {
 	f.Add("nothing to see here")
 	f.Add("ANTHROPIC_API_KEY=sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")
 	f.Add("sk-ant-admin01-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")
@@ -709,16 +709,16 @@ func FuzzAnthropicAPIKey_matchesReference(f *testing.F) {
 	f.Add("payload=zzzzsk-ant-a-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdezzzz")
 	f.Add("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzsk-ant-a-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdezzzz")
 
-	fuzzAgainstReference(f, AnthropicAPIKey().Find, referenceAnthropicAPIKeyFind)
+	fuzzAgainstReference(f, AnthropicCredential().Find, referenceAnthropicCredentialFind)
 }
 
-// anthropicAPIKeyFindBenchmarks is what this scan is timed on. The
+// anthropicCredentialFindBenchmarks is what this scan is timed on. The
 // builtinPatterns entry for the pattern names it, and BenchmarkBuiltins times
 // every case it holds under the pattern's own name, so that a built-in cannot
 // arrive without a benchmark. Every case is held to the count it states under a
 // plain go test as well, which is what a benchmark nobody has run yet cannot
 // be.
-func anthropicAPIKeyFindBenchmarks() []benchmarkCase {
+func anthropicCredentialFindBenchmarks() []benchmarkCase {
 	// Nothing in an ordinary line opens the prefix, so what the line times is
 	// the search for it — which is most of what this pattern costs a caller
 	// whose text holds no key.

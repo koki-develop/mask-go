@@ -1,11 +1,11 @@
 // What the source of this package is held to, read from the source itself.
 //
-// Two of the rules this package keeps are about how it is written rather than
-// about what it computes, and neither can be stated as a case: a reference that
+// The rules kept here are about how this package is written rather than about
+// what it computes, and none of them can be stated as a case: a reference that
 // shares a declaration with the scan it checks still agrees with it on every
-// input, and a doc comment naming the wrong identifier still compiles. Both
-// drift in silence for exactly that reason, so both are read out of the syntax
-// tree here.
+// input, one written inline at the call is a reference no rule reaches, and a
+// doc comment naming the wrong identifier still compiles. They drift in silence
+// for exactly that reason, so they are read out of the syntax tree here.
 
 package mask
 

@@ -2,20 +2,21 @@ package mask
 
 import "strings"
 
-// AnthropicAPIKey locates Anthropic API keys: the keys the Claude Console
-// issues (sk-ant-api03-) and the keys of the Admin API (sk-ant-admin01-). Both
-// are written the same way — the prefix sk-ant-, the name of a kind, a hyphen,
-// and a long run of random characters — and it is that shape, rather than the
-// two names, that this pattern is anchored on. The OAuth tokens and the session
-// keys Anthropic writes the same way are therefore located as well.
+// AnthropicCredential locates the credentials Anthropic issues: the API keys
+// the Claude Console issues (sk-ant-api03-), the keys of the Admin API
+// (sk-ant-admin01-), the OAuth access and refresh tokens issued for Claude Code
+// (sk-ant-oat01-, sk-ant-ort01-) and the session keys of a signed-in account
+// (sk-ant-sid01-). All are written the same way — the prefix sk-ant-, the name
+// of a kind, a hyphen, and a long run of random characters — and it is that
+// shape, rather than the names, that this pattern is anchored on.
 //
-// A key is located wherever it is written, with no word boundary either side,
-// and is redacted from its sk-ant- to the end of the run it stands in. So a key
-// written against a word character keeps its span, and a character of the key's
-// own alphabet written straight after a key is redacted with it.
+// A credential is located wherever it is written, with no word boundary either
+// side, and is redacted from its sk-ant- to the end of the run it stands in. So
+// one written against a word character keeps its span, and a character of its
+// own alphabet written straight after it is redacted with it.
 //
-// Its name is "anthropic-api-key".
-func AnthropicAPIKey() Pattern { return anthropicAPIKey }
+// Its name is "anthropic-credential".
+func AnthropicCredential() Pattern { return anthropicCredential }
 
 // What Anthropic states and what Anthropic shows are worth separating here, as
 // they are wherever a vendor names a prefix and leaves the rest of a format to
@@ -59,6 +60,22 @@ func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 // more lowercase letters and digits closed by a hyphen, which is how every kind
 // Anthropic has written spells itself.
 //
+// What is left is the name, and credential is Anthropic's own word for the
+// whole of what this locates rather than a word chosen here. Its authentication
+// page heads the column naming what authenticates a request Credential, over
+// rows for an API key and for two kinds of short-lived token; its Admin API page
+// writes that the endpoint accepts three credentials and lists an Admin API key,
+// an OAuth bearer token and a personal or service account key among them. Key
+// covers less: on the account of Anthropic's own terms above, an OAuth refresh
+// token is not one and a session key is not an API one, and a name covering less
+// than a pattern locates is a name to change rather than a pattern to split.
+//
+// Splitting would cost what the paragraph above buys. The kinds cannot be told
+// apart without reading which one it is, which is the table just declined, and a
+// boundary would not help a caller: none of them is published by design, each
+// reaches Anthropic in an account's or a user's name, and nothing a redactor
+// could key on separates them, so two switches would stand for one decision.
+//
 // The alphabet of the body is the base64url one, isBase64URLByte in
 // builtin_scan.go: the letters of both cases, the digits, the hyphen and the
 // underscore. That is what both rulesets admit behind the prefix. The hyphen
@@ -93,7 +110,7 @@ func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 // cut stay in the output. That is the far side of this choice and it is the
 // direction the OpenAI scan does not have to take, because a marker inside a
 // key says what the key is where here only length can. The cases in
-// builtin_anthropic_api_key_test.go pin it so that it stays a decision on the
+// builtin_anthropic_credential_test.go pin it so that it stays a decision on the
 // record.
 //
 // The two characters a key closes with are not read. AA closes the ninety-five
@@ -143,7 +160,7 @@ func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 // and none can: a later candidate carries the closing hyphen somewhere, an
 // earlier candidate's kind holds no character like it, so the later candidate
 // cannot begin until that kind has ended, and its body stands past that kind's
-// body. Test_anthropicAPIKeyPrefix_bodyNeverMovesBack holds the prefix to the
+// body. Test_anthropicCredentialPrefix_bodyNeverMovesBack holds the prefix to the
 // one thing the argument rests on.
 //
 // Where the kind ends is not remembered and needs no cursor, for the same
@@ -151,7 +168,7 @@ func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 // hold, and the next candidate carries one two characters before its own body,
 // so each walk is bounded by the distance to the next candidate and the walks
 // telescope into a single pass over the input.
-// Test_AnthropicAPIKey_scanIsLinear drives both.
+// Test_AnthropicCredential_scanIsLinear drives both.
 //
 // What this pattern over-matches on: a run of base64url characters carrying
 // sk-ant-, a kind, a hyphen and ninety-five more characters. The prefix holds
@@ -171,17 +188,17 @@ func AnthropicAPIKey() Pattern { return anthropicAPIKey }
 // turns it away is the ninety-five unbroken characters of the alphabet the body
 // is held to.
 //
-// referenceAnthropicAPIKeyFind in builtin_anthropic_api_key_test.go states the
+// referenceAnthropicCredentialFind in builtin_anthropic_credential_test.go states the
 // same grammar with no cursor in it, spelling the prefix, the kind, the
 // separator, the floor and the alphabet again so that the two are changed
 // together, and the fuzz target beside it holds this scan to that statement.
-var anthropicAPIKey = NewPattern("anthropic-api-key", func(src string) ([]Span, int) {
+var anthropicCredential = NewPattern("anthropic-credential", func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of a prefix standing at the
 	// end of it, or a candidate the end of it cut short. builtin_scan.go says
 	// why those are the two.
-	retain := anthropicAPIKeyTail.start(src)
+	retain := anthropicCredentialTail.start(src)
 
 	// The run a key is read as is worked out once and remembered, for the
 	// reason the rationale above gives. The cursor holds the end of the run the
@@ -190,7 +207,7 @@ var anthropicAPIKey = NewPattern("anthropic-api-key", func(src string) ([]Span, 
 	runEnd := -1
 
 	for offset := 0; offset < len(src); {
-		i := strings.IndexByte(src[offset:], anthropicAPIKeyAnchor)
+		i := strings.IndexByte(src[offset:], anthropicCredentialAnchor)
 		if i < 0 {
 			break
 		}
@@ -201,20 +218,20 @@ var anthropicAPIKey = NewPattern("anthropic-api-key", func(src string) ([]Span, 
 		// body is, so a key can begin inside the body of the one before it.
 		offset = anchor + 1
 
-		if anchor < anthropicAPIKeyAnchorIndex {
+		if anchor < anthropicCredentialAnchorIndex {
 			continue
 		}
-		start := anchor - anthropicAPIKeyAnchorIndex
+		start := anchor - anthropicCredentialAnchorIndex
 
 		// The byte a prefix opens with is tested before the prefix is compared.
 		// Every anchor the search stops at reaches this line, and all but the
 		// few that open a candidate are turned away by one byte where a
 		// comparison of the whole prefix is a length and a read.
-		if src[start] != anthropicAPIKeyPrefix[0] || !strings.HasPrefix(src[start:], anthropicAPIKeyPrefix) {
+		if src[start] != anthropicCredentialPrefix[0] || !strings.HasPrefix(src[start:], anthropicCredentialPrefix) {
 			continue
 		}
 
-		body, kindEnd := anthropicAPIKeyBodyAt(src, start)
+		body, kindEnd := anthropicCredentialBodyAt(src, start)
 		if body < 0 {
 			// A name running to the end of the input is a name the separator
 			// behind it has not arrived for, so whether a body begins here at
@@ -238,7 +255,7 @@ var anthropicAPIKey = NewPattern("anthropic-api-key", func(src string) ([]Span, 
 			// what comes next either carries the run on or closes it.
 			retain = min(retain, start)
 		}
-		if runEnd-body < anthropicAPIKeyBodyChars {
+		if runEnd-body < anthropicCredentialBodyChars {
 			continue
 		}
 		spans = append(spans, Span{Start: start, End: runEnd})
@@ -247,38 +264,38 @@ var anthropicAPIKey = NewPattern("anthropic-api-key", func(src string) ([]Span, 
 })
 
 const (
-	// anthropicAPIKeyPrefix is what every credential Anthropic issues opens
+	// anthropicCredentialPrefix is what every credential Anthropic issues opens
 	// with, whichever kind names itself behind it. Every character of it
 	// belongs to the alphabet a body is written in, which is what lets one key
 	// be written inside another and is why the scan resumes a byte along;
-	// Test_anthropicAPIKeyPrefix holds it to that.
-	anthropicAPIKeyPrefix = "sk-ant-"
+	// Test_anthropicCredentialPrefix holds it to that.
+	anthropicCredentialPrefix = "sk-ant-"
 
-	// anthropicAPIKeyAnchor is the byte the scan searches the input for and
-	// anthropicAPIKeyAnchorIndex is where it stands in the prefix, so that a
+	// anthropicCredentialAnchor is the byte the scan searches the input for and
+	// anthropicCredentialAnchorIndex is where it stands in the prefix, so that a
 	// candidate begins that many bytes in front of what a search reported. The
 	// rationale above says why this character and not the one the prefix opens
 	// with.
-	anthropicAPIKeyAnchor      = 'k'
-	anthropicAPIKeyAnchorIndex = 1
+	anthropicCredentialAnchor      = 'k'
+	anthropicCredentialAnchorIndex = 1
 
-	// anthropicAPIKeySeparator closes the kind and opens the body. It belongs
+	// anthropicCredentialSeparator closes the kind and opens the body. It belongs
 	// to the body alphabet and not to the one a kind is written in, which is
 	// what makes the first of them behind the prefix the one that divides the
 	// two. It is also the character the prefix closes with, which is what keeps
 	// a body from ever moving back and a walk over a kind from ever being
 	// repeated.
-	anthropicAPIKeySeparator = '-'
+	anthropicCredentialSeparator = '-'
 
-	// anthropicAPIKeyBodyChars is the count a body is held to, read as a floor
+	// anthropicCredentialBodyChars is the count a body is held to, read as a floor
 	// rather than exactly. Ninety-five is what every published Anthropic
 	// credential carries and what both rulesets state; it is also what keeps a
 	// hyphenated identifier out, which is why it is not a number that can be
 	// lowered on its own. The rationale above weighs both.
-	anthropicAPIKeyBodyChars = 95
+	anthropicCredentialBodyChars = 95
 )
 
-// anthropicAPIKeyBodyAt returns where the body of a candidate opening at start
+// anthropicCredentialBodyAt returns where the body of a candidate opening at start
 // begins, or -1 where what stands behind the prefix is not the name of a kind
 // closed by a separator.
 //
@@ -286,30 +303,30 @@ const (
 // digits, which is how every kind Anthropic has written spells itself, and no
 // list of the names themselves. How long the body then is, is the caller's to
 // measure against the run it stands in.
-func anthropicAPIKeyBodyAt(src string, start int) (body, kindEnd int) {
-	kind := start + len(anthropicAPIKeyPrefix)
+func anthropicCredentialBodyAt(src string, start int) (body, kindEnd int) {
+	kind := start + len(anthropicCredentialPrefix)
 
 	i := kind
-	for i < len(src) && isAnthropicAPIKeyKindByte(src[i]) {
+	for i < len(src) && isAnthropicCredentialKindByte(src[i]) {
 		i++
 	}
-	if i == kind || i == len(src) || src[i] != anthropicAPIKeySeparator {
+	if i == kind || i == len(src) || src[i] != anthropicCredentialSeparator {
 		return -1, i
 	}
 	return i + 1, i
 }
 
-// isAnthropicAPIKeyKindByte reports whether c may appear in the name a kind of
+// isAnthropicCredentialKindByte reports whether c may appear in the name a kind of
 // credential writes between the prefix and its body.
 //
 // It admits neither the hyphen nor the underscore, which the alphabet a body is
 // written in does. The hyphen is what closes the kind, so admitting it would
 // leave nothing to divide the two; the underscore is admitted by neither
 // Anthropic's own hint nor any kind it has written.
-func isAnthropicAPIKeyKindByte(c byte) bool {
+func isAnthropicCredentialKindByte(c byte) bool {
 	return '0' <= c && c <= '9' || 'a' <= c && c <= 'z'
 }
 
-// anthropicAPIKeyTail is what the scan settles the tail of its input by.
+// anthropicCredentialTail is what the scan settles the tail of its input by.
 // prefixTail (builtin_scan.go) says what that is and why it is built once.
-var anthropicAPIKeyTail = newPrefixTail(anthropicAPIKeyPrefix)
+var anthropicCredentialTail = newPrefixTail(anthropicCredentialPrefix)

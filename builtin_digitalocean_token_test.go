@@ -379,13 +379,12 @@ func Test_DigitalOceanToken_aWordEndingInAKind(t *testing.T) {
 }
 
 func Test_DigitalOceanToken_aDigestBehindThePrefix(t *testing.T) {
-	// The collision every prefix in this package leaves is a digest written
-	// behind it, and this format pays it rather than ruling it out — more
-	// squarely than most, since a SHA-256 is sixty-four lowercase hexadecimal
-	// characters and a body is exactly that. So the prefix and a SHA-256 is a
-	// token with nothing left over to tell the two apart, which is what
-	// builtin_digitalocean_token.go weighs: a scan declining it would decline
-	// every token DigitalOcean issues.
+	// The collision a prefix invites is a digest written behind it, and this
+	// format pays it rather than ruling it out — more squarely than most, since
+	// a SHA-256 is sixty-four lowercase hexadecimal characters and a body is
+	// exactly that. So the prefix and a SHA-256 is a token with nothing left
+	// over to tell the two apart, which is what builtin_digitalocean_token.go
+	// weighs: a scan declining it would decline every token DigitalOcean issues.
 	//
 	// The digests shorter than the count are turned away by the count, and a
 	// digest with no prefix in front of it holds nothing to be found at.

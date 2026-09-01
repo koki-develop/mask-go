@@ -26,6 +26,14 @@ type Match struct {
 //
 // Implementations must be safe for concurrent use by multiple goroutines.
 type Redactor interface {
+	// Redact returns the text written in place of the value m holds. It is
+	// written out as it is returned: the length of the original is not kept
+	// unless the text returned keeps it, as Fill does and Fixed does not,
+	// and returning the empty string splices the text either side of the
+	// value together.
+	//
+	// What m holds is the attribution of a redaction rather than a promise
+	// about the whole of it. Match.Value says where that comes from.
 	Redact(m Match) string
 }
 

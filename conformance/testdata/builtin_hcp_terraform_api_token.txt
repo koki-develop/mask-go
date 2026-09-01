@@ -149,8 +149,8 @@ case:     a vagrant cloud token
 in:       VAGRANT_CLOUD_TOKEN=0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012
 out:      VAGRANT_CLOUD_TOKEN=«hcp-terraform-api-token»
 
-# The other HashiCorp credential this library reads, which this pattern locates
-# nothing in, and the text an HCP Terraform log line is written from, which
+# A HashiCorp credential of another kind, which this pattern locates nothing
+# in, and the text an HCP Terraform log line is written from, which
 # carries the host name a token is spent against without carrying a separator.
 
 case:     a vault token

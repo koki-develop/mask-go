@@ -6,8 +6,7 @@ import (
 	"testing"
 )
 
-// Every benchmark there is: the one driving a Masker with every built-in at
-// once, the one driving each built-in scan alone, and the bodies they share.
+// What the benchmarks of this package are driven by, and the bodies they share.
 //
 // What a pattern is timed on lives with the pattern, in the
 // builtin_<name>_test.go beside it: what is worth timing in a scan is the run

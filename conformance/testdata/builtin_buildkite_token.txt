@@ -194,9 +194,9 @@ out:      «buildkite-token» «buildkite-token»
 # token written the same way. What is taken is a stretch of a value that was
 # already opaque to a reader.
 #
-# Every body written in this file is forty hexadecimal characters, which is a
-# SHA-1's shape exactly, so each of the cases above is also a digest behind a
-# prefix and is redacted for the same reason.
+# The body these cases are written around is forty hexadecimal characters, which
+# is a SHA-1's shape exactly, so a token written that way is also a digest behind
+# a prefix and is redacted for the same reason.
 
 case:     the prefix inside a longer run of base64url
 in:       payload=zzzzbkua_0123456789abcdef0123456789abcdef01234567zzzz

@@ -160,12 +160,13 @@ func PrivateKey() Pattern { return privateKey }
 //
 // A body of one base64 character is a body. There is no floor under it, and
 // declining to put one there is a decision rather than an omission. What a
-// floor would buy back is the placeholder somebody wrote where a key stands —
-// a word under a BEGIN line, in a template — and what it would cost is the key
-// a column limit cut to fewer characters than the floor, which is the value
-// this pattern most needs to reach and the one no other pattern here can. The
-// boundary line is the whole of the evidence and it is decisive on its own, so
-// what stands in the key's place is redacted whatever it turns out to be.
+// floor would buy back is the placeholder somebody wrote where a key stands
+// — a word under a BEGIN line, in a template — and what it would cost is the
+// key a column limit cut to fewer characters than the floor, which is the
+// value this pattern most needs to reach and which carries nothing of its
+// own to be found by: what is left of such a key is base64 and no more. The
+// boundary line is the whole of the evidence and it is decisive on its own,
+// so what stands in the key's place is redacted whatever it turns out to be.
 //
 // Line breaks are read in four spellings: a line feed, a carriage return and a
 // line feed, and each of those written as the two characters \ and n rather
@@ -223,10 +224,12 @@ func PrivateKey() Pattern { return privateKey }
 //
 // What this pattern over-matches on: base64 written under a boundary line by
 // somebody who was not writing a key. That is over-matching on text already
-// opaque to a reader, which is the standard the rules hold a built-in to, and
-// the boundary line in front of it is a stronger statement of intent than any
-// prefix another pattern here reads. What it does not reach is prose, a git
-// SHA or an MD5, none of which carries a boundary line at all.
+// opaque to a reader, which is the standard the rules hold a built-in to,
+// and the boundary line in front of it is a stronger statement of intent
+// than a prefix: a prefix is a handful of characters a random string can
+// open with by accident, where a boundary line spells out what the block
+// beneath it is. What it does not reach is prose, a git SHA or an MD5, none
+// of which carries a boundary line at all.
 //
 // The private key formats this pattern does not read are the ones written in
 // no armor: PuTTY's .ppk, which opens PuTTY-User-Key-File-3 and counts its
