@@ -1,8 +1,8 @@
 # The tests of a masking library have to carry values shaped like real
 # credentials, and betterleaks reports them as it should. Every such value in a
 # test is built from the ordered run 0123456789abcdef, which no real credential
-# is, so those alone are allowed. A credential written any other way is still
-# reported, in a test as anywhere else.
+# is, so those are the values allowed. A credential written any other way is
+# still reported, in a test as anywhere else.
 #
 # The run is allowed in either case, because the case is the credential's to
 # choose: an AWS access key ID is written in uppercase and digits alone, so a
@@ -30,6 +30,33 @@
 # are the end of. Those values are built from the same ordered run for the same
 # reason, and the condition on them is the same one: a credential written any
 # other way is reported in a pattern's file as anywhere else.
+#
+# Where the run stands is asked for as well as that it stands somewhere. A value
+# of this kind is a vendor's prefix and then a body, and the run is the body: it
+# opens the value, or it opens the body behind the separator the prefix closes
+# with. Asking only that the run be present asks nothing at all of a real
+# credential with the run written across the middle of it, which is a value half
+# rewritten by hand and the one shape this entry would otherwise hide. So the
+# run is asked for within nine characters of the beginning of the value or of a
+# separator inside it. Nine is what the corpus reaches: a vendor's marker
+# written against a body with no separator between them is AKIA, AIza, dapi or
+# GR1348941, and none of them is longer.
+#
+# Some vendors write a fixed string of their own in front of the body, longer
+# than any marker: a PyPI token carries the index it was issued against, encoded
+# into the token, and a PlanetScale token carries a JWT header. Those strings
+# are named in the regexes below, so that the body behind one is read as a body.
+# There is one of them per index the PyPI cases are written for rather than one
+# for the vendor, because the string is the index's name and not the vendor's.
+# A string arriving tomorrow that is named nowhere below is reported until it
+# is, which is the side to fail on — the entry stops covering what it has not
+# been told about rather than covering it silently.
+#
+# What it gives up is a real credential with the run written over the opening of
+# its body. The run does not fall there by chance: sixteen ordered characters in
+# an alphabet of sixty-two is nothing a generator writes, so what is given up is
+# a value somebody rewrote by hand and stopped rewriting partway, and the line
+# it is written on is a line a reviewer reads.
 
 [extend]
 useDefault = true
@@ -40,10 +67,10 @@ condition = "AND"
 paths = ['''_test\.go$''', '''conformance/testdata/[^/]+\.txt$''', '''(^|/)builtin_[a-z0-9_]+\.go$''']
 regexTarget = "secret"
 regexes = [
-  '''0123456789abcdef''',
-  '''0123456789ABCDEF''',
-  '''01234567-89ab-cdef-0123-456789abcdef''',
-  '''01234567-89AB-CDEF-0123-456789ABCDEF''',
+  '''(?:^|[^0-9A-Za-z])(?:AgEIcHlwaS5vcmc|AgENdGVzdC5weXBpLm9yZw|AgEEeC5pbw|eyJhbGciOiJIUzI1NiJ9)?[0-9A-Za-z]{0,9}0123456789abcdef''',
+  '''(?:^|[^0-9A-Za-z])(?:AgEIcHlwaS5vcmc|AgENdGVzdC5weXBpLm9yZw|AgEEeC5pbw|eyJhbGciOiJIUzI1NiJ9)?[0-9A-Za-z]{0,9}0123456789ABCDEF''',
+  '''(?:^|[^0-9A-Za-z])(?:AgEIcHlwaS5vcmc|AgENdGVzdC5weXBpLm9yZw|AgEEeC5pbw|eyJhbGciOiJIUzI1NiJ9)?[0-9A-Za-z]{0,9}01234567-89ab-cdef-0123-456789abcdef''',
+  '''(?:^|[^0-9A-Za-z])(?:AgEIcHlwaS5vcmc|AgENdGVzdC5weXBpLm9yZw|AgEEeC5pbw|eyJhbGciOiJIUzI1NiJ9)?[0-9A-Za-z]{0,9}01234567-89AB-CDEF-0123-456789ABCDEF''',
 ]
 
 # The corpus writes a redaction as the pattern's name between guillemets, and a
@@ -89,14 +116,15 @@ regexes = ['''^«[a-z0-9-]+»$''']
 # stops being ordered characters the moment it reaches either. What is asked for
 # instead is the run those two are taken out of, which is as much of it as the
 # format admits, under the same paths and the same case as above: a key written
-# any other way is reported as before.
+# any other way is reported as before. Where the run has to stand is what the
+# entry above asks of its own, and for the reason given there.
 [[allowlists]]
 description = "age secret keys made of the ordered characters Bech32 admits, written into a test or a pattern's rationale"
 condition = "AND"
 targetRules = ["age-secret-key"]
 paths = ['''_test\.go$''', '''conformance/testdata/[^/]+\.txt$''', '''(^|/)builtin_[a-z0-9_]+\.go$''']
 regexTarget = "secret"
-regexes = ['''023456789ACDEF''']
+regexes = ['''(?:^|[^0-9A-Za-z])[0-9A-Za-z]{0,9}023456789ACDEF''']
 
 # The private key pattern is a place the ordered run cannot be asked for, and
 # the reason is what the rule reports rather than what the tests hold. The
