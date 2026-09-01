@@ -563,8 +563,8 @@ func Test_OryAPIKey_insideAnOpaqueRun(t *testing.T) {
 			// pattern is not enabled here, so what the case states is the Ory
 			// pattern's own reading of it.
 			name: "where a signature stands",
-			src:  "****************************************************************************",
-			want: "****************************************************************************",
+			src:  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzory_pat_0123456789abcdef0123456789abcdefzzzz",
+			want: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz********************************************",
 		},
 	}
 
@@ -870,7 +870,7 @@ func FuzzOryAPIKey_matchesReference(f *testing.F) {
 	// The prefix written inside a run of base64url, which is the over-match the
 	// pattern admits.
 	f.Add("payload=zzzzory_pat_0123456789abcdef0123456789abcdefzzzz")
-	f.Add("****************************************************************************")
+	f.Add("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzory_pat_0123456789abcdef0123456789abcdefzzzz")
 
 	fuzzAgainstReference(f, OryAPIKey().Find, referenceOryAPIKeyFind)
 }
