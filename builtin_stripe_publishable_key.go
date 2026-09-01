@@ -123,7 +123,7 @@ func StripePublishableKey() Pattern { return stripePublishableKey }
 // away a prefix standing inside a word, but the exemption a run of keys is
 // located by admits any candidate with stripeKeyRunBeforeChars letters and
 // digits unbroken in front of it — which a long identifier has, however it is
-// cased. So pk_live_ behind twenty-six characters of camelCase is redacted
+// cased. So pk_live_ behind twenty-two characters of camelCase is redacted
 // where pk_live_ behind one letter is not. builtin_stripe_secret_key.go states
 // what the exemption is worth and why it is not on offer to decline it. The
 // cases in builtin_stripe_publishable_key_test.go pin the over-match so that it

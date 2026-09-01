@@ -594,9 +594,9 @@ func Test_HashiCorpVaultToken_aDottedName(t *testing.T) {
 	// makes the legacy s., b. and r. prefixes unreadable — the difference being
 	// that hvs is a rare thing to call a receiver where s is not.
 	//
-	// The second and fourth cases are the same text with a segment short of the
-	// floor, which is what turns an ordinary name away. Nothing in the grammar
-	// could have turned the first and third away: twenty-four unbroken
+	// The cases named for a segment shorter than the floor are those same texts
+	// written short of it, which is what turns an ordinary name away. Nothing
+	// in the grammar could have turned the rest away: twenty-four unbroken
 	// characters behind one of the prefixes is a root service token exactly.
 	tests := []struct {
 		name string

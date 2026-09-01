@@ -122,12 +122,14 @@ func CratesIOToken() Pattern { return cratesIOToken }
 // benchmarks are written on, over the text shapes its conformance corpus holds
 // and over the output cargo writes while publishing a crate; the i, which is a
 // vowel of prose as well as the first letter of io, is the commonest of the
-// three on all of them. The line these benchmarks are
-// written on is the one text where the count comes out the other way — the
-// vendor's name and the path behind it repeat the c three times against the
-// o's two — and one line of the vendor's own URLs is not what a caller's log
-// is. Neither opening carries the c a second time, so a candidate stops the
-// search once however it ends.
+// three on all of them. Those are counts of the corpora entire, and lines
+// within them go the other way wherever a name carrying the c is written out:
+// the line these benchmarks are written on repeats the vendor's own name and
+// the path behind it, so the c stands three times there against the o's two,
+// and the line cargo writes while publishing names a crate spelled with one.
+// Neither a line of the vendor's own URLs nor one crate's name is what a
+// caller's log is. Neither opening carries the c a second time, so a candidate
+// stops the search once however it ends.
 //
 // The scan resumes one byte past the start of a candidate whether it became a
 // token or not. The body is written in an alphabet holding every character of
