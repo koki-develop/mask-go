@@ -89,7 +89,11 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   and that is what a change to a scan is compared against, since a regression in
   one is divided in the first by however many patterns the registry holds.
   `go test -bench Builtins/jwt -benchmem .` runs one of them.
-- `golangci-lint run` — lint (no config file; defaults).
+- `golangci-lint run` — lint (no config file; defaults, which hold nothing to
+  formatting).
+- `gofmt -l .` — formatting, reported rather than applied. The pre-commit hook
+  runs `go fmt ./...`, which rewrites and stages what it rewrote, so a push
+  made without the hook is what this catches and it is what CI runs.
 - `go fix ./...` — apply modern Go idioms. Go 1.26's `go fix` is the
   analyzer-driven fixer that supersedes the standalone `modernize`, so it
   ships with the pinned toolchain rather than needing a pin of its own.
