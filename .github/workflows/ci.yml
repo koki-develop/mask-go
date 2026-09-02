@@ -112,7 +112,9 @@ jobs:
             echo "go list reports $count package(s) and this matrix holds $ROWS row(s)" >&2
             exit 1
           fi
-          if ! printf '%s\n' "$packages" | grep -qxF "$mine"; then
+          # Not a pipe: grep -q leaves on its first match, and a writer caught
+          # still writing dies of SIGPIPE, which pipefail reads as no match.
+          if ! grep -qxF "$mine" <<<"$packages"; then
             echo "$mine is not a package of this module" >&2
             exit 1
           fi
