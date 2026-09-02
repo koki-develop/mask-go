@@ -2,6 +2,10 @@ name: CI
 
 permissions: {}
 
+defaults:
+  run:
+    shell: bash
+
 on:
   pull_request:
   push:
@@ -88,7 +92,6 @@ jobs:
           cache: save
           build: race
       - name: Check that the matrix names every package
-        shell: bash
         env:
           PKG: ${{ matrix.pkg }}
           ROWS: ${{ strategy.job-total }}
@@ -138,7 +141,6 @@ jobs:
       - uses: ./.github/actions/setup
       - name: List every fuzz target
         id: list
-        shell: bash
         run: |
           # A loop iterating over what a command substitution produced is where
           # errexit does not reach: the substitution can fail and the loop simply
@@ -197,14 +199,62 @@ jobs:
       # inputs someone thought of. Every target is given a little time to look
       # for the ones nobody did.
       - name: Fuzz
-        shell: bash
         # The two reach the script through the environment rather than being
         # written into it: what the listing job reported is then data the shell
         # expands, not text it parses.
         env:
           PKG: ${{ matrix.pkg }}
           TARGET: ${{ matrix.target }}
-        run: go test -run '^$' -fuzz "^${TARGET}$" -fuzztime 30s "$PKG"
+        # go test can report a run that found nothing as a failure. It
+        # suppresses the -fuzztime deadline by comparing the error its
+        # coordinator woke on against the workers' child context, and context
+        # closes a parent's done channel before handing the error down -- so the
+        # coordinator can wake with the parent expired and the child not yet
+        # cancelled, the comparison misses, and a quiet run exits 1 saying
+        # "context deadline exceeded".
+        run: |
+          # tee so the elapsed lines stream; pipefail because the status read
+          # below is tee's otherwise, and a run that found a crasher would exit
+          # 0. The shell named at the top of this file sets it too.
+          set -o pipefail
+          fuzztime=30s
+          log="$RUNNER_TEMP/fuzz.log"
+          status=0
+          go test -run '^$' -fuzz "^${TARGET}$" -fuzztime "$fuzztime" "$PKG" 2>&1 | tee "$log" || status=${PIPESTATUS[0]}
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+
+          if ! out=$(cat "$log"); then
+            echo "reading $log failed" >&2
+            exit 1
+          fi
+
+          # The corpus settles it before the message does: a crash caught while
+          # being minimized reaches testdata/fuzz from a defer but is named as
+          # the failure only where the error is nil, so a lost race leaves it on
+          # disk reported as nothing but the deadline.
+          if ! crashers=$(git status --porcelain -- '*testdata/fuzz*'); then
+            echo "listing testdata/fuzz failed" >&2
+            exit 1
+          fi
+          if [ -n "$crashers" ]; then
+            echo "fuzzing wrote a crasher to testdata/fuzz" >&2
+            exit 1
+          fi
+
+          # The deadline alone and nothing else: any other detail line is a
+          # failure this must not swallow.
+          fails=$(grep -c '^--- FAIL: ' <<<"$out" || true)
+          details=$({ grep '^    ' <<<"$out" || true; } | sed 's/^ *//' | sort -u)
+          if [ "$fails" -eq 1 ] &&
+            grep -q "^--- FAIL: ${TARGET} " <<<"$out" &&
+            [ "$details" = "context deadline exceeded" ]; then
+            echo "fuzzing found nothing in $fuzztime; go test reported the deadline as a failure" >&2
+            exit 0
+          fi
+
+          exit "$status"
 
   # The name the fuzzing is read by from outside, kept to one row now that the
   # targets are a job apiece. needs alone would only skip this job when one of
@@ -229,7 +279,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check that every target was fuzzed
-        shell: bash
         env:
           LIST_RESULT: ${{ needs.fuzz-list.result }}
           TARGET_RESULT: ${{ needs.fuzz-target.result }}
@@ -263,7 +312,6 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup
       - name: Check that every file is formatted
-        shell: bash
         run: |
           unformatted=$(gofmt -l .)
           if [ -n "$unformatted" ]; then
