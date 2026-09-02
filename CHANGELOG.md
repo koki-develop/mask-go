@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.3.0](https://github.com/koki-develop/mask-go/compare/v0.2.0...v0.3.0) (2026-09-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* AnthropicAPIKey is now AnthropicCredential, and the name it reports is "anthropic-credential" rather than "anthropic-api-key".
+
+### Features
+
+* Locate a Neon API key ([#67](https://github.com/koki-develop/mask-go/issues/67)) ([#113](https://github.com/koki-develop/mask-go/issues/113)) ([b37fda4](https://github.com/koki-develop/mask-go/commit/b37fda42c63b8c0314da505e23336b08a1164c35))
+* Locate a Netlify authentication token ([#104](https://github.com/koki-develop/mask-go/issues/104)) ([#111](https://github.com/koki-develop/mask-go/issues/111)) ([746e984](https://github.com/koki-develop/mask-go/commit/746e98437f51e83b6010507c74ead229650923e3))
+* Locate a Pinecone API key ([#65](https://github.com/koki-develop/mask-go/issues/65)) ([#112](https://github.com/koki-develop/mask-go/issues/112)) ([eeefc61](https://github.com/koki-develop/mask-go/commit/eeefc6155b084b2a92dcea3d0d0d8f7497ac8821))
+* Locate a Render API key ([#103](https://github.com/koki-develop/mask-go/issues/103)) ([#121](https://github.com/koki-develop/mask-go/issues/121)) ([25e5bc3](https://github.com/koki-develop/mask-go/commit/25e5bc3b2e67f2bfb388e90e9286f477902f584b))
+* Locate a Shippo API token ([#95](https://github.com/koki-develop/mask-go/issues/95)) ([#122](https://github.com/koki-develop/mask-go/issues/122)) ([2d0030a](https://github.com/koki-develop/mask-go/commit/2d0030a600bd8a32dfbd0d3f8c0a60f7885b204e))
+* Locate an Ory API key ([#117](https://github.com/koki-develop/mask-go/issues/117)) ([#120](https://github.com/koki-develop/mask-go/issues/120)) ([5afd1c4](https://github.com/koki-develop/mask-go/commit/5afd1c4e73b1423b3e0d36013a0a55fac81508f2))
+* Name the Anthropic pattern for the whole of what it locates ([cf3bc29](https://github.com/koki-develop/mask-go/commit/cf3bc29e319a0605c3e2e8288a994e3944316d56))
+* Release v0.3.0 ([eea1f94](https://github.com/koki-develop/mask-go/commit/eea1f94009b29293c206c7d5dc248041eb8a2a6f))
+
+
+### Bug Fixes
+
+* Answer the generic rules betterleaks 1.8.1 added, one kind at a time ([#123](https://github.com/koki-develop/mask-go/issues/123)) ([5e1b3f9](https://github.com/koki-develop/mask-go/commit/5e1b3f99973705710bac52076e808f99e0ce2e74))
+* Ask where the ordered run stands, not only that it stands ([14f0f80](https://github.com/koki-develop/mask-go/commit/14f0f80d9984cc4e10ba7b6f2beb2b43ec88f4cb))
+
+
+### Performance Improvements
+
+* Turn a pattern away on a text that holds none of its openings ([#135](https://github.com/koki-develop/mask-go/issues/135)) ([3ff2320](https://github.com/koki-develop/mask-go/commit/3ff232051d4d224314b400d9e973c5a8c7d405d5))
+
 ## [0.2.0](https://github.com/koki-develop/mask-go/compare/v0.1.0...v0.2.0) (2026-08-30)
 
 
