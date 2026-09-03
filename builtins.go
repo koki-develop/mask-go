@@ -66,6 +66,7 @@ var builtins = []Pattern{
 	openRouterAPIKey,
 	oryAPIKey,
 	paddleAPIKey,
+	perplexityAPIKey,
 	pineconeAPIKey,
 	planetScaleToken,
 	postHogPersonalAPIKey,

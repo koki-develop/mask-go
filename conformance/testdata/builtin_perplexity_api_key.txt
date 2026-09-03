@@ -1,0 +1,257 @@
+# What Perplexity API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run
+# 0123456789abcdefghijklmnopqrstuvwxyz, which no real credential is. That run is
+# thirty-six characters, so a body carries it and twelve characters more — the
+# shortest body the pattern reads, since the count is a floor. It is spelled in
+# lowercase where the case does not matter and in uppercase where the case is
+# what a case is about: base62 holds the letters of both, so either spelling is
+# a body. The one case the run cannot state is "a body of one repeated
+# character", which is written from a single letter because what it turns on is
+# the entropy of a body and the run has plenty.
+
+patterns: perplexity-api-key
+
+# The one prefix Perplexity has issued an API key with. There is a single kind
+# of string here rather than a table of them: one key authenticates every
+# request an account makes against one balance, so nothing in the value says
+# what it may be spent on, and the cases below are that one shape in the places
+# a key is written.
+
+case:     a key in an environment assignment
+in:       PERPLEXITY_API_KEY=pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      PERPLEXITY_API_KEY=«perplexity-api-key»
+
+case:     a key in the bearer authorization header the api is called with
+in:       Authorization: Bearer pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      Authorization: Bearer «perplexity-api-key»
+
+case:     a key in the json the endpoint that issues one returns
+in:       {"auth_token":"pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab","token_name":"Production API Key"}
+out:      {"auth_token":"«perplexity-api-key»","token_name":"Production API Key"}
+
+case:     a key on a command line
+in:       curl -H "Authorization: Bearer pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab" https://api.perplexity.ai/chat/completions
+out:      curl -H "Authorization: Bearer «perplexity-api-key»" https://api.perplexity.ai/chat/completions
+
+case:     a key in a configuration environment block
+in:       "env": {"PERPLEXITY_API_KEY": "pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab"}
+out:      "env": {"PERPLEXITY_API_KEY": "«perplexity-api-key»"}
+
+# The alphabet the forty-eight characters are written in. It is base62 — the
+# letters of both cases and the digits — which is what the published expression
+# admits behind the prefix. The two characters base64url adds, the hyphen and
+# the underscore, are not admitted, and either of them ends a body.
+
+case:     a body written in capitals
+in:       pplx-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789AB
+out:      «perplexity-api-key»
+
+case:     a body carrying a hyphen
+in:       pplx-0123456789abcdefghij-lmnopqrstuvwxyz0123456789ab
+out:      pplx-0123456789abcdefghij-lmnopqrstuvwxyz0123456789ab
+
+case:     a body carrying an underscore
+in:       pplx-0123456789abcdefghij_lmnopqrstuvwxyz0123456789ab
+out:      pplx-0123456789abcdefghij_lmnopqrstuvwxyz0123456789ab
+
+# The lengths either side of forty-eight. Perplexity states no length for a key,
+# and no alphabet and no checksum either; one expression is published for the
+# format and it reads forty-eight characters. The count is read as a floor
+# rather than exactly: forty-seven characters are not a key, and forty-nine are
+# one key to the end of its run rather than a key and a character left over.
+# What the floor costs is the middle case below — a key cut short of forty-eight
+# keeps every random character written in front of the cut, and none of them is
+# redacted.
+
+case:     a body of forty-eight characters is a key
+in:       pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      «perplexity-api-key»
+
+case:     a body of forty-seven characters is not
+in:       pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789a
+out:      pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789a
+
+case:     an alphabet run longer than the floor is a key to the end of it
+in:       pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789abc
+out:      «perplexity-api-key»
+
+# The entropy floor the published rules carry is not read. This library redacts
+# rather than reports, so a value declined is a credential written out in full
+# where a value taken wrongly is a stretch of opaque text lost to a reader — and
+# nothing about the format says a key of repetitive characters cannot be issued.
+# The case below is what reading no entropy admits, and it is the one here whose
+# body is not the ordered run: the run carries more entropy than either rule
+# asks for, so no other case in this file would report a scan that started
+# reading one.
+
+case:     a body of one repeated character
+in:       pplx-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+out:      «perplexity-api-key»
+
+# What a key may be written against. There is no boundary on either side of the
+# prefix, so a key keeps its span whatever word character it abuts — and where
+# the run of its alphabet carries on past the floor, what carries it on is
+# redacted with the key. A hyphen and an underscore end the run instead.
+
+case:     a key after an underscore
+in:       PERPLEXITY_API_KEY_pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      PERPLEXITY_API_KEY_«perplexity-api-key»
+
+case:     a key after a letter
+in:       xpplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      x«perplexity-api-key»
+
+case:     a word written against a key
+in:       pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789absuffix
+out:      «perplexity-api-key»
+
+case:     a hyphenated word written against a key
+in:       pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab-suffix
+out:      «perplexity-api-key»-suffix
+
+case:     an underscored word written against a key
+in:       pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab_suffix
+out:      «perplexity-api-key»_suffix
+
+case:     a key at the end of a sentence
+in:       the key is pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab.
+out:      the key is «perplexity-api-key».
+
+# Two keys written together. The four letters the prefix opens with belong to
+# the alphabet a body is written in, so a body may close with pplx and the
+# hyphen of the next key stand directly behind it; the second key begins four
+# characters before the first one ends, the two spans overlap and are redacted
+# as one. Written with nothing at all between them the first body reaches four
+# characters into the second prefix and stops at the hyphen behind them, so
+# those two overlap as well. Written with a space between them the two are
+# separate values, and both go.
+
+case:     a key beginning inside the key before it
+in:       pplx-0123456789abcdefghijklmnopqrstuvwxyz01234567pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      «perplexity-api-key»
+
+case:     two keys with nothing between them
+in:       pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789abpplx-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789AB
+out:      «perplexity-api-key»
+
+case:     two keys separated by a space
+in:       pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab pplx-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789AB
+out:      «perplexity-api-key» «perplexity-api-key»
+
+# Perplexity names its own products with the prefix it issues keys under, so the
+# text most likely to be written beside a key carries a whole prefix. The API was
+# announced as pplx-api, the embedding models are pplx-embed-v1-0 and
+# pplx-embed-context-v1-0, the command line is pplx-cli and ships as
+# pplx-aarch64-apple-darwin.bin, and the MCP server names itself pplx-mcp-server
+# in a header of its own. What holds each of them away is the floor: the segment
+# behind the prefix is broken by the next hyphen or dot long before forty-eight
+# characters. The last case is what that leaves admitted, and it is a key's
+# format exactly.
+
+case:     the name the api was announced under
+in:       using pplx-api for search
+out:      using pplx-api for search
+
+case:     the embedding model names
+in:       {"model":"pplx-embed-v1-0"} {"model":"pplx-embed-context-v1-0"}
+out:      {"model":"pplx-embed-v1-0"} {"model":"pplx-embed-context-v1-0"}
+
+case:     the command line and the file it ships as
+in:       pplx-cli installs pplx-aarch64-apple-darwin.bin
+out:      pplx-cli installs pplx-aarch64-apple-darwin.bin
+
+case:     the name the mcp server sends as its source
+in:       "X-Source": "pplx-mcp-server"
+out:      "X-Source": "pplx-mcp-server"
+
+case:     a name whose segment runs the length of a body
+in:       {"model":"pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab"}
+out:      {"model":"«perplexity-api-key»"}
+
+# What this pattern redacts that nobody issued. The prefix closes with a hyphen,
+# which standard base64 writes nowhere, so only a base64url encoding can hold
+# one — and where forty-eight base62 characters follow, the run from the prefix
+# to the end of them is redacted whether or not Perplexity issued it. That is
+# the answer rather than a fault in it, because such a run is a key's format
+# exactly and nothing in the text tells the two apart: sparing these would spare
+# a real key written the same way. What is taken is a stretch of a value that
+# was already opaque to a reader.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzzpplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789abzzzz
+out:      payload=zzzz«perplexity-api-key»
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzpplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789abzzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«perplexity-api-key»
+
+# A digest written behind the prefix, which is the one over-match here that
+# takes a value a reader had a use for. Hexadecimal digits are base62 and a
+# digest carries nothing that ends a run, so pplx- and the sixty-four characters
+# of a SHA-256 are a key's format exactly, and both are redacted. Declining them
+# would mean declining every key Perplexity happened to write in the digits
+# alone, which is a whole credential against a cache key. What holds either side
+# of it is the floor and the prefix: a SHA-1 is forty characters, eight short of
+# a body, an MD5 is thirty-two, and an underscore is no character the prefix
+# carries.
+
+case:     a sha256 behind the prefix
+in:       pplx-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «perplexity-api-key»
+
+case:     a sha256 in a cache key
+in:       key: pplx-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      key: «perplexity-api-key»
+
+case:     a sha1 behind the prefix, eight characters short of a body
+in:       pplx-0123456789abcdef0123456789abcdef01234567
+out:      pplx-0123456789abcdef0123456789abcdef01234567
+
+case:     an md5 behind the prefix
+in:       pplx-0123456789abcdef0123456789abcdef
+out:      pplx-0123456789abcdef0123456789abcdef
+
+case:     a sha256 behind an underscore rather than the prefix
+in:       pplx_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pplx_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# And what this pattern leaves alone. The first three are the prefix, read in
+# the case Perplexity writes it — including the capitalisation its own MCP
+# server writes in a header name — in the hyphen it closes with and in that
+# hyphen being there at all. The two after them are the alphabet and the anchor:
+# a body a space has broken, and a run of the right length with no prefix in
+# front of it. The last two hold no hyphen where the prefix wants one, so
+# neither holds a position to be found at however long it runs.
+
+case:     an uppercase prefix
+in:       PPLX-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      PPLX-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+
+case:     the prefix capitalised as a header name writes it
+in:       Pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      Pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+
+case:     an underscore where the prefix carries a hyphen
+in:       pplx_0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      pplx_0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+
+case:     the prefix without its closing hyphen
+in:       pplx0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      pplx0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+
+case:     a body broken by a space
+in:       pplx-0123456789abcdefghij lmnopqrstuvwxyz0123456789ab
+out:      pplx-0123456789abcdefghij lmnopqrstuvwxyz0123456789ab
+
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
