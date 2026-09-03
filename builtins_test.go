@@ -456,6 +456,20 @@ var builtinPatterns = []struct {
 		benchmarks: jwtFindBenchmarks,
 	},
 	{
+		name:    "langsmith-api-key",
+		pattern: LangSmithAPIKey,
+		ref:     referenceLangSmithAPIKeyFind,
+		samples: []string{
+			"LANGSMITH_API_KEY=lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789",
+			"lsv2_sk_0123456789ABCDEFGHIJKLMNOPQRSTUV_0123456789",
+			"lsv2_pt_0123456789abcdefghijklmnopqrstuvw_0123456789",
+			"lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789",
+			"lsv2_pt_0123456789abcdefghijklmnopqrlsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789",
+		},
+		anchors:    []string{"lsv2_pt_0123456789abcdefghijklmnopqr"},
+		benchmarks: langSmithAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "linear-api-key",
 		pattern: LinearAPIKey,
 		ref:     referenceLinearAPIKeyFind,
