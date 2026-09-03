@@ -219,6 +219,12 @@ func OryPatterns() []Pattern { return []Pattern{oryAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func PaddlePatterns() []Pattern { return []Pattern{paddleAPIKey} }
 
+// PerplexityPatterns returns every built-in pattern that locates a credential
+// Perplexity issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func PerplexityPatterns() []Pattern { return []Pattern{perplexityAPIKey} }
+
 // PineconePatterns returns every built-in pattern that locates a credential
 // Pinecone issues.
 //

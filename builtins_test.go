@@ -605,6 +605,19 @@ var builtinPatterns = []struct {
 		benchmarks: paddleAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "perplexity-api-key",
+		pattern: PerplexityAPIKey,
+		ref:     referencePerplexityAPIKeyFind,
+		samples: []string{
+			"PERPLEXITY_API_KEY=pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab",
+			"pplx-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789AB",
+			"pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789abc",
+			"pplx-0123456789abcdefghijklmnopqrstuvwxyz01234567pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab",
+		},
+		anchors:    []string{"pplx-0"},
+		benchmarks: perplexityAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "pinecone-api-key",
 		pattern: PineconeAPIKey,
 		ref:     referencePineconeAPIKeyFind,
