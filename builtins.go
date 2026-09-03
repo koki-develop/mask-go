@@ -56,6 +56,7 @@ var builtins = []Pattern{
 	huggingFaceUserAccessToken,
 	jsonWebToken,
 	linearAPIKey,
+	mailerSendAPIToken,
 	neonAPIKey,
 	netlifyAuthToken,
 	newRelicUserKey,
