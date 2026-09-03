@@ -1,0 +1,117 @@
+# What LangSmith API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from ordered characters, which no real credential is.
+# A first run opens on 0123456789abcdef and carries on through the alphabet to
+# thirty-two characters, which is the shortest one the pattern reads, since the
+# count is a floor. Carrying on rather than writing those sixteen twice is what
+# states the alphabet: a first run reaching past f is what a pattern reading
+# hexadecimal would locate nothing of. The run joined to it is the first ten of
+# those characters. Both are spelled in lowercase where the case does not matter
+# and in uppercase where the case is what a case is about: base62 holds the
+# letters of both, so either spelling is a run.
+
+patterns: langsmith-api-key
+
+# The two prefixes LangSmith names: lsv2_pt_, which a personal access token
+# carries, and lsv2_sk_, which a service key carries. Both are read with the
+# same body, so the cases below are that one shape in the places a key is
+# written.
+
+case:     a key in an environment assignment
+in:       LANGSMITH_API_KEY=lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789
+out:      LANGSMITH_API_KEY=«langsmith-api-key»
+
+case:     a key in the header the langsmith api is called with
+in:       x-api-key: lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789
+out:      x-api-key: «langsmith-api-key»
+
+case:     a key in json
+in:       {"api_key":"lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789"}
+out:      {"api_key":"«langsmith-api-key»"}
+
+case:     a key on a command line
+in:       curl -H "x-api-key: lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789" https://api.smith.langchain.com/api/v1/runs
+out:      curl -H "x-api-key: «langsmith-api-key»" https://api.smith.langchain.com/api/v1/runs
+
+case:     a service key in a configuration environment block
+in:       "env": {"LANGSMITH_API_KEY": "lsv2_sk_0123456789abcdefghijklmnopqrstuv_0123456789"}
+out:      "env": {"LANGSMITH_API_KEY": "«langsmith-api-key»"}
+
+case:     a key at the end of a sentence
+in:       the key is lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789.
+out:      the key is «langsmith-api-key».
+
+# The alphabet the runs are written in. It is base62 — the letters of both cases
+# and the digits — so a run written in capitals is a run, and the hyphen
+# base64url adds is not admitted and ends one.
+
+case:     runs written in capitals
+in:       lsv2_sk_0123456789ABCDEFGHIJKLMNOPQRSTUV_0123456789
+out:      «langsmith-api-key»
+
+case:     a hyphen inside the first run
+in:       lsv2_pt_0123456789abcdef-hijklmnopqrstuv_0123456789
+out:      lsv2_pt_0123456789abcdef-hijklmnopqrstuv_0123456789
+
+# The count, which is read as a floor and is asked of the first run alone. A
+# first run longer than the floor is redacted to its end; one shorter is no key,
+# and neither is a key whose first run reaches the floor only by counting what
+# stands behind an underscore.
+
+case:     a first run longer than the floor
+in:       lsv2_pt_0123456789abcdefghijklmnopqrstuvw_0123456789
+out:      «langsmith-api-key»
+
+case:     a first run one character short of the floor
+in:       LANGSMITH_API_KEY=lsv2_pt_0123456789abcdefghijklmnopqrstu
+out:      LANGSMITH_API_KEY=lsv2_pt_0123456789abcdefghijklmnopqrstu
+
+case:     the floor divided across two runs
+in:       lsv2_pt_0123456789abcdef_hijklmnopqrstuv
+out:      lsv2_pt_0123456789abcdef_hijklmnopqrstuv
+
+# The tail. The underscore joins another run to the last one, so the redaction
+# reaches the end of what is joined to a key — including a word written against
+# it in that same shape, which is what reading the tail costs. A second
+# underscore ends a body where it stands, since a run carries at least one
+# character.
+
+case:     a word joined to the key by an underscore
+in:       lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789_backup
+out:      «langsmith-api-key»
+
+case:     a second underscore against the key
+in:       lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789__backup
+out:      «langsmith-api-key»__backup
+
+# The prefix, which is the whole of what tells this format from text. It is read
+# in the one case LangSmith writes it, with the underscores LangSmith divides it
+# by, and the word naming the kind has to stand between them.
+
+case:     an uppercase prefix
+in:       LSV2_PT_0123456789abcdefghijklmnopqrstuv_0123456789
+out:      LSV2_PT_0123456789abcdefghijklmnopqrstuv_0123456789
+
+case:     hyphens where the prefix carries underscores
+in:       lsv2-pt-0123456789abcdefghijklmnopqrstuv-0123456789
+out:      lsv2-pt-0123456789abcdefghijklmnopqrstuv-0123456789
+
+case:     the prefix without its closing underscore
+in:       lsv2_pt0123456789abcdefghijklmnopqrstuv_0123456789
+out:      lsv2_pt0123456789abcdefghijklmnopqrstuv_0123456789
+
+case:     the opening without a word naming a kind
+in:       lsv2_0123456789abcdefghijklmnopqrstuv_0123456789
+out:      lsv2_0123456789abcdefghijklmnopqrstuv_0123456789
+
+case:     a word no key is issued with where the kind stands
+in:       lsv2_st_0123456789abcdefghijklmnopqrstuv_0123456789
+out:      lsv2_st_0123456789abcdefghijklmnopqrstuv_0123456789
+
+# The prefix LangSmith issued keys under before these, which the pattern does
+# not read: support for it ended and v2 tracing rejects a key carrying it, so
+# what reading it would locate authenticates nothing.
+
+case:     the prefix the keys before these carry
+in:       LANGCHAIN_API_KEY=ls__0123456789abcdefghijklmnopqrstuv
+out:      LANGCHAIN_API_KEY=ls__0123456789abcdefghijklmnopqrstuv

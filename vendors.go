@@ -153,6 +153,12 @@ func HerokuPatterns() []Pattern { return []Pattern{herokuAPIToken} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func HuggingFacePatterns() []Pattern { return []Pattern{huggingFaceUserAccessToken} }
 
+// LangSmithPatterns returns every built-in pattern that locates a credential
+// LangSmith issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func LangSmithPatterns() []Pattern { return []Pattern{langSmithAPIKey} }
+
 // LinearPatterns returns every built-in pattern that locates a credential
 // Linear issues.
 //

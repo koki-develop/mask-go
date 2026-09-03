@@ -55,6 +55,7 @@ var builtins = []Pattern{
 	herokuAPIToken,
 	huggingFaceUserAccessToken,
 	jsonWebToken,
+	langSmithAPIKey,
 	linearAPIKey,
 	mailerSendAPIToken,
 	neonAPIKey,
