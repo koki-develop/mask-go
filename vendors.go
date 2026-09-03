@@ -159,6 +159,12 @@ func HuggingFacePatterns() []Pattern { return []Pattern{huggingFaceUserAccessTok
 // The returned slice is freshly allocated and may be modified by the caller.
 func LinearPatterns() []Pattern { return []Pattern{linearAPIKey} }
 
+// MailerSendPatterns returns every built-in pattern that locates a credential
+// MailerSend issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func MailerSendPatterns() []Pattern { return []Pattern{mailerSendAPIToken} }
+
 // NeonPatterns returns every built-in pattern that locates a credential Neon
 // issues.
 //

@@ -1,0 +1,228 @@
+# What MailerSend API tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run
+# 0123456789abcdefghijklmnopqrst, which no real credential is. That run is
+# thirty characters, which is the shortest body the pattern reads, since the
+# count is a floor. It is spelled in lowercase where the case does not matter
+# and in uppercase where the case is what a case is about: base62 holds the
+# letters of both, so either spelling is a body.
+#
+# The case about a body of few distinct characters carries no ordered run. Ten
+# each of three characters is what that case is about, and no run can be written
+# that way.
+
+patterns: mailersend-api-token
+
+# The prefix MailerSend writes an API token with. There is a single kind of
+# string here rather than a table of them: one token sends mail from the
+# account's verified domains and reaches the account endpoints behind the same
+# API, within the scopes it was created with, and nothing in the value says
+# which those are. The cases below are that one shape in the places a token is
+# written.
+
+case:     a token in an environment assignment
+in:       MAILERSEND_API_TOKEN=mlsn.0123456789abcdefghijklmnopqrst
+out:      MAILERSEND_API_TOKEN=«mailersend-api-token»
+
+case:     a token in the bearer authorization header every call to the API carries
+in:       Authorization: Bearer mlsn.0123456789abcdefghijklmnopqrst
+out:      Authorization: Bearer «mailersend-api-token»
+
+case:     a token in json
+in:       {"accessToken":"mlsn.0123456789abcdefghijklmnopqrst"}
+out:      {"accessToken":"«mailersend-api-token»"}
+
+case:     a token on a command line
+in:       curl -H "Authorization: Bearer mlsn.0123456789abcdefghijklmnopqrst" https://api.mailersend.com/v1/email
+out:      curl -H "Authorization: Bearer «mailersend-api-token»" https://api.mailersend.com/v1/email
+
+case:     a token in a configuration environment block
+in:       "env": {"MAILERSEND_API_TOKEN": "mlsn.0123456789abcdefghijklmnopqrst"}
+out:      "env": {"MAILERSEND_API_TOKEN": "«mailersend-api-token»"}
+
+# Two other MailerSend credentials. The SMTP password an account issues is
+# written with a prefix of its own and no source states a shape for what stands
+# behind it, so the four letters in front of the dot are the whole of what tells
+# it from a token here. The other is the API token
+# MailerSend issued before it wrote a prefix on any of them, which its own
+# Firebase extension still gives as the example of one: a JOSE-shaped value
+# carrying no prefix for this pattern to find.
+
+case:     an smtp password
+in:       mssp.0123456789abcdefghijklmnopqrst
+out:      mssp.0123456789abcdefghijklmnopqrst
+
+case:     a token of the shape MailerSend issued before it wrote a prefix
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+# The alphabet the body is written in. It is base62 — the letters of both cases
+# and the digits — which is what the one source stating a shape for this token
+# reads behind the prefix. The two characters base64url adds, the hyphen and the
+# underscore, are in neither it nor a body here, and so is the dot the prefix
+# itself closes with: each of the three ends a body.
+
+case:     a body written in capitals
+in:       mlsn.0123456789ABCDEFGHIJKLMNOPQRST
+out:      «mailersend-api-token»
+
+case:     a body carrying a hyphen
+in:       mlsn.0123456789abcdefghij-lmnopqrst
+out:      mlsn.0123456789abcdefghij-lmnopqrst
+
+case:     a body carrying an underscore
+in:       mlsn.0123456789abcdefghij_lmnopqrst
+out:      mlsn.0123456789abcdefghij_lmnopqrst
+
+case:     a body carrying a dot
+in:       mlsn.0123456789abcdefghij.lmnopqrst
+out:      mlsn.0123456789abcdefghij.lmnopqrst
+
+# The lengths either side of thirty. MailerSend states no length for a token,
+# and thirty is where the one source that states one puts the shortest body. It
+# is read as a floor rather than exactly, and the hundred that source closes its
+# range at is not read at all: a ceiling read exactly would locate the first
+# hundred characters of a longer token and leave the rest of it in the output.
+# What the floor costs is the second case below: a token cut short of thirty
+# keeps every random character written in front of the cut, and none of them is
+# redacted.
+
+case:     a body of thirty characters is a token
+in:       mlsn.0123456789abcdefghijklmnopqrst
+out:      «mailersend-api-token»
+
+case:     a body of twenty-nine characters is not
+in:       mlsn.0123456789abcdefghijklmnopqrs
+out:      mlsn.0123456789abcdefghijklmnopqrs
+
+case:     a body longer than the floor is a token to the end of its run
+in:       mlsn.0123456789abcdefghijklmnopqrstuvwxyz
+out:      «mailersend-api-token»
+
+# What a token may be written against. There is no boundary on either side of
+# the prefix, so a token keeps its span whatever word character it abuts — and
+# where the run of its alphabet carries on past the floor, what carries it on is
+# redacted with the token. A hyphen, an underscore and a dot end the run
+# instead.
+
+case:     a token after an underscore
+in:       MAILERSEND_API_TOKEN_mlsn.0123456789abcdefghijklmnopqrst
+out:      MAILERSEND_API_TOKEN_«mailersend-api-token»
+
+case:     a token after a letter
+in:       xmlsn.0123456789abcdefghijklmnopqrst
+out:      x«mailersend-api-token»
+
+case:     a word written against a token
+in:       mlsn.0123456789abcdefghijklmnopqrstsuffix
+out:      «mailersend-api-token»
+
+case:     a hyphenated word written against a token
+in:       mlsn.0123456789abcdefghijklmnopqrst-suffix
+out:      «mailersend-api-token»-suffix
+
+case:     an underscored word written against a token
+in:       mlsn.0123456789abcdefghijklmnopqrst_suffix
+out:      «mailersend-api-token»_suffix
+
+case:     a token at the end of a sentence
+in:       the token is mlsn.0123456789abcdefghijklmnopqrst.
+out:      the token is «mailersend-api-token».
+
+# Two tokens written together. The four letters the prefix opens with belong to
+# the alphabet a body is written in, so a body may close with mlsn and the dot
+# of the next token stand directly behind it: written with nothing between them
+# the second token begins four characters before the first one ends, the two
+# spans overlap and are redacted as one. Written with a space between them the
+# two are separate values, and both go.
+
+case:     two tokens with nothing between them
+in:       mlsn.0123456789abcdefghijklmnopqrstmlsn.0123456789ABCDEFGHIJKLMNOPQRST
+out:      «mailersend-api-token»
+
+case:     two tokens separated by a space
+in:       mlsn.0123456789abcdefghijklmnopqrst mlsn.0123456789ABCDEFGHIJKLMNOPQRST
+out:      «mailersend-api-token» «mailersend-api-token»
+
+# What this pattern redacts that nobody issued. The prefix closes with a dot,
+# which neither base64url nor standard base64 writes, so no encoded payload can
+# carry it inside itself however long it runs — and the two shapes left are the
+# boundary between two dotted segments and the label of a host name. Both are
+# redacted whether or not MailerSend issued them. That is the answer rather than
+# a fault in it, because either is a token's format exactly and nothing in the
+# text tells them apart: sparing these would spare a real token written the same
+# way.
+
+case:     a jose payload closing on the letters of the prefix
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQmlsn.0123456789abcdefghijklmnopqrst
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ«mailersend-api-token»
+
+case:     a label of a host name
+in:       curl https://mlsn.0123456789abcdefghijklmnopqrst.example.com/
+out:      curl https://«mailersend-api-token».example.com/
+
+# And where this pattern is wider than the source its floor came from. That
+# source drops a match whose body falls below an entropy of three and a half, so
+# the body below is no finding there and is a token here: a scan is deciding
+# what to keep out of a log rather than what to put in a report, and the two do
+# not want the same clause.
+
+case:     a body of few distinct characters
+in:       mlsn.aaaaaaaaaabbbbbbbbbbcccccccccc
+out:      «mailersend-api-token»
+
+# A digest written behind the prefix, an over-match that takes a value a reader
+# had a use for. The floor sits below the three digests a log is most often
+# written with: hexadecimal digits are base62 and a digest carries nothing that
+# ends a run, so the prefix and an MD5, a git SHA or a SHA-256 are a token's
+# format exactly. Declining them would mean declining every token MailerSend
+# happened to write in the digits alone, which is a whole credential against a
+# cache key. What holds the other side of it is the prefix: a digest behind a
+# hyphen, or behind nothing at all, carries no dot for a candidate to be found
+# at.
+
+case:     an md5 behind the prefix
+in:       mlsn.0123456789abcdef0123456789abcdef
+out:      «mailersend-api-token»
+
+case:     a sha256 in a cache key
+in:       key: mlsn.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      key: «mailersend-api-token»
+
+case:     a sha256 behind a hyphen rather than the prefix
+in:       mlsn-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      mlsn-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# And what this pattern leaves alone. Three of the cases below are the prefix,
+# read in the case MailerSend writes it, in the dot it closes with and in that
+# dot being there at all. The rest are the alphabet and the anchor: a body a
+# space has broken, a run of the right length with no prefix in front of it, a
+# digest with none either, and prose.
+
+case:     an uppercase prefix
+in:       MLSN.0123456789abcdefghijklmnopqrst
+out:      MLSN.0123456789abcdefghijklmnopqrst
+
+case:     an underscore where the prefix carries a dot
+in:       mlsn_0123456789abcdefghijklmnopqrst
+out:      mlsn_0123456789abcdefghijklmnopqrst
+
+case:     the prefix without its closing dot
+in:       mlsn0123456789abcdefghijklmnopqrst
+out:      mlsn0123456789abcdefghijklmnopqrst
+
+case:     a body broken by a space
+in:       mlsn.0123456789abcdefghij lmnopqrst
+out:      mlsn.0123456789abcdefghij lmnopqrst
+
+case:     a run of the right length with no prefix in front of it
+in:       0123456789abcdefghijklmnopqrst
+out:      0123456789abcdefghijklmnopqrst
+
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence

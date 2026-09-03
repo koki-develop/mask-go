@@ -469,6 +469,19 @@ var builtinPatterns = []struct {
 		benchmarks: linearAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "mailersend-api-token",
+		pattern: MailerSendAPIToken,
+		ref:     referenceMailerSendAPITokenFind,
+		samples: []string{
+			"MAILERSEND_API_TOKEN=mlsn.0123456789abcdefghijklmnopqrst",
+			"mlsn.0123456789ABCDEFGHIJKLMNOPQRST",
+			"mlsn.0123456789abcdefghijklmnopqrstuvwxyz",
+			"mlsn.0123456789abcdefghijklmnopqrstmlsn.0123456789ABCDEFGHIJKLMNOPQRST",
+		},
+		anchors:    []string{"mlsn.0"},
+		benchmarks: mailerSendAPITokenFindBenchmarks,
+	},
+	{
 		name:    "neon-api-key",
 		pattern: NeonAPIKey,
 		ref:     referenceNeonAPIKeyFind,
