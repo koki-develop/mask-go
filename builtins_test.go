@@ -1584,7 +1584,8 @@ func Test_builtins_prefilterAgreesWithFind(t *testing.T) {
 	// naming them here is a hash of a string at every input of every pattern.
 	turnedAway := make([]int, len(patterns))
 	for _, src := range corpus {
-		g := newGrams(src)
+		var g grams
+		g.fill(src)
 		for i, p := range patterns {
 			if checkPrefilter(t, p, src, &g) {
 				turnedAway[i]++

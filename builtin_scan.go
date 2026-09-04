@@ -229,7 +229,7 @@ type prefixTail struct {
 // gramPair is where the first and the last three bytes of one prefix stand in a
 // grams filter. They are the same piece where the prefix is three bytes long,
 // and the filter is then asked about that piece twice: two reads of the one
-// word, which keeps the table one shape and is cheaper than a second shape to
+// slot, which keeps the table one shape and is cheaper than a second shape to
 // branch on.
 type gramPair struct{ last, first uint32 }
 
@@ -264,17 +264,59 @@ func newPrefixTail(prefixes ...string) prefixTail {
 // that text at all. It says yes where it cannot tell, for the reason grams
 // gives: a pattern passed over is a value left in the output.
 func (t *prefixTail) possible(g *grams) bool {
-	for _, o := range t.opens {
+	return !gramsTurnAway(g, t.opens)
+}
+
+// gramsTurnAway reports whether a text whose three-byte pieces are g holds none
+// of the prefixes opens was built from, which is what decides whether the scan
+// reading them is run over that text at all.
+//
+// An empty table is a pattern this cannot tell anything about, and it is turned
+// away nowhere: a filter that says no to a pattern it knows nothing about is a
+// value left in the output. That guard stands here rather than beside the walk
+// over the registry so that a Masker skipping a pattern and possible above are
+// the one decision, which is the one the tests are written against.
+func gramsTurnAway(g *grams, opens []gramPair) bool {
+	return len(opens) > 0 && !gramsHold(g, opens)
+}
+
+// gramsHold reports whether a text whose three-byte pieces are g may hold a
+// prefix any of opens was built from. It is what a Masker asks of the openings
+// it gathered and what possible asks of the ones a tail keeps, so that the two
+// cannot come to read a filter differently.
+func gramsHold(g *grams, opens []gramPair) bool {
+	for _, o := range opens {
 		// The closing piece is asked about first: it is the one carrying the
 		// separator, so it is the one an ordinary line is least likely to
 		// hold, and the prefix it turns away costs a single lookup.
-		if g[o.last>>6]&(1<<(o.last&63)) != 0 && g[o.first>>6]&(1<<(o.first&63)) != 0 {
+		if g[o.last] != 0 && g[o.first] != 0 {
 			return true
 		}
 	}
-	// An empty table is a pattern this cannot tell anything about, and the
-	// walk above has just as truthfully found nothing in it.
-	return len(t.opens) == 0
+	return false
+}
+
+// gatherOpens returns the openings of tails, one entry per tail and empty where
+// a tail is nil, with every entry pointing into one array. What that is for is
+// said in the field of Masker it fills.
+func gatherOpens(tails []*prefixTail) [][]gramPair {
+	n := 0
+	for _, t := range tails {
+		if t != nil {
+			n += len(t.opens)
+		}
+	}
+	flat := make([]gramPair, 0, n)
+	opens := make([][]gramPair, len(tails))
+	for i, t := range tails {
+		if t == nil {
+			continue
+		}
+		at := len(flat)
+		flat = append(flat, t.opens...)
+		opens[i] = flat[at:len(flat):len(flat)]
+	}
+	return opens
 }
 
 // start returns where the longest of the prefixes standing at the end of src
@@ -362,21 +404,28 @@ func (p *builtin) Name() string { return p.name }
 // Find runs the scan over src.
 func (p *builtin) Find(src string) ([]Span, int) { return p.find(src) }
 
-// gramWords is how wide the filter below is, in words of sixty-four bits. Two
-// thousand and forty-eight bits is a quarter of a kilobyte on the stack of the
-// call that builds it, which is small enough to be zeroed for an input of a
-// single line and wide enough that a line of prose leaves all but a few
-// hundredths of it clear.
-const gramWords = 32
-
-// gramShift is how many bits of a hash a filter of gramWords words reads: the
+// gramShift is how many bits of a hash a filter reads to reach a slot with: the
 // top bits of the product below, which are the ones a multiplication spreads
-// best. The declaration under it holds the two together, since a width changed
-// without the shift beside it leaves most of the filter unreachable or the hash
-// reaching past its end.
+// best. Eleven of them is a filter of two thousand and forty-eight slots.
+//
+// The width is a trade between what a filter costs to empty and what it lets
+// through, and it is the second that settles it. Emptying is paid once a call
+// whatever the text is, so a narrower filter is ahead on a short record and
+// ahead by a fixed amount: over one of eighty-seven bytes a filter of half this
+// width comes in fifteen nanoseconds under. What it gives back grows with the
+// text, because a filter fills as the text spells more of the alphabet of
+// three-byte pieces, and every piece it then wrongly reports present is a scan
+// of the whole text by a pattern that will find nothing — over a log of six
+// hundred and ninety-six bytes that same half-width filter is twice as slow.
+// Twice this width buys none of it back and pays the emptying again.
+// BenchmarkPrefilter_Patterns is where all three are read off.
 const gramShift = 11
 
-var _ [gramWords * 64]struct{} = [1 << gramShift]struct{}{}
+// gramSlots is how many slots a filter of gramShift bits has, and so how wide
+// grams is. It is written from the shift rather than beside it so that the two
+// cannot come apart: a width stated on its own leaves most of the filter
+// unreachable or the hash reaching past its end.
+const gramSlots = 1 << gramShift
 
 // gramMix is the multiplier the hash below is built on, the odd constant near
 // 2^32 divided by the golden ratio: it spreads three consecutive bytes over the
@@ -398,7 +447,7 @@ const gramMix = 2654435761
 // find.
 //
 // The filter answers absence and only absence. Two different pieces of text can
-// set the same bit, so a piece it reports present may be present nowhere, and
+// mark the same slot, so a piece it reports present may be present nowhere, and
 // the pattern asking about it is then scanned as it would have been anyway. A
 // piece it reports absent is absent, which is the direction a redaction rests
 // on: a pattern passed over is a value left in the output, and passing one over
@@ -409,26 +458,65 @@ const gramMix = 2654435761
 // the letters a vendor names a prefix in; three of them in a row are not, so
 // three is where the filter stops being a coin toss and starts turning nearly
 // the whole registry away.
-type grams [gramWords]uint64
-
-// newGrams returns the filter over every three consecutive bytes of src.
 //
-// The three bytes are read afresh at each position rather than carried along
-// from the position before it. Carrying them makes the loop a chain of shifts
-// each waiting on the one behind it, where three reads at fixed distances wait
-// on nothing and the processor runs as many of them at once as it has room
-// for — and this walk is the one this whole filter has to be cheaper than.
-func newGrams(src string) grams {
-	var g grams
-	for i := 0; i+2 < len(src); i++ {
-		h := gramHash(src[i], src[i+1], src[i+2])
-		g[h>>6] |= 1 << (h & 63)
+// A slot is a byte rather than a bit. A bit costs the walk below a read, an or
+// and a write of the word the bit stands in, where a byte costs a write and
+// nothing else, and the walk is the one thing this whole filter has to be
+// cheaper than. What the width buys is paid for on the stack of the call that
+// builds it, twice over: two kilobytes zeroed once against a quarter of one,
+// and a frame that much wider, which a goroutine masking its first line pays
+// again as a copy of its stack. That copy is a few per cent of the first line
+// and nothing after it, where the walk is every line. No benchmark here masks
+// from a stack that has not grown, so it is the half of this they do not show.
+type grams [gramSlots]byte
+
+// fill marks in g where every three consecutive bytes of src stand. It marks
+// and never clears, so g must be empty when it is handed over: a filter carried
+// from one text to the next reports the pieces of both, which is a filter that
+// turns nothing away rather than one that turns away what it should not — no
+// value escapes it, and nothing fails except the speed it was built for.
+//
+// Six of them are taken out of one eight-byte read. Read a byte at a time the
+// walk spends most of itself putting three bytes together — three reads, two
+// shifts and two ors apiece — and the bytes of one piece are the bytes of the
+// next two, so the same byte is read three times over. Eight bytes read at
+// once hold six pieces, each of them a shift and a mask of a word already in
+// hand. Where the architecture reads an unaligned word in one instruction, as
+// arm64 and amd64 do, the compiler folds the eight reads into the single word
+// read they spell; where it does not, eight reads still stand against three a
+// piece.
+//
+// The tail is walked a byte at a time, which is at most five pieces and needs
+// no such care: the wide loop stops with seven bytes left at most, and three of
+// them are one piece. It steps by six having marked six, so the two meet with
+// nothing between them.
+func (g *grams) fill(src string) {
+	i := 0
+	for ; i+8 <= len(src); i += 6 {
+		s := src[i : i+8]
+		w := uint64(s[0]) | uint64(s[1])<<8 | uint64(s[2])<<16 | uint64(s[3])<<24 |
+			uint64(s[4])<<32 | uint64(s[5])<<40 | uint64(s[6])<<48 | uint64(s[7])<<56
+		g[gramSlot(uint32(w))] = 1
+		g[gramSlot(uint32(w>>8))] = 1
+		g[gramSlot(uint32(w>>16))] = 1
+		g[gramSlot(uint32(w>>24))] = 1
+		g[gramSlot(uint32(w>>32))] = 1
+		g[gramSlot(uint32(w>>40))] = 1
 	}
-	return g
+	for ; i+3 <= len(src); i++ {
+		g[gramHash(src[i], src[i+1], src[i+2])] = 1
+	}
+}
+
+// gramSlot returns where the low three bytes of w stand in a grams filter. The
+// three are read low byte first because that is the order an eight-byte read of
+// the text leaves them in, and the filter is asked in whatever order it was
+// filled in.
+func gramSlot(w uint32) uint32 {
+	return ((w & 0xffffff) * gramMix) >> (32 - gramShift)
 }
 
 // gramHash returns where the three bytes a, b and c stand in a grams filter.
 func gramHash(a, b, c byte) uint32 {
-	w := uint32(a)<<16 | uint32(b)<<8 | uint32(c)
-	return (w * gramMix) >> (32 - gramShift)
+	return gramSlot(uint32(a) | uint32(b)<<8 | uint32(c)<<16)
 }

@@ -32,9 +32,10 @@ type Masker struct {
 	redactor Redactor
 
 	// tails are the openings of the patterns above, one entry apiece and nil
-	// where a pattern states none or states none this can read. locate reads
-	// them to pass over the patterns its input cannot hold an opening of;
-	// grams (builtin_scan.go) says why that is most of them on most text.
+	// where a pattern states none or states none this can read. What locate
+	// asks them is where a pattern it has already passed over leaves the text
+	// settled; which patterns those are is opens below, and grams
+	// (builtin_scan.go) says why that is most of them on most text.
 	//
 	// They are gathered here rather than asked of each pattern in the loop
 	// because asking is a type assertion, and a Masker holding the whole
@@ -47,6 +48,23 @@ type Masker struct {
 	// since an empty filter turns every opening away and would have the pattern
 	// passed over on text it locates values in.
 	tails []*prefixTail
+
+	// opens are where those openings stand in a filter, one entry apiece and
+	// empty where a pattern has no tail this can read. It is the same question
+	// tails answers and is asked far more often — once a pattern a call, where
+	// the tail behind it is walked only for the ones turned away — so it is
+	// gathered out of the tails rather than reached through them.
+	//
+	// Every entry points into one array, so the walk over the registry reads
+	// the openings of the patterns in the order it asks about them. Reached
+	// through the tails they are a slice header in whichever global that
+	// pattern was declared in, which is one miss a pattern on a line the whole
+	// registry is turned away from.
+	//
+	// filterOn fills this and tails together, which is what lets locate read
+	// this at the index of the pattern it is asking about without a bound of
+	// its own.
+	opens [][]gramPair
 }
 
 // gramsWorthIt is the least number of patterns stating openings a Masker must
@@ -55,18 +73,37 @@ type Masker struct {
 // The filter is one walk of the input, and what it saves is the walks of the
 // patterns it turns away. Those are not the same walk: a scan looks for one
 // byte with strings.Index, which reads a word of the input at a time, where the
-// filter reads three bytes at every byte and hashes them, and the difference
-// between the two is most of an order of magnitude. So a Masker holding a
-// handful of patterns pays more for the filter than the scans it saves, however
-// many of them it turns away, and one holding the registry saves many times it.
+// filter reads a word and takes six pieces out of it. So a Masker holding few
+// patterns pays more for the filter than the scans it saves, however many of
+// them it turns away, and one holding the registry saves many times it.
 //
-// The number is where the two cross, measured rather than reasoned about:
-// BenchmarkPrefilter_Patterns (benchmark_test.go) times a Masker of each number
-// of such patterns over a line holding no value, with the filter and without
-// it, and this is the smallest number at which the filter wins there — nine is
-// a wash and eight is a loss. A caller reaching for one vendor's accessor is on
-// the near side of it and pays nothing.
-const gramsWorthIt = 10
+// Where the two cross is not one number. The filter is emptied once a call
+// whatever the text is, where the scans it stands in for cost in proportion to
+// the text, so the crossing climbs as the text shrinks:
+// BenchmarkPrefilter_Patterns (benchmark_test.go) reads it off at several
+// lengths, and it stands at eight over a record of eighty-seven bytes and over
+// logs of several records, near twelve over a fragment of a couple of dozen
+// bytes, and past sixteen over one of eight.
+//
+// This is the first of those, and it is the one to take because it is where the
+// difference is worth anything. A Masker of eight to sixteen patterns handed a
+// fragment pays the emptying of a filter that did not earn itself back, which
+// is a few tens of nanoseconds and no more; the same Masker handed a log of
+// seven hundred bytes is more than twice as fast for having built one. A caller
+// reaching for one vendor's accessor is on the near side of the number and pays
+// nothing either way.
+//
+// What that benchmark times is a Masker settling its input, which is what a
+// stream asks and not what Mask does: a pattern the filter turns away still owes
+// a stream where its openings leave the text settled, and that walk is the
+// filter's to pay. Timed on Mask the filter looks worth building several
+// patterns sooner than it is. The number governs both, so it is read off the one
+// the filter is worth least in.
+//
+// It moves whenever the walk that fills the filter does, which is what the
+// benchmark is for: a filter made cheaper and a number left where it was is a
+// Masker paying for scans it need not run.
+const gramsWorthIt = 8
 
 // New returns a Masker that scans with the patterns given to WithPatterns and
 // redacts what it locates with the redactor given to WithRedactor, which
@@ -93,12 +130,23 @@ func New(opts ...Option) *Masker {
 		}
 	}
 	if filterable >= gramsWorthIt {
-		m.tails = make([]*prefixTail, len(o.patterns))
-		for i, p := range o.patterns {
-			m.tails[i] = filterableTail(p)
-		}
+		m.filterOn(o.patterns)
 	}
 	return m
+}
+
+// filterOn fills the tables a Masker turns patterns away by, from patterns.
+//
+// Both of them together, and nowhere else: locate reads one at the index of the
+// other, so a Masker holding one without the other reaches past the end of it on
+// the first text it is handed, and two statements are two a caller can write
+// half of.
+func (m *Masker) filterOn(patterns []Pattern) {
+	m.tails = make([]*prefixTail, len(patterns))
+	for i, p := range patterns {
+		m.tails[i] = filterableTail(p)
+	}
+	m.opens = gatherOpens(m.tails)
 }
 
 // Mask returns src with every located value redacted.
@@ -118,7 +166,7 @@ func New(opts ...Option) *Masker {
 // was never written. Either way masking again may redact more than masking
 // once did, and neither is a defect in a scan.
 func (m *Masker) Mask(src string) string {
-	found := m.locate(src, 0).found
+	found := m.gather(src, 0, false).found
 	if len(found) == 0 {
 		return src
 	}
@@ -150,11 +198,13 @@ type locations struct {
 	// retain is the offset from which the text is not settled: the least any
 	// pattern reported, since the text is settled only as far as every
 	// pattern scanning it agrees that it is, and len(src) where there are no
-	// patterns at all.
+	// patterns at all. It is zero, which promises nothing, where the walk that
+	// filled this was not asked to settle the text — gather says why.
 	retain int
-	// holder is the pattern that settled least, and nil where retain is the
-	// whole of the text. It is what a stream names when it gives up holding
-	// text back, so that the redaction says which grammar was still open.
+	// holder is the pattern that settled least, and nil where no pattern is
+	// holding the text back. It is what a stream names when it gives up
+	// holding text back, so that the redaction says which grammar was still
+	// open.
 	holder Pattern
 }
 
@@ -193,6 +243,22 @@ type locations struct {
 // what LookBehind asks of a Find, and what Regexp does with an expression
 // carrying \b or an anchor.
 func (m *Masker) locate(src string, from int) locations {
+	return m.gather(src, from, true)
+}
+
+// gather is locate, and settles src as well where settle asks it to.
+//
+// Mask reads the whole of its input at once and ignores what the patterns leave
+// settled, so answering for the ones turned away is a walk of their openings
+// over the tail of the text for a number nothing reads — one walk per pattern
+// turned away, which over a line holding no value is nearly the whole registry.
+// What a stream asks is the same question with the number kept.
+//
+// Where settle is false it reports nothing settled, which Pattern.Find calls the
+// answer that promises nothing. Skipping that walk can only leave the offset
+// further along than the patterns agree it is, and an offset too far along is
+// text released before a pattern has read it.
+func (m *Masker) gather(src string, from int, settle bool) locations {
 	var all []located
 	found := locations{retain: len(src)}
 
@@ -200,24 +266,29 @@ func (m *Masker) locate(src string, from int) locations {
 	// openings this turns away locates nothing in src, so what is left to ask
 	// of it is where its openings leave the tail settled, which is what its
 	// scan would have answered having found nothing.
-	var g grams
+	//
+	// The filter stands here rather than in the Masker because a Masker is
+	// shared between goroutines and a filter is one text's. It is nil where
+	// none was built, which is what the walk below reads to hand every pattern
+	// the text: a Masker building none holds no openings either, and an empty
+	// filter would turn every opening away.
+	var g *grams
 	if len(m.tails) > 0 {
-		g = newGrams(src)
+		var f grams
+		f.fill(src)
+		g = &f
 	}
 
 	for i, p := range m.patterns {
-		// The bound is what says whether a filter was built at all: a Masker
-		// building none holds no tails, so this is nil at every pattern and
-		// every one of them is handed the text.
-		var t *prefixTail
-		if i < len(m.tails) {
-			t = m.tails[i]
-		}
-		if t != nil && !t.possible(&g) {
-			if r := t.start(src); r < found.retain {
-				found.retain, found.holder = r, p
+		if g != nil {
+			if gramsTurnAway(g, m.opens[i]) {
+				if settle {
+					if r := m.tails[i].start(src); r < found.retain {
+						found.retain, found.holder = r, p
+					}
+				}
+				continue
 			}
-			continue
 		}
 		spans, r := p.Find(src)
 		if r = min(max(r, 0), len(src)); r < found.retain {
@@ -229,6 +300,9 @@ func (m *Masker) locate(src string, from int) locations {
 			}
 			all = append(all, located{Span: s, pattern: p, order: i})
 		}
+	}
+	if !settle {
+		found.retain, found.holder = 0, nil
 	}
 	if len(all) < 2 {
 		found.found = all
