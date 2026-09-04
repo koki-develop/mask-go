@@ -116,6 +116,73 @@ func Test_SlackToken(t *testing.T) {
 			src:  "SLACK_BOT_TOKEN=xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn",
 			want: []Span{{16, 72}},
 		},
+		{
+			// The second prefix stands against the letter the first token's
+			// secret ends on, which opens nothing: the whole of the second
+			// token is read as more of the first one's run instead, and the
+			// two come through as a single span.
+			name: "two tokens of the same kind concatenated",
+			src:  "xwfp-0123456789ab-0123456789abcdefghijklmnxwfp-0123456789ab-0123456789abcdefghijklmn",
+			want: []Span{{0, 84}},
+		},
+		{
+			// A multi-byte rune is neither a letter nor a digit, so it opens a
+			// token in front exactly as an ASCII punctuation byte would.
+			name: "a token after a multi-byte rune",
+			src:  "日本語xoxb-0123456789ab-0123456789abcdefghijklmn",
+			want: []Span{{9, 51}},
+		},
+		{
+			// And behind a token, a multi-byte rune ends the run: none of its
+			// bytes belong to the alphabet a body is read in.
+			name: "a token before a multi-byte rune",
+			src:  "xoxb-0123456789ab-0123456789abcdefghijklmn日本語",
+			want: []Span{{0, 42}},
+		},
+		{
+			// xoxe. pairs with the bot and user prefixes alone, so in front of
+			// a kind it does not name it is not a prefix at all: only the
+			// inner prefix, opened by the dot standing against it, is found.
+			name: "the rotation prefix in front of an undocumented kind",
+			src:  "xoxe.xwfp-0123456789ab-0123456789abcdefghijklmn",
+			want: []Span{{5, 47}},
+		},
+		{
+			// The letter a secret must carry may stand at either end of it,
+			// not only past the digits in front of it.
+			name: "a secret whose only letter is its first character",
+			src:  "xoxb-0123456789ab-a12345678901234567",
+			want: []Span{{0, 36}},
+		},
+		{
+			// A body opening straight onto the separator reads as an empty
+			// first segment, which is itself the part a secret must stand
+			// behind: the segment after it is the second, not the first.
+			name: "an empty segment in front of the secret",
+			src:  "xoxb--0123456789abcdefghijklmn",
+			want: []Span{{0, 30}},
+		},
+		{
+			// The alphabet a secret is read in holds both cases of letter, so a
+			// secret carrying an uppercase one is a secret Slack has issued just
+			// as one written in lowercase is.
+			name: "a secret opening with an uppercase letter",
+			src:  "xoxb-0123456789ab-Z0123456789abcdefg",
+			want: []Span{{0, 36}},
+		},
+		{
+			name: "a secret closing with an uppercase letter",
+			src:  "xoxb-0123456789ab-0123456789abcdefgZ",
+			want: []Span{{0, 36}},
+		},
+		{
+			// Three prefixes chained. The run cursor is computed once at the
+			// first candidate's body and reused at the second and third, each of
+			// which still finds the same rightmost secret ahead of its own body.
+			name: "three prefixes chained together",
+			src:  "xoxb-xoxb-xoxb-0123456789ab-0123456789abcdefghijklmn",
+			want: []Span{{0, 52}, {5, 52}, {10, 52}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -367,6 +434,59 @@ func Test_SlackToken_noMatch(t *testing.T) {
 			src:  "0123456789ab-0123456789abcdefghijklmn",
 		},
 		{
+			// The secret-behind-a-part rule is asserted for xoxb- elsewhere;
+			// here it is the other prefixes, each with a secret against the
+			// prefix and no part in front of it.
+			name: "a refresh token secret with no part in front of it",
+			src:  "xoxe-0123456789abcdefghijklmn",
+		},
+		{
+			name: "a workflow token secret with no part in front of it",
+			src:  "xwfp-0123456789abcdefghijklmn",
+		},
+		{
+			// Neither reading of this candidate — the whole xoxe.xoxb- prefix,
+			// or the inner xoxb- alone — finds a part in front of the secret.
+			name: "a rotatable bot token secret with no part in front of it",
+			src:  "xoxe.xoxb-0123456789abcdefghijklmn",
+		},
+		{
+			name: "an uppercase app-level token prefix",
+			src:  "XAPP-1-A0123456789-0123456789abc-0123456789abcdefghijklmn",
+		},
+		{
+			name: "an uppercase workflow token prefix",
+			src:  "XWFP-0123456789ab-0123456789abcdefghijklmn",
+		},
+		{
+			// The secret stands against the prefix as the first segment, so it
+			// is excluded from standing behind a part; the two trailing empty
+			// segments behind it are shorter than a secret and do not stand in
+			// for one either.
+			name: "trailing empty segments do not stand in for a part",
+			src:  "xoxb-0123456789abcdefghijklmn--",
+		},
+		{
+			// The underscore and the dot are left out of the alphabet a body is
+			// read in, so either one standing straight after the separator ends
+			// the run before it opens: the segment behind the prefix is empty
+			// and nothing that follows is read as part of this candidate at all.
+			name: "a body opening on an underscore",
+			src:  "xoxb-_0123456789abcdefghijklmn",
+		},
+		{
+			name: "a body opening on a dot",
+			src:  "xoxb-.0123456789abcdefghijklmn",
+		},
+		{
+			// The underscore ends the run wherever it stands in it, not only at
+			// the front: the digits behind it here would have reached the floor
+			// on their own, but they are no longer part of any candidate's body
+			// once the run has already closed in front of them.
+			name: "an underscore cutting off a segment before it reaches the floor",
+			src:  "xoxb-0123456789ab-_0123456789abcdefgh",
+		},
+		{
 			name: "plain prose",
 			src:  "there is no credential in this sentence",
 		},
@@ -551,6 +671,50 @@ func Test_SlackToken_whatEndsABody(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_SlackToken_settlesAPrefixTheInputCutShort(t *testing.T) {
+	// What Find's second result reports on an input ending inside a candidate:
+	// a piece of a dotted prefix that might still grow into xoxe.xoxb- or
+	// xoxe.xoxp-, or a candidate's own start where the run behind it has not
+	// stopped. Prose with no opening at all settles the whole input.
+	tests := []struct {
+		name   string
+		src    string
+		retain int
+	}{
+		{
+			// xoxe.xox could still complete either xoxe.xoxb- or xoxe.xoxp-,
+			// so nothing from the start of it may be released.
+			name:   "a piece of the dotted prefix",
+			src:    "xoxe.xox",
+			retain: 0,
+		},
+		{
+			// The run behind the prefix has not stopped, so where the body
+			// ends and whether it holds a secret are not settled: what is
+			// held back is the candidate's own start.
+			name:   "a candidate the input cut short",
+			src:    "prose here xoxb-0123456789ab-012345678",
+			retain: 11,
+		},
+		{
+			// No separator stands anywhere in this text, so the search never
+			// opens a candidate and the whole input is settled.
+			name:   "prose with no prefix at all",
+			src:    "prose with no prefix at all",
+			retain: len("prose with no prefix at all"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, retain := SlackToken().Find(tt.src)
+			if retain != tt.retain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.retain)
 			}
 		})
 	}

@@ -35,6 +35,10 @@ case:     an openssh key
 in:       -----BEGIN OPENSSH PRIVATE KEY-----\n0123456789abcdef\n-----END OPENSSH PRIVATE KEY-----
 out:      «private-key»
 
+case:     a dsa key
+in:       -----BEGIN DSA PRIVATE KEY-----\n0123456789abcdef\n-----END DSA PRIVATE KEY-----
+out:      «private-key»
+
 case:     a label ending on the words no document has written yet
 in:       -----BEGIN QUANTUM PRIVATE KEY-----\n0123456789abcdef\n-----END QUANTUM PRIVATE KEY-----
 out:      «private-key»
@@ -88,6 +92,18 @@ case:     a key written with carriage returns
 in:       -----BEGIN PRIVATE KEY-----\r\n0123456789abcdef\r\n-----END PRIVATE KEY-----
 out:      «private-key»
 
+case:     a key whose escaped line breaks carry a carriage return
+in:       -----BEGIN PRIVATE KEY-----\\r\\n0123456789abcdef\\r\\n-----END PRIVATE KEY-----
+out:      «private-key»
+
+case:     a key between multi-byte runes with nothing between them
+in:       日本語-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----日本語
+out:      日本語«private-key»日本語
+
+case:     a key between invalid bytes with nothing between them
+in:       \xff-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\xff
+out:      \xff«private-key»\xff
+
 case:     two keys one after the other
 in:       -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\n-----BEGIN EC PRIVATE KEY-----\n0123456789abcdef\n-----END EC PRIVATE KEY-----
 out:      «private-key»\n«private-key»
@@ -111,6 +127,10 @@ out:      «private-key»\n\n0123456789abcdef\n-----END PRIVATE KEY-----
 case:     a closing boundary naming another label
 in:       -----BEGIN RSA PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----
 out:      «private-key»\n-----END PRIVATE KEY-----
+
+case:     a closing boundary naming a longer label than this one opens
+in:       -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY BLOCK-----
+out:      «private-key»\n-----END PRIVATE KEY BLOCK-----
 
 case:     what follows the closing boundary
 in:       -----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\ndone
@@ -151,6 +171,18 @@ out:      -----BEGIN PRIVATE KEY----- and ends with -----END PRIVATE KEY-----
 case:     a body separated by spaces rather than by line breaks
 in:       -----BEGIN PRIVATE KEY----- 0123456789abcdef -----END PRIVATE KEY-----
 out:      -----BEGIN PRIVATE KEY----- 0123456789abcdef -----END PRIVATE KEY-----
+
+case:     a block cut short by a quote with a log record behind it
+in:       msg="-----BEGIN PRIVATE KEY-----\n0123456789ab" level=info
+out:      msg="-----BEGIN PRIVATE KEY-----\n0123456789ab" level=info
+
+case:     boundaries written with six dashes instead of five
+in:       ------BEGIN PRIVATE KEY------\n0123456789abcdef\n------END PRIVATE KEY------
+out:      ------BEGIN PRIVATE KEY------\n0123456789abcdef\n------END PRIVATE KEY------
+
+case:     a body line carrying three padding characters
+in:       -----BEGIN PRIVATE KEY-----\n0123456789a===\n-----END PRIVATE KEY-----
+out:      -----BEGIN PRIVATE KEY-----\n0123456789a===\n-----END PRIVATE KEY-----
 
 case:     a template with the key left out of it
 in:       -----BEGIN RSA PRIVATE KEY-----\nYOUR KEY HERE\n-----END RSA PRIVATE KEY-----

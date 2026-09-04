@@ -53,6 +53,18 @@ case:     a secret broken by a space
 in:       pcsk_012345_0123456789abcdef 123456789abcdef0123456789abcdef0123456789abcde
 out:      pcsk_012345_0123456789abcdef 123456789abcdef0123456789abcdef0123456789abcde
 
+case:     a space where the separator belongs
+in:       pcsk_012345 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      pcsk_012345 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     a label written across the whole alphabet
+in:       pcsk_0123gz_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopq
+out:      «pinecone-api-key»
+
+case:     an uppercase label
+in:       pcsk_ABCDE_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «pinecone-api-key»
+
 # The label is read in that same alphabet, and Pinecone states nothing about
 # where its characters come from. The one rule that reads this format reads
 # letters and digits there; what the vendor's own word leaves open is a label
@@ -97,6 +109,10 @@ case:     a run longer than the secret's floor is redacted to its end
 in:       pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      «pinecone-api-key»
 
+case:     a long label together with a long secret
+in:       pcsk_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «pinecone-api-key»
+
 # What a key may be written against. The prefixes are the whole of the anchor
 # and there is no boundary on either side of one, so a key keeps its span
 # whatever word character stands in front of it — and the span reaches to the
@@ -119,6 +135,14 @@ case:     a key at the end of a sentence
 in:       the key is pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde.
 out:      the key is «pinecone-api-key».
 
+case:     a key followed by japanese with nothing between them
+in:       キー=pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde、以上
+out:      キー=«pinecone-api-key»、以上
+
+case:     a key preceded by japanese with nothing between them
+in:       日本語pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      日本語«pinecone-api-key»
+
 # Two keys written together. A key can begin inside another: its prefix is
 # spelled in the alphabet a secret is written in and closes on the separator a
 # key already carries, so a secret ending in pcsk holds the start of the key
@@ -138,6 +162,10 @@ case:     two keys with a space between them
 in:       pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde pckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
 out:      «pinecone-api-key» «pinecone-api-key»
 
+case:     a pckey_ key beginning inside the key before it
+in:       pckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789apckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «pinecone-api-key»
+
 # The prefixes, which are what tell this format from text. They agree on the two
 # characters pc and part at the third, and each is read in the one case Pinecone
 # writes it.
@@ -145,6 +173,10 @@ out:      «pinecone-api-key» «pinecone-api-key»
 case:     an uppercase prefix
 in:       PCSK_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
 out:      PCSK_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     an uppercase pckey_ prefix
+in:       PCKEY_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      PCKEY_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
 
 case:     the opening with neither spelling behind it
 in:       pcs_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde

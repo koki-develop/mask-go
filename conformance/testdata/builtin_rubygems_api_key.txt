@@ -42,6 +42,30 @@ case:     a key at the end of a sentence
 in:       the key is rubygems_0123456789abcdef0123456789abcdef0123456789abcdef.
 out:      the key is «rubygems-api-key».
 
+case:     a key between tabs
+in:       \trubygems_0123456789abcdef0123456789abcdef0123456789abcdef\t
+out:      \t«rubygems-api-key»\t
+
+case:     a key before a crlf
+in:       RUBYGEMS_API_KEY=rubygems_0123456789abcdef0123456789abcdef0123456789abcdef\r\n
+out:      RUBYGEMS_API_KEY=«rubygems-api-key»\r\n
+
+case:     a key in parentheses
+in:       (rubygems_0123456789abcdef0123456789abcdef0123456789abcdef)
+out:      («rubygems-api-key»)
+
+case:     a key immediately against japanese on both sides
+in:       キーはrubygems_0123456789abcdef0123456789abcdef0123456789abcdefです
+out:      キーは«rubygems-api-key»です
+
+case:     a key against an invalid byte
+in:       \xffrubygems_0123456789abcdef0123456789abcdef0123456789abcdef\xff
+out:      \xff«rubygems-api-key»\xff
+
+case:     a key cut short with an ellipsis
+in:       rubygems_0123456789abcdef0123456789abcdef012345...
+out:      rubygems_0123456789abcdef0123456789abcdef012345...
+
 # The alphabet. The body is what SecureRandom.hex returns, which Ruby documents
 # as 0-9 and a-f, so lowercase alone is read — unlike the Grafana checksum,
 # which stands behind a match a prefix and a secret have already decided and is
@@ -67,6 +91,14 @@ out:      rubygems_0123456789abcdef_123456789abcdef0123456789abcdef0
 case:     a hyphen inside the body
 in:       rubygems_0123456789abcdef-123456789abcdef0123456789abcdef0
 out:      rubygems_0123456789abcdef-123456789abcdef0123456789abcdef0
+
+case:     a letter past f at the first character of the body
+in:       rubygems_g123456789abcdef0123456789abcdef0123456789abcdef
+out:      rubygems_g123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     an uppercase letter at the first character of the body
+in:       rubygems_A123456789abcdef0123456789abcdef0123456789abcdef
+out:      rubygems_A123456789abcdef0123456789abcdef0123456789abcdef
 
 # The lengths either side of the count. It is the generator's rather than an
 # observation: twenty-four is the argument it passes SecureRandom.hex, and Ruby
@@ -178,6 +210,10 @@ out:      key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 case:     an uppercase prefix
 in:       RUBYGEMS_0123456789abcdef0123456789abcdef0123456789abcdef
 out:      RUBYGEMS_0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     the prefix in the case the vendor's name is written in
+in:       RubyGems_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      RubyGems_0123456789abcdef0123456789abcdef0123456789abcdef
 
 case:     a hyphen where the prefix carries its underscore
 in:       rubygems-0123456789abcdef0123456789abcdef0123456789abcdef

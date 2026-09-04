@@ -3,7 +3,9 @@ package mask_test
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/koki-develop/mask-go"
@@ -33,6 +35,54 @@ func ExampleStripePatterns() {
 
 	fmt.Println(m.Mask("secret=sk_live_0123456789abcdef01234567 publishable=pk_live_0123456789abcdef01234567 webhook=whsec_0123456789abcdef0123456789abcdef"))
 	// Output: secret=******************************** publishable=******************************** webhook=**************************************
+}
+
+func ExampleAWSPatterns() {
+	// Concatenating two vendors' accessors is how a caller reaches for some of
+	// the registry and not all of it, which is what a Masker built from
+	// AllBuiltinPatterns cannot do.
+	m := mask.New(mask.WithPatterns(slices.Concat(
+		mask.AWSPatterns(),
+		mask.GitHubPatterns(),
+	)...))
+
+	fmt.Println(m.Mask("AWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF AWS_SECRET_ACCESS_KEY=0123456789abcdef0123456789abcdef01234567 gh=ghp_0123456789abcdefghijklmnopqrstuvwxyz gl=glpat-0123456789abcdefghij"))
+	// Output: AWS_ACCESS_KEY_ID=******************** AWS_SECRET_ACCESS_KEY=**************************************** gh=**************************************** gl=glpat-0123456789abcdefghij
+}
+
+func ExampleCloudflarePatterns() {
+	m := mask.New(mask.WithPatterns(mask.CloudflarePatterns()...))
+
+	fmt.Println(m.Mask("key=cfk_0123456789abcdef0123456789abcdef0123456789abcdef token=cfut_0123456789abcdef0123456789abcdef0123456789abcdef"))
+	// Output: key=**************************************************** token=*****************************************************
+}
+
+func ExampleDatabricksPatterns() {
+	m := mask.New(mask.WithPatterns(mask.DatabricksPatterns()...))
+
+	fmt.Println(m.Mask("pat=dapi0123456789abcdef0123456789abcdef secret=dose0123456789abcdef0123456789abcdef"))
+	// Output: pat=************************************ secret=************************************
+}
+
+func ExampleHashiCorpPatterns() {
+	m := mask.New(mask.WithPatterns(mask.HashiCorpPatterns()...))
+
+	fmt.Println(m.Mask("vault=hvs.0123456789abcdef01234567 tfc=0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012"))
+	// Output: vault=**************************** tfc=******************************************************************************************
+}
+
+func ExampleShopifyPatterns() {
+	m := mask.New(mask.WithPatterns(mask.ShopifyPatterns()...))
+
+	fmt.Println(m.Mask("token=shpat_0123456789abcdef0123456789abcdef secret=shpss_0123456789abcdef0123456789abcdef"))
+	// Output: token=************************************** secret=**************************************
+}
+
+func ExampleSupabasePatterns() {
+	m := mask.New(mask.WithPatterns(mask.SupabasePatterns()...))
+
+	fmt.Println(m.Mask("access=sbp_0123456789abcdef0123456789abcdef01234567 publishable=sb_publishable_0123456789abcdef012345_01234567 secret=sb_secret_0123456789abcdef012345_01234567"))
+	// Output: access=******************************************** publishable=********************************************** secret=*****************************************
 }
 
 func ExampleAWSAccessKeyID() {
@@ -111,6 +161,15 @@ func ExampleStripeWebhookSigningSecret() {
 	// Output: secret=************************************** key=sk_live_0123456789abcdef01234567
 }
 
+func ExampleSupabaseSecretKey() {
+	// Supabase's secret key is what a server authenticates with; its
+	// publishable key is meant to ship in a client and is left alone.
+	m := mask.New(mask.WithPatterns(mask.SupabaseSecretKey()))
+
+	fmt.Println(m.Mask("secret=sb_secret_0123456789abcdef012345_01234567 publishable=sb_publishable_0123456789abcdef012345_01234567"))
+	// Output: secret=***************************************** publishable=sb_publishable_0123456789abcdef012345_01234567
+}
+
 func ExampleWithPatterns() {
 	// Repeated options accumulate, so the built-in patterns and one of your
 	// own can be given separately.
@@ -121,6 +180,19 @@ func ExampleWithPatterns() {
 
 	fmt.Println(m.Mask("github=ghp_0123456789abcdefghijklmnopqrstuvwxyz internal=INT-0123456789abcdef0123456789abcdef"))
 	// Output: github=**************************************** internal=************************************
+}
+
+func ExampleWithPatterns_selected() {
+	// A short, named list rather than the whole registry: each of the two
+	// patterns given here reads what it names, and a credential neither of
+	// them names — an AWS access key ID, say — is left as written.
+	m := mask.New(
+		mask.WithPatterns(mask.GitHubToken(), mask.JWT()),
+		mask.WithPatterns(mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`)),
+	)
+
+	fmt.Println(m.Mask("gh=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef int=INT-0123456789abcdef0123456789abcdef aws=AKIA0123456789ABCDEF"))
+	// Output: gh=**************************************** jwt=************************************************************************ int=************************************ aws=AKIA0123456789ABCDEF
 }
 
 func ExampleRegexp() {
@@ -137,10 +209,24 @@ func ExampleRegexp() {
 	// Output: token: ************************************
 }
 
+func ExampleRegexp_maskGroup() {
+	// The literal outside the group survives; only what the group named
+	// "mask" matched is redacted.
+	p, err := mask.Regexp("bearer-token", `Bearer (?P<mask>[\w.~+/-]+=*)`)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	m := mask.New(mask.WithPatterns(p))
+
+	fmt.Println(m.Mask("Authorization: Bearer abc123"))
+	// Output: Authorization: Bearer ******
+}
+
 func ExampleMustRegexp() {
-	m := mask.New(mask.WithPatterns(
-		mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`),
-	))
+	p := mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`)
+
+	m := mask.New(mask.WithPatterns(p))
 
 	fmt.Println(m.Mask("token: INT-0123456789abcdef0123456789abcdef"))
 	// Output: token: ************************************
@@ -184,6 +270,50 @@ func ExampleNewPattern() {
 	// Output: password=************
 }
 
+// sharedSecret is a Pattern implemented directly on a named type, rather than
+// through NewPattern's closure — the other way README.md says the interface
+// may be satisfied.
+type sharedSecret string
+
+func (s sharedSecret) Name() string { return "shared-secret" }
+
+func (s sharedSecret) Find(src string) ([]mask.Span, int) {
+	var spans []mask.Span
+	for i := 0; ; {
+		j := strings.Index(src[i:], string(s))
+		if j < 0 {
+			break
+		}
+		spans = append(spans, mask.Span{Start: i + j, End: i + j + len(s)})
+		i += j + 1
+	}
+	return spans, max(0, len(src)-len(s)+1)
+}
+
+func ExamplePattern() {
+	m := mask.New(mask.WithPatterns(sharedSecret("s3cr3t-value")))
+
+	fmt.Println(m.Mask("password=s3cr3t-value"))
+	// Output: password=************
+}
+
+func ExampleWithRedactor() {
+	// Without WithRedactor, a Masker redacts with Fill('*'), which keeps the
+	// length of what it replaces.
+	def := mask.New(mask.WithPatterns(mask.GitHubToken()))
+	custom := mask.New(
+		mask.WithPatterns(mask.GitHubToken()),
+		mask.WithRedactor(mask.Fixed("[REDACTED]")),
+	)
+
+	src := "GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+	fmt.Println(def.Mask(src))
+	fmt.Println(custom.Mask(src))
+	// Output:
+	// GITHUB_TOKEN=****************************************
+	// GITHUB_TOKEN=[REDACTED]
+}
+
 func ExampleFill() {
 	m := mask.New(
 		mask.WithPatterns(mask.AllBuiltinPatterns()...),
@@ -216,6 +346,36 @@ func ExampleNewRedactor() {
 	// Output: GITHUB_TOKEN=[GITHUB-TOKEN]
 }
 
+func ExampleNewRedactor_byName() {
+	m := mask.New(
+		mask.WithPatterns(mask.AllBuiltinPatterns()...),
+		mask.WithRedactor(mask.NewRedactor(func(m mask.Match) string {
+			if m.Pattern.Name() == "jwt" {
+				return "[JWT]"
+			}
+			return "[REDACTED]"
+		})),
+	)
+
+	fmt.Println(m.Mask("jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef gh=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
+	// Output: jwt=[JWT] gh=[REDACTED]
+}
+
+func ExampleMatch() {
+	m := mask.New(
+		mask.WithPatterns(mask.GitHubToken()),
+		mask.WithRedactor(mask.NewRedactor(func(m mask.Match) string {
+			fmt.Printf("%s: %s\n", m.Pattern.Name(), m.Value)
+			return "[REDACTED]"
+		})),
+	)
+
+	fmt.Println(m.Mask("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"))
+	// Output:
+	// github-token: ghp_0123456789abcdefghijklmnopqrstuvwxyz
+	// GITHUB_TOKEN=[REDACTED]
+}
+
 func ExampleNewWriter() {
 	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
 
@@ -235,6 +395,25 @@ func ExampleNewWriter() {
 		panic(err)
 	}
 	// Output: GITHUB_TOKEN=****************************************
+}
+
+func ExampleNewWriter_logger() {
+	// A Writer behind a logger holds a line back only until the logger's own
+	// newline settles it, so a credential a log line carries is redacted as
+	// that call returns rather than one line later.
+	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
+	w := mask.NewWriter(os.Stdout, m)
+
+	l := log.New(w, "", 0)
+	l.Println("GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz")
+	l.Println("connection refused")
+
+	if err := w.Close(); err != nil {
+		panic(err)
+	}
+	// Output:
+	// GITHUB_TOKEN=****************************************
+	// connection refused
 }
 
 func ExampleNewReader() {

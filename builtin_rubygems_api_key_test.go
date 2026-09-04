@@ -108,6 +108,23 @@ func Test_RubyGemsAPIKey_noMatch(t *testing.T) {
 			src:  "rubygems_0123456789abcdef0123456789abcdef0123456789abcdeg",
 		},
 		{
+			// The forbidden byte at the very first body position, with a run
+			// of forty-seven valid characters behind it so the whole
+			// fifty-seven character count is spent.
+			name: "a letter past f at the first character of the body",
+			src:  "rubygems_g123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "an uppercase letter at the first character of the body",
+			src:  "rubygems_A123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// RubyGems.org writes its own name in mixed case; the prefix is
+			// read lowercase alone.
+			name: "the prefix in the case the vendor's name is written in",
+			src:  "RubyGems_0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
 			// The alphabet holds neither the hyphen nor the underscore, so the
 			// prefix's own underscore cannot stand inside a body either.
 			name: "an underscore inside the body",
@@ -215,6 +232,19 @@ func Test_RubyGemsAPIKey_inContext(t *testing.T) {
 			src:  "rubygems_0123456789abcdef0123456789abcdef0123456789abcdef rubygems_abcdef0123456789abcdef0123456789abcdef0123456789",
 			want: "********************************************************* *********************************************************",
 		},
+		{
+			// A key immediately against a multi-byte rune on both sides. The
+			// pattern reads no word boundary either side of a match, so the
+			// key keeps its span.
+			name: "between japanese",
+			src:  "キーはrubygems_0123456789abcdef0123456789abcdef0123456789abcdefです",
+			want: "キーは*********************************************************です",
+		},
+		{
+			name: "between bytes that are not utf-8",
+			src:  "\xffrubygems_0123456789abcdef0123456789abcdef0123456789abcdef\xff",
+			want: "\xff*********************************************************\xff",
+		},
 	}
 
 	m := New(WithPatterns(RubyGemsAPIKey()))
@@ -247,6 +277,11 @@ func Test_RubyGemsAPIKey_nextToWordCharacters(t *testing.T) {
 			name: "underscore before",
 			src:  "RUBYGEMS_API_KEY_rubygems_0123456789abcdef0123456789abcdef0123456789abcdef",
 			want: "RUBYGEMS_API_KEY_*********************************************************",
+		},
+		{
+			name: "digit before",
+			src:  "9rubygems_0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: "9*********************************************************",
 		},
 		{
 			// The far side of the same choice, and the one that costs
@@ -489,6 +524,48 @@ func Test_RubyGemsAPIKey_theShortExampleTheGuidePrints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := RubyGemsAPIKey().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
+			}
+		})
+	}
+}
+
+// Test_RubyGemsAPIKey_retain holds the second return of Find to a literal
+// offset, on the two shapes builtin_scan.go names: a piece of the prefix
+// standing at the end of the input, and a candidate the end of the input cut
+// short of the count.
+func Test_RubyGemsAPIKey_retain(t *testing.T) {
+	tests := []struct {
+		name       string
+		src        string
+		wantRetain int
+	}{
+		{
+			// The last eight characters are "rubygems", a piece of the
+			// nine-character prefix "rubygems_" cut short by the end of the
+			// input.
+			name:       "a piece of the prefix standing at the end of the input",
+			src:        "key rubygems",
+			wantRetain: 4,
+		},
+		{
+			// A whole prefix with a body behind it too short to reach the
+			// count, all of it standing at the end of the input. More
+			// characters arriving could still complete the key, so the
+			// candidate is unsettled from its own start.
+			name:       "a candidate the end of the input cut short of the count",
+			src:        "rubygems_0123456789abcdef01234",
+			wantRetain: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := RubyGemsAPIKey().Find(tt.src)
+			if len(got) != 0 {
+				t.Fatalf("Find(%q) located %v, want no span", tt.src, got)
+			}
+			if retain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.wantRetain)
 			}
 		})
 	}

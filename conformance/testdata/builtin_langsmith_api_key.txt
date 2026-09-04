@@ -41,6 +41,30 @@ case:     a key at the end of a sentence
 in:       the key is lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789.
 out:      the key is «langsmith-api-key».
 
+case:     a key after a letter
+in:       xlsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789
+out:      x«langsmith-api-key»
+
+case:     a key in a structured log line
+in:       time=2026-08-17T00:00:00Z level=info key=lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789
+out:      time=2026-08-17T00:00:00Z level=info key=«langsmith-api-key»
+
+case:     a key in a fragment of yaml
+in:       langsmith:\n  apiKey: lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789
+out:      langsmith:\n  apiKey: «langsmith-api-key»
+
+case:     a key in a url query string
+in:       https://api.smith.langchain.com/hooks?key=lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789&run=1
+out:      https://api.smith.langchain.com/hooks?key=«langsmith-api-key»&run=1
+
+case:     a key followed by a carriage return and a newline
+in:       LANGSMITH_API_KEY=lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789\r\n
+out:      LANGSMITH_API_KEY=«langsmith-api-key»\r\n
+
+case:     a key between japanese
+in:       キーはlsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789です
+out:      キーは«langsmith-api-key»です
+
 # The alphabet the runs are written in. It is base62 — the letters of both cases
 # and the digits — so a run written in capitals is a run, and the hyphen
 # base64url adds is not admitted and ends one.
@@ -52,6 +76,35 @@ out:      «langsmith-api-key»
 case:     a hyphen inside the first run
 in:       lsv2_pt_0123456789abcdef-hijklmnopqrstuv_0123456789
 out:      lsv2_pt_0123456789abcdef-hijklmnopqrstuv_0123456789
+
+# Two keys written together, and one written into the tail of the key before
+# it. The prefix's four characters and the runs behind it are all base62, so a
+# key can begin inside another; the scan advances a byte at a time and reports
+# both, and where the spans overlap the redaction reaches from the first
+# character of the first key to the last of the second.
+
+case:     two keys separated by a space
+in:       lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789 lsv2_sk_0123456789ABCDEFGHIJKLMNOPQRSTUV_0123456789
+out:      «langsmith-api-key» «langsmith-api-key»
+
+case:     a key written into the tail of the key before it
+in:       lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789
+out:      «langsmith-api-key»
+
+# What this pattern redacts that nobody issued. A digest carries nothing that
+# ends a run, so an MD5 written behind the prefix is exactly the characters a
+# first run is, and a stretch of base64url text that happens to hold the
+# opening is redacted the same way — that alphabet carries the underscore
+# where hexadecimal and standard base64 do not, which is why a payload written
+# in it can hold one at all.
+
+case:     an md5 behind the prefix
+in:       lsv2_pt_0123456789abcdef0123456789abcdef
+out:      «langsmith-api-key»
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzzlsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789zzzz
+out:      payload=zzzz«langsmith-api-key»
 
 # The count, which is read as a floor and is asked of the first run alone. A
 # first run longer than the floor is redacted to its end; one shorter is no key,

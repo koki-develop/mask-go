@@ -91,6 +91,14 @@ func Test_CloudflareAPIToken(t *testing.T) {
 			src:  "zone_cfut_0123456789abcdef0123456789abcdef0123456789abcdef",
 			want: []Span{{5, 58}},
 		},
+		{
+			// A letter past f at the last character of the secret — the
+			// fortieth, immediately in front of the checksum — which the
+			// secret's own alphabet admits where the checksum's would not.
+			name: "a letter past f at the last character of the secret",
+			src:  "cfut_0123456789abcdef0123456789abcdef0123456z01234567",
+			want: []Span{{0, 53}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -141,6 +149,57 @@ func Test_CloudflareAPIToken_noMatch(t *testing.T) {
 		{
 			name: "an underscore inside the secret",
 			src:  "cfut_0123456789abcdef_123456789abcdef0123456789abcdef",
+		},
+		{
+			// Every rejection claim above is written only against the token a
+			// user owns. The account owned prefix is exercised nowhere with a
+			// malformed body, so its own versions of the same claims stand
+			// here: a body one character short, an uppercase prefix, a
+			// checksum ending past f, and a hyphen where its own underscore
+			// belongs.
+			name: "an account owned body one character short",
+			src:  "cfat_0123456789abcdef0123456789abcdef012345670123456",
+		},
+		{
+			name: "an uppercase account owned prefix",
+			src:  "CFAT_0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a letter past f at the end of an account owned token's checksum",
+			src:  "cfat_0123456789abcdef0123456789abcdef012345670123456g",
+		},
+		{
+			name: "a hyphen where the account owned prefix carries its underscore",
+			src:  "cfat-0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// A character outside the secret's alphabet standing immediately
+			// behind the prefix, at the first character of the body, rather
+			// than in the middle of it where the existing case above breaks
+			// the run.
+			name: "a hyphen at the first character of the secret",
+			src:  "cfut_-123456789abcdef0123456789abcdef0123456701234567",
+		},
+		{
+			name: "an underscore at the first character of the secret",
+			src:  "cfut__123456789abcdef0123456789abcdef0123456701234567",
+		},
+		{
+			name: "a space at the first character of the secret",
+			src:  "cfut_ 123456789abcdef0123456789abcdef0123456701234567",
+		},
+		{
+			// The letter past f standing at the first character of the
+			// checksum — the fortieth character of the body, one behind the
+			// end of the secret — rather than in the middle of the checksum
+			// or at its last character, where the existing cases above break
+			// the run.
+			name: "a letter past f at the first character of the checksum",
+			src:  "cfut_0123456789abcdef0123456789abcdef01234567z1234567",
+		},
+		{
+			name: "a body broken by an invalid byte",
+			src:  "cfut_0123456789abcdef\xff123456789abcdef0123456789abcdef",
 		},
 		{
 			name: "a token broken by a space",
@@ -284,6 +343,27 @@ func Test_CloudflareAPIToken_nextToWordCharacters(t *testing.T) {
 			// which is part of no credential, stays in the text.
 			name: "a character of the checksum's class after",
 			src:  "cfut_0123456789abcdef0123456789abcdef0123456789abcdef0",
+			want: "*****************************************************0",
+		},
+		{
+			// A multi-byte rune flush against the token on both sides, with
+			// no space between them.
+			name: "a multi-byte rune flush against the token on both sides",
+			src:  "日本語cfut_0123456789abcdef0123456789abcdef0123456789abcdef日本語",
+			want: "日本語*****************************************************日本語",
+		},
+		{
+			// An account owned token written against a letter, and an
+			// account owned run one character longer than the count — the
+			// same two claims as above, driven against the prefix nothing
+			// else in this file drives them against.
+			name: "an account owned token after a letter",
+			src:  "xcfat_0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: "x*****************************************************",
+		},
+		{
+			name: "an account owned token followed by a character of the checksum's class",
+			src:  "cfat_0123456789abcdef0123456789abcdef0123456789abcdef0",
 			want: "*****************************************************0",
 		},
 	}
@@ -516,6 +596,64 @@ func Test_CloudflareAPIToken_scanIsLinear(t *testing.T) {
 	}
 
 	checkScanIsLinear(t, CloudflareAPIToken(), sources)
+}
+
+// Test_CloudflareAPIToken_settlesWhatTheInputCutShort holds Find's second
+// return to the offset in front of which nothing further back can still
+// become a token, which is either a piece of a prefix standing at the end of
+// the input or a candidate the end of the input cut short. What every
+// built-in owes about this offset over generated text and over the samples is
+// driven in builtins_test.go and fuzz_test.go; what is written out here is
+// which inputs of this pattern's own shape hold anything back, since nothing
+// else names them.
+func Test_CloudflareAPIToken_settlesWhatTheInputCutShort(t *testing.T) {
+	const token = "cfut_0123456789abcdef0123456789abcdef0123456789abcdef"
+
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			name: "a prefix alone",
+			src:  "cfut_",
+			want: 0,
+		},
+		{
+			name: "a body the end of the input cut short",
+			src:  "cfut_0123456789abcdef0123456789",
+			want: 0,
+		},
+		{
+			// A whole token reaching the end of the input. Nothing is read
+			// behind the count, and the token's own alphabets carry none of
+			// the bytes a prefix is written with, so nothing is held back.
+			name: "a whole token reaching the end of the input",
+			src:  token,
+			want: 53,
+		},
+		{
+			name: "a whole token followed by a character that opens no prefix",
+			src:  token + " ",
+			want: 54,
+		},
+		{
+			// A whole prefix at the end of the input with no body behind it,
+			// held back from its own start rather than from the prose in
+			// front.
+			name: "a whole prefix at the end of the input",
+			src:  "nothing here yet cfut_",
+			want: 17,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, got := CloudflareAPIToken().Find(tt.src); got != tt.want {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, got, tt.want)
+			}
+		})
+	}
 }
 
 func Test_cloudflareAPITokenPrefixes(t *testing.T) {

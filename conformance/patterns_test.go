@@ -60,6 +60,43 @@ func spansPattern(name string, spans ...mask.Span) mask.Pattern {
 	return mask.NewPattern(name, func(src string) ([]mask.Span, int) { return spans, len(src) })
 }
 
+// retainsNothingPattern returns a Pattern locating every occurrence of want,
+// like substringPattern, except that it reports retain as 0 always — the
+// naive Find the package docs show a caller writing without a stream in mind,
+// which never says any of src is settled.
+func retainsNothingPattern(name, want string) mask.Pattern {
+	return mask.NewPattern(name, func(src string) ([]mask.Span, int) {
+		var spans []mask.Span
+		for i := 0; ; {
+			j := strings.Index(src[i:], want)
+			if j < 0 {
+				return spans, 0
+			}
+			spans = append(spans, mask.Span{Start: i + j, End: i + j + len(want)})
+			i += j + 1
+		}
+	})
+}
+
+// hostileSpans is a pattern reporting spans a caller's Pattern is under no
+// obligation to be careful about: empty, reversed, negative, past the end of
+// src, duplicated, and dependent on len(src) in a way the merge has to
+// survive. FuzzMask_customPatterns drives generated text through it beside
+// the built-ins, so that the hostile-span contract Masker.Mask states is
+// fuzzed at the merge rather than pinned only on the two fixed inputs
+// mask_test.go carries in the root package.
+var hostileSpans = mask.NewPattern("hostile", func(src string) ([]mask.Span, int) {
+	n := len(src)
+	return []mask.Span{
+		{Start: n / 2, End: n + 5},
+		{Start: -1, End: 2},
+		{Start: n / 3, End: n / 3},
+		{Start: n, End: 0},
+		{Start: 1, End: 2},
+		{Start: 1, End: 2},
+	}, 0
+})
+
 // patternSets is what the patterns field of a case names.
 //
 // A case that names none is masked with what the last patterns directive above
@@ -112,6 +149,38 @@ var customPatternSets = map[string][]mask.Pattern{
 		mask.AllBuiltinPatterns(),
 		mask.MustRegexp("internal-token", `INT-[0-9a-f]{32}`),
 	),
+
+	// A pattern that never settles anything, which is what a Find written
+	// without a stream in mind returns per the package docs. Mask ignores
+	// retain outright, so nothing here should differ from a pattern that
+	// settles the ordinary way; what would differ is a stream, which
+	// unusable_spans.txt's sibling below drives.
+	"func-retains-nothing": {retainsNothingPattern("naive", "0123456789abcdef0123456789abcdef")},
+
+	// The one span shape Pattern.Find documents as neither ignored nor
+	// repaired: a span whose end falls inside a multi-byte rune. Written
+	// against "日本" (two three-byte runes) rather than against "abcdef" as
+	// the rest of unusable_spans.txt is, since a rune has to stand there for
+	// the span to cut in half.
+	"span-inside-a-rune": {spansPattern("half", mask.Span{Start: 0, End: 1})},
+
+	// \b, a word boundary — one of the two things LookBehind names as why a
+	// Pattern built by Regexp reads one rune of context, the other being ^,
+	// which is not a corpus case of its own for the reason
+	// TestConformance_regexpAnchor (conformance_test.go) gives: checkCase's
+	// "in a longer text" and "twice over" wrap every case in more text by
+	// design, exactly the question ^ answers differently once asked of it, so
+	// it states the rule directly instead. Neither is exercised by the
+	// "regexp" set above, which opens on a literal alone.
+	"regexp-bounded": {mask.MustRegexp("bounded", `\bINT-[0-9a-f]{32}\b`)},
+
+	// A regular expression whose whole match can be empty. Go's regexp
+	// reports an empty match at nearly every position of text holding none of
+	// x, and Pattern.Find's own contract says a span whose Start is not less
+	// than its End is ignored — this is what states that the ignored spans
+	// Go's engine hands back this way are what "ignored" means here, not a
+	// crash and not a redaction of a place nothing was written.
+	"regexp-empty": {mask.MustRegexp("maybe", `x*`)},
 
 	// The rules by which values that overlap are merged, and the one the
 	// combined text is attributed to. Each set is written against the input

@@ -68,6 +68,15 @@ func Test_PulumiAccessToken(t *testing.T) {
 			src:  "pul-pul-0123456789abcdef0123456789abcdef01234567",
 			want: []Span{{4, 48}},
 		},
+		{
+			// A multi-byte rune written straight against a token with no
+			// ASCII byte between the two. The rune stands outside the body's
+			// alphabet either way, so it neither widens the token nor keeps
+			// the scan from finding one.
+			name: "a token after a multi-byte rune",
+			src:  "日本語pul-0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{9, 53}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -123,6 +132,28 @@ func Test_PulumiAccessToken_noMatch(t *testing.T) {
 		{
 			name: "the prefix without its middle letter",
 			src:  "pl-0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// The prefix with one letter capitalised rather than the whole
+			// string. Nothing here folds case a character at a time, so a
+			// single capital turns the candidate away exactly as the whole
+			// uppercase spelling does.
+			name: "the prefix with its first letter capital",
+			src:  "Pul-0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "the prefix with its last letter capital",
+			src:  "puL-0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// The excluded class at the very first body character rather than
+			// in the middle of one.
+			name: "an uppercase letter at the first body character",
+			src:  "pul-A123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "a letter past f at the first body character",
+			src:  "pul-g123456789abcdef0123456789abcdef01234567",
 		},
 		{
 			name: "a body of the right length opening with no prefix",
@@ -487,6 +518,38 @@ func Test_PulumiAccessToken_aDigestBehindThePrefix(t *testing.T) {
 	}
 }
 
+func Test_PulumiAccessToken_settlesAWholeToken(t *testing.T) {
+	// A token of exactly the right count standing at the very end of the
+	// input closes on its own count rather than on a run, so nothing arriving
+	// after it can turn it into something else, and the whole input is
+	// settled.
+	src := "pul-0123456789abcdef0123456789abcdef01234567"
+
+	spans, retain := PulumiAccessToken().Find(src)
+	if want := []Span{{0, 44}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != len(src) {
+		t.Errorf("Find(%q) settled %d of %d, want the whole of it", src, retain, len(src))
+	}
+}
+
+func Test_PulumiAccessToken_holdsATokenTheInputCutShort(t *testing.T) {
+	// The other side of the same decision. A candidate one character short of
+	// the count is not a token, but more text could still complete it, so the
+	// scan holds the candidate open from its own start rather than reporting
+	// the whole input settled.
+	src := "pul-0123456789abcdef0123456789abcdef0123456"
+
+	spans, retain := PulumiAccessToken().Find(src)
+	if spans != nil {
+		t.Errorf("Find(%q) = %v, want no span", src, spans)
+	}
+	if retain != 0 {
+		t.Errorf("Find(%q) settled from %d, want 0", src, retain)
+	}
+}
+
 func Test_pulumiAccessTokenPrefix(t *testing.T) {
 	// Two things about the prefix are load-bearing, and neither shows anywhere
 	// else.
@@ -655,11 +718,16 @@ func FuzzPulumiAccessToken_matchesReference(f *testing.F) {
 	f.Add("pul-0123456789abcdef-123456789abcdef01234567")
 	f.Add("pul-0123456789abcdef_123456789abcdef01234567")
 	f.Add("pul-0123456789abcdef\n123456789abcdef01234567")
-	f.Add("pul-0123456789ABCDEF0123456789ABCDEF01234567") // an uppercase body
-	f.Add("pul-0123456789abcdefghijklmnopqrstuvwxyz0123") // letters past f
-	f.Add("PUL-0123456789abcdef0123456789abcdef01234567") // an uppercase prefix
-	f.Add("pul0123456789abcdef0123456789abcdef012345678") // no hyphen closing it
-	f.Add("pul_0123456789abcdef0123456789abcdef01234567") // an underscore closing it
+	f.Add("pul-0123456789ABCDEF0123456789ABCDEF01234567")    // an uppercase body
+	f.Add("pul-0123456789abcdefghijklmnopqrstuvwxyz0123")    // letters past f
+	f.Add("PUL-0123456789abcdef0123456789abcdef01234567")    // an uppercase prefix
+	f.Add("Pul-0123456789abcdef0123456789abcdef01234567")    // one letter capitalised
+	f.Add("puL-0123456789abcdef0123456789abcdef01234567")    // the last letter capitalised
+	f.Add("pul-A123456789abcdef0123456789abcdef01234567")    // an uppercase letter at the first body character
+	f.Add("pul-g123456789abcdef0123456789abcdef01234567")    // a letter past f at the first body character
+	f.Add("日本語pul-0123456789abcdef0123456789abcdef01234567") // a token after a multi-byte rune
+	f.Add("pul0123456789abcdef0123456789abcdef012345678")    // no hyphen closing it
+	f.Add("pul_0123456789abcdef0123456789abcdef01234567")    // an underscore closing it
 	f.Add("xpul-0123456789abcdef0123456789abcdef01234567")
 	// The digests and the UUID the count and the alphabet are read against,
 	// and the word ending in the letters the prefix opens with.

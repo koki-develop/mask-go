@@ -81,6 +81,23 @@ func Test_DigitalOceanToken(t *testing.T) {
 			src:  "cloud_dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			want: []Span{{6, 77}},
 		},
+		{
+			// The count is read the same for every kind, so a run one longer than
+			// it behind an oauth refresh token's prefix is a token and what
+			// follows it, exactly as it is behind the personal access token's.
+			name: "a refresh token in a run longer than the count",
+			src:  "dor_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+			want: []Span{{0, 71}},
+		},
+		{
+			// Three tokens of the three different kinds, none of them closing on a
+			// d, so no span overlaps the next: unlike
+			// Test_DigitalOceanToken_aTokenBeginningInsideAnother, the three spans
+			// are separate and cover the whole input between them.
+			name: "three tokens with nothing between them",
+			src:  "dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefdoo_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefdor_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{0, 71}, {71, 142}, {142, 213}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -114,6 +131,50 @@ func Test_DigitalOceanToken_noMatch(t *testing.T) {
 		{
 			name: "an uppercase prefix",
 			src:  "DOP_V1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// One letter of the prefix in the other case, rather than the whole
+			// of it. The reading ends at the first character it meets that is
+			// neither the opening nor the kind nor the version written as
+			// DigitalOcean writes them, and a single miscased letter is enough.
+			name: "the opening with one letter capitalized",
+			src:  "Dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "the version with its letter capitalized",
+			src:  "dop_V1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// The oauth kind, one character short of the count instead of the
+			// personal access token kind that carries every other case in this
+			// file. DigitalOcean's own count is read the same for the three of
+			// them, so what turns this away is the same test the dop_v1_ case
+			// above states, driven behind a different kind.
+			name: "an oauth access token one character short of the count",
+			src:  "doo_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+		},
+		{
+			name: "a refresh token with an uppercase body",
+			src:  "dor_v1_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		},
+		{
+			name: "a refresh token with a letter past f in the body",
+			src:  "dor_v1_0123456789abcdefg123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// The forbidden characters above all stand in the middle of a body.
+			// These three stand at its first character, straight behind the
+			// prefix, where the same rejection has to hold.
+			name: "a letter past f at the first character of the body",
+			src:  "dop_v1_g123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a hyphen at the first character of the body",
+			src:  "dop_v1_-123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a space at the first character of the body",
+			src:  "dop_v1_ 123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		},
 		{
 			// A letter past f, which is what separates a body from the base62
@@ -255,6 +316,35 @@ func Test_DigitalOceanToken_nextToWordCharacters(t *testing.T) {
 			src:  "dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
 			want: "***********************************************************************0",
 		},
+		{
+			name: "a digit before",
+			src:  "9dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: "9***********************************************************************",
+		},
+		{
+			name: "a hyphen before",
+			src:  "-dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: "-***********************************************************************",
+		},
+		{
+			name: "an oauth access token after a letter",
+			src:  "xdoo_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: "x***********************************************************************",
+		},
+		{
+			name: "a refresh token after a letter",
+			src:  "xdor_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: "x***********************************************************************",
+		},
+		{
+			// A multi-byte rune written against the token on both sides. Neither
+			// UTF-8 encoding shares a byte with the prefix or the body's
+			// alphabet, so the token keeps its span exactly as it does against a
+			// single-byte character.
+			name: "a multi-byte rune before and after",
+			src:  "日本語dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef日本語",
+			want: "日本語***********************************************************************日本語",
+		},
 	}
 
 	m := New(WithPatterns(DigitalOceanToken()))
@@ -365,6 +455,24 @@ func Test_DigitalOceanToken_aWordEndingInAKind(t *testing.T) {
 		{
 			name: "another word closing on it",
 			src:  "hoodoo_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{3, 74}},
+		},
+		{
+			// The refresh token's kind closes no ordinary word the way doo closes
+			// voodoo and hoodoo, but a snake_case name reaches it the same way a
+			// personal access token's kind is reached in
+			// Test_DigitalOceanToken, and the trimmed span is the same shape.
+			name: "a snake_case name closing on the refresh token's kind",
+			src:  "cloud_dor_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{6, 77}},
+		},
+		{
+			// A word closing on the refresh token's kind as voodoo closes on the
+			// oauth kind: condor carries dor as its last three letters, so the
+			// candidate opens there with the three characters in front of it left
+			// in the text.
+			name: "a word closing on the refresh token's kind",
+			src:  "condor_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			want: []Span{{3, 74}},
 		},
 	}
@@ -547,6 +655,69 @@ func Test_DigitalOceanToken_scanIsLinear(t *testing.T) {
 	}
 
 	checkScanIsLinear(t, DigitalOceanToken(), sources)
+}
+
+// Test_DigitalOceanToken_holdsATokenTheInputCutShort states, with a literal
+// number, what the second return of Find settles on the three shapes
+// builtin_digitalocean_token.go's rationale on settling names: a prefix
+// standing at the end of the input, a candidate the end of the input cut
+// short, and a whole match with nothing left unsettled behind it.
+func Test_DigitalOceanToken_holdsATokenTheInputCutShort(t *testing.T) {
+	tests := []struct {
+		name   string
+		src    string
+		want   []Span
+		retain int
+	}{
+		{
+			// A piece of the prefix stands at the very end of the input: it
+			// could still grow into "dop_v1_" or "doo_v1_" with one more
+			// byte, so nothing behind where it opens is settled.
+			name:   "a piece of the prefix at the end of the input",
+			src:    "dop_v1",
+			retain: 0,
+		},
+		{
+			// The same piece with prose in front of it, so what is
+			// unsettled is only the piece itself rather than the whole
+			// input.
+			name:   "a piece of the prefix behind prose",
+			src:    "the token starts with dop_v1",
+			retain: len("the token starts with "),
+		},
+		{
+			// A whole prefix and a body the input cuts short before the
+			// count is met. The candidate could still become a token were
+			// the input longer, so what is unsettled reaches back to where
+			// the candidate opened rather than to the byte the input
+			// stopped at.
+			name:   "a body the input cuts short of the count",
+			src:    "dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef012345",
+			retain: 0,
+		},
+		{
+			// A whole token with more text after it, ending in a byte that
+			// opens no piece of any prefix, so nothing at the end of the
+			// input is left unsettled — the token found is reported and the
+			// input is settled to its end.
+			name:   "a whole token followed by settled text",
+			src:    "dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef tail",
+			want:   []Span{{0, 71}},
+			retain: len("dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef tail"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := DigitalOceanToken().Find(tt.src)
+			if retain != tt.retain {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, retain, tt.retain)
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
 }
 
 func Test_digitalOceanTokenOpening(t *testing.T) {

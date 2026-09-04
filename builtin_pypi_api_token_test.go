@@ -181,6 +181,14 @@ func Test_PyPIAPIToken_noMatch(t *testing.T) {
 			src:  "pypi-AgEIcHlwaS5vcmc0123456789abcdef\n0123456789abcdef0123456789abcdef",
 		},
 		{
+			// The padding character base64url strips is outside the alphabet
+			// too, so it ends the run exactly where a real value could never
+			// carry it — and what stands in front of it here, thirty-one
+			// characters, is short of the fifty the floor asks for.
+			name: "padding inside the body",
+			src:  "pypi-AgEIcHlwaS5vcmc0123456789abcdef=0123456789abcdef0123456789abcdef",
+		},
+		{
 			name: "plain prose",
 			src:  "there is no credential in this sentence",
 		},
@@ -205,6 +213,50 @@ func Test_PyPIAPIToken_noMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := PyPIAPIToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
+			}
+		})
+	}
+}
+
+// Test_PyPIAPIToken_retain holds the second return of Find to a literal
+// offset, on the two shapes builtin_scan.go names: a piece of the anchor
+// standing at the end of the input, and a candidate the end of the input cut
+// short of the floor.
+func Test_PyPIAPIToken_retain(t *testing.T) {
+	tests := []struct {
+		name       string
+		src        string
+		wantRetain int
+	}{
+		{
+			// The last seven characters are "pypi-Ag", a piece of the
+			// eight-character anchor "pypi-AgE" cut short by the end of the
+			// input. Nothing behind it can complete a candidate yet, so the
+			// text is unsettled from where that piece opens.
+			name:       "a piece of the anchor standing at the end of the input",
+			src:        "note pypi-Ag",
+			wantRetain: 5,
+		},
+		{
+			// A whole anchor with a body behind it too short to reach the
+			// floor, all of it standing at the end of the input. More
+			// characters arriving could still carry the run to the floor, so
+			// the candidate is unsettled from its own start rather than from
+			// wherever the run happens to end today.
+			name:       "a candidate the end of the input cut short of the floor",
+			src:        "pypi-AgE0123456789abcdef0123456789abcdef",
+			wantRetain: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := PyPIAPIToken().Find(tt.src)
+			if len(got) != 0 {
+				t.Fatalf("Find(%q) located %v, want no span", tt.src, got)
+			}
+			if retain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.wantRetain)
 			}
 		})
 	}
@@ -329,6 +381,15 @@ func Test_PyPIAPIToken_reachesTheEndOfTheRun(t *testing.T) {
 			name: "a word against the token",
 			src:  "pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdefsuffix",
 			want: "**************************************************************************",
+		},
+		{
+			// The padding character base64url strips is outside the alphabet a
+			// body is read in, so the run ends on the first of them and both
+			// stay in the text — the same as any other punctuation written
+			// straight after a token.
+			name: "padding written straight after a token",
+			src:  "pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef==",
+			want: strings.Repeat("*", 68) + "==",
 		},
 	}
 

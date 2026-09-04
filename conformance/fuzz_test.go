@@ -10,6 +10,7 @@
 package conformance
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/koki-develop/mask-go"
@@ -19,6 +20,18 @@ func FuzzMask(f *testing.F) {
 	for _, c := range corpusCases(f) {
 		f.Add(c.in)
 	}
+	// A string built from all 256 byte values, which is the one input
+	// separatorFor (properties_test.go) has nothing left to mark redactions
+	// with — masking.check's own fallback branch is otherwise reached only
+	// by chance, after a fuzzer's mutations happen to cover every byte.
+	var allBytes strings.Builder
+	for b := range 256 {
+		allBytes.WriteByte(byte(b))
+	}
+	f.Add(allBytes.String())
+	f.Add("\xff\xfe")
+	f.Add("日本語ghp_0123456789abcdefghijklmnopqrstuvwxyz日本語")
+	f.Add("ghp_0123456789abcdefghijklmnopqrstuvwxyzghp_0123456789abcdefghijklmnopqrstuvwxyz")
 
 	patterns := mask.AllBuiltinPatterns()
 	f.Fuzz(func(t *testing.T, src string) {
@@ -35,6 +48,10 @@ func FuzzMask_customPatterns(f *testing.F) {
 	for _, c := range corpusCases(f) {
 		f.Add(c.in)
 	}
+	f.Add("eyey")
+	f.Add("user_id=")
+	f.Add("日本語")
+	f.Add("\xff\xfe")
 
 	patterns := append(
 		mask.AllBuiltinPatterns(),
@@ -43,6 +60,7 @@ func FuzzMask_customPatterns(f *testing.F) {
 		substringPattern("shared-secret", "0123456789abcdef0123456789abcdef"),
 		substringPattern("one-byte", "e"),
 		substringPattern("two-bytes", "ey"),
+		hostileSpans,
 	)
 	f.Fuzz(func(t *testing.T, src string) {
 		checkMasking(t, patterns, src)

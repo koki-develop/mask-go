@@ -99,6 +99,36 @@ func Test_PineconeAPIKey(t *testing.T) {
 			src:  "pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789apcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
 			want: []Span{{0, 75}, {71, 146}},
 		},
+		{
+			// The label carries letters an ordered run never reaches: g
+			// through z, standing in the middle of the label rather than only
+			// in the secret.
+			name: "a label written across the whole alphabet",
+			src:  "pcsk_0123gz_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopq",
+			want: []Span{{0, 75}},
+		},
+		{
+			// The label is base62, so it is written in capitals as readily as
+			// the secret is above.
+			name: "an uppercase label",
+			src:  "pcsk_ABCDE_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			want: []Span{{0, 74}},
+		},
+		{
+			// A pckey_ key beginning inside the one before it, the same shape
+			// the case above drives under the shorter prefix.
+			name: "a pckey_ key beginning inside the key before it",
+			src:  "pckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789apckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			want: []Span{{0, 77}, {72, 148}},
+		},
+		{
+			// A label far longer than any published key together with a
+			// secret far longer than its floor, so the separator dividing
+			// them stands well past both prefixes' own lengths.
+			name: "a long label together with a long secret",
+			src:  "pcsk_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{0, 118}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -168,6 +198,33 @@ func Test_PineconeAPIKey_noMatch(t *testing.T) {
 		{
 			name: "a secret broken by a space",
 			src:  "pcsk_012345_0123456789abcdef 123456789abcdef0123456789abcdef0123456789abcde",
+		},
+		{
+			name: "a space where the separator belongs",
+			src:  "pcsk_012345 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+		},
+		{
+			name: "a label broken by a space",
+			src:  "pcsk_012 45_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+		},
+		{
+			name: "an uppercase pckey_ prefix",
+			src:  "PCKEY_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+		},
+		{
+			// The longer prefix's own label one character short of the floor.
+			name: "a pckey_ label one character short of the floor",
+			src:  "pckey_0123_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+		},
+		{
+			// The longer prefix's own secret one character short of the
+			// floor.
+			name: "a pckey_ secret one character short of the floor",
+			src:  "pckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd",
+		},
+		{
+			name: "a hyphen where the pckey_ separator belongs",
+			src:  "pckey_012345-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
 		},
 		{
 			name: "a secret broken by a line break",
@@ -272,9 +329,8 @@ func Test_PineconeAPIKey_inContext(t *testing.T) {
 func Test_PineconeAPIKey_nextToWordCharacters(t *testing.T) {
 	// A word boundary either side of the pattern, which the one published rule
 	// asks for, would not trim these matches but drop them, letting the key
-	// through whole. The first of them is also what the tightening some scans
-	// here take would cost — which, since no word closes on pcsk or pckey, buys
-	// nothing.
+	// through whole. The first of them is what adding such a boundary here
+	// would cost; since no word closes on pcsk or pckey, it would buy nothing.
 	tests := []struct {
 		name string
 		src  string
@@ -579,6 +635,38 @@ func Test_PineconeAPIKey_theClientSecret(t *testing.T) {
 	}
 }
 
+func Test_PineconeAPIKey_settlesNothingAboutAnOpenRun(t *testing.T) {
+	// A key standing at the very end of the input closes no run: more text
+	// could still carry the secret on, so the scan holds the candidate open
+	// from its own start rather than reporting the input settled up to the
+	// span it already found.
+	src := "pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde"
+
+	spans, retain := PineconeAPIKey().Find(src)
+	if want := []Span{{0, 75}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != 0 {
+		t.Errorf("Find(%q) settled from %d, want 0", src, retain)
+	}
+}
+
+func Test_PineconeAPIKey_settlesOnceTheRunCloses(t *testing.T) {
+	// The other side of the same decision. A period does not belong to the
+	// alphabet a secret is written in, so it closes the run behind the key:
+	// no text arriving after it can widen what was already found, and the
+	// whole of the input is settled.
+	src := "the key is pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde."
+
+	spans, retain := PineconeAPIKey().Find(src)
+	if want := []Span{{11, 86}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != len(src) {
+		t.Errorf("Find(%q) settled %d of %d, want the whole of it", src, retain, len(src))
+	}
+}
+
 func Test_pineconeAPIKeyPrefixes(t *testing.T) {
 	// The scan resumes one byte past the start of a candidate because a key can
 	// begin inside the one before it, and that holds on what a prefix is made
@@ -801,9 +889,19 @@ func FuzzPineconeAPIKey_matchesReference(f *testing.F) {
 	f.Add("pcsk_example-api-key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")  // a hyphenated label
 	f.Add("pckey_example_api_key_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde") // and an underscored one
 	f.Add("pcsk_012345_0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcde")           // and a hyphen inside the secret
-	f.Add("PCSK_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")           // an uppercase prefix
-	f.Add("pcs_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")            // the opening with neither spelling behind it
-	f.Add("pcsky_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")          // the shorter prefix with a letter where its underscore belongs
+	f.Add("pcsk_012345 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")           // a space where the separator belongs
+	f.Add("pcsk_012 45_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")           // a label broken by a space
+	f.Add("PCKEY_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")          // an uppercase pckey_ prefix
+	f.Add("pckey_0123_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")            // a pckey_ label one short
+	f.Add("pckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd")           // a pckey_ secret one short
+	f.Add("pckey_012345-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")          // a hyphen at the pckey_ separator
+	f.Add("pcsk_0123gz_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopq")           // a label across the whole alphabet
+	f.Add("pcsk_ABCDE_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")            // an uppercase label
+	f.Add("pckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789apckey_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")
+	f.Add("pcsk_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	f.Add("PCSK_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")  // an uppercase prefix
+	f.Add("pcs_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")   // the opening with neither spelling behind it
+	f.Add("pcsky_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde") // the shorter prefix with a letter where its underscore belongs
 	f.Add("pcsk_012345_0123456789abcdef\n123456789abcdef0123456789abcdef0123456789abcde")
 	f.Add("xpcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde")
 	// A digest where the secret belongs, which the floor admits, and one

@@ -58,6 +58,15 @@ func Test_GroqAPIKey(t *testing.T) {
 			want: []Span{{0, 55}},
 		},
 		{
+			// The length every published key actually has: fifty-two
+			// characters behind the prefix, fifty-six altogether. This is the
+			// one length nobody wagers by, sitting strictly between the floor
+			// and the runs the cases above and below drive.
+			name: "a key at the length every published key has",
+			src:  "gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdef",
+			want: []Span{{0, 56}},
+		},
+		{
 			name: "two keys separated by a space",
 			src:  "gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd gsk_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCD",
 			want: []Span{{0, 54}, {55, 109}},
@@ -119,6 +128,33 @@ func Test_GroqAPIKey_noMatch(t *testing.T) {
 		{
 			name: "a body carrying an underscore",
 			src:  "gsk_0123456789abcdefghij_lmnopqrstuvwxyz0123456789abcd",
+		},
+		{
+			// A plus and a slash, the two characters standard base64 writes
+			// that base62 does not carry at all, driven at the same middle
+			// position as the hyphen and the underscore above.
+			name: "a body carrying a plus",
+			src:  "gsk_0123456789abcdefghij+lmnopqrstuvwxyz0123456789abcd",
+		},
+		{
+			name: "a body carrying a slash",
+			src:  "gsk_0123456789abcdefghij/lmnopqrstuvwxyz0123456789abcd",
+		},
+		{
+			// The excluded characters above all stand in the middle of a
+			// body. These three stand straight behind the prefix, with a full
+			// run of the alphabet behind them — the run is still too short to
+			// be a body, because it never gets to begin.
+			name: "a hyphen straight behind the prefix",
+			src:  "gsk_-0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd",
+		},
+		{
+			name: "an underscore straight behind the prefix",
+			src:  "gsk__0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd",
+		},
+		{
+			name: "a dot straight behind the prefix",
+			src:  "gsk_.0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd",
 		},
 		{
 			name: "an uppercase prefix",
@@ -288,6 +324,13 @@ func Test_GroqAPIKey_nextToWordCharacters(t *testing.T) {
 			src:  "GROQ_API_KEY_gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd",
 			want: "GROQ_API_KEY_******************************************************",
 		},
+		{
+			// The third class of word character neither of the two above
+			// is: a bare digit immediately in front of the prefix.
+			name: "digit before",
+			src:  "0gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd",
+			want: "0******************************************************",
+		},
 	}
 
 	m := New(WithPatterns(GroqAPIKey()))
@@ -336,6 +379,22 @@ func Test_GroqAPIKey_reachesTheEndOfTheRun(t *testing.T) {
 			name: "an underscored word against the key",
 			src:  "gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd_suffix",
 			want: "******************************************************_suffix",
+		},
+		{
+			// The two characters standard base64 adds beyond base62 also
+			// end a run, exactly as the hyphen and the underscore do.
+			name: "a plus against the key",
+			src:  "gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd+AAA",
+			want: "******************************************************+AAA",
+		},
+		{
+			// A multi-byte rune written immediately against the key.
+			// Neither its UTF-8 encoding nor a byte of it belongs to the
+			// alphabet a body is read in, so the run stops there exactly
+			// as it does against a single-byte character.
+			name: "a multi-byte rune against the key",
+			src:  "日本語gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd日本語",
+			want: "日本語******************************************************日本語",
 		},
 	}
 
@@ -519,6 +578,58 @@ func Test_GroqAPIKey_aDigestBehindThePrefix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_GroqAPIKey_holdsATokenTheInputCutShort states, with a literal number,
+// what the second return of Find settles: a piece of the prefix standing at
+// the end of the input, a candidate the end of the input cut short before the
+// floor is reached, and a whole match with nothing left unsettled behind it.
+func Test_GroqAPIKey_holdsATokenTheInputCutShort(t *testing.T) {
+	tests := []struct {
+		name   string
+		src    string
+		want   []Span
+		retain int
+	}{
+		{
+			// A piece of the prefix stands at the end of the input: it
+			// could still grow into "gsk_" with one more byte, so nothing
+			// behind where it opens is settled.
+			name:   "a piece of the prefix at the end of the input",
+			src:    "the key starts with gsk",
+			retain: len("the key starts with "),
+		},
+		{
+			// A whole prefix and a run the input cuts short before the
+			// floor is met. The run also reaches the end of the input, so
+			// more of it could still arrive, and what is unsettled reaches
+			// back to where the candidate opened.
+			name:   "a run the input cuts short of the floor",
+			src:    "gsk_0123456789abcdefghij",
+			retain: 0,
+		},
+		{
+			// A whole key with more text after it, ending in a byte that
+			// opens no piece of the prefix, so nothing at the end of the
+			// input is left unsettled.
+			name:   "a whole key followed by settled text",
+			src:    "gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd tail",
+			want:   []Span{{0, 54}},
+			retain: len("gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd tail"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := GroqAPIKey().Find(tt.src)
+			if retain != tt.retain {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, retain, tt.retain)
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}

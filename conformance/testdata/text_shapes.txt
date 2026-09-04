@@ -199,3 +199,52 @@ out:      GITHUB_CLIENT_SECRET=0123456789abcdef0123456789abcdef01234567
 case:     a classic token encoded into base64 is not located
 in:       Authorization: Basic eC1hY2Nlc3MtdG9rZW46Z2hwXzAxMjM0NTY3ODlhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==
 out:      Authorization: Basic eC1hY2Nlc3MtdG9rZW46Z2hwXzAxMjM0NTY3ODlhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==
+
+# A leading byte order mark, a zero width space and a run of carriage returns
+# for line endings — three things a file arrives with that are not any
+# vendor's alphabet and stand in front of, or beside, a credential all the
+# same. Mask redacts what is located and writes everything else back
+# byte for byte, so none of these is special-cased.
+
+case:     a file opening with a byte order mark
+in:       ﻿GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      ﻿GITHUB_TOKEN=«github-token»
+
+case:     a token pasted with a zero width space against it
+in:       token=​ghp_0123456789abcdefghijklmnopqrstuvwxyz​
+out:      token=​«github-token»​
+
+case:     a token broken by a zero width space
+in:       ghp_0123456789abcdef​ghijklmnopqrstuvwxyz0123456789abcdef
+out:      ghp_0123456789abcdef​ghijklmnopqrstuvwxyz0123456789abcdef
+
+case:     a log with carriage return line endings
+in:       HOME=/root\rGITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz\rPATH=/usr/bin
+out:      HOME=/root\rGITHUB_TOKEN=«github-token»\rPATH=/usr/bin
+
+# Text that has already been masked: a run of asterisks the length a real
+# credential would leave, and the fixed placeholder a caller's own redactor
+# or a CI system writes. Neither is in any built-in's alphabet, so masking
+# such text again leaves it exactly as it was.
+
+case:     a value already replaced with asterisks
+in:       GITHUB_TOKEN=**************************************** AWS_ACCESS_KEY_ID=********************
+out:      GITHUB_TOKEN=**************************************** AWS_ACCESS_KEY_ID=********************
+
+case:     asterisks written against a live prefix
+in:       ghp_************************************
+out:      ghp_************************************
+
+case:     text already redacted by another tool
+in:       token=[REDACTED] jwt=[REDACTED]
+out:      token=[REDACTED] jwt=[REDACTED]
+
+# A single credential written at a size closer to what a caller's own key
+# material reaches: a JWT with a payload of several kilobytes rather than the
+# few dozen characters the rest of this file's values are. Escaped as one
+# line here, as text_shapes.txt's own cases are, so every property driven
+# over the corpus reaches a value this wide too.
+
+case:     a jwt with a large payload
+in:       Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMiLCJkYXRhIjoiMDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6IiwibmJmIjoxfQ.0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdef
+out:      Authorization: Bearer «jwt»

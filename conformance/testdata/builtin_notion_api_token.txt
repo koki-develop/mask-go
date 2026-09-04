@@ -60,6 +60,18 @@ case:     a further underscore inside the body
 in:       ntn_0123456789abcdef0123_456789abcdef0123456789abc
 out:      ntn_0123456789abcdef0123_456789abcdef0123456789abc
 
+case:     an older-format body written in capitals
+in:       secret_0123456789ABCDEF0123456789ABCDEF0123456789A
+out:      «notion-api-token»
+
+case:     a hyphen inside an older-format body
+in:       secret_0123456789abcdef0123-456789abcdef0123456789
+out:      secret_0123456789abcdef0123-456789abcdef0123456789
+
+case:     a further underscore inside an older-format body
+in:       secret_0123456789abcdef0123_456789abcdef0123456789
+out:      secret_0123456789abcdef0123_456789abcdef0123456789
+
 # How long a token is. Fifty characters, prefix included, read exactly rather
 # than as a floor — which is where this pattern stands with the AWS, Google and
 # SendGrid ones rather than with the OpenAI, Anthropic, Stripe, PyPI and npm
@@ -118,6 +130,14 @@ case:     a hyphenated word written against a token
 in:       ntn_0123456789abcdef0123456789abcdef0123456789abcd-suffix
 out:      «notion-api-token»-suffix
 
+case:     a letter before an older-format token
+in:       xsecret_0123456789abcdef0123456789abcdef0123456789a
+out:      x«notion-api-token»
+
+case:     a dashed word written against an older-format token
+in:       secret_0123456789abcdef0123456789abcdef0123456789a-suffix
+out:      «notion-api-token»-suffix
+
 # Two tokens written together. The characters in front of either prefix's
 # underscore belong to the alphabet a body is written in, so a body closing with
 # ntn hands the underscore written after the token to a candidate beginning
@@ -142,6 +162,14 @@ out:      «notion-api-token»
 case:     a token of the older format beginning inside the one before it
 in:       secret_0123456789abcdef0123456789abcdef01234secret_0123456789abcdef0123456789abcdef0123456789a
 out:      «notion-api-token»
+
+case:     the newer prefix in front of an older-format token
+in:       ntn_secret_0123456789abcdef0123456789abcdef0123456789a
+out:      ntn_«notion-api-token»
+
+case:     the older prefix in front of a newer-format token
+in:       secret_ntn_0123456789abcdef0123456789abcdef0123456789abcd
+out:      secret_«notion-api-token»
 
 # What this pattern redacts that nobody issued, and the one place the text taken
 # is text somebody wrote. secret_ closes an ordinary name — client_secret_,
@@ -240,6 +268,22 @@ out:      NOTION_API_KEY=\nNOTION_VERSION=2022-06-28
 case:     a log line
 in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.notion.com/v1/pages
 out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.notion.com/v1/pages
+
+# Adjacency the properties in conformance drive on generated text but never
+# assert an expected output for: a multi-byte rune, an invalid UTF-8 byte, a
+# tab and a carriage return.
+
+case:     a token between japanese
+in:       日本語ntn_0123456789abcdef0123456789abcdef0123456789abcd日本語
+out:      日本語«notion-api-token»日本語
+
+case:     a token between tabs
+in:       \tsecret_0123456789abcdef0123456789abcdef0123456789a\t
+out:      \t«notion-api-token»\t
+
+case:     a token followed by a carriage return and a newline
+in:       token=ntn_0123456789abcdef0123456789abcdef0123456789abcd\r\n
+out:      token=«notion-api-token»\r\n
 
 # And a Notion credential this pattern has nothing to say about. A public
 # connection is given a refresh token beside its access token, and that one

@@ -11,6 +11,7 @@
 package conformance
 
 import (
+	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -121,6 +122,35 @@ func (ms *masking) remark(m mask.Match) string {
 	return ms.secondSep
 }
 
+// reportsARuneCuttingSpan reports whether any pattern ms was built with
+// reports a usable span over src whose Start or End falls short of a UTF-8
+// rune boundary: the one span shape Pattern.Find documents as neither
+// ignored nor repaired, so that what stands either side of it is written back
+// as found and the output need not be valid UTF-8.
+//
+// It puts the same question to each pattern's Find that Mask itself puts to
+// build masked, rather than naming which pattern might answer yes: a built-in
+// and Regexp cannot, by what Find documents of them, but a pattern built by
+// hand — hostileSpans, or the one customPatternSets' "span-inside-a-rune"
+// states — is free to.
+func (ms *masking) reportsARuneCuttingSpan(src string) bool {
+	for p := range ms.known {
+		spans, _ := p.Find(src)
+		for _, s := range spans {
+			if s.Start < 0 || s.End > len(src) || s.Start >= s.End {
+				continue // Find documents these as ignored rather than used
+			}
+			if !utf8.RuneStart(src[s.Start]) {
+				return true
+			}
+			if s.End < len(src) && !utf8.RuneStart(src[s.End]) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // check holds masking src to what must hold of masking anything, as
 // checkMasking states it.
 func (ms *masking) check(t testing.TB, src string) {
@@ -128,6 +158,7 @@ func (ms *masking) check(t testing.TB, src string) {
 
 	sep, ok := separatorFor(src)
 	if !ok {
+		ms.checkAllBytes(t, src)
 		return // text holding every byte there is; nothing can mark it
 	}
 
@@ -163,6 +194,24 @@ func (ms *masking) check(t testing.TB, src string) {
 	if masked != want.String() {
 		t.Fatalf("masking %q gave %q, want %q", src, masked, want.String())
 	}
+	// The built-in patterns and Regexp cannot report a span cutting a
+	// multi-byte rune in half — every built-in decides its ends on an ASCII
+	// alphabet, and Go's regexp matches runes — so valid UTF-8 in must give
+	// valid UTF-8 out wherever nothing driven here actually reports one of
+	// those over src. A pattern built by hand, such as hostileSpans or the
+	// one span-inside-a-rune states, is free to report one, and
+	// reportsARuneCuttingSpan asks Find itself rather than naming which
+	// pattern might: the same question Mask puts to it to build masked.
+	//
+	// !utf8.ValidString(masked) stands last rather than in the middle: it is
+	// false on nearly every call, where reportsARuneCuttingSpan calls Find
+	// again for every pattern in the set, bypassing the gram prefilter Mask
+	// itself reads first. Putting the cheap, almost-always-false check first
+	// lets it short-circuit the expensive one on nearly every call instead of
+	// paying for it every time.
+	if utf8.ValidString(src) && !utf8.ValidString(masked) && !ms.reportsARuneCuttingSpan(src) {
+		t.Fatalf("masking valid UTF-8 %q gave %q, which is not valid UTF-8", src, masked)
+	}
 	ms.checkSecondPass(src, masked, kept, values)
 	// A value that was in the text once and has been redacted is not in the
 	// output at all. Where it was there more than once, some of them may have
@@ -197,11 +246,117 @@ func (ms *masking) check(t testing.TB, src string) {
 	// builtin_stripe_secret_key.txt states two written together and three, and
 	// what those out lines are for is that a scan losing the tail of a run
 	// again shows up there.
+	//
+	// The property is stated only where value's redaction under Fill('*') —
+	// as many asterisks as it has runes — can be told apart from value itself.
+	// A pattern a caller writes may report any span at all (hostileSpans is
+	// one), so a fuzzed value can come out as a run of nothing but '*': "o*"
+	// with the pattern above locates "*" alone, one byte, and Fill('*') redacts
+	// one byte of it to one asterisk — the same byte. masked then holds "*"
+	// exactly where the redaction went, and strings.Contains reading that as
+	// the value surviving is reading the redaction, not a defect. Where the
+	// two differ, finding value in masked still means the first pass left it
+	// standing, so the check is not weakened for any value it could tell apart.
 	for _, value := range values {
-		if strings.Count(src, value) == 1 && strings.Contains(masked, value) {
+		if strings.Count(src, value) != 1 {
+			continue
+		}
+		if value == strings.Repeat("*", utf8.RuneCountInString(value)) {
+			continue // this value's own redaction is not distinguishable from it
+		}
+		if strings.Contains(masked, value) {
 			t.Fatalf("masking %q gave %q, which still holds the redacted %q", src, masked, value)
 		}
 	}
+}
+
+// checkAllBytes holds masking src, text holding every one of the 256 byte
+// values there is, to what can still be said of it once separatorFor has
+// nothing left to mark redactions with: check returns without checking
+// anything on such an input, so this is what stands in its place rather than
+// a silent pass.
+//
+// Nothing here assumes a value is located at all — a set of one narrow
+// pattern may find nothing in 256 bytes drawn from everywhere — so what is
+// asked holds whether or not anything was: a value a redactor recorded is
+// honestly a substring of src, the text Fixed("") left is what remained once
+// every recorded value's bytes were taken out in order, and Fill's rune count
+// agrees with what the kept stretches and the recorded values each hold
+// counted on their own.
+func (ms *masking) checkAllBytes(t testing.TB, src string) {
+	t.Helper()
+
+	patterns := make([]mask.Pattern, 0, len(ms.known))
+	for p := range ms.known {
+		patterns = append(patterns, p)
+	}
+
+	var recorded []string
+	dropped := mask.New(mask.WithPatterns(patterns...), mask.WithRedactor(mask.NewRedactor(func(m mask.Match) string {
+		recorded = append(recorded, m.Value)
+		return ""
+	}))).Mask(src)
+	fill := maskerWith(patterns, mask.Fill('*')).Mask(src)
+
+	total := len(dropped)
+	for _, v := range recorded {
+		if v == "" {
+			t.Fatalf("masking %q recorded an empty value", src)
+		}
+		if !strings.Contains(src, v) {
+			t.Fatalf("masking %q recorded %q, which is not a substring of the input", src, v)
+		}
+		total += len(v)
+	}
+	if total != len(src) {
+		t.Fatalf("masking %q left %d dropped byte(s) and recorded %d value byte(s), which do not add up to the input's %d bytes",
+			src, len(dropped), total-len(dropped), len(src))
+	}
+	if !isSubsequence(dropped, src) {
+		t.Fatalf("masking %q with Fixed(\"\") gave %q, which is not what removing bytes from the input in order would leave", src, dropped)
+	}
+
+	// wantRunes is what Fill must leave: the kept stretches' runes plus the
+	// recorded values' runes, each counted the way it stood on its own in
+	// src. dropped does not keep them apart to count them that way — Fixed("")
+	// writes the kept stretches straight into one another with nothing
+	// between them — and a rune Fixed("") cut in half can fuse with the byte
+	// that now follows it, or a byte it left dangling can decode differently
+	// than it would have on its own, so RuneCountInString(dropped) is not
+	// their sum.
+	//
+	// isolated marks the same joins with \xff instead of dropping them.
+	// \xff is never a lead byte or a continuation byte of a rune, so
+	// splicing it between two stretches of src can never fuse with a byte on
+	// either side of it: what stood on either side decodes exactly as it did
+	// in src, whether that byte belonged to a stretch this scan cut apart or
+	// was already sitting next to a stray 0xff of the input's own. \xff
+	// itself always decodes as one rune of its own, so subtracting one rune
+	// per join undoes exactly what inserting it added, leaving the kept
+	// stretches' runes with nothing else mixed in.
+	isolated := mask.New(mask.WithPatterns(patterns...), mask.WithRedactor(mask.NewRedactor(func(mask.Match) string {
+		return "\xff"
+	}))).Mask(src)
+	wantRunes := utf8.RuneCountInString(isolated) - len(recorded)
+	for _, v := range recorded {
+		wantRunes += utf8.RuneCountInString(v)
+	}
+	if got := utf8.RuneCountInString(fill); got != wantRunes {
+		t.Fatalf("masking %q with Fill left %d rune(s), want %d", src, got, wantRunes)
+	}
+}
+
+// isSubsequence reports whether every byte of sub appears in s in order, not
+// necessarily contiguous — what is left of s once some stretches, in order,
+// are taken out of it.
+func isSubsequence(sub, s string) bool {
+	i := 0
+	for j := 0; i < len(sub) && j < len(s); j++ {
+		if sub[i] == s[j] {
+			i++
+		}
+	}
+	return i == len(sub)
 }
 
 // checkSecondPass holds masking masked, which is what masking src gave, to
@@ -366,7 +521,51 @@ func TestProperties_everySuffix(t *testing.T) {
 
 // injected is the bytes pushed into a case: the ones the built-in scans key on,
 // the ones that end a run, and bytes text cannot hold.
-var injected = []byte{'.', '_', '-', 'g', 'e', 'y', '0', ' ', '\n', 0x00, 0xff}
+//
+// Each byte here stands for a class a scan's own declarations read
+// differently, and is kept only where no other byte here already reads that
+// class:
+//
+//   - '/' and '+' are two characters of the standard base64 alphabet — not
+//     base64url's, which '-' and '_' already stand for — that
+//     AWSSecretAccessKey, FlyIoAccessToken, PrivateKey and SentryAuthToken
+//     all read as part of a value's body rather than as its end.
+//   - '=' is base64's padding character, which those same bodies read as
+//     ending a run rather than extending one, and which AWSSecretAccessKey's
+//     isAWSSecretAccessKeyAssignment also reads as an assignment character
+//     between a name and a value.
+//   - '"' is what AWSSecretAccessKey's isAWSSecretAccessKeyQuote reads around
+//     a value, the plain apostrophe it also admits being no different a
+//     class.
+//   - '\t' is what AWSSecretAccessKeySpace reads as a space, alongside ' '.
+//   - '\r' is half of the "\r\n" line break PrivateKey reads as one of its
+//     four spellings, a class '\n' alone does not stand for.
+//   - 'A' and 'Z' are what an uppercase letter does to a lowercase
+//     hexadecimal or base62 body: 'A' is a valid hexadecimal digit in that
+//     case and 'Z' is not, so the two read different boundaries of the same
+//     alphabets.
+//
+// ':' is left out: AWSSecretAccessKey's isAWSSecretAccessKeyAssignment reads
+// it exactly where it reads '=', so '=' already drives that branch, and a
+// separator no scan recognises at all is already what '.' drives. The corpus
+// still states ':' as a separator directly —
+// builtin_aws_secret_access_key.txt's "under the name a workflow input
+// writes" and "the words written out" cases both use it.
+//
+// 0x80, 0xc3, 0xe6 and 0xf0 are left out too: every alphabet a built-in scan
+// tests membership in (isBase64URLByte, isBase62Byte and the rest) is a plain
+// ASCII range comparison, so a continuation byte, a lead byte of any width and
+// 0xff all fail every one of them the same way — none of a scan's own
+// declarations reads them apart. 0xff, already below, is the one
+// representative that class needs. Where the byte's width genuinely matters —
+// a rune truncated after one, two or three of its continuation bytes —
+// degenerate.txt states it directly, with the exact text the truncation
+// leaves, rather than through every position of every other case here.
+var injected = []byte{
+	'.', '_', '-', '/', '+', '=', '"',
+	'g', 'e', 'y', 'A', 'Z', '0', ' ', '\t', '\r', '\n',
+	0x00, 0xff,
+}
 
 // injectionPoints returns where a byte is pushed into src. Every position of a
 // short text, and of a longer one the edges of every redaction it holds, where a
@@ -576,6 +775,298 @@ func TestProperties_noValueLeaksThroughAnyRedactor(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestProperties_morePatternsRedactNoLess(t *testing.T) {
+	// AllBuiltinPatterns: "The set grows as patterns are added to this
+	// package." A corpus case masked with a set holding one built-in alone is
+	// how TestCorpus_coversEveryBuiltinPattern states what that pattern
+	// locates on its own, but a caller reaching for one built-in reaches for
+	// AllBuiltinPatterns instead, which is the whole registry scanning the
+	// same text at once. This is what states the difference cannot cost a
+	// value: whatever one pattern alone locates, the whole registry must
+	// still redact.
+	//
+	// It could fail two ways checkPrefilter and Test_builtins_retainSettles
+	// (root package) do not reach: a pattern's own openings turning it away
+	// on text another pattern's grammar would have opened a candidate in —
+	// which is what customSets' scans are for, but not what the corpus's own
+	// ~2600 builtin_<name>.txt inputs are ever driven through — or two
+	// built-ins disagreeing about where a value ends and the shorter of the
+	// two winning attribution while stopping short of what the longer would
+	// have redacted.
+	all := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...), mask.WithRedactor(mask.Fill('*')))
+	builtin := map[mask.Pattern]bool{}
+	for _, p := range mask.AllBuiltinPatterns() {
+		builtin[p] = true
+	}
+
+	driven := 0
+	for _, c := range corpusCases(t) {
+		patterns := c.patterns()
+		if len(patterns) != 1 || !builtin[patterns[0]] {
+			continue // not a case masked with one built-in alone
+		}
+		_, values := maskMarked(patterns, c.in)
+		if len(values) == 0 {
+			continue // a clean case; nothing here to lose
+		}
+		driven++
+		got := all.Mask(c.in)
+		for _, v := range values {
+			if strings.Count(c.in, v) == 1 && strings.Contains(got, v) {
+				t.Errorf("%s: %s alone redacts %q out of %q, but the whole registry's Mask gives %q, which still holds it",
+					c.id(), patterns[0].Name(), v, c.in, got)
+			}
+		}
+	}
+	if driven == 0 {
+		t.Fatal("no case masked with one built-in alone located anything, so this drove nothing")
+	}
+}
+
+// builtinValues is one located value per built-in pattern, taken from the
+// corpus's own per-pattern cases: the first case masked with that pattern
+// alone that locates exactly one value, and one that pattern goes on to
+// locate standing entirely on its own.
+//
+// A value taken from the corpus rather than built here is a value already
+// held to being one that pattern locates on its own — TestCorpus_summary
+// counts every pattern with at least one such case, and TestCorpus_summary's
+// sibling TestCorpus_coversEveryBuiltinPattern asks for at least three.
+//
+// The last check leaves out a pattern such as AWSSecretAccessKey, whose
+// Match.Value is the forty characters alone: its own doc states they are
+// located "standing behind the name it is assigned to", so the name is what a
+// case's in field carries and Match.Value never does. Pairing such a value
+// with another builtin's, with nothing standing in for the name, is not a
+// question this test's concatenation can put to that pattern at all — the
+// gap is in what the corpus states about the pattern needing a name nearby,
+// not in this property.
+func builtinValues(t testing.TB) map[string]string {
+	t.Helper()
+
+	builtin := map[mask.Pattern]bool{}
+	for _, p := range mask.AllBuiltinPatterns() {
+		builtin[p] = true
+	}
+
+	values := make(map[string]string, len(mask.AllBuiltinPatterns()))
+	for _, c := range corpusCases(t) {
+		patterns := c.patterns()
+		if len(patterns) != 1 || !builtin[patterns[0]] {
+			continue // not a set holding one built-in alone
+		}
+		name := patterns[0].Name()
+		if _, ok := values[name]; ok {
+			continue
+		}
+		_, vs := maskMarked(patterns, c.in)
+		if len(vs) != 1 || vs[0] != c.in {
+			continue // not a case whose whole in is the one value located
+		}
+		values[name] = vs[0]
+	}
+	return values
+}
+
+func TestProperties_everyPairOfBuiltins(t *testing.T) {
+	// TestProperties_casesRunTogether pairs a case with six neighbours chosen
+	// by where the corpus's files happen to sort, so which of the ~4400
+	// ordered pairs of built-ins is exercised drifts as cases are added or
+	// files renamed, and most pairs are never driven beside each other at
+	// all. This drives every ordered pair instead, directly: one value per
+	// built-in, written beside another with nothing, a newline, a space or a
+	// dot between them, under the whole registry.
+	values := builtinValues(t)
+	names := slices.Sorted(maps.Keys(values))
+
+	// nonContributingBuiltins is how many of AllBuiltinPatterns() contribute
+	// no value to builtinValues. Held to exactly, the way TestCorpus_summary
+	// holds knownCollisions to a count rather than a bound: builtinValues's
+	// own doc names the one pattern this covers — AWSSecretAccessKey, whose
+	// Match.Value is the forty characters alone and never a value standing on
+	// its own, so no single-value corpus case can seed it here. A pattern
+	// that quietly stops contributing — a corpus edit that puts a keyword
+	// prefix on what was its only single-value case, say — moves this count
+	// without moving nonContributingBuiltins, and only counting catches that;
+	// the fewer names drive fewer of the ~4400 ordered pairs this test
+	// exists to state something about.
+	const nonContributingBuiltins = 1
+	if want := len(mask.AllBuiltinPatterns()) - nonContributingBuiltins; len(names) != want {
+		contributed := make(map[string]bool, len(names))
+		for _, n := range names {
+			contributed[n] = true
+		}
+		var missing []string
+		for _, p := range mask.AllBuiltinPatterns() {
+			if !contributed[p.Name()] {
+				missing = append(missing, p.Name())
+			}
+		}
+		t.Fatalf("%d built-in(s) contributed a value, want %d (nonContributingBuiltins=%d) — missing: %v",
+			len(names), want, nonContributingBuiltins, missing)
+	}
+
+	// robustLeadingAlnum and robustTrailingAlnum say whether a pattern still
+	// gets its own value fully redacted with a letter or a digit standing
+	// directly against it — in front for the first, behind for the second.
+	// Several of the built-ins document the opposite by name for the leading
+	// side — SlackToken and StripeSecretKey both require "no letter or digit
+	// stands in front of it" — and every one of this library's own values
+	// both ends and, read as vq, begins in one, so concatenating two of them
+	// with nothing between is asking a question those patterns' own docs
+	// already answer rather than testing an adjacency defect. A pattern
+	// requiring the mirror image on its trailing side is answered the same
+	// way. Both are computed once per name against a plain digit rather than
+	// assumed from a name, so a pattern with either requirement arriving
+	// later is read correctly without this test naming it.
+	//
+	// The two probes ask different questions of the match, on purpose. A scan
+	// walking forward from a prefix has no way to extend a match earlier than
+	// where it opened, so prepending "9" either leaves q's value exactly as
+	// reported (this is a false positive) or blocks it outright the way
+	// Slack's and Stripe's own leading rule does — an exact-match check tells
+	// those two apart. Appending "9" is not symmetric: several bodies here
+	// are variable-length and read as far as their alphabet allows, so the
+	// same digit is often just one more character of the body, extending the
+	// reported match rather than being refused. The question that matters
+	// downstream is only whether vp survives being redacted, not whether the
+	// match that redacts it stops exactly at vp's own end — so this asks
+	// whether some match's Value carries vp as a prefix, true whether that
+	// match is vp exactly or vp with the digit read onto it, and false only
+	// where a trailing boundary rule, the mirror of Slack's and Stripe's own,
+	// would leave vp itself standing in the output.
+	robustLeadingAlnum := make(map[string]bool, len(names))
+	robustTrailingAlnum := make(map[string]bool, len(names))
+	for _, q := range names {
+		_, vs := maskMarked(mask.AllBuiltinPatterns(), "9"+values[q])
+		robustLeadingAlnum[q] = len(vs) == 1 && vs[0] == values[q]
+
+		_, vs = maskMarked(mask.AllBuiltinPatterns(), values[q]+"9")
+		robustTrailingAlnum[q] = slices.ContainsFunc(vs, func(v string) bool { return strings.HasPrefix(v, values[q]) })
+	}
+
+	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...), mask.WithRedactor(mask.Fill('*')))
+	for _, p := range names {
+		t.Run(p, func(t *testing.T) {
+			t.Parallel()
+			vp := values[p]
+			for _, q := range names {
+				vq := values[q]
+				for _, sep := range []string{"", "\n", " ", "."} {
+					// sep == "" concatenates vp directly against vq: vp's
+					// trailing edge meets vq's leading edge with nothing
+					// between them, so both sides of that seam need to be
+					// robust to an alnum neighbour for the pair to say
+					// anything about an adjacency defect rather than about a
+					// prefix's own documented requirement.
+					if sep == "" && (!robustTrailingAlnum[p] || !robustLeadingAlnum[q]) {
+						continue
+					}
+					src := vp + sep + vq
+					got := m.Mask(src)
+					if strings.Contains(got, vp) && strings.Count(src, vp) == 1 {
+						t.Errorf("%s beside %s over %q: Mask gives %q, which still holds %s's own value", p, q, src, got, p)
+					}
+					if strings.Contains(got, vq) && strings.Count(src, vq) == 1 {
+						t.Errorf("%s beside %s over %q: Mask gives %q, which still holds %s's own value", p, q, src, got, q)
+					}
+					if sep == " " {
+						// checkCase's affix property already states that a
+						// value standing alone after "log: " is located; a
+						// second credential in front of it, separated only by
+						// a space, must not cost either one.
+						log := "log: " + src
+						got := m.Mask(log)
+						if strings.Contains(got, vp) && strings.Count(log, vp) == 1 {
+							t.Errorf("%s beside %s, logged: Mask(%q) = %q, which still holds %s's own value", p, q, log, got, p)
+						}
+						if strings.Contains(got, vq) && strings.Count(log, vq) == 1 {
+							t.Errorf("%s beside %s, logged: Mask(%q) = %q, which still holds %s's own value", p, q, log, got, q)
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestProperties_manyValues(t *testing.T) {
+	// TestConformance's "twice over" property and TestProperties_repeatedCases
+	// hold a value repeated eight times; a leaked key material dump or a
+	// repeated log line repeats one thousands of times over, with no scan
+	// state carried between calls to answer for. This drives a single value
+	// at that scale, through Mask directly and through a Writer a byte at a
+	// time, both held to the same rune-count and no-value-survives properties
+	// checkCase already states at a smaller scale.
+	const n = 5000
+	const value = "ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+	m := mask.New(mask.WithPatterns(mask.GitHubToken()), mask.WithRedactor(mask.Fill('*')))
+
+	adjacent := strings.Repeat(value, n)
+	if got, want := m.Mask(adjacent), strings.Repeat("*", n*utf8.RuneCountInString(value)); got != want {
+		t.Errorf("masking %d adjacent values gave %d asterisk(s), want %d", n, strings.Count(got, "*"), strings.Count(want, "*"))
+	}
+
+	separated := strings.Repeat(value+"\n", n)
+	wantLine := strings.Repeat("*", utf8.RuneCountInString(value)) + "\n"
+	if got, want := m.Mask(separated), strings.Repeat(wantLine, n); got != want {
+		t.Errorf("masking %d values separated by newlines did not give %d repeats of one masked line", n, n)
+	}
+
+	pieces := make([]string, len(separated))
+	for i := range len(separated) {
+		pieces[i] = separated[i : i+1]
+	}
+	checkStream(t, m, separated, m.Mask(separated), pieces)
+}
+
+func TestProperties_customPatternSets(t *testing.T) {
+	// builtinSets is what every property above drives — the built-in
+	// patterns and each of them alone — leaving the sets a caller's own
+	// patterns are stated with (regexp, a mask group, a function) undriven by
+	// text derived from their cases: no prefix or suffix of one, no byte
+	// pushed into its match, no repetition of it. Restricted to the cases
+	// each such set is its own — a case masked with the built-ins already
+	// runs through every property above — this drives the same shapes over
+	// them.
+	sets := map[string][]mask.Pattern{}
+	var cases []*corpusCase
+	for _, c := range readableCases(t) {
+		if _, ok := customPatternSets[c.set]; !ok {
+			continue // a built-in set on its own; driven above already
+		}
+		if c.set == "default" || c.set == "default-and-regexp" || c.set == "none" {
+			continue // the built-ins at scale, driven above; none locates nothing to derive text from
+		}
+		sets[c.set] = c.patterns()
+		cases = append(cases, c)
+	}
+	if len(sets) == 0 {
+		t.Fatal("no custom pattern set has a readable case")
+	}
+
+	for setName, patterns := range sets {
+		t.Run(setName, func(t *testing.T) {
+			t.Parallel()
+			ms := newMasking(patterns)
+			for _, c := range cases {
+				if c.set != setName {
+					continue
+				}
+				t.Run(c.name, func(t *testing.T) {
+					for i := range len(c.in) + 1 {
+						ms.check(t, c.in[:i])
+						ms.check(t, c.in[i:])
+					}
+					for _, sep := range []string{"", "\n", " "} {
+						ms.check(t, strings.Repeat(c.in+sep, 8))
+					}
+				})
+			}
+		})
 	}
 }
 

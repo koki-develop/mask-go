@@ -199,6 +199,58 @@ func Test_NetlifyAuthToken_noMatch(t *testing.T) {
 			name: "a git sha",
 			src:  "0123456789abcdef0123456789abcdef01234567",
 		},
+		{
+			// The character between the opening and the underscore has to
+			// name one of the five kinds, and an uppercase letter names none
+			// of them: the prefix is read in the one case Netlify writes it.
+			name: "the kind letter uppercased",
+			src:  "nfP_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			name: "a digit naming no kind",
+			src:  "nf1_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			// The kind character is the underscore itself, which is written
+			// nowhere Netlify names a kind by.
+			name: "an underscore naming no kind",
+			src:  "nf__0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			name: "a hyphen naming no kind",
+			src:  "nf-_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			// The three-character opening with no kind character between it
+			// and the underscore at all -- the shape the announcement's own
+			// division would leave were the kind character optional, which it
+			// is not.
+			name: "the opening and the underscore with no kind between them",
+			src:  "nf_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			// A hyphen immediately behind the prefix, with a full
+			// thirty-six-character run behind it. The run does not begin
+			// until past the hyphen, so it is one character short of a body
+			// however far it runs.
+			name: "a hyphen at the first character of the body",
+			src:  "nfp_-0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			name: "an underscore at the first character of the body",
+			src:  "nfp__0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			// A plus and a slash are base64 characters and not base62 ones,
+			// so either ends a body exactly as the hyphen and the underscore
+			// do.
+			name: "a plus in the body",
+			src:  "nfp_0123456789abcdef+ghijklmnopqrstuvwxyz",
+		},
+		{
+			name: "a slash in the body",
+			src:  "nfp_0123456789abcdef/ghijklmnopqrstuvwxyz",
+		},
 	}
 
 	for _, tt := range tests {
@@ -280,6 +332,19 @@ func Test_NetlifyAuthToken_nextToWordCharacters(t *testing.T) {
 			src:  "NETLIFY_TOKEN_nfp_0123456789abcdefghijklmnopqrstuvwxyz",
 			want: "NETLIFY_TOKEN_****************************************",
 		},
+		{
+			// A multi-byte rune is no word character, but it is worth pinning
+			// beside the two above: nothing about a boundary is asked of it
+			// either, in front or behind.
+			name: "a multi-byte rune before and after",
+			src:  "日本語nfp_0123456789abcdefghijklmnopqrstuvwxyz日本語",
+			want: "日本語****************************************日本語",
+		},
+		{
+			name: "an invalid utf-8 byte before",
+			src:  "\xffnfp_0123456789abcdefghijklmnopqrstuvwxyz",
+			want: "\xff****************************************",
+		},
 	}
 
 	m := New(WithPatterns(NetlifyAuthToken()))
@@ -329,6 +394,14 @@ func Test_NetlifyAuthToken_reachesTheEndOfTheRun(t *testing.T) {
 			src:  "nfp_0123456789abcdefghijklmnopqrstuvwxyz_suffix",
 			want: "****************************************_suffix",
 		},
+		{
+			// Base64 padding is neither base62 nor a character that closes a
+			// prefix, so it ends the run exactly as a hyphen or an underscore
+			// would and is left in the text behind the token.
+			name: "base64 padding against the token",
+			src:  "nfp_0123456789abcdefghijklmnopqrstuvwxyz==",
+			want: "****************************************==",
+		},
 	}
 
 	m := New(WithPatterns(NetlifyAuthToken()))
@@ -368,6 +441,52 @@ func Test_NetlifyAuthToken_cutShortOfTheFloor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.src {
 				t.Errorf("Mask(%q) = %q, want the text unchanged", tt.src, got)
+			}
+		})
+	}
+}
+
+func Test_NetlifyAuthToken_holdsATokenTheInputCutShort(t *testing.T) {
+	// What Find's second return settles. builtin_scan.go and the rationale in
+	// builtin_netlify_auth_token.go give two shapes: a piece of a prefix
+	// standing at the end of the input, and a candidate the end of the input
+	// cut short. Everything else is settled to the end of the input, since
+	// nothing there could still become a token.
+	tests := []struct {
+		name   string
+		src    string
+		retain int
+	}{
+		{
+			// No prefix and no piece of one anywhere in the text, so the whole
+			// of it is settled.
+			name:   "no credential at all",
+			src:    "there is no credential in this sentence",
+			retain: len("there is no credential in this sentence"),
+		},
+		{
+			// The last two characters of the input are a piece of every
+			// prefix at once, so what comes next could still complete one:
+			// the text from there on is held.
+			name:   "a piece of the opening at the end of the input",
+			src:    "xxx nf",
+			retain: 4,
+		},
+		{
+			// A candidate whose body has not reached the floor, with the run
+			// carrying on to the end of the input. What comes next either
+			// carries the run on to a token or ends it, so this candidate's
+			// start is held rather than settled.
+			name:   "a candidate the input cut short of the floor",
+			src:    "xxx nfp_0123456789abcdef",
+			retain: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, retain := NetlifyAuthToken().Find(tt.src); retain != tt.retain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.retain)
 			}
 		})
 	}

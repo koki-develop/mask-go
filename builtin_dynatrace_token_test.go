@@ -169,6 +169,58 @@ func Test_DynatraceToken_noMatch(t *testing.T) {
 			src:  "dt0c01.0123456789ABCDEF-1234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
 		},
 		{
+			// The lengths, the classes and the second separator are all correct;
+			// the only fault is an extra full stop written inside the public
+			// portion, which is what a scan cutting the run at a fixed count
+			// rather than looking for the separator would miss.
+			name: "a full stop inside the public portion",
+			src:  "dt0c01.0123456789AB.DEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		},
+		{
+			name: "a full stop inside the secret",
+			src:  "dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF.123456789ABCDEF0123456789ABCDEF",
+		},
+		{
+			// Both digits naming the type are checked; the earlier cases in
+			// this file only ever vary the first of them.
+			name: "a letter where the second digit of the type stands",
+			src:  "dt0c0X.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		},
+		{
+			name: "a type of one digit",
+			src:  "dt0c1.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		},
+		{
+			name: "a type of three digits",
+			src:  "dt0c011.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		},
+		{
+			// The second separator being wrong is driven above; this is the
+			// first one on its own, with the second left correct.
+			name: "the separator behind the prefix missing",
+			src:  "dt0c010123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		},
+		{
+			name: "a hyphen behind the prefix",
+			src:  "dt0c01-0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		},
+		{
+			name: "an underscore inside the public portion",
+			src:  "dt0c01.0123456789ABCDEF_1234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		},
+		{
+			name: "a lowercase letter opening the secret",
+			src:  "dt0c01.0123456789ABCDEF01234567.a123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		},
+		{
+			name: "a lowercase letter opening the public portion",
+			src:  "dt0c01.a123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+		},
+		{
+			name: "padding characters in the secret",
+			src:  "dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD==",
+		},
+		{
 			// A body of the right counts and the right class behind something
 			// else. The prefix is the whole of the anchor.
 			name: "a value of the right shape opening with no prefix",
@@ -313,6 +365,15 @@ func Test_DynatraceToken_leavesWhatFollowsAlone(t *testing.T) {
 			name: "a word written against a token",
 			src:  "dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEFsuffix",
 			want: "************************************************************************************************suffix",
+		},
+		{
+			// A multi-byte rune written immediately against the token. Neither
+			// its UTF-8 encoding nor the byte in front of it belongs to either
+			// portion's alphabet, so the count alone ends the token exactly as
+			// it does against a single-byte character.
+			name: "a rune written against a token",
+			src:  "dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF日本語",
+			want: "************************************************************************************************日本語",
 		},
 	}
 
@@ -536,6 +597,59 @@ func Test_DynatraceToken_scanIsLinear(t *testing.T) {
 	}
 
 	checkScanIsLinear(t, DynatraceToken(), sources)
+}
+
+// Test_DynatraceToken_holdsATokenTheInputCutShort states, with a literal
+// number, what the second return of Find settles: a piece of an opening
+// standing at the end of the input, a candidate the end of the input cut
+// short, and a whole match with nothing left unsettled behind it.
+func Test_DynatraceToken_holdsATokenTheInputCutShort(t *testing.T) {
+	tests := []struct {
+		name   string
+		src    string
+		want   []Span
+		retain int
+	}{
+		{
+			// A piece of the opening stands at the end of the input: the
+			// separator that would close the prefix has not arrived, so the
+			// candidate could still open or fail to depending on what
+			// follows.
+			name:   "a piece of the opening at the end of the input",
+			src:    "the token starts with dt0c01",
+			retain: len("the token starts with "),
+		},
+		{
+			// A whole opening and a secret the input cuts short before the
+			// count is met. The candidate could still become a token were
+			// the input longer, so what is unsettled reaches back to where
+			// the candidate opened.
+			name:   "a secret the input cuts short of the count",
+			src:    "dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF01234",
+			retain: 0,
+		},
+		{
+			// A whole token with more text after it, ending in a byte that
+			// opens no piece of any opening, so nothing at the end of the
+			// input is left unsettled.
+			name:   "a whole token followed by settled text",
+			src:    "dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF tail",
+			want:   []Span{{0, 96}},
+			retain: len("dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF tail"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := DynatraceToken().Find(tt.src)
+			if retain != tt.retain {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, retain, tt.retain)
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
 }
 
 func Test_dynatraceTokenOpening(t *testing.T) {

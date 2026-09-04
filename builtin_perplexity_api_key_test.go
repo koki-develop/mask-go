@@ -121,6 +121,18 @@ func Test_PerplexityAPIKey_noMatch(t *testing.T) {
 			src:  "pplx-0123456789abcdefghij_lmnopqrstuvwxyz0123456789ab",
 		},
 		{
+			// The two characters standard base64 writes that base64url does
+			// not. Neither belongs to base62 either, so each ends a run one
+			// character short of the floor exactly as the hyphen and the
+			// underscore do.
+			name: "a plus in the body",
+			src:  "pplx-0123456789abcdefghij+lmnopqrstuvwxyz0123456789ab",
+		},
+		{
+			name: "a slash in the body",
+			src:  "pplx-0123456789abcdefghij/lmnopqrstuvwxyz0123456789ab",
+		},
+		{
 			name: "an uppercase prefix",
 			src:  "PPLX-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab",
 		},
@@ -305,6 +317,14 @@ func Test_PerplexityAPIKey_reachesTheEndOfTheRun(t *testing.T) {
 			name: "an underscored word against the key",
 			src:  "pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab_suffix",
 			want: "*****************************************************_suffix",
+		},
+		{
+			// Standard base64's padding character. It is no character base62
+			// admits, so it ends the run exactly where a hyphen or an
+			// underscore would and stays in the text.
+			name: "base64 padding against the key",
+			src:  "pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab=",
+			want: "*****************************************************=",
 		},
 	}
 
@@ -530,6 +550,38 @@ func Test_PerplexityAPIKey_aDigestBehindThePrefix(t *testing.T) {
 	}
 }
 
+func Test_PerplexityAPIKey_settlesNothingAboutAnOpenRun(t *testing.T) {
+	// A key standing at the very end of the input closes no run: more text
+	// could still carry it on, so the scan holds the candidate open from its
+	// own start rather than reporting the input settled up to the span it
+	// already found.
+	src := "pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab"
+
+	spans, retain := PerplexityAPIKey().Find(src)
+	if want := []Span{{0, 53}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != 0 {
+		t.Errorf("Find(%q) settled from %d, want 0", src, retain)
+	}
+}
+
+func Test_PerplexityAPIKey_settlesOnceTheRunCloses(t *testing.T) {
+	// The other side of the same decision. A period does not belong to the
+	// alphabet a body is written in, so it closes the run behind the key: no
+	// text arriving after it can widen what was already found, and the whole
+	// of the input is settled.
+	src := "the key is pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab."
+
+	spans, retain := PerplexityAPIKey().Find(src)
+	if want := []Span{{11, 64}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != len(src) {
+		t.Errorf("Find(%q) settled %d of %d, want the whole of it", src, retain, len(src))
+	}
+}
+
 func Test_perplexityAPIKeyPrefix(t *testing.T) {
 	// The scan resumes one byte past the start of a candidate because a key can
 	// begin inside the one before it, and that holds only while the prefix
@@ -665,6 +717,9 @@ func FuzzPerplexityAPIKey_matchesReference(f *testing.F) {
 	f.Add("pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789abc") // and a run longer than one
 	f.Add("pplx-0123456789abcdefghij-lmnopqrstuvwxyz0123456789ab")  // a hyphen, which base64url admits and base62 does not
 	f.Add("pplx-0123456789abcdefghij_lmnopqrstuvwxyz0123456789ab")  // an underscore, likewise
+	f.Add("pplx-0123456789abcdefghij+lmnopqrstuvwxyz0123456789ab")  // a plus, standard base64's alone
+	f.Add("pplx-0123456789abcdefghij/lmnopqrstuvwxyz0123456789ab")  // a slash, likewise
+	f.Add("pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab=") // base64 padding against a key
 	f.Add("pplx-0123456789abcdefghij.lmnopqrstuvwxyz0123456789ab")  // a dot ends the body
 	f.Add("PPLX-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab")  // an uppercase prefix
 	f.Add("Pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab")  // the capitalisation a header name of the vendor's carries

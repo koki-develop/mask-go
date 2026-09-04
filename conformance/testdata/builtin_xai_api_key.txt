@@ -77,6 +77,10 @@ case:     an uppercase body
 in:       xai-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
 out:      «xai-api-key»
 
+case:     a body carried out to the ends of the alphabet
+in:       xai-0123456789abcdefghijklmnopqrstuvwxyzGHIJKLMNOPQRSTUVWXYZ012345678901234567890123
+out:      «xai-api-key»
+
 case:     a body carrying a hyphen
 in:       xai-0123456789abcdef0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcdef
 out:      xai-0123456789abcdef0123456789abcdef-123456789abcdef0123456789abcdef0123456789abcdef
@@ -109,6 +113,10 @@ case:     an alphabet run longer than the floor is one key to the end of it
 in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0
 out:      «xai-api-key»
 
+case:     a management run longer than the floor is one key to the end of it
+in:       xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0
+out:      «xai-api-key»
+
 # What a key may be written against. The prefix is the whole of the anchor and
 # there is no boundary on either side of it, so a key keeps its span whatever
 # word character stands in front of it, and takes with it whatever word
@@ -129,6 +137,10 @@ out:      «xai-api-key»
 case:     a key before a hyphenated word
 in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef-suffix
 out:      «xai-api-key»-suffix
+
+case:     an underscore written against the end of a key
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef_suffix
+out:      «xai-api-key»_suffix
 
 case:     a key at the end of a sentence
 in:       the key is xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.
@@ -157,6 +169,14 @@ out:      «xai-api-key»-0123456789
 case:     a prefix written where a body would stand
 in:       xai-0123456789abcxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      xai-0123456789abc«xai-api-key»
+
+case:     two management keys with nothing between them
+in:       xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefxai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «xai-api-key»
+
+case:     a management key immediately followed by a plain key
+in:       xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «xai-api-key»
 
 # What this pattern redacts that nobody issued. Eighty letters and digits
 # behind the prefix is the shape every key xAI, osv-scalibr and kingfisher
@@ -198,6 +218,14 @@ case:     an uppercase prefix
 in:       XAI-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      XAI-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
+case:     a prefix with one letter capitalized
+in:       xAi-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      xAi-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a forbidden character where the body opens
+in:       xai-_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      xai-_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
 case:     an underscore where the prefix closes
 in:       xai_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      xai_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
@@ -229,3 +257,47 @@ out:      there is no credential in this sentence
 case:     a log line naming the api a key authenticates against
 in:       time=2026-08-17T00:00:00Z level=info msg="creating chat completion" url=https://api.x.ai/v1/chat/completions
 out:      time=2026-08-17T00:00:00Z level=info msg="creating chat completion" url=https://api.x.ai/v1/chat/completions
+
+# A key in the shapes this pattern has nothing to say about the surrounding
+# text of, and next to bytes no letter or digit is: parentheses, a query
+# string, a diff line, japanese text and three keys one to a line.
+
+case:     a key in a yaml value
+in:       xai_api_key: xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      xai_api_key: «xai-api-key»
+
+case:     a key in a query string
+in:       https://api.x.ai/v1/chat/completions?key=xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&model=grok
+out:      https://api.x.ai/v1/chat/completions?key=«xai-api-key»&model=grok
+
+case:     two keys in parentheses
+in:       (xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef, xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef)
+out:      («xai-api-key», «xai-api-key»)
+
+case:     a key removed on a diff line
+in:       -XAI_API_KEY=xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      -XAI_API_KEY=«xai-api-key»
+
+case:     a key after japanese text
+in:       キーはxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefです
+out:      キーは«xai-api-key»です
+
+case:     a key on each of three lines
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\nxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\nxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «xai-api-key»\n«xai-api-key»\n«xai-api-key»
+
+case:     a key cut short with an ellipsis
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc…
+out:      xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc…
+
+case:     a key between tabs
+in:       \txai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\t
+out:      \t«xai-api-key»\t
+
+case:     a key before a carriage return
+in:       xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\r\n
+out:      «xai-api-key»\r\n
+
+case:     a key behind an invalid utf-8 byte
+in:       \xffxai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      \xff«xai-api-key»

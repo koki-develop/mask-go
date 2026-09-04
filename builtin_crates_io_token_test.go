@@ -271,6 +271,51 @@ func Test_CratesIOToken_nextToWordCharacters(t *testing.T) {
 	}
 }
 
+func Test_CratesIOToken_trustedPublishingNextToWordCharacters(t *testing.T) {
+	// The adjacency claims above are driven only against the API token. The
+	// Trusted Publishing form is a separate prefix and a separate count, so its
+	// own boundary is driven here rather than assumed to follow from the
+	// shorter form's.
+	const tp = "cio_tp_0123456789abcdef0123456789abcdef"
+
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			name: "a Trusted Publishing token after a letter",
+			src:  "x" + tp,
+			want: []Span{{1, 1 + len(tp)}},
+		},
+		{
+			name: "a Trusted Publishing token after an underscore",
+			src:  "CARGO_REGISTRY_TOKEN_" + tp,
+			want: []Span{{21, 21 + len(tp)}},
+		},
+		{
+			name: "a word written against a Trusted Publishing token",
+			src:  tp + "suffix",
+			want: []Span{{0, len(tp)}},
+		},
+		{
+			// A multi-byte rune flush against a token on both sides, with no
+			// space between them.
+			name: "a multi-byte rune flush against the token on both sides",
+			src:  "日本語" + tp + "日本語",
+			want: []Span{{9, 9 + len(tp)}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := CratesIOToken().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_CratesIOToken_aTokenInsideAnother(t *testing.T) {
 	// A token can be written inside another, which is why the scan resumes a
 	// byte past the start of a candidate rather than past the candidate. The
@@ -464,6 +509,106 @@ func Test_CratesIOToken_aBodyWithNoPrefix(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Test_CratesIOToken_settlesWhatTheInputCutShort holds Find's second return to
+// the offset in front of which nothing further back can still become a token,
+// which is either a piece of an opening standing at the end of the input or a
+// candidate the end of the input cut short. What every built-in owes about
+// this offset over generated text and over the samples is driven in
+// builtins_test.go and fuzz_test.go; what is written out here is which inputs
+// of this pattern's own shape hold anything back, since nothing else names
+// them.
+func Test_CratesIOToken_settlesWhatTheInputCutShort(t *testing.T) {
+	const api = "cio0123456789abcdef0123456789abcdef"
+	const tp = "cio_tp_0123456789abcdef0123456789abcdef"
+
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			name: "the opening alone",
+			src:  "cio",
+			want: 0,
+		},
+		{
+			name: "the Trusted Publishing prefix alone",
+			src:  "cio_tp_",
+			want: 0,
+		},
+		{
+			name: "the Trusted Publishing prefix cut short before its final underscore",
+			src:  "cio_tp",
+			want: 0,
+		},
+		{
+			name: "an api body the end of the input cut short",
+			src:  "cio0123456789abcdef",
+			want: 0,
+		},
+		{
+			name: "a Trusted Publishing body the end of the input cut short",
+			src:  "cio_tp_0123456789ab",
+			want: 0,
+		},
+		{
+			// A whole API token reaching the end of the input. Nothing is
+			// read behind the count, and the token's own alphabet carries
+			// none of the bytes an opening is written with, so nothing is
+			// held back.
+			name: "a whole api token reaching the end of the input",
+			src:  api,
+			want: len(api),
+		},
+		{
+			name: "a whole api token followed by a character that opens nothing",
+			src:  api + " ",
+			want: len(api) + 1,
+		},
+		{
+			name: "a whole trusted publishing token reaching the end of the input",
+			src:  tp,
+			want: len(tp),
+		},
+		{
+			name: "a whole trusted publishing token followed by a character that opens nothing",
+			src:  tp + " ",
+			want: len(tp) + 1,
+		},
+		{
+			// A whole opening at the end of the input with no body behind
+			// it, held back from its own start rather than from the prose in
+			// front.
+			name: "the opening at the end of the input",
+			src:  "nothing here yet cio",
+			want: 17,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, got := CratesIOToken().Find(tt.src); got != tt.want {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_CratesIOToken_scanIsLinear drives the crowding this scan is most
+// exposed to: the opening is written in the same alphabet as the body behind
+// it, so a run of that alphabet holds a candidate at every byte, and the scan
+// reads a fixed count at each rather than keeping a cursor, so nothing here is
+// expected to cost more than that count times the number of candidates.
+func Test_CratesIOToken_scanIsLinear(t *testing.T) {
+	checkScanIsLinear(t, CratesIOToken(), map[string]string{
+		"an opening every three characters":        strings.Repeat("cio", 700000),
+		"the longer prefix every seven characters": strings.Repeat("cio_tp_", 300000),
+		"an anchor with no opening behind it":      strings.Repeat("c", 2000000),
+		"a base62 run with no opening at all":      strings.Repeat("a", 2000000),
+		"a token every thirty-five characters":     strings.Repeat("cio0123456789abcdef0123456789abcdef", 60000),
+	})
 }
 
 func Test_cratesIOTokenOpening(t *testing.T) {

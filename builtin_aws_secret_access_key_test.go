@@ -150,6 +150,36 @@ func Test_AWSSecretAccessKey(t *testing.T) {
 			want: []Span{{20, 60}},
 		},
 		{
+			// Each gap between two words is read on its own: the walk takes
+			// whatever separator stands at a gap, or none, without regard to what
+			// the other gap carried. So a name may open with one separator and
+			// close with another, which is what a spelling drifting between
+			// snake_case and kebab-case leaves behind, and is located exactly as
+			// a name written with one separator throughout would be.
+			name: "an underscore between the first two words and a hyphen between the last two",
+			src:  "secret_access-key=" + awsSecretAccessKeyTestValue,
+			want: []Span{{18, 58}},
+		},
+		{
+			name: "a hyphen between the first two words and an underscore between the last two",
+			src:  "secret-access_key=" + awsSecretAccessKeyTestValue,
+			want: []Span{{18, 58}},
+		},
+		{
+			// No separator at all is one of the four things a gap may carry, so
+			// it mixes with a real one exactly as two real ones mix: the first gap
+			// here carries none, camel-casing access onto secret, and the second
+			// carries an underscore.
+			name: "no separator between the first two words and an underscore between the last two",
+			src:  "secretAccess_Key=" + awsSecretAccessKeyTestValue,
+			want: []Span{{17, 57}},
+		},
+		{
+			name: "an underscore between the first two words and no separator between the last two",
+			src:  "secret_AccessKey=" + awsSecretAccessKeyTestValue,
+			want: []Span{{17, 57}},
+		},
+		{
 			name: "two values on one line",
 			src:  "a=" + awsSecretAccessKeyTestValue + " SECRET_ACCESS_KEY=" + awsSecretAccessKeyTestValue + " secret_access_key=" + awsSecretAccessKeyTestValue,
 			want: []Span{{61, 101}, {120, 160}},

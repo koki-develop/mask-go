@@ -105,6 +105,32 @@ func Test_HashiCorpVaultToken(t *testing.T) {
 			src:  "hvs.0123456789abcdef01234hvs.0123456789abcdef01234567",
 			want: []Span{{0, 28}, {25, 53}},
 		},
+		{
+			// A body written only in the two characters base64url adds beyond
+			// base62, which no case elsewhere in this file drives.
+			name: "a body written only in the characters base64url adds",
+			src:  "hvs.________________________",
+			want: []Span{{0, 28}},
+		},
+		{
+			name: "a body written only in hyphens",
+			src:  "hvs.------------------------",
+			want: []Span{{0, 28}},
+		},
+		{
+			// The nesting case above is driven for the service token alone;
+			// this is the same shape behind the batch token's prefix.
+			name: "a batch token beginning inside the batch token before it",
+			src:  "hvb.0123456789abcdef01234hvb.0123456789abcdef01234567",
+			want: []Span{{0, 28}, {25, 53}},
+		},
+		{
+			// And the recovery token's run longer than the floor, which is
+			// driven for the service token elsewhere in this file.
+			name: "a recovery run longer than the floor",
+			src:  "hvr.0123456789abcdef012345678",
+			want: []Span{{0, 29}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -145,6 +171,21 @@ func Test_HashiCorpVaultToken_noMatch(t *testing.T) {
 			src:  "hvs.0123456789abcdef.01234567",
 		},
 		{
+			// The character above stands in the middle of a body. These two
+			// stand straight behind the separator instead, so the run behind
+			// the prefix is zero characters long rather than merely broken.
+			name: "a second separator straight behind the prefix",
+			src:  "hvs..0123456789abcdef01234567",
+		},
+		{
+			name: "a plus straight behind the prefix",
+			src:  "hvs.+0123456789abcdef01234567",
+		},
+		{
+			name: "an equals sign straight behind the prefix",
+			src:  "hvs.=0123456789abcdef01234567",
+		},
+		{
 			name: "a body broken by a space",
 			src:  "hvs.0123456789abcdef 01234567",
 		},
@@ -165,6 +206,14 @@ func Test_HashiCorpVaultToken_noMatch(t *testing.T) {
 		{
 			name: "an uppercase prefix",
 			src:  "HVS.0123456789abcdef01234567",
+		},
+		{
+			name: "an uppercase batch prefix",
+			src:  "HVB.0123456789abcdef01234567",
+		},
+		{
+			name: "an uppercase recovery prefix",
+			src:  "HVR.0123456789abcdef01234567",
 		},
 		{
 			name: "an underscore where the prefix carries its separator",
@@ -304,6 +353,22 @@ func Test_HashiCorpVaultToken_nextToWordCharacters(t *testing.T) {
 			want: "VAULT_TOKEN_****************************",
 		},
 		{
+			// A digit is a third class of word character, driven for
+			// neither prefix character above.
+			name: "digit before",
+			src:  "0hvs.0123456789abcdef01234567",
+			want: "0****************************",
+		},
+		{
+			// A hyphen is not a word character, but it is the one
+			// base64url character never written in front of a prefix
+			// elsewhere in this file — a letter, an underscore and a
+			// digit all are.
+			name: "hyphen before",
+			src:  "-hvs.0123456789abcdef01234567",
+			want: "-****************************",
+		},
+		{
 			// The far side of the same choice. A boundary asked behind the count
 			// would drop this token rather than trim it to the count; without
 			// one the span reaches to the end of the run, which is what the
@@ -393,6 +458,20 @@ func Test_HashiCorpVaultToken_leavesWhatFollowsAlone(t *testing.T) {
 			name: "a token written against standard base64 padding",
 			src:  "hvs.0123456789abcdef01234567==",
 			want: "****************************==",
+		},
+		{
+			// A multi-byte rune written against the token on both sides.
+			// Neither its UTF-8 encoding nor a byte of it belongs to the
+			// prefix or the body's alphabet, so the run stops there
+			// exactly as it does against a single-byte character.
+			name: "a multi-byte rune before and after",
+			src:  "日本語hvs.0123456789abcdef01234567日本語",
+			want: "日本語****************************日本語",
+		},
+		{
+			name: "an invalid byte after",
+			src:  "hvs.0123456789abcdef01234567\xff",
+			want: "****************************\xff",
 		},
 	}
 
@@ -609,6 +688,13 @@ func Test_HashiCorpVaultToken_aDottedName(t *testing.T) {
 			want: "https://****************************.example.com/v1",
 		},
 		{
+			// The doc comment's own worked example: a hyphen-carrying host
+			// label of at least the floor behind a prefix.
+			name: "the hostname the doc comment prints",
+			src:  "https://hvs.example-host-name-of-that-length/v1",
+			want: "https://************************************/v1",
+		},
+		{
 			name: "the same name with a label shorter than the floor",
 			src:  "https://hvs.0123456789abcdef0123456.example.com/v1",
 			want: "https://hvs.0123456789abcdef0123456.example.com/v1",
@@ -638,6 +724,58 @@ func Test_HashiCorpVaultToken_aDottedName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_HashiCorpVaultToken_holdsATokenTheInputCutShort states, with a
+// literal number, what the second return of Find settles: a piece of the
+// prefix standing at the end of the input, a candidate the end of the input
+// cut short before the floor is reached, and a whole match with nothing left
+// unsettled behind it.
+func Test_HashiCorpVaultToken_holdsATokenTheInputCutShort(t *testing.T) {
+	tests := []struct {
+		name   string
+		src    string
+		want   []Span
+		retain int
+	}{
+		{
+			// A piece of the prefix stands at the end of the input: it
+			// could still grow into "hvs." with one more byte, so nothing
+			// behind where it opens is settled.
+			name:   "a piece of the prefix at the end of the input",
+			src:    "the token starts with hvs",
+			retain: len("the token starts with "),
+		},
+		{
+			// A whole prefix and a run the input cuts short before the
+			// floor is met. The run also reaches the end of the input, so
+			// more of it could still arrive.
+			name:   "a run the input cuts short of the floor",
+			src:    "hvs.0123456789abcdef012",
+			retain: 0,
+		},
+		{
+			// A whole token with more text after it, ending in a byte
+			// that opens no piece of any prefix, so nothing at the end of
+			// the input is left unsettled.
+			name:   "a whole token followed by settled text",
+			src:    "hvs.0123456789abcdef01234567 tail",
+			want:   []Span{{0, 28}},
+			retain: len("hvs.0123456789abcdef01234567 tail"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := HashiCorpVaultToken().Find(tt.src)
+			if retain != tt.retain {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, retain, tt.retain)
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}

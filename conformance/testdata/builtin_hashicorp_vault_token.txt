@@ -88,6 +88,26 @@ case:     a token written against standard base64 padding
 in:       hvs.0123456789abcdef01234567==
 out:      «hashicorp-vault-token»==
 
+case:     a token between multi-byte text with nothing between them
+in:       日本語hvs.0123456789abcdef01234567日本語
+out:      日本語«hashicorp-vault-token»日本語
+
+case:     a token between tabs
+in:       field\thvs.0123456789abcdef01234567\tend
+out:      field\t«hashicorp-vault-token»\tend
+
+case:     a token in a markdown code span
+in:       run `vault login hvs.0123456789abcdef01234567` first
+out:      run `vault login «hashicorp-vault-token»` first
+
+case:     a token cut short with an ellipsis
+in:       hvs.0123456789abcdef012...
+out:      hvs.0123456789abcdef012...
+
+case:     the hostname the doc comment prints
+in:       https://hvs.example-host-name-of-that-length/v1
+out:      https://«hashicorp-vault-token»/v1
+
 # The lengths either side of twenty-four. Vault states the count itself — "after
 # the prefix, a string of 24 or more randomly-generated characters is appended"
 # — so it is read as a floor rather than a count, which is what lets the same

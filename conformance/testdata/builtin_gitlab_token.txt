@@ -93,6 +93,10 @@ case:     a ci job token with the longest partition id
 in:       glcbt-0123f_0123456789abcdefghij
 out:      «gitlab-token»
 
+case:     a ci job token with the shortest partition id
+in:       glcbt-0_0123456789abcdefghij
+out:      «gitlab-token»
+
 # The shape GitLab.com is moving to for Cells. The payload carries the routing
 # information and is closed by a dot, the length of the payload and a checksum —
 # with a version between the two in the form GitLab writes today. Neither the
@@ -118,6 +122,22 @@ out:      «gitlab-token»
 case:     a payload longer than the shortest one
 in:       glpat-0123456789abcdefghijklmnopqrstuvwxyzABCDEF.012345678
 out:      «gitlab-token»
+
+case:     a routable deploy token
+in:       gldt-0123456789abcdefghijklmnopq.012345678
+out:      «gitlab-token»
+
+case:     a routable agent token
+in:       glagent-0123456789abcdefghijklmnopq.012345678
+out:      «gitlab-token»
+
+case:     a routable oauth application secret
+in:       gloas-0123456789abcdefghijklmnopq.012345678
+out:      «gitlab-token»
+
+case:     a routable token whose version is written with a capital, so it is read as a classic token instead
+in:       glpat-0123456789abcdefghijklmnopq.0A.012345678
+out:      «gitlab-token»klmnopq.0A.012345678
 
 # A token as the text around it is ordinarily written.
 
@@ -152,6 +172,10 @@ out:      «gitlab-token»klmn
 case:     a hyphen after a token, which is a body character and still not part of one
 in:       glpat-0123456789abcdefghij-backup
 out:      «gitlab-token»-backup
+
+case:     a token between multi-byte text with nothing between them
+in:       日本語glpat-0123456789abcdefghij日本語
+out:      日本語«gitlab-token»日本語
 
 # There is no boundary in front of a match either, so a token written against a
 # word character is trimmed rather than dropped — and a token can begin inside
@@ -210,6 +234,18 @@ out:      glimt-0123456789abcdefghij
 case:     an uppercase prefix
 in:       GLPAT-0123456789abcdefghij
 out:      GLPAT-0123456789abcdefghij
+
+case:     a mixed-case prefix
+in:       GLpat-0123456789abcdefghij
+out:      GLpat-0123456789abcdefghij
+
+case:     a plus inside a body
+in:       glpat-0123456789abcdef+hij
+out:      glpat-0123456789abcdef+hij
+
+case:     a hyphen inside a partition id
+in:       glcbt-0-f_0123456789abcdefghij
+out:      glcbt-0-f_0123456789abcdefghij
 
 case:     a prefix with no hyphen behind it
 in:       glpat0123456789abcdefghij

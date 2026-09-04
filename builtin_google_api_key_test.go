@@ -69,6 +69,19 @@ func Test_GoogleAPIKey(t *testing.T) {
 			src:  "AIzaAIza0123456789abcdefghijklmnopqrstuvwxy",
 			want: []Span{{0, 39}, {4, 43}},
 		},
+		{
+			// The hyphen and the underscore are written in the middle of a
+			// body elsewhere in this file; these are the two straight behind
+			// the prefix, the position adjacent to it.
+			name: "a hyphen at the first character of the body",
+			src:  "AIza-0123456789abcdefghijklmnopqrstuvwx",
+			want: []Span{{0, 39}},
+		},
+		{
+			name: "an underscore at the first character of the body",
+			src:  "AIza_0123456789abcdefghijklmnopqrstuvwx",
+			want: []Span{{0, 39}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -110,6 +123,43 @@ func Test_GoogleAPIKey_noMatch(t *testing.T) {
 			src:  "AIza0123456789abcdef/hijklmnopqrstuvwx+",
 		},
 		{
+			// The slash alone, at each of the three positions the class is
+			// tested at: the middle of the body, straight behind the prefix,
+			// and the last character.
+			name: "a slash alone in the middle of the body",
+			src:  "AIza0123456789abcdef/hijklmnopqrstuvwxy",
+		},
+		{
+			name: "a slash alone at the first character of the body",
+			src:  "AIza/123456789abcdefghijklmnopqrstuvwxy",
+		},
+		{
+			name: "a slash alone at the last character of the body",
+			src:  "AIza0123456789abcdefghijklmnopqrstuvwx/",
+		},
+		{
+			// Base64's padding character, which appears in no test or corpus
+			// case elsewhere in this pattern.
+			name: "an equals sign in the middle of the body",
+			src:  "AIza0123456789abcdef=hijklmnopqrstuvwxy",
+		},
+		{
+			name: "an equals sign at the first character of the body",
+			src:  "AIza=123456789abcdefghijklmnopqrstuvwxy",
+		},
+		{
+			name: "an equals sign at the last character of the body",
+			src:  "AIza0123456789abcdefghijklmnopqrstuvwx=",
+		},
+		{
+			name: "a body broken by a tab",
+			src:  "AIza0123456789abcdef\thijklmnopqrstuvwxy",
+		},
+		{
+			name: "a body broken by a carriage return",
+			src:  "AIza0123456789abcdef\rhijklmnopqrstuvwxy",
+		},
+		{
 			name: "a body broken by a space",
 			src:  "AIza0123456789abcdef hijklmnopqrstuvwxy",
 		},
@@ -124,6 +174,24 @@ func Test_GoogleAPIKey_noMatch(t *testing.T) {
 		{
 			name: "an uppercase prefix",
 			src:  "AIZA0123456789abcdefghijklmnopqrstuvwxy",
+		},
+		{
+			// A single letter of the prefix miscased, rather than the whole of
+			// it: each of the other three positions on its own.
+			name: "the second character of the prefix in capitals",
+			src:  "AIZa0123456789abcdefghijklmnopqrstuvwxy",
+		},
+		{
+			name: "the first two characters of the prefix reversed in case",
+			src:  "AiZa0123456789abcdefghijklmnopqrstuvwxy",
+		},
+		{
+			name: "the whole prefix lowercase but the last character",
+			src:  "aIza0123456789abcdefghijklmnopqrstuvwxy",
+		},
+		{
+			name: "the last character of the prefix in capitals",
+			src:  "AIzA0123456789abcdefghijklmnopqrstuvwxy",
 		},
 		{
 			// The prefix is four characters and all four are read. Google
@@ -280,6 +348,15 @@ func Test_GoogleAPIKey_leavesWhatFollowsAlone(t *testing.T) {
 			src:  "AIza0123456789abcdefghijklmnopqrstuvwxy-suffix",
 			want: "***************************************-suffix",
 		},
+		{
+			// A multi-byte rune written against the key on both sides.
+			// Neither its UTF-8 encoding nor a byte of it belongs to the
+			// prefix or the body's alphabet, so the key keeps its span
+			// exactly as it does against a single-byte character.
+			name: "a multi-byte rune before and after",
+			src:  "日本語AIza0123456789abcdefghijklmnopqrstuvwxy日本語",
+			want: "日本語***************************************日本語",
+		},
 	}
 
 	m := New(WithPatterns(GoogleAPIKey()))
@@ -330,6 +407,56 @@ func Test_GoogleAPIKey_insideAnOpaqueRun(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_GoogleAPIKey_holdsATokenTheInputCutShort states, with a literal
+// number, what the second return of Find settles: a piece of the prefix
+// standing at the end of the input, a candidate the end of the input cut
+// short, and a whole match with nothing left unsettled behind it.
+func Test_GoogleAPIKey_holdsATokenTheInputCutShort(t *testing.T) {
+	tests := []struct {
+		name   string
+		src    string
+		want   []Span
+		retain int
+	}{
+		{
+			// A piece of the prefix stands at the end of the input: it
+			// could still grow into "AIza" with one more byte, so nothing
+			// behind where it opens is settled.
+			name:   "a piece of the prefix at the end of the input",
+			src:    "the key starts with AIz",
+			retain: len("the key starts with "),
+		},
+		{
+			// A whole prefix and a body the input cuts short before the
+			// count is met.
+			name:   "a body the input cuts short of the count",
+			src:    "AIza0123456789abcdefghij",
+			retain: 0,
+		},
+		{
+			// A whole key with more text after it, ending in a byte that
+			// opens no piece of the prefix, so nothing at the end of the
+			// input is left unsettled.
+			name:   "a whole key followed by settled text",
+			src:    "AIza0123456789abcdefghijklmnopqrstuvwxy tail",
+			want:   []Span{{0, 39}},
+			retain: len("AIza0123456789abcdefghijklmnopqrstuvwxy tail"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := GoogleAPIKey().Find(tt.src)
+			if retain != tt.retain {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, retain, tt.retain)
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}

@@ -51,6 +51,14 @@ case:     a body carrying an underscore
 in:       napi_0123456789abcdef0123456789abcdef_123456789abcdef0123456789abcdef
 out:      napi_0123456789abcdef0123456789abcdef_123456789abcdef0123456789abcdef
 
+case:     a hyphen at the first character of the body, with a full run behind it
+in:       napi_-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      napi_-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     an underscore at the first character of the body, with a full run behind it
+in:       napi__0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      napi__0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
 # The lengths either side of sixty-four. The count is read as a floor rather
 # than exactly, so sixty-three characters are not a key and sixty-five are one
 # key to the end of its run rather than a key and a character left over. What
@@ -157,6 +165,22 @@ case:     two keys separated by a space
 in:       napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef napi_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
 out:      «neon-api-key» «neon-api-key»
 
+case:     a key followed immediately by japanese
+in:       napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef日本語
+out:      «neon-api-key»日本語
+
+case:     a key preceded immediately by japanese
+in:       日本語napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      日本語«neon-api-key»
+
+case:     a key in a fragment of yaml
+in:       NEON_API_KEY: napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      NEON_API_KEY: «neon-api-key»
+
+case:     a key in a url query string
+in:       https://console.neon.tech/api/v2/projects?key=napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&p=1
+out:      https://console.neon.tech/api/v2/projects?key=«neon-api-key»&p=1
+
 # What this pattern redacts that nobody issued. The prefix closes with an
 # underscore, which standard base64 writes nowhere, so only a base64url encoding
 # can hold one — and where sixty-four base62 characters follow, the run from the
@@ -202,6 +226,10 @@ case:     an uppercase prefix
 in:       NAPI_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      NAPI_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
+case:     the prefix with one letter capitalised
+in:       Napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      Napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
 case:     the prefix without its closing underscore
 in:       napi0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      napi0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
@@ -209,3 +237,7 @@ out:      napi0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 case:     a run of the right length opening with no prefix
 in:       0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence

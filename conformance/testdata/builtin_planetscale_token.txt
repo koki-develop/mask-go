@@ -68,6 +68,22 @@ case:     a body carrying a dot
 in:       pscale_tkn_0123456789abcdef.123456789abcdef0123456789a
 out:      pscale_tkn_0123456789abcdef.123456789abcdef0123456789a
 
+case:     a plus sign in the body
+in:       pscale_tkn_0123456789abcdef+123456789abcdef0123456789a
+out:      pscale_tkn_0123456789abcdef+123456789abcdef0123456789a
+
+case:     a slash in the body
+in:       pscale_tkn_0123456789abcdef/123456789abcdef0123456789a
+out:      pscale_tkn_0123456789abcdef/123456789abcdef0123456789a
+
+case:     an equals sign at the first character of the body
+in:       pscale_tkn_=0123456789abcdef0123456789abcdef0123456789a
+out:      pscale_tkn_=0123456789abcdef0123456789abcdef0123456789a
+
+case:     an equals sign at the last character of the body
+in:       pscale_tkn_0123456789abcdef0123456789abcdef012345678=
+out:      pscale_tkn_0123456789abcdef0123456789abcdef012345678=
+
 # The lengths either side of forty-three. That count is what the two tokens
 # PlanetScale's API reference prints are written to and what trufflehog reads
 # behind the service token's prefix, and it is used as a count rather than a
@@ -89,6 +105,14 @@ case:     a base64url run longer than a token is a token and what follows it
 in:       pscale_tkn_0123456789abcdef0123456789abcdef0123456789a0
 out:      «planetscale-token»0
 
+case:     an oauth token and a character after it
+in:       pscale_oauth_0123456789abcdef0123456789abcdef0123456789a0
+out:      «planetscale-token»0
+
+case:     a refresh token and a character after it
+in:       pscale_oauth_refresh_0123456789abcdef0123456789abcdef0123456789a0
+out:      «planetscale-token»0
+
 # What a token may be written against. The prefix is the whole of the anchor and
 # there is no boundary on either side of it, so a token keeps its span whatever
 # word character it abuts.
@@ -108,6 +132,34 @@ out:      «planetscale-token»-suffix
 case:     a token at the end of a sentence
 in:       the token is pscale_tkn_0123456789abcdef0123456789abcdef0123456789a.
 out:      the token is «planetscale-token».
+
+case:     a token before a word with nothing between them
+in:       pscale_tkn_0123456789abcdef0123456789abcdef0123456789asuffix
+out:      «planetscale-token»suffix
+
+case:     a token before an underscored word
+in:       pscale_tkn_0123456789abcdef0123456789abcdef0123456789a_tail
+out:      «planetscale-token»_tail
+
+case:     a hyphen at the last character of a body
+in:       pscale_tkn_0123456789abcdef0123456789abcdef0123456789-
+out:      «planetscale-token»
+
+case:     a body broken by a line break
+in:       pscale_tkn_0123456789abcdef\n123456789abcdef0123456789a
+out:      pscale_tkn_0123456789abcdef\n123456789abcdef0123456789a
+
+case:     a token after a multi-byte rune with nothing between them
+in:       日本語pscale_tkn_0123456789abcdef0123456789abcdef0123456789a
+out:      日本語«planetscale-token»
+
+case:     a token before a multi-byte rune with nothing between them
+in:       pscale_tkn_0123456789abcdef0123456789abcdef0123456789a日本語
+out:      «planetscale-token»日本語
+
+case:     an invalid byte in the body
+in:       pscale_tkn_0123456789abcdef\xff123456789abcdef0123456789a
+out:      pscale_tkn_0123456789abcdef\xff123456789abcdef0123456789a
 
 # The refresh token is written behind the access token's own prefix, and
 # everything between them — refresh_ — is written in the body's alphabet. So a

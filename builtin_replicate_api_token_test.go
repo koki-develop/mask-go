@@ -58,6 +58,39 @@ func Test_ReplicateAPIToken(t *testing.T) {
 			src:  "r8_0123456789ABCDEF0123456789ABCDEF01234",
 			want: []Span{{0, 40}},
 		},
+		{
+			// The letters between g and z, and between G and Z, never stand
+			// in the ordered runs the rest of this file is built from.
+			// base62 holds them the same as any other letter. The body opens
+			// on the ordered run, so the count is exact: sixteen characters
+			// of run and the twenty letters g through z leave one more
+			// character, which closes the count with an uppercase G.
+			name: "a body written in the letters past f",
+			src:  "r8_0123456789abcdefghijklmnopqrstuvwxyzG",
+			want: []Span{{0, 40}},
+		},
+		{
+			// The other case, opened on the uppercase run so that the
+			// twenty letters G through Z are covered as well, with a
+			// lowercase a closing the count.
+			name: "a body written in the letters past f in uppercase",
+			src:  "r8_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZa",
+			want: []Span{{0, 40}},
+		},
+		{
+			// A token immediately against a multi-byte rune on both sides. The
+			// pattern reads no boundary either side of a match, so the token
+			// keeps its span at the byte offset the rune's encoding leaves it
+			// at.
+			name: "between japanese",
+			src:  "鍵r8_0123456789abcdef0123456789abcdef01234鍵",
+			want: []Span{{3, 43}},
+		},
+		{
+			name: "against an invalid byte",
+			src:  "\xffr8_0123456789abcdef0123456789abcdef01234\xff",
+			want: []Span{{1, 41}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -99,6 +132,40 @@ func Test_ReplicateAPIToken_noMatch(t *testing.T) {
 		{
 			name: "a character outside the alphabet in the body",
 			src:  "r8_0123456789abcdef.123456789abcdef01234",
+		},
+		{
+			name: "a body broken by a line break",
+			src:  "r8_0123456789abcdef\n123456789abcdef01234",
+		},
+		{
+			// The excluded byte standing at the very first body position, with
+			// a run of thirty-six valid characters behind it so the whole
+			// forty-character count is spent. The count is exact, so the one
+			// bad byte fails the whole body rather than leaving a shorter
+			// token.
+			name: "a hyphen straight behind the prefix",
+			src:  "r8_-123456789abcdef0123456789abcdef01234",
+		},
+		{
+			name: "an underscore straight behind the prefix",
+			src:  "r8__123456789abcdef0123456789abcdef01234",
+		},
+		{
+			name: "a space straight behind the prefix",
+			src:  "r8_ 123456789abcdef0123456789abcdef01234",
+		},
+		{
+			// The excluded byte at the last of the thirty-seven body
+			// positions, with a full run of valid characters in front of it.
+			name: "a hyphen where the thirty-seventh body character stands",
+			src:  "r8_0123456789abcdef0123456789abcdef0123-56789",
+		},
+		{
+			// The underscore here is the interesting one: reading back from it
+			// opens a candidate at "23_", which is no prefix, so nothing masks
+			// it as a body character stray either.
+			name: "an underscore where the thirty-seventh body character stands",
+			src:  "r8_0123456789abcdef0123456789abcdef0123_56789",
 		},
 		{
 			// The prefix is read in the one case Replicate writes it, where
@@ -462,6 +529,66 @@ func Test_replicateAPITokenChars(t *testing.T) {
 	}
 	if got := replicateAPITokenChars; got != 40 {
 		t.Errorf("replicateAPITokenChars = %d, want 40", got)
+	}
+}
+
+func Test_ReplicateAPIToken_scanIsLinear(t *testing.T) {
+	// A candidate reads a fixed thirty-seven bytes and stops, so nothing here
+	// keeps a cursor to be wrong about, but a line dense in prefixes still
+	// holds a candidate for every three characters it has, and a payload
+	// crowding tokens together holds one for every one of them.
+	//
+	// The generic guard in builtins_test.go repeats the samples, which hold a
+	// candidate every forty bytes where they are densest. The crowding a line
+	// can actually carry, a candidate every three bytes, stays here.
+	sources := map[string]string{
+		"a candidate every three characters":             strings.Repeat("r8_", 300000),
+		"a token beginning inside every token before it": strings.Repeat("r8_0123456789abcdef0123456789abcdef012", 22000),
+		"a run of the body alphabet with no anchor":      strings.Repeat("0123456789abcdef", 200000),
+		"an anchor that opens no candidate":              strings.Repeat("_", 900000),
+	}
+
+	checkScanIsLinear(t, ReplicateAPIToken(), sources)
+}
+
+// Test_ReplicateAPIToken_retain holds the second return of Find to a literal
+// offset, on the two shapes builtin_scan.go names: a piece of the prefix
+// standing at the end of the input, and a candidate the end of the input cut
+// short of the count.
+func Test_ReplicateAPIToken_retain(t *testing.T) {
+	tests := []struct {
+		name       string
+		src        string
+		wantRetain int
+	}{
+		{
+			// The last two characters are "r8", a piece of the three-character
+			// prefix "r8_" cut short by the end of the input.
+			name:       "a piece of the prefix standing at the end of the input",
+			src:        "token r8",
+			wantRetain: 6,
+		},
+		{
+			// A whole prefix with a body behind it too short to reach the
+			// exact count, standing at the end of the input. More characters
+			// arriving could still complete the body, so the candidate is
+			// unsettled from its own start.
+			name:       "a candidate the end of the input cut short of the count",
+			src:        "r8_0123456789abcdef0123",
+			wantRetain: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := ReplicateAPIToken().Find(tt.src)
+			if len(got) != 0 {
+				t.Fatalf("Find(%q) located %v, want no span", tt.src, got)
+			}
+			if retain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.wantRetain)
+			}
+		})
 	}
 }
 

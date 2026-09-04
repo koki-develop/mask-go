@@ -246,6 +246,77 @@ func Test_DatabricksOAuthClientSecret_nextToWordCharacters(t *testing.T) {
 			src:  secret + "2",
 			want: []Span{{0, len(secret)}},
 		},
+		{
+			// A multi-byte rune flush against the secret on both sides, with
+			// no space between them.
+			name: "a multi-byte rune flush against the secret on both sides",
+			src:  "日本語" + secret + "日本語",
+			want: []Span{{9, 9 + len(secret)}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := DatabricksOAuthClientSecret().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_DatabricksOAuthClientSecret_aTitleCasePrefix(t *testing.T) {
+	// The prefix is read in the one case Databricks' own scanner and every
+	// partner's documentation writes it in. Only the wholly uppercase spelling
+	// is driven elsewhere in this file; a prefix capitalised in part is driven
+	// here.
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{
+			name: "a title case prefix",
+			src:  "Dose0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "one uppercase character in the prefix",
+			src:  "doSe0123456789abcdef0123456789abcdef",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := DatabricksOAuthClientSecret().Find(tt.src); len(got) != 0 {
+				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
+			}
+		})
+	}
+}
+
+func Test_DatabricksOAuthClientSecret_aBodyOfOneClassAlone(t *testing.T) {
+	// Every body written elsewhere in this file is the ordered run
+	// 0123456789abcdef, which carries both digits and hexadecimal letters at
+	// once. A body of one class alone is asserted nowhere, so each is written
+	// out here.
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			name: "a body of digits alone",
+			src:  "dose01234567890123456789012345678901",
+			want: []Span{{0, 36}},
+		},
+		{
+			name: "a body of hexadecimal letters alone",
+			src:  "doseabcdefabcdefabcdefabcdefabcdefab",
+			want: []Span{{0, 36}},
+		},
+		{
+			name: "a body of one repeated character",
+			src:  "dose" + strings.Repeat("a", 32),
+			want: []Span{{0, 36}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -501,6 +572,21 @@ func Test_DatabricksOAuthClientSecret_settlesAWholeSecret(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Test_DatabricksOAuthClientSecret_scanIsLinear drives the crowding this scan
+// is most exposed to: the prefix carries two characters of its own body
+// alphabet, d and e, so a run built from the prefix repeated crowds candidates
+// close together, and the scan reads a fixed count at each rather than keeping
+// a cursor, so nothing here is expected to cost more than that count times the
+// number of candidates.
+func Test_DatabricksOAuthClientSecret_scanIsLinear(t *testing.T) {
+	checkScanIsLinear(t, DatabricksOAuthClientSecret(), map[string]string{
+		"a prefix every four characters":       strings.Repeat("dose", 500000),
+		"an anchor with no prefix behind it":   strings.Repeat("s", 2000000),
+		"a hexadecimal run with no prefix":     strings.Repeat("0123456789abcdef", 125000),
+		"a secret every thirty-six characters": strings.Repeat("dose0123456789abcdef0123456789abcdef", 55000),
+	})
 }
 
 func Test_databricksOAuthClientSecretPrefix(t *testing.T) {

@@ -102,6 +102,22 @@ case:     a body carrying a dot
 in:       bkua_0123456789abcdef.0123456789abcdef01234567
 out:      bkua_0123456789abcdef.0123456789abcdef01234567
 
+case:     a body of uppercase letters past F
+in:       bkua_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCD
+out:      «buildkite-token»
+
+case:     a plus sign in the body
+in:       bkua_0123456789abcdef+0123456789abcdef01234567
+out:      bkua_0123456789abcdef+0123456789abcdef01234567
+
+case:     base64 padding against the token
+in:       bkua_0123456789abcdef0123456789abcdef01234567==
+out:      «buildkite-token»==
+
+case:     a slash against the token
+in:       bkua_0123456789abcdef0123456789abcdef01234567/deliver
+out:      «buildkite-token»/deliver
+
 # The lengths either side of forty. Buildkite states no length for any of the
 # ten kinds — what it draws is a row of asterisks, and the rulesets read those
 # rows. betterleaks reads seven of the prefixes at a count exactly and the API
@@ -165,6 +181,10 @@ case:     a token at the end of a sentence
 in:       the token is bkua_0123456789abcdef0123456789abcdef01234567.
 out:      the token is «buildkite-token».
 
+case:     a token flush against a multi-byte rune on both sides
+in:       日本語bkua_0123456789abcdef0123456789abcdef01234567日本語
+out:      日本語«buildkite-token»日本語
+
 # Two tokens written together. Every character of a prefix belongs to the
 # alphabet a body is written in, the underscore closing it included, so a whole
 # prefix can stand inside a body: the second token below begins five characters
@@ -174,6 +194,14 @@ out:      the token is «buildkite-token».
 
 case:     a token beginning inside the token before it
 in:       bkua_bkct_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     a six character prefix beginning inside a five character one
+in:       bkua_bkjat_0123456789abcdef0123456789abcdef01234567
+out:      «buildkite-token»
+
+case:     a five character prefix beginning inside a six character one
+in:       bkpat_bkct_0123456789abcdef0123456789abcdef01234567
 out:      «buildkite-token»
 
 case:     two tokens with nothing between them
@@ -259,6 +287,10 @@ out:      bkzz_0123456789abcdef0123456789abcdef01234567
 case:     a character written into an acronym
 in:       bkuaa_0123456789abcdef0123456789abcdef01234567
 out:      bkuaa_0123456789abcdef0123456789abcdef01234567
+
+case:     the head of a three character acronym
+in:       bkpa_0123456789abcdef0123456789abcdef01234567
+out:      bkpa_0123456789abcdef0123456789abcdef01234567
 
 case:     a run of the right length opening with no prefix
 in:       0123456789abcdef0123456789abcdef01234567

@@ -60,6 +60,14 @@ case:     a token on the command line a run takes one on
 in:       doppler run --token dp.st.dev.0123456789abcdef0123456789abcdef0123456789a -- ./deploy.sh
 out:      doppler run --token «doppler-auth-token» -- ./deploy.sh
 
+case:     a token followed by crlf
+in:       DOPPLER_TOKEN=dp.pt.0123456789abcdef0123456789abcdef0123456789a\r\n
+out:      DOPPLER_TOKEN=«doppler-auth-token»\r\n
+
+case:     a token in a query string
+in:       https://example.com/cb?token=dp.pt.0123456789abcdef0123456789abcdef0123456789a&next=/
+out:      https://example.com/cb?token=«doppler-auth-token»&next=/
+
 # The environment segment, which Doppler gives to the service token and to no
 # other kind. It is lowercase letters, digits, the hyphen and the underscore,
 # two to thirty-five characters, closed by a separator — and it cannot be
@@ -92,6 +100,10 @@ out:      dp.st.Dev.0123456789abcdef0123456789abcdef0123456789a
 case:     a segment written on a kind that carries none
 in:       dp.pt.dev.0123456789abcdef0123456789abcdef0123456789a
 out:      dp.pt.dev.0123456789abcdef0123456789abcdef0123456789a
+
+case:     the segment's floor
+in:       dp.st.qa.0123456789abcdef0123456789abcdef0123456789a
+out:      «doppler-auth-token»
 
 # The range a body is read as. Doppler writes forty to forty-four, and the
 # examples it prints are forty-three, so a body at either end of the range is a
@@ -160,6 +172,10 @@ case:     a token at the end of a sentence
 in:       the token is dp.pt.0123456789abcdef0123456789abcdef0123456789a.
 out:      the token is «doppler-auth-token».
 
+case:     a token between multi-byte text with nothing between them
+in:       日本語dp.pt.0123456789abcdef0123456789abcdef0123456789a日本語
+out:      日本語«doppler-auth-token»日本語
+
 # Two tokens written together, and a prefix written inside one. A candidate
 # opens on the two letters and the separator behind them, and inside a token a
 # separator stands only where a kind or a segment closes — so a candidate opens
@@ -192,6 +208,14 @@ out:      «doppler-auth-token»
 case:     a digest on its own
 in:       0123456789abcdef0123456789abcdef01234567
 out:      0123456789abcdef0123456789abcdef01234567
+
+case:     a uuid written where a body would stand
+in:       dp.pt.01234567-89ab-cdef-0123-456789abcdef
+out:      dp.pt.01234567-89ab-cdef-0123-456789abcdef
+
+case:     a token cut short with an ellipsis
+in:       dp.pt.0123456789abcdef0123456789abcdef01234...
+out:      dp.pt.0123456789abcdef0123456789abcdef01234...
 
 # And what this pattern leaves alone: the openings that are not, and the kinds
 # Doppler names no format for.

@@ -123,6 +123,13 @@ func Test_GitLabToken(t *testing.T) {
 			src:  "GITLAB_TOKEN=glpat-0123456789abcdefghij",
 			want: []Span{{13, 39}},
 		},
+		{
+			// The partition id at its floor: one character, which the id's
+			// alphabet and the separator behind it are enough to close.
+			name: "a ci job token with the shortest partition id",
+			src:  "glcbt-0_0123456789abcdefghij",
+			want: []Span{{0, 28}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -182,6 +189,54 @@ func Test_GitLabToken_routable(t *testing.T) {
 			src:  "GITLAB_TOKEN=glpat-0123456789abcdefghijklmnopq.012345678",
 			want: []Span{{13, 56}},
 		},
+		{
+			// The nine kinds beside glpat-, glrt- and glcbt- above, each driven
+			// through a routable payload of its own, so that a kind admitted to
+			// the routable reading only by accident of table order is caught.
+			name: "a routable deploy token",
+			src:  "gldt-0123456789abcdefghijklmnopq.012345678",
+			want: []Span{{0, 42}},
+		},
+		{
+			name: "a routable runner authentication token created through a registration token",
+			src:  "glrtr-0123456789abcdefghijklmnopq.012345678",
+			want: []Span{{0, 43}},
+		},
+		{
+			name: "a routable feed token",
+			src:  "glft-0123456789abcdefghijklmnopq.012345678",
+			want: []Span{{0, 42}},
+		},
+		{
+			name: "a routable scim oauth token",
+			src:  "glsoat-0123456789abcdefghijklmnopq.012345678",
+			want: []Span{{0, 44}},
+		},
+		{
+			name: "a routable feature flags client token",
+			src:  "glffct-0123456789abcdefghijklmnopq.012345678",
+			want: []Span{{0, 44}},
+		},
+		{
+			name: "a routable incoming mail token",
+			src:  "glimt-0123456789abcdefghijklmnopq.012345678",
+			want: []Span{{0, 43}},
+		},
+		{
+			name: "a routable pipeline trigger token",
+			src:  "glptt-0123456789abcdefghijklmnopq.012345678",
+			want: []Span{{0, 43}},
+		},
+		{
+			name: "a routable agent token",
+			src:  "glagent-0123456789abcdefghijklmnopq.012345678",
+			want: []Span{{0, 45}},
+		},
+		{
+			name: "a routable oauth application secret",
+			src:  "gloas-0123456789abcdefghijklmnopq.012345678",
+			want: []Span{{0, 43}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -231,6 +286,26 @@ func Test_GitLabToken_routableFallsBackToClassic(t *testing.T) {
 			name: "a classic token written in front of a dot",
 			src:  "glpat-0123456789abcdefghij.012345678",
 			want: "**************************.012345678",
+		},
+		{
+			// A version is read in lowercase base36 alone; a capital in it
+			// is no version, so what stood behind the payload's dot is read
+			// directly as the length and checksum instead — and that reading
+			// fails too, since a capital is no character either field is
+			// written in.
+			name: "a version written with a capital",
+			src:  "glpat-0123456789abcdefghijklmnopq.0A.012345678",
+			want: "**************************klmnopq.0A.012345678",
+		},
+		{
+			// Three characters where a version is exactly two, so the
+			// separator the version form needs at the third position is not
+			// there and the candidate is read directly as the length and
+			// checksum — which is not nine characters of base36 either,
+			// since a dot stands inside them.
+			name: "a version of three characters",
+			src:  "glpat-0123456789abcdefghijklmnopq.012.012345678",
+			want: "**************************klmnopq.012.012345678",
 		},
 	}
 
@@ -318,6 +393,41 @@ func Test_GitLabToken_noMatch(t *testing.T) {
 			src:  "glimt-0123456789abcdefghij",
 		},
 		{
+			// The below-floor rejection is written for glpat-, glimt-, gloas-
+			// and glptt- elsewhere; these are the seven other kinds, each one
+			// character short of its own count.
+			name: "a deploy token one character short",
+			src:  "gldt-0123456789abcdefghi",
+		},
+		{
+			name: "a runner authentication token one character short",
+			src:  "glrt-0123456789abcdefghi",
+		},
+		{
+			name: "a registration-created runner token one character short",
+			src:  "glrtr-0123456789abcdefghi",
+		},
+		{
+			name: "a feed token one character short",
+			src:  "glft-0123456789abcdefghi",
+		},
+		{
+			name: "a scim oauth token one character short",
+			src:  "glsoat-0123456789abcdefghi",
+		},
+		{
+			name: "a feature flags client token one character short",
+			src:  "glffct-0123456789abcdefghi",
+		},
+		{
+			name: "an agent token one character short",
+			src:  "glagent-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLM",
+		},
+		{
+			name: "an incoming mail token one character short of its own count",
+			src:  "glimt-0123456789abcdefghijklmn",
+		},
+		{
 			name: "an oauth application secret one character too short",
 			src:  "gloas-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0",
 		},
@@ -374,8 +484,51 @@ func Test_GitLabToken_noMatch(t *testing.T) {
 			src:  "glcbt-01234f_0123456789abcdefghij",
 		},
 		{
+			// A hyphen inside the partition id stops the partition alphabet's
+			// own run after one character, and the character standing there is
+			// not the underscore a partition id closes on — so the classic
+			// reading fails, and the routable one fails too, since the run
+			// behind the prefix stays short of the payload floor.
+			name: "a hyphen inside a partition id",
+			src:  "glcbt-0-f_0123456789abcdefghij",
+		},
+		{
 			name: "a prefix that is not one of the kinds",
 			src:  "glzzz-0123456789abcdefghij",
+		},
+		{
+			// The three characters standard base64 and its padding add, which
+			// base64url does not admit: each ends the run before it reaches the
+			// count, at the first character of the body and inside it.
+			name: "a plus at the first character of the body",
+			src:  "glpat-+123456789abcdefghij",
+		},
+		{
+			name: "a plus inside the body",
+			src:  "glpat-0123456789abcdef+hij",
+		},
+		{
+			name: "a slash inside the body",
+			src:  "glpat-0123456789abcdef/hij",
+		},
+		{
+			name: "an equals sign inside the body",
+			src:  "glpat-0123456789abcdef=hij",
+		},
+		{
+			// A single letter of the other case, rather than the whole prefix,
+			// and two more of the eleven other kinds whose capitalised prefix
+			// is written nowhere else in this file.
+			name: "an agent token prefix in capitals",
+			src:  "GLAGENT-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN",
+		},
+		{
+			name: "an oauth application secret prefix in capitals",
+			src:  "GLOAS-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01",
+		},
+		{
+			name: "a mixed-case prefix",
+			src:  "GLpat-0123456789abcdefghij",
 		},
 		{
 			name: "plain prose",
@@ -481,6 +634,15 @@ func Test_GitLabToken_nextToWordCharacters(t *testing.T) {
 			src:  "glpat-0123456789abcdefghij-backup",
 			want: "**************************-backup",
 		},
+		{
+			// A multi-byte rune written against the token on both sides.
+			// Neither its UTF-8 encoding nor a byte of it belongs to the
+			// prefix or the body alphabet, so the token keeps its span exactly
+			// as it does against a single-byte character.
+			name: "a multi-byte rune before and after",
+			src:  "日本語glpat-0123456789abcdefghij日本語",
+			want: "日本語**************************日本語",
+		},
 	}
 
 	m := New(WithPatterns(GitLabToken()))
@@ -507,6 +669,59 @@ func Test_GitLabToken_tokenBeginningInsideTheOneBeforeIt(t *testing.T) {
 	m := New(WithPatterns(GitLabToken()))
 	if got, w := m.Mask(src), strings.Repeat("*", len(src)); got != w {
 		t.Errorf("Mask(%q) = %q, want %q", src, got, w)
+	}
+}
+
+// Test_GitLabToken_holdsATokenTheInputCutShort states, with a literal number,
+// what the second return of Find settles: a piece of a prefix standing at the
+// end of the input, and a classic candidate the end of the input cut short
+// before its count is met.
+func Test_GitLabToken_holdsATokenTheInputCutShort(t *testing.T) {
+	tests := []struct {
+		name   string
+		src    string
+		want   []Span
+		retain int
+	}{
+		{
+			// "glpat" is a piece of the personal access token's prefix,
+			// which no hyphen has closed yet, so nothing behind where it
+			// opens is settled.
+			name:   "a piece of a prefix at the end of the input",
+			src:    "the token starts with glpat",
+			retain: len("the token starts with "),
+		},
+		{
+			// A body the input cuts short before the count is met. The
+			// run also reaches the end of the input, so the candidate
+			// could still become a token, a longer body or a routable one
+			// were the input longer, and what is unsettled reaches back to
+			// where it opened.
+			name:   "a body the input cuts short of the count",
+			src:    "glpat-0123456789abcde",
+			retain: 0,
+		},
+		{
+			// A whole classic token with more text after it, ending in a
+			// byte that opens no piece of any prefix, so nothing at the
+			// end of the input is left unsettled.
+			name:   "a whole token followed by settled text",
+			src:    "glpat-0123456789abcdefghij tail",
+			want:   []Span{{0, 26}},
+			retain: len("glpat-0123456789abcdefghij tail"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := GitLabToken().Find(tt.src)
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+			if retain != tt.retain {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, retain, tt.retain)
+			}
+		})
 	}
 }
 

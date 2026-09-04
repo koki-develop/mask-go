@@ -48,9 +48,37 @@ case:     an organization token in the json that first reports it
 in:       {"token":"sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a","name":"CI"}
 out:      {"token":"«sentry-auth-token»","name":"CI"}
 
+case:     an organization token in an environment assignment
+in:       SENTRY_AUTH_TOKEN=sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a
+out:      SENTRY_AUTH_TOKEN=«sentry-auth-token»
+
 case:     a user token at the end of a sentence
 in:       the token is sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.
 out:      the token is «sentry-auth-token».
+
+case:     a user token between tabs
+in:       \tsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\t
+out:      \t«sentry-auth-token»\t
+
+case:     a user token before a crlf
+in:       SENTRY_AUTH_TOKEN=sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\r\n
+out:      SENTRY_AUTH_TOKEN=«sentry-auth-token»\r\n
+
+case:     a token in a markdown code span
+in:       `sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`
+out:      `«sentry-auth-token»`
+
+case:     a user token immediately against japanese on both sides
+in:       トークンはsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefです
+out:      トークンは«sentry-auth-token»です
+
+case:     a user token against an invalid byte
+in:       \xffsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\xff
+out:      \xff«sentry-auth-token»\xff
+
+case:     a token cut short with an ellipsis
+in:       sntryu_0123456789abcdef0123456789abcdef01234...
+out:      sntryu_0123456789abcdef0123456789abcdef01234...
 
 # The character naming the kind, which is the one place the four prefixes
 # differ. Four of them are read — u for a user token, a for a user application
@@ -73,6 +101,18 @@ case:     a hyphen where the prefix carries its separator
 in:       sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      sntryu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
+case:     an uppercase kind character behind a lowercase opening
+in:       sntryU_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      sntryU_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     an uppercase organization kind
+in:       sntryS_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a
+out:      sntryS_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a
+
+case:     the separator where the kind belongs
+in:       sntry__0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      sntry__0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
 # The hexadecimal body. It is thirty-two random bytes written two characters a
 # byte, which is sixty-four, and the count is read exactly: a run longer than it
 # is a token with something written after it, and only the token is redacted,
@@ -92,6 +132,18 @@ case:     a hexadecimal body written in uppercase
 in:       sntryu_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
 out:      sntryu_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
 
+case:     a letter past f at the first character of a hexadecimal body
+in:       sntryu_g123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      sntryu_g123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a user application token with a body one character short
+in:       sntrya_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      sntrya_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+
+case:     an internal integration token with a hexadecimal run one character longer than a body
+in:       sntryi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefa
+out:      «sentry-auth-token»a
+
 case:     a token cut off at its prefix
 in:       SENTRY_AUTH_TOKEN=sntryu_
 out:      SENTRY_AUTH_TOKEN=sntryu_
@@ -102,6 +154,23 @@ out:      SENTRY_AUTH_TOKEN=sntryu_
 # forty-three characters thirty-two bytes come to and carries none. The
 # underscore between them belongs to neither alphabet, which is what ends the
 # payload where it stands and what makes the count behind it readable at all.
+#
+# Two cases below carry no run of the file's own: a payload of one whole group
+# of four is the ordered run's own opening, but the base64 of an actual payload
+# object naming the organization and its urls is a body of one class alone that
+# the ordered run cannot state, and the file's header says so.
+
+case:     an organization token whose payload is one group of four
+in:       sntrys_0123_0123456789abcdef0123456789abcdef0123456789a
+out:      «sentry-auth-token»
+
+case:     an organization token whose payload closes with two padding characters and is otherwise a single group
+in:       sntrys_01==_0123456789abcdef0123456789abcdef0123456789a
+out:      «sentry-auth-token»
+
+case:     an organization token whose payload is the base64 of a payload object
+in:       sntrys_eyJpYXQiOjE3MDAwMDAwMDAsInVybCI6Imh0dHBzOi8vc2VudHJ5LmlvIiwicmVnaW9uX3VybCI6Imh0dHBzOi8vdXMuc2VudHJ5LmlvIiwib3JnIjoiYWNtZSJ9_0123456789abcdef0123456789abcdef0123456789a
+out:      «sentry-auth-token»
 
 case:     an organization payload closing with one padding character
 in:       sntrys_0123456789abcdef0123456789abcde=_0123456789abcdef0123456789abcdef0123456789a
@@ -142,6 +211,14 @@ out:      sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcd
 case:     no separator between the two segments
 in:       sntrys_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
 out:      sntrys_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+
+case:     a hyphen at the first character of an organization secret
+in:       sntrys_0123456789abcdef0123456789abcdef_-123456789abcdef0123456789abcdef0123456789a
+out:      sntrys_0123456789abcdef0123456789abcdef_-123456789abcdef0123456789abcdef0123456789a
+
+case:     padding written after a whole organization token
+in:       sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a=
+out:      «sentry-auth-token»=
 
 # What a token may be written against. There is no boundary on either side of a
 # match, as there is none in any built-in but the Slack and Stripe ones: a
@@ -188,6 +265,14 @@ out:      «sentry-auth-token»
 case:     a user token beginning inside the payload of an organization token
 in:       sntrys_0123456789abcdef0123456789sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      «sentry-auth-token»
+
+case:     two organization tokens with nothing between them
+in:       sntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789asntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789a
+out:      «sentry-auth-token»«sentry-auth-token»
+
+case:     an organization token immediately against japanese on both sides
+in:       トークンはsntrys_0123456789abcdef0123456789abcdef_0123456789abcdef0123456789abcdef0123456789aです
+out:      トークンは«sentry-auth-token»です
 
 # What this pattern redacts that nobody issued. A hexadecimal body is thirty-two
 # random bytes written in hexadecimal, which is a SHA-256 digest's shape

@@ -92,6 +92,10 @@ case:     one letter among seventeen digits is
 in:       xoxb-0123456789ab-01234567890123456a
 out:      «slack-token»
 
+case:     an uppercase letter in the secret is a letter as readily as a lowercase one
+in:       xoxb-0123456789ab-Z0123456789abcdefg
+out:      «slack-token»
+
 # And where in the run a secret may sit: behind a part, never against the
 # prefix. Every Slack token Slack's own examples show carries at least one
 # part between the two — two identifiers for the bot token in Slack's own
@@ -162,6 +166,38 @@ case:     two tokens with a space between them
 in:       xwfp-0123456789ab-0123456789abcdefghijklmn xwfp-0123456789ab-0123456789abcdefghijklmn
 out:      «slack-token» «slack-token»
 
+case:     two tokens of the same kind with nothing between them
+in:       xwfp-0123456789ab-0123456789abcdefghijklmnxwfp-0123456789ab-0123456789abcdefghijklmn
+out:      «slack-token»
+
+case:     three prefixes chained together
+in:       xoxb-xoxb-xoxb-0123456789ab-0123456789abcdefghijklmn
+out:      «slack-token»
+
+case:     a token between tabs
+in:       \txoxb-0123456789ab-0123456789abcdefghijklmn\t
+out:      \t«slack-token»\t
+
+case:     a token before a carriage return
+in:       xoxb-0123456789ab-0123456789abcdefghijklmn\r\n
+out:      «slack-token»\r\n
+
+case:     a token in parentheses
+in:       (xoxb-0123456789ab-0123456789abcdefghijklmn)
+out:      («slack-token»)
+
+# A multi-byte rune is neither a letter nor a digit, so it opens a token in
+# front the same as an ASCII punctuation byte, and it ends the run behind one
+# the same as any other character outside the alphabet.
+
+case:     a token against japanese text on both sides
+in:       日本語xoxb-0123456789ab-0123456789abcdefghijklmn日本語
+out:      日本語«slack-token»日本語
+
+case:     the rotation prefix in front of an undocumented kind
+in:       xoxe.xwfp-0123456789ab-0123456789abcdefghijklmn
+out:      xoxe.«slack-token»
+
 # Where a body ends. The hyphen is the one punctuation a body admits, because it
 # is what a token's parts are joined with, so it is the one piece of text after
 # a token that is redacted with it. That is the price of asking for a long part
@@ -210,6 +246,10 @@ out:      0123456789ab-0123456789abcdefghijklmn
 case:     prose
 in:       there is no credential in this sentence
 out:      there is no credential in this sentence
+
+case:     a token cut short with an ellipsis
+in:       xoxb-0123456789ab-01234567…
+out:      xoxb-0123456789ab-01234567…
 
 # The text the demands on a candidate are there for, and what each of them holds
 # back. A prefix and a run alone would have redacted every line below: the hyphen

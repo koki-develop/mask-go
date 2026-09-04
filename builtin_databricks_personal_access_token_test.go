@@ -120,6 +120,30 @@ func Test_DatabricksPersonalAccessToken_noMatch(t *testing.T) {
 			src:  "da-pi0123456789abcdef0123456789abcdef",
 		},
 		{
+			name: "a title case prefix",
+			src:  "Dapi0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "one uppercase character in the prefix",
+			src:  "dapI0123456789abcdef0123456789abcdef",
+		},
+		{
+			// A character the body alphabet forbids standing immediately
+			// behind the prefix, at the first character of the body, rather
+			// than in the middle of it where the existing cases above break
+			// the run.
+			name: "a letter outside hexadecimal at the first character of the body",
+			src:  "dapig123456789abcdef0123456789abcdef0",
+		},
+		{
+			name: "a hyphen at the first character of the body",
+			src:  "dapi-123456789abcdef0123456789abcdef0",
+		},
+		{
+			name: "an uppercase letter at the first character of the body",
+			src:  "dapiA123456789abcdef0123456789abcdef0",
+		},
+		{
 			// The OAuth client secret Databricks issues a service principal,
 			// which carries a prefix of its own and no dapi to be found at.
 			name: "an oauth client secret",
@@ -250,6 +274,25 @@ func Test_DatabricksPersonalAccessToken_nextToWordCharacters(t *testing.T) {
 			src:  token + "-suffix",
 			want: []Span{{0, len(token)}},
 		},
+		{
+			// A digit and a hyphen written immediately in front of the
+			// prefix, rather than the letter and the underscore driven above.
+			name: "a token after a digit",
+			src:  "9" + token,
+			want: []Span{{1, 1 + len(token)}},
+		},
+		{
+			name: "a token after a hyphen",
+			src:  "-" + token,
+			want: []Span{{1, 1 + len(token)}},
+		},
+		{
+			// A multi-byte rune flush against the token on both sides, with
+			// no space between them.
+			name: "a multi-byte rune flush against the token on both sides",
+			src:  "日本語" + token + "日本語",
+			want: []Span{{9, 9 + len(token)}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -302,6 +345,35 @@ func Test_DatabricksPersonalAccessToken_theTail(t *testing.T) {
 			name: "a token with the tail in an environment assignment",
 			src:  "DATABRICKS_TOKEN=" + token + "-2",
 			want: []Span{{17, 55}},
+		},
+		{
+			// The two ends of the tail digit's own class, rather than the 2
+			// every other case here carries.
+			name: "a tail digit at the bottom of its class",
+			src:  token + "-0",
+			want: []Span{{0, 38}},
+		},
+		{
+			name: "a tail digit at the top of its class",
+			src:  token + "-9",
+			want: []Span{{0, 38}},
+		},
+		{
+			// A run longer than the body's own count with a tail written
+			// behind that longer run. The extra character belongs to the run
+			// rather than to the body the count reads, so the hyphen does not
+			// stand where a tail is read from and the run and its tail stay
+			// in the text.
+			name: "a run longer than the body's count with a tail behind it",
+			src:  token + "0-2",
+			want: []Span{{0, 36}},
+		},
+		{
+			// Two tokens each carrying the tail, written with nothing between
+			// them.
+			name: "two tagged tokens with nothing between them",
+			src:  token + "-2" + token + "-2",
+			want: []Span{{0, 38}, {38, 76}},
 		},
 	}
 
@@ -510,6 +582,21 @@ func Test_DatabricksPersonalAccessToken_settlesNothingAboutAnOpenTail(t *testing
 			}
 		})
 	}
+}
+
+// Test_DatabricksPersonalAccessToken_scanIsLinear drives the crowding this
+// scan is most exposed to: the prefix carries two characters of its own body
+// alphabet, d and a, so a run built from the prefix repeated crowds candidates
+// close together, and the scan reads a fixed count at each rather than keeping
+// a cursor, so nothing here is expected to cost more than that count times the
+// number of candidates.
+func Test_DatabricksPersonalAccessToken_scanIsLinear(t *testing.T) {
+	checkScanIsLinear(t, DatabricksPersonalAccessToken(), map[string]string{
+		"a prefix every four characters":      strings.Repeat("dapi", 500000),
+		"an anchor with no prefix behind it":  strings.Repeat("p", 2000000),
+		"a hexadecimal run with no prefix":    strings.Repeat("0123456789abcdef", 125000),
+		"a token every thirty-six characters": strings.Repeat("dapi0123456789abcdef0123456789abcdef", 55000),
+	})
 }
 
 func Test_databricksPersonalAccessTokenPrefix(t *testing.T) {

@@ -93,3 +93,47 @@ out:      GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
 case:     a masker given no pattern leaves a jwt alone
 in:       eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:      eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+patterns: func-retains-nothing
+
+# The pattern in this set reports retain as 0 always, which the package docs
+# say is what a Find written without a stream in mind returns. Mask ignores
+# retain outright, so what these cases hold is that nothing about it changes
+# what Mask itself gives.
+
+case:     a pattern that never settles anything still masks under Mask
+in:       password=0123456789abcdef0123456789abcdef
+out:      password=«naive»
+
+case:     a pattern that never settles anything and finds nothing
+in:       password=0123456789abcdef
+out:      password=0123456789abcdef
+
+patterns: regexp-bounded
+
+# \b is decided the same way ^ is above: the one rune of context LookBehind
+# lets a Pattern built by Regexp read.
+
+case:     a word boundary in front of the match
+in:       id INT-0123456789abcdef0123456789abcdef end
+out:      id «bounded» end
+
+case:     no word boundary where the match would begin
+in:       xINT-0123456789abcdef0123456789abcdef
+out:      xINT-0123456789abcdef0123456789abcdef
+
+patterns: regexp-empty
+
+# x* can match the empty string at nearly every position of text holding no x
+# at all, and Pattern.Find ignores a span whose Start is not less than its
+# End. What these cases show is that Go's own empty matches are exactly the
+# spans that rule ignores, rather than a crash or a redaction where nothing
+# was written.
+
+case:     an empty match everywhere and a real one in the middle
+in:       axxb
+out:      a«maybe»b
+
+case:     nothing but empty matches
+in:       abc
+out:      abc

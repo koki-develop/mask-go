@@ -106,6 +106,18 @@ case:     an underscore where the separator belongs
 in:       SG.0123456789abcdef012345_0123456789abcdef0123456789abcdef0123456789a
 out:      SG.0123456789abcdef012345_0123456789abcdef0123456789abcdef0123456789a
 
+case:     a space where the separator belongs
+in:       SG.0123456789abcdef012345 0123456789abcdef0123456789abcdef0123456789a
+out:      SG.0123456789abcdef012345 0123456789abcdef0123456789abcdef0123456789a
+
+case:     a plus at the first character of the identifier
+in:       SG.+123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:      SG.+123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+
+case:     a second dot at the first character of the identifier
+in:       SG..123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:      SG..123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+
 case:     a hyphen where the prefix carries its dot
 in:       SG-0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
 out:      SG-0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
@@ -134,6 +146,30 @@ out:      export SENDGRID_API_KEY="«sendgrid-api-key»"
 case:     a key before a hyphenated word
 in:       SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a-suffix
 out:      «sendgrid-api-key»-suffix
+
+case:     a key between tabs
+in:       \tSG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a\t
+out:      \t«sendgrid-api-key»\t
+
+case:     a key before a crlf
+in:       SENDGRID_API_KEY=SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a\r\n
+out:      SENDGRID_API_KEY=«sendgrid-api-key»\r\n
+
+case:     a key in a markdown code span
+in:       `SG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a`
+out:      `«sendgrid-api-key»`
+
+case:     a key immediately against japanese on both sides
+in:       キーはSG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789aです
+out:      キーは«sendgrid-api-key»です
+
+case:     a key against an invalid byte
+in:       \xffSG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a\xff
+out:      \xff«sendgrid-api-key»\xff
+
+case:     a key cut short with an ellipsis
+in:       SG.0123456789abcdef012345.0123456789abcdef0123...
+out:      SG.0123456789abcdef012345.0123456789abcdef0123...
 
 # Two keys written together. The prefix is two characters a segment is written
 # with and the dot a key already carries between its segments, so a secret
@@ -170,6 +206,18 @@ out:      «sendgrid-api-key»
 case:     a property chain whose first component closes on the prefix
 in:       MSG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
 out:      M«sendgrid-api-key»
+
+case:     a chain whose first component is NSG
+in:       NSG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:      N«sendgrid-api-key»
+
+case:     a chain whose first component is ESG
+in:       ESG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:      E«sendgrid-api-key»
+
+case:     a chain whose first component is PSG
+in:       PSG.0123456789abcdef012345.0123456789abcdef0123456789abcdef0123456789a
+out:      P«sendgrid-api-key»
 
 # And what this pattern leaves alone. The prefix is read in its own case; a
 # digest, a base64 payload and a base64url one each hold no dot and so no prefix

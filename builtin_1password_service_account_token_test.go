@@ -57,6 +57,29 @@ func Test_OnePasswordServiceAccountToken(t *testing.T) {
 			want: []Span{{0, 164}},
 		},
 		{
+			// Base64url holds the letters of both cases, so a body written in
+			// capitals is a body.
+			name: "a body written in capitals",
+			src:  "ops_eyJ0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABC",
+			want: []Span{{0, 164}},
+		},
+		{
+			// Base64 padding, which the body's alphabet does not admit. Once
+			// the floor is already met the run ends there, and what follows
+			// is left in the text as the padding it is.
+			name: "a token followed by base64 padding",
+			src:  "ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc==",
+			want: []Span{{0, 164}},
+		},
+		{
+			// A token stands wherever it is written, with no boundary either
+			// side, so it is located between two runs of Japanese exactly as
+			// it would be between two runs of ASCII prose.
+			name: "a token between japanese",
+			src:  "日本語ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc日本語",
+			want: []Span{{9, 173}},
+		},
+		{
 			// A hundred and sixty characters behind the prefix, which is the
 			// floor exactly: shorter than an object carrying both of the
 			// secrets a token is a credential by, and a quarter of what the
@@ -151,6 +174,19 @@ func Test_OnePasswordServiceAccountToken_noMatch(t *testing.T) {
 		{
 			name: "a line break inside the body",
 			src:  "ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\n0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// The equals sign is base64 padding rather than a body character,
+			// so a run broken by it well short of the floor leaves nothing
+			// long enough to be one.
+			name: "an equals sign inside the body, short of the floor",
+			src:  "ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// A carriage return inside the body, which the alphabet does not
+			// admit any more than the line break above does.
+			name: "a carriage return inside the body",
+			src:  "ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\r0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		},
 		{
 			// A JWT written behind the prefix. Its header segment closes on a
@@ -393,6 +429,68 @@ func Test_OnePasswordServiceAccountToken_insideAnOpaqueRun(t *testing.T) {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_OnePasswordServiceAccountToken_twoTokensWithNothingBetweenThem(t *testing.T) {
+	// Every character of the anchor and of a body belong to the alphabet a
+	// body is written in, so a second token opening directly behind a
+	// floor-length one stands inside the run the first is read as: the run
+	// cursor the scan remembers already reaches past the second token's own
+	// start, so its run is answered from there rather than walked again, and
+	// the first token's span reaches all the way to where the second one's
+	// does. Nothing here reports the second span shorter than the first's.
+	token := "ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc"
+	src := token + token
+
+	got, _ := OnePasswordServiceAccountToken().Find(src)
+	want := []Span{{0, 2 * len(token)}, {len(token), 2 * len(token)}}
+	if !slices.Equal(got, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, got, want)
+	}
+}
+
+func Test_OnePasswordServiceAccountToken_holdsATokenTheInputCutShort(t *testing.T) {
+	// What a scan settles for a run the end of the input cut short: nothing
+	// behind the run's own start, since neither whether it is long enough for
+	// the floor nor where it stops if it runs on is decided until more of the
+	// stream arrives. That holds whether or not the floor has already been
+	// met, which is why the answer is not monotone in how much of a token has
+	// arrived: a run one character short of the floor and a run already past
+	// it are both held from the same place.
+	whole := "see ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc"
+	cut := whole[:len(whole)-1] // one character short of the floor
+
+	spans, retain := OnePasswordServiceAccountToken().Find(cut)
+	if len(spans) != 0 {
+		t.Errorf("Find(%q) = %v, want no span", cut, spans)
+	}
+	if want := 4; retain != want {
+		t.Errorf("Find(%q) settled from %d, want %d", cut, retain, want)
+	}
+
+	spans, retain = OnePasswordServiceAccountToken().Find(whole)
+	if want := []Span{{4, len(whole)}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", whole, spans, want)
+	}
+	if want := 4; retain != want {
+		t.Errorf("Find(%q) settled from %d, want %d", whole, retain, want)
+	}
+
+	m := New(WithPatterns(OnePasswordServiceAccountToken()))
+	var out strings.Builder
+	w := NewWriter(&out, m)
+	if _, err := w.Write([]byte(cut)); err != nil {
+		t.Fatalf("Write() = %v", err)
+	}
+	if _, err := w.Write([]byte(whole[len(whole)-1:])); err != nil {
+		t.Fatalf("Write() = %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close() = %v", err)
+	}
+	if got, want := out.String(), "see "+strings.Repeat("*", len(whole)-4); got != want {
+		t.Errorf("a token written in two pieces came out %q, want %q", got, want)
 	}
 }
 

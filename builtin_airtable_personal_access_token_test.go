@@ -66,6 +66,22 @@ func Test_AirtablePersonalAccessToken(t *testing.T) {
 			src:  "patpat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			want: []Span{{3, 85}},
 		},
+		{
+			// The four-part shape a chained digest or another OAuth-style
+			// string takes: a token, a dot, and another sixty-four hexadecimal
+			// characters. The count is read exactly, so the second run is not
+			// part of the token and stays in the text.
+			name: "a token followed by a dot and another sixty-four hexadecimal characters",
+			src:  "pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{0, 82}},
+		},
+		{
+			// An identifier drawn from the letters the ordered run used
+			// elsewhere in this file never reaches.
+			name: "an identifier drawn from the far end of the alphabet",
+			src:  "patZYXWVUzyxwvu98.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{0, 82}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -170,6 +186,30 @@ func Test_AirtablePersonalAccessToken_noMatch(t *testing.T) {
 			name: "a log line",
 			src:  `time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.airtable.com/v0/meta/whoami`,
 		},
+		{
+			// A dot standing one character early, with the identifier's own
+			// characters carrying on behind it. This is what separates a scan
+			// reading the separator at a fixed position from one searching for
+			// it anywhere in the identifier.
+			name: "a dot one character early with more identifier-shaped text behind it",
+			src:  "pat012345.789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a space inside the identifier",
+			src:  "pat0123456789 bcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// The character straight behind the dot standing outside
+			// hexadecimal, so the secret's own alphabet is broken at its very
+			// first byte rather than in the middle where every other case here
+			// breaks it.
+			name: "a character outside hexadecimal at the first character of the secret",
+			src:  "pat0123456789abcd.g123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a secret broken by a carriage return and a line feed",
+			src:  "pat0123456789abcd.0123456789abcdef\r\n123456789abcdef0123456789abcdef0123456789abcdef",
+		},
 	}
 
 	for _, tt := range tests {
@@ -269,6 +309,13 @@ func Test_AirtablePersonalAccessToken_nextToWordCharacters(t *testing.T) {
 		{
 			name: "a token after a dot",
 			src:  "airtable." + token,
+			want: []Span{{9, 9 + len(token)}},
+		},
+		{
+			// A multi-byte rune standing flush against the token on both
+			// sides, with no space between them.
+			name: "a multi-byte rune flush against the token on both sides",
+			src:  "日本語" + token + "日本語",
 			want: []Span{{9, 9 + len(token)}},
 		},
 	}
@@ -449,6 +496,86 @@ func Test_AirtablePersonalAccessToken_aPrefixInsideAnIdentifier(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Test_AirtablePersonalAccessToken_settlesWhatTheInputCutShort holds Find's
+// second return to the offset in front of which nothing further back can
+// still become a token, which is either a piece of the prefix standing at the
+// end of the input or a candidate the end of the input cut short. What every
+// built-in owes about that offset over generated text and over the samples is
+// driven in builtins_test.go and fuzz_test.go; what is written out here is
+// which inputs of this pattern's own shape hold anything back, since nothing
+// else names them.
+func Test_AirtablePersonalAccessToken_settlesWhatTheInputCutShort(t *testing.T) {
+	const token = "pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			name: "the prefix alone",
+			src:  "pat",
+			want: 0,
+		},
+		{
+			// An identifier complete but with no separator or secret behind
+			// it, held back from its own start rather than from further back.
+			name: "an identifier with nothing behind it",
+			src:  "pat0123456789abcd",
+			want: 0,
+		},
+		{
+			name: "a secret the end of the input cut short",
+			src:  "pat0123456789abcd.0123456789abcdef",
+			want: 0,
+		},
+		{
+			// A token reaching the end of the input. Nothing is read behind
+			// either count, and the alphabets carry none of the bytes the
+			// prefix is written with, so nothing is held back.
+			name: "a whole token reaching the end of the input",
+			src:  token,
+			want: len(token),
+		},
+		{
+			name: "a whole token followed by a character that opens no prefix",
+			src:  token + " ",
+			want: len(token) + 1,
+		},
+		{
+			// The candidate cut short by the end of the input, held back from
+			// its own start rather than from the prose in front of it.
+			name: "a candidate cut short held from its own start rather than further back",
+			src:  "AIRTABLE_API_KEY=pat0123456789abcd",
+			want: 17,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, got := AirtablePersonalAccessToken().Find(tt.src); got != tt.want {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_AirtablePersonalAccessToken_scanIsLinear drives the crowding this scan
+// is most exposed to: the anchor is the p the prefix opens with, and it stands
+// nowhere else in either alphabet the format is read in, so a run of either one
+// holds no candidate at all. What does hold a candidate at every three bytes is
+// the prefix itself repeated, and the scan reads a fixed count at each rather
+// than keeping a cursor, so nothing here is expected to cost more than that
+// count times the number of candidates.
+func Test_AirtablePersonalAccessToken_scanIsLinear(t *testing.T) {
+	checkScanIsLinear(t, AirtablePersonalAccessToken(), map[string]string{
+		"a prefix every three characters":           strings.Repeat("pat", 700000),
+		"an anchor with no prefix behind it":        strings.Repeat("p", 3000000),
+		"a run of the secret alphabet":              strings.Repeat("0123456789abcdef", 200000),
+		"candidates walked to their last character": strings.Repeat("pat0123456789abcd.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde ", 30000),
+	})
 }
 
 func Test_airtablePersonalAccessTokenPrefix(t *testing.T) {

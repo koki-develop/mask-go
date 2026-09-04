@@ -57,6 +57,14 @@ func Test_SupabasePublishableKey(t *testing.T) {
 			want: []Span{{0, 46}, {46, 92}},
 		},
 		{
+			// Three rather than two: the shape a run of keys takes when it is
+			// longer than a pair, still with the anchor's one occurrence in
+			// front of a key deciding where each span begins.
+			name: "three keys with nothing between them",
+			src:  "sb_publishable_0123456789abcdef012345_01234567sb_publishable_0123456789abcdef012345_01234567sb_publishable_0123456789abcdef012345_01234567",
+			want: []Span{{0, 46}, {46, 92}, {92, 138}},
+		},
+		{
 			// The candidate this scan resumes a byte along for. The prefix at
 			// the front of the input opens a candidate whose body carries no
 			// separator where one has to stand; the key is the one fifteen
@@ -74,6 +82,28 @@ func Test_SupabasePublishableKey(t *testing.T) {
 		{
 			name: "an uppercase body",
 			src:  "sb_publishable_0123456789ABCDEF012345_01234567",
+			want: []Span{{0, 46}},
+		},
+		{
+			// base64url's own two characters standing in the checksum, which
+			// is a narrower run than the random part gets exercised at.
+			name: "a hyphen in the checksum",
+			src:  "sb_publishable_0123456789abcdef012345_0123456-",
+			want: []Span{{0, 46}},
+		},
+		{
+			name: "an underscore in the checksum",
+			src:  "sb_publishable_0123456789abcdef012345_0123456_",
+			want: []Span{{0, 46}},
+		},
+		{
+			// Every character the alphabet has, at once: uppercase past F,
+			// lowercase past f, both digits' neighbours and both of the
+			// characters standard base64 leaves out. The body is the one
+			// Test_isSupabaseKeyBody already holds the helper to; here it
+			// stands behind this half's own prefix and count.
+			name: "a body spanning the alphabet",
+			src:  "sb_publishable_ABCDEFGHIJKLMNOPQRSTUV_wxyz-_09",
 			want: []Span{{0, 46}},
 		},
 	}
@@ -105,12 +135,32 @@ func Test_SupabasePublishableKey_noMatch(t *testing.T) {
 			src:  "sb_publishable_0123456789abcdef01234_501234567",
 		},
 		{
+			// The other side of the same claim: the separator has to stand at
+			// exactly the twenty-third character, and one character late is
+			// as much no key as one character early.
+			name: "the separator one character late",
+			src:  "sb_publishable_0123456789abcdef0123450_1234567",
+		},
+		{
 			name: "a body of the right length with no separator",
 			src:  "sb_publishable_0123456789abcdef012345001234567",
 		},
 		{
 			name: "a character outside the alphabet in the body",
 			src:  "sb_publishable_0123456789.bcdef012345_01234567",
+		},
+		{
+			// The same rejection at the first body character rather than in
+			// the middle of the run, which is a position no case here reaches
+			// otherwise.
+			name: "a character outside the alphabet at the first body character",
+			src:  "sb_publishable_.123456789abcdef012345_01234567",
+		},
+		{
+			// A character outside base64url standing in the checksum rather
+			// than in the random part.
+			name: "a character outside the alphabet in the checksum",
+			src:  "sb_publishable_0123456789abcdef012345_0123456.",
 		},
 		{
 			name: "a body broken by a space",
@@ -331,6 +381,113 @@ func Test_SupabasePublishableKey_aBase64URLRunBehindThePrefix(t *testing.T) {
 	}
 }
 
+func Test_SupabasePublishableKey_underscoresInTheRandomPart(t *testing.T) {
+	// The body is sliced out of a base64url encoding, which carries
+	// underscores of its own, so the separator settles nothing about where
+	// the parts divide — only the count either side of it does. A body of
+	// underscores throughout is a key all the same, and one carrying a
+	// character other than an underscore where the separator belongs is not,
+	// however many underscores stand around it. This is the other half's own
+	// claim, stated here behind this half's prefix rather than assumed to
+	// carry over untested.
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			name: "a body of underscores alone",
+			src:  "sb_publishable_" + strings.Repeat("_", 31),
+			want: []Span{{0, 46}},
+		},
+		{
+			// The one position that may not be an underscore: a hyphen
+			// standing where the separator belongs, with underscores on
+			// every other position of the body.
+			name: "a hyphen where the separator stands and underscores around it",
+			src:  "sb_publishable_" + strings.Repeat("_", 22) + "-" + strings.Repeat("_", 8),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := SupabasePublishableKey().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_SupabasePublishableKey_holdsAKeyTheInputCutShort(t *testing.T) {
+	// What this scan settles where the input ends inside a candidate: the
+	// candidate's own start, reported but not read, held there until what
+	// comes next either carries the body on to a key or closes it.
+	tests := []struct {
+		name       string
+		src        string
+		wantSpans  []Span
+		wantRetain int
+	}{
+		{
+			name:       "a body the input cuts short",
+			src:        "apikey: sb_publishable_0123456789abcdef",
+			wantSpans:  nil,
+			wantRetain: 8,
+		},
+		{
+			name:       "the prefix the input cuts short",
+			src:        "apikey: sb_pub",
+			wantSpans:  nil,
+			wantRetain: 8,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotSpans, gotRetain := SupabasePublishableKey().Find(tt.src)
+			if !slices.Equal(gotSpans, tt.wantSpans) {
+				t.Errorf("Find(%q) spans = %v, want %v", tt.src, gotSpans, tt.wantSpans)
+			}
+			if gotRetain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, gotRetain, tt.wantRetain)
+			}
+		})
+	}
+}
+
+// Test_SupabasePublishableKey_adjacentToASecretKey drives the boundary
+// between the two project keys with nothing standing between them rather than
+// elsewhere in the text: neither prefix reads inside the other's, sb_secret_
+// closing where sb_publishable_ would still need five more characters and a
+// second underscore, so this pattern locates the publishable half alone,
+// wherever in the pair it stands.
+func Test_SupabasePublishableKey_adjacentToASecretKey(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			name: "a secret key immediately followed by a publishable key",
+			src:  "sb_secret_0123456789abcdef012345_01234567sb_publishable_0123456789abcdef012345_01234567",
+			want: []Span{{41, 87}},
+		},
+		{
+			name: "a publishable key immediately followed by a secret key",
+			src:  "sb_publishable_0123456789abcdef012345_01234567sb_secret_0123456789abcdef012345_01234567",
+			want: []Span{{0, 46}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := SupabasePublishableKey().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_supabasePublishableKeyPrefix(t *testing.T) {
 	// The prefix is the argument the generator is called with for this kind of
 	// key, and it is the whole of what tells one from a secret key.
@@ -437,6 +594,12 @@ func FuzzSupabasePublishableKey_matchesReference(f *testing.F) {
 	f.Add("sb_publishable_0123456789-bcdef012345_01234567")  // and a hyphen
 	f.Add("sb_publishable_0123456789ABCDEF012345_01234567")  // an uppercase body
 	f.Add("sb_publishable_0123456789.bcdef012345_01234567")  // a character outside the alphabet
+	f.Add("sb_publishable_.123456789abcdef012345_01234567")  // the same, at the first body character
+	f.Add("sb_publishable_0123456789abcdef012345_0123456.")  // and in the checksum
+	f.Add("sb_publishable_0123456789abcdef012345_0123456-")  // a hyphen in the checksum
+	f.Add("sb_publishable_0123456789abcdef0123450_1234567")  // the separator a character late
+	f.Add("sb_publishable_ABCDEFGHIJKLMNOPQRSTUV_wxyz-_09")  // every character of the alphabet at once
+	f.Add("sb_publishable_" + strings.Repeat("_", 31))       // a body of underscores alone
 	f.Add("sb_publishable_0123456789abcdef012345\n01234567")
 	f.Add("sb_publishable-0123456789abcdef012345_01234567") // a hyphen where the prefix closes
 	f.Add("SB_PUBLISHABLE_0123456789abcdef012345_01234567") // an uppercase prefix

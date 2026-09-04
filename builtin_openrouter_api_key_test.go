@@ -70,6 +70,35 @@ func Test_OpenRouterAPIKey(t *testing.T) {
 			want: []Span{{9, 82}},
 		},
 		{
+			// A prefix written inside a body too short to be one: the outer
+			// candidate's body is sixty-three hexadecimal digits and then the s
+			// the inner prefix opens with, which is no hexadecimal digit, so the
+			// outer candidate is turned away and the inner key is all that
+			// stands.
+			name: "a prefix written inside a body too short to be one",
+			src:  "sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdesk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{72, 145}},
+		},
+		{
+			// Two keys separated by a hyphen rather than written flush against
+			// one another. The hyphen is no hexadecimal digit, so it closes the
+			// first key's body exactly where the count already would, and
+			// neither key begins inside the other.
+			name: "two keys separated by a hyphen",
+			src:  "sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef-sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{0, 73}, {74, 147}},
+		},
+		{
+			// A hexadecimal run twice the count behind the prefix. The count is
+			// read exactly, so only the first seventy-three characters are a
+			// key and the other sixty-four hexadecimal digits stay in the text
+			// exactly as "a body run one character longer" above leaves its one
+			// extra character.
+			name: "a hexadecimal run twice the count",
+			src:  "sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{0, 73}},
+		},
+		{
 			// The one shape a word boundary in front would turn away, and what
 			// it would cost is the environment assignment above. The prefix
 			// closes with a hyphen rather than with a letter, so no snake_case
@@ -136,6 +165,13 @@ func Test_OpenRouterAPIKey_noMatch(t *testing.T) {
 		{
 			name: "an uppercase prefix",
 			src:  "SK-OR-V1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// The prefix is read in one case as a whole, so a prefix uppercased
+			// in only one of its segments is no more a match than one
+			// uppercased throughout.
+			name: "one segment of the prefix in capitals",
+			src:  "sk-OR-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		},
 		{
 			// The version segment is what the count is read exactly on the
@@ -374,6 +410,39 @@ func Test_OpenRouterAPIKey_aDigestBehindThePrefix(t *testing.T) {
 	}
 }
 
+func Test_OpenRouterAPIKey_settlesAWholeKey(t *testing.T) {
+	// A key of exactly the right count standing at the very end of the input
+	// closes on its own count rather than on a run, so nothing arriving after
+	// it can turn it into something else. The whole input is settled, unlike
+	// the run-reading patterns whose last candidate stays open until a
+	// non-alphabet byte closes it.
+	src := "sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+	spans, retain := OpenRouterAPIKey().Find(src)
+	if want := []Span{{0, 73}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != len(src) {
+		t.Errorf("Find(%q) settled %d of %d, want the whole of it", src, retain, len(src))
+	}
+}
+
+func Test_OpenRouterAPIKey_holdsABodyTheInputCutShort(t *testing.T) {
+	// The other side of the same decision. A body one character short of the
+	// count is not a key, but more text could still complete it, so the scan
+	// holds the candidate open from its own start rather than reporting the
+	// whole input settled.
+	src := "sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde"
+
+	spans, retain := OpenRouterAPIKey().Find(src)
+	if len(spans) != 0 {
+		t.Errorf("Find(%q) = %v, want no span", src, spans)
+	}
+	if retain != 0 {
+		t.Errorf("Find(%q) settled from %d, want 0", src, retain)
+	}
+}
+
 func Test_OpenRouterAPIKey_noKeyBeginsInsideAnother(t *testing.T) {
 	// The claim builtin_openrouter_api_key.go makes: the spans of this pattern
 	// never overlap one another. A candidate begins where an s begins, and the
@@ -608,6 +677,15 @@ func FuzzOpenRouterAPIKey_matchesReference(f *testing.F) {
 	f.Add("sk-or-v1-sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
 	f.Add("sk-or-v1-0123456789abcdef0123456789abcdefsk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
 	f.Add("sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	// A prefix written inside a body one character too short to have already
+	// closed the outer candidate, and two keys separated by a hyphen rather
+	// than written flush against one another.
+	f.Add("sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdesk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	f.Add("sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef-sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	// A hexadecimal run twice the count behind the prefix, and one segment of
+	// the prefix capitalised on its own.
+	f.Add("sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	f.Add("sk-OR-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
 	// Candidate positions crowded as close as they can be, a run of hyphens,
 	// and a hexadecimal run with no prefix in front of it.
 	f.Add(strings.Repeat("sk-or-v1-", 32))

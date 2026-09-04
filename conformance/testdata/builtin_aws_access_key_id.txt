@@ -89,6 +89,14 @@ case:     two keys with nothing between them
 in:       AKIA0123456789ABCDEFASIA0123456789ABCDEF
 out:      «aws-access-key-id»«aws-access-key-id»
 
+case:     a key opening inside a longer uppercase run that is itself no candidate
+in:       MYROLEAKIA0123456789ABCDEF
+out:      MYROLE«aws-access-key-id»
+
+case:     a key on each of three lines
+in:       AKIA0123456789ABCDEF\nASIA0123456789ABCDEF\nAKIA0123456789ABCDEF
+out:      «aws-access-key-id»\n«aws-access-key-id»\n«aws-access-key-id»
+
 # Punctuation ends a key, so nothing written after one joins it.
 
 case:     an access key id before a host name
@@ -98,6 +106,18 @@ out:      host=«aws-access-key-id».example.com
 case:     an access key id at the end of a sentence
 in:       the key is AKIA0123456789ABCDEF.
 out:      the key is «aws-access-key-id».
+
+case:     a key flush against a multi-byte rune on both sides
+in:       日本語AKIA0123456789ABCDEF日本語
+out:      日本語«aws-access-key-id»日本語
+
+case:     a key in a markdown code span
+in:       `AKIA0123456789ABCDEF`
+out:      `«aws-access-key-id»`
+
+case:     a key in a query string
+in:       https://example.com/x?key=AKIA0123456789ABCDEF&region=us-east-1
+out:      https://example.com/x?key=«aws-access-key-id»&region=us-east-1
 
 # What this pattern redacts that nobody issued. ASIA is an English word where
 # AKIA is not, so an unbroken run of twenty uppercase letters and digits that
@@ -145,6 +165,14 @@ out:      AKIA0123456789ABCDE
 case:     a lowercase body
 in:       AKIA0123456789abcdef
 out:      AKIA0123456789abcdef
+
+case:     a prefix with one letter in the wrong case
+in:       AkIA0123456789ABCDEF
+out:      AkIA0123456789ABCDEF
+
+case:     the legacy shape a ruleset carries and aws documents nowhere
+in:       A3TX0123456789ABCDEF
+out:      A3TX0123456789ABCDEF
 
 case:     a hyphen where the body would be
 in:       AKIA-123456789ABCDEF

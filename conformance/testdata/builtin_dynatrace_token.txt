@@ -38,6 +38,10 @@ case:     a prefix the published table does not list
 in:       dt0s17.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
 out:      «dynatrace-token»
 
+case:     a prefix dynatrace has not published at all
+in:       dt0x99.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      «dynatrace-token»
+
 case:     a token in the command line a request is made from
 in:       curl -H 'Authorization: Api-Token dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF' https://abc12345.live.dynatrace.com/api/v2/metrics
 out:      curl -H 'Authorization: Api-Token «dynatrace-token»' https://abc12345.live.dynatrace.com/api/v2/metrics
@@ -45,6 +49,18 @@ out:      curl -H 'Authorization: Api-Token «dynatrace-token»' https://abc1234
 case:     the two tokens a deployment is configured with
 in:       {"apiToken":"dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF","paasToken":"dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"}
 out:      {"apiToken":"«dynatrace-token»","paasToken":"«dynatrace-token»"}
+
+case:     a token between tabs
+in:       field\tdt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF\tnext
+out:      field\t«dynatrace-token»\tnext
+
+case:     a token followed by crlf
+in:       Api-Token: dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF\r\n
+out:      Api-Token: «dynatrace-token»\r\n
+
+case:     a token in a query string
+in:       https://abc12345.live.dynatrace.com/api/v2/metrics?Api-Token=dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
+out:      https://abc12345.live.dynatrace.com/api/v2/metrics?Api-Token=«dynatrace-token»
 
 # The alphabet both portions are written in: the uppercase letters and the
 # digits, which is the class Dynatrace spells for each of them in the expression
@@ -121,6 +137,10 @@ out:      «dynatrace-token»-suffix
 case:     a token at the end of a sentence
 in:       the token is dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF.
 out:      the token is «dynatrace-token».
+
+case:     a token between multi-byte text with nothing between them
+in:       トークンはdt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEFです
+out:      トークンは«dynatrace-token»です
 
 # Two tokens written together. No token begins inside another: the two letters an
 # opening starts with are lowercase and neither portion is written in lowercase
@@ -204,6 +224,14 @@ out:      xx0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF012345
 case:     prose
 in:       there is no credential in this sentence
 out:      there is no credential in this sentence
+
+case:     a token cut short with an ellipsis
+in:       dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF012...
+out:      dt0c01.0123456789ABCDEF01234567.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF012...
+
+case:     a build number and a job name that happen to share the opening's letters
+in:       build=1755388800123456789 job=dt0c01
+out:      build=1755388800123456789 job=dt0c01
 
 case:     a log line naming the api a token authenticates against
 in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://abc12345.live.dynatrace.com/api/v2/metrics

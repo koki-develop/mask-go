@@ -74,6 +74,33 @@ func Test_PlanetScaleToken(t *testing.T) {
 			src:  "pscale_tkn_0123456789abcdef0123456789abcdef0123456789apscale_oauth_0123456789abcdef0123456789abcdef0123456789a",
 			want: []Span{{0, 54}, {54, 110}},
 		},
+		{
+			// The count is read exactly for every kind, not only the service
+			// token: an oauth access token with a character written after it
+			// is a token and the character.
+			name: "an oauth token and a character after it",
+			src:  "pscale_oauth_0123456789abcdef0123456789abcdef0123456789a0",
+			want: []Span{{0, 56}},
+		},
+		{
+			name: "a refresh token and a character after it",
+			src:  "pscale_oauth_refresh_0123456789abcdef0123456789abcdef0123456789a0",
+			want: []Span{{0, 64}},
+		},
+		{
+			// A multi-byte rune written straight against a token with no ASCII
+			// byte between the two. The rune stands outside base64url either
+			// way, so it neither widens the token nor keeps the scan from
+			// finding one.
+			name: "a token after a multi-byte rune",
+			src:  "日本語pscale_tkn_0123456789abcdef0123456789abcdef0123456789a",
+			want: []Span{{9, 63}},
+		},
+		{
+			name: "a token before a multi-byte rune",
+			src:  "pscale_tkn_0123456789abcdef0123456789abcdef0123456789a日本語",
+			want: []Span{{0, 54}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -118,6 +145,33 @@ func Test_PlanetScaleToken_noMatch(t *testing.T) {
 			// same two admit.
 			name: "a dot in the body",
 			src:  "pscale_tkn_0123456789abcdef.123456789abcdef0123456789a",
+		},
+		{
+			// The two characters that separate standard base64 from
+			// base64url. Neither belongs to the class a body is written in,
+			// so each ends the run one character short of the count exactly
+			// as the equals sign and the dot do.
+			name: "a plus sign in the body",
+			src:  "pscale_tkn_0123456789abcdef+123456789abcdef0123456789a",
+		},
+		{
+			name: "a slash in the body",
+			src:  "pscale_tkn_0123456789abcdef/123456789abcdef0123456789a",
+		},
+		{
+			name: "an equals sign at the first character of the body",
+			src:  "pscale_tkn_=0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			name: "an equals sign at the last character of the body",
+			src:  "pscale_tkn_0123456789abcdef0123456789abcdef012345678=",
+		},
+		{
+			// An invalid UTF-8 byte inside a body. It belongs to no encoding
+			// at all, so it ends the run exactly as the equals sign and the
+			// dot do.
+			name: "an invalid byte in the body",
+			src:  "pscale_tkn_0123456789abcdef\xff123456789abcdef0123456789a",
 		},
 		{
 			name: "a body broken by a space",
@@ -748,6 +802,13 @@ func FuzzPlanetScaleToken_matchesReference(f *testing.F) {
 	f.Add("pscale_tkn_0123456789abcdef-0123456789abcdef_012345678")                           // the hyphen and the underscore
 	f.Add("pscale_tkn_0123456789abcdef=123456789abcdef0123456789a")                           // the padding character, which is no body's
 	f.Add("pscale_tkn_0123456789abcdef.123456789abcdef0123456789a")                           // and the dot
+	f.Add("pscale_tkn_0123456789abcdef+123456789abcdef0123456789a")                           // a plus, standard base64's alone
+	f.Add("pscale_tkn_0123456789abcdef/123456789abcdef0123456789a")                           // a slash, likewise
+	f.Add("pscale_tkn_=0123456789abcdef0123456789abcdef0123456789a")                          // an equals sign at the first body character
+	f.Add("pscale_tkn_0123456789abcdef0123456789abcdef012345678=")                            // one at the last
+	f.Add("日本語pscale_tkn_0123456789abcdef0123456789abcdef0123456789a")                        // a token after a multi-byte rune
+	f.Add("pscale_tkn_0123456789abcdef0123456789abcdef0123456789a日本語")                        // and before one
+	f.Add("pscale_oauth_0123456789abcdef0123456789abcdef0123456789a0")                        // an oauth token and a character after it
 	f.Add("PSCALE_TKN_0123456789abcdef0123456789abcdef0123456789a")                           // an uppercase prefix
 	f.Add("pscale-tkn-0123456789abcdef0123456789abcdef0123456789a")                           // hyphens where the underscores stand
 	f.Add("pscale_tkn0123456789abcdef0123456789abcdef0123456789ab")                           // the kind without the underscore closing it

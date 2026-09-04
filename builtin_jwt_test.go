@@ -241,6 +241,57 @@ func Test_JWT(t *testing.T) {
 	}
 }
 
+func Test_JWT_noMatch(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{
+			name: "plain prose",
+			src:  "there is no credential in this sentence",
+		},
+		{
+			// The third character of "eyewitness" is 'e', which is outside the
+			// class opensJOSEHeader admits, so an ordinary word opening with the
+			// header's own two letters is turned away without decoding anything.
+			name: "an ordinary word opening with the header letters",
+			src:  "eyewitness accounts vary widely",
+		},
+		{
+			// The prefix is read case-sensitively: EY is not ey, so the anchor
+			// this scan searches for, a lowercase y, is never found at the start
+			// of this candidate, and neither the payload "a" nor the signature
+			// "b" carries the header letters for a candidate of its own.
+			name: "an uppercase header prefix",
+			src:  "EYJhbGciOiJIUzI1NiJ9.a.b",
+		},
+		{
+			// Three base64url segments joined by dots, none of them opening
+			// with the header letters at all, so no candidate is ever found to
+			// decode.
+			name: "segments with no header",
+			src:  "YWJj.ZGVm.Z2hp",
+		},
+		{
+			// A header and a payload run together with no dot between them:
+			// every candidate this holds, wherever the scan finds its anchor,
+			// reads the same maximal run of base64url characters to the same
+			// end of the input, so none of them ever meets the dot that would
+			// close a header.
+			name: "a base64url run with no dot to close the header",
+			src:  "eyJhbGciOiJIUzI1NiJ9eyJzdWIiOiJhYmMifQ0123456789abcdef",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := JWT().Find(tt.src); len(got) != 0 {
+				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
+			}
+		})
+	}
+}
+
 func Test_JWT_afterRejectedCandidate(t *testing.T) {
 	// A candidate whose header is not JSON must not consume what it covered: a
 	// real token can begin inside it. Both tokens below start at offset 8.

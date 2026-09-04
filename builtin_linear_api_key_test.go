@@ -81,6 +81,37 @@ func Test_LinearAPIKey(t *testing.T) {
 			src:  "lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123",
 			want: []Span{{0, 51}, {48, 96}},
 		},
+		{
+			// Three keys run together with nothing between any pair of them.
+			// The first and second bodies each read three characters into the
+			// prefix behind them before the underscore stops the run, exactly
+			// as the two-key case above does; the third reaches the end of
+			// the input at the floor.
+			name: "three keys run together with nothing between them",
+			src: "lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123" +
+				"lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123" +
+				"lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123",
+			want: []Span{{0, 51}, {48, 99}, {96, 144}},
+		},
+		{
+			// The far side of the prefix rather than a word character: a
+			// multi-byte rune written straight against a key on either side
+			// keeps the key's span exactly as a single-byte word character
+			// would.
+			name: "a key followed immediately by japanese",
+			src:  "lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123です",
+			want: []Span{{0, 48}},
+		},
+		{
+			name: "a key preceded immediately by japanese",
+			src:  "キーはlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123",
+			want: []Span{{9, 57}},
+		},
+		{
+			name: "a key after an invalid utf-8 byte",
+			src:  "\xfflin_api_0123456789abcdefghijklmnopqrstuvwxyz0123",
+			want: []Span{{1, 49}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -119,6 +150,18 @@ func Test_LinearAPIKey_noMatch(t *testing.T) {
 		{
 			name: "a body carrying an underscore",
 			src:  "lin_api_0123456789abcdefghij_lmnopqrstuvwxyz0123",
+		},
+		{
+			// A hyphen at the first character of the body, with a full forty
+			// character run behind it. The run's length is not what turns
+			// this away — it never begins, since the character behind the
+			// prefix is not one a body is written with.
+			name: "a hyphen at the first character of the body",
+			src:  "lin_api_-0123456789abcdefghijklmnopqrstuvwxyz0123",
+		},
+		{
+			name: "an underscore at the first character of the body",
+			src:  "lin_api__0123456789abcdefghijklmnopqrstuvwxyz0123",
 		},
 		{
 			name: "an uppercase prefix",
@@ -544,6 +587,53 @@ func Test_LinearAPIKey_theOtherPrefix(t *testing.T) {
 	}
 }
 
+func Test_LinearAPIKey_retain(t *testing.T) {
+	// What Find's second return settles, held to literal offsets rather than
+	// left to slip past unread: the text carries no key at all, a key cut
+	// short of the floor by the end of the input, and a prefix cut short of
+	// its own length by the end of the input.
+	//
+	// Prose settling as the whole of the input is the ordinary case: nothing
+	// in "there is no credential in this sentence" is a piece of the prefix
+	// standing at the end, so what is not settled is nothing at all.
+	//
+	// A key cut short of the floor is not ruled out by what stands in front
+	// of it: the run might carry on past where the input ends, so what is
+	// not settled is the candidate's own start rather than the run behind it.
+	// A prefix cut short is the same claim one step earlier: "lin_ap" is a
+	// piece of "lin_api_" standing at the end of the input, so the candidate
+	// it might open is held from its own start as well.
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			name: "no candidate at all",
+			src:  "there is no credential in this sentence",
+			want: 39,
+		},
+		{
+			name: "a body cut short of the floor by the end of the input",
+			src:  "see lin_api_0123456789",
+			want: 4,
+		},
+		{
+			name: "a prefix cut short by the end of the input",
+			src:  "see lin_ap",
+			want: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, retain := LinearAPIKey().Find(tt.src); retain != tt.want {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.want)
+			}
+		})
+	}
+}
+
 func Test_linearAPIKeyPrefix(t *testing.T) {
 	// The scan resumes one byte past the start of a candidate because a key can
 	// begin inside the one before it, and that holds only while the prefix
@@ -708,6 +798,12 @@ func FuzzLinearAPIKey_matchesReference(f *testing.F) {
 	// candidate has one.
 	f.Add(strings.Repeat("lin_api_", 16))
 	f.Add(strings.Repeat("lin_api_0123456789abcdefghijklmnopqrstuvwxyz0", 4))
+	// Three keys run together, and a key beside a multi-byte rune or an
+	// invalid UTF-8 byte.
+	f.Add("lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123")
+	f.Add("lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123です")
+	f.Add("キーはlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123")
+	f.Add("\xfflin_api_0123456789abcdefghijklmnopqrstuvwxyz0123")
 	// A digest written behind the prefix, which is a key's format exactly, and
 	// one eight characters short of a body.
 	f.Add("lin_api_0123456789abcdef0123456789abcdef01234567")

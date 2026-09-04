@@ -41,6 +41,18 @@ case:     a token at the end of a sentence
 in:       the token is cfut_0123456789abcdef0123456789abcdef0123456789abcdef.
 out:      the token is «cloudflare-api-token».
 
+case:     a token flush against a multi-byte rune on both sides
+in:       日本語cfut_0123456789abcdef0123456789abcdef0123456789abcdef日本語
+out:      日本語«cloudflare-api-token»日本語
+
+case:     a token in a tab separated field before a crlf
+in:       token\tcfat_0123456789abcdef0123456789abcdef0123456789abcdef\r\n
+out:      token\t«cloudflare-api-token»\r\n
+
+case:     a token in parentheses
+in:       (cfut_0123456789abcdef0123456789abcdef0123456789abcdef)
+out:      («cloudflare-api-token»)
+
 # The alphabets, which are two rather than one. The forty characters of the
 # secret are letters and digits, so they run past f and admit neither the hyphen
 # nor the underscore the older unprefixed format was written with; the eight
@@ -73,6 +85,26 @@ out:      cfut_0123456789abcdef-123456789abcdef0123456789abcdef
 case:     an underscore inside the secret
 in:       cfut_0123456789abcdef_123456789abcdef0123456789abcdef
 out:      cfut_0123456789abcdef_123456789abcdef0123456789abcdef
+
+case:     a hyphen at the first character of the secret
+in:       cfut_-123456789abcdef0123456789abcdef0123456701234567
+out:      cfut_-123456789abcdef0123456789abcdef0123456701234567
+
+case:     a letter past f at the first character of the checksum
+in:       cfut_0123456789abcdef0123456789abcdef01234567z1234567
+out:      cfut_0123456789abcdef0123456789abcdef01234567z1234567
+
+case:     a letter past f at the last character of the secret
+in:       cfut_0123456789abcdef0123456789abcdef0123456z01234567
+out:      «cloudflare-api-token»
+
+case:     an account owned body one character short
+in:       cfat_0123456789abcdef0123456789abcdef012345670123456
+out:      cfat_0123456789abcdef0123456789abcdef012345670123456
+
+case:     a letter past f at the end of an account owned token's checksum
+in:       cfat_0123456789abcdef0123456789abcdef012345670123456g
+out:      cfat_0123456789abcdef0123456789abcdef012345670123456g
 
 # The lengths. Forty is what Cloudflare's page on token formats writes, and both
 # forty and eight are what the Credentials and Secrets row of its predefined DLP
@@ -176,8 +208,8 @@ out:      cfut_«cloudflare-api-token»
 # text. Redacting it is right rather than a fault: the vendor's format is a
 # prefix and forty-eight characters whose last eight are hexadecimal, so a
 # scan declining a digest behind this prefix declines the tokens whose secret
-# is written in the same sixteen characters — which every token in this file
-# is. The shorter digests are turned away by the counts, and a digest on its
+# happens to be written in the same sixteen characters, as one is above.
+# The shorter digests are turned away by the counts, and a digest on its
 # own carries no underscore and so holds no prefix to be found in.
 
 case:     a sha256 behind the prefix

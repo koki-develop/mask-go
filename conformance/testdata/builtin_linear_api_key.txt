@@ -54,6 +54,14 @@ case:     a body carrying an underscore
 in:       lin_api_0123456789abcdefghij_lmnopqrstuvwxyz0123
 out:      lin_api_0123456789abcdefghij_lmnopqrstuvwxyz0123
 
+case:     a hyphen at the first character of the body, with a full run behind it
+in:       lin_api_-0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      lin_api_-0123456789abcdefghijklmnopqrstuvwxyz0123
+
+case:     an underscore at the first character of the body, with a full run behind it
+in:       lin_api__0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      lin_api__0123456789abcdefghijklmnopqrstuvwxyz0123
+
 # The lengths either side of forty. Linear states no length for a key, and no
 # alphabet and no checksum either; forty is the count both rulesets stating a
 # shape read off the keys they were shown. Like the GitHub, Stripe, PyPI and npm
@@ -127,6 +135,38 @@ out:      «linear-api-key»
 case:     two keys separated by a space
 in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123 lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123
 out:      «linear-api-key» «linear-api-key»
+
+case:     three keys run together with nothing between them
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      «linear-api-key»
+
+case:     one key per line over three lines
+in:       a=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123\nb=lin_api_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123\nc=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      a=«linear-api-key»\nb=«linear-api-key»\nc=«linear-api-key»
+
+case:     a key followed immediately by japanese
+in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123です
+out:      «linear-api-key»です
+
+case:     a key preceded immediately by japanese
+in:       キーはlin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      キーは«linear-api-key»
+
+case:     a key in a fragment of yaml
+in:       linear:\n  apiKey: lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      linear:\n  apiKey: «linear-api-key»
+
+case:     a key in a url query string
+in:       https://example.com/hook?key=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123&team=core
+out:      https://example.com/hook?key=«linear-api-key»&team=core
+
+case:     a key followed by a carriage return and a newline
+in:       LINEAR_API_KEY=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123\r\nHOME=/root
+out:      LINEAR_API_KEY=«linear-api-key»\r\nHOME=/root
+
+case:     a key in parentheses
+in:       (lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123)
+out:      («linear-api-key»)
 
 # A word closing on the three letters the prefix opens with. berlin, dublin,
 # merlin, muslin, kaolin, insulin, gremlin, violin and javelin each end on lin,

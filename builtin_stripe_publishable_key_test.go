@@ -92,6 +92,20 @@ func Test_StripePublishableKey(t *testing.T) {
 			want: []Span{{32, 64}},
 		},
 		{
+			// The far side of the floor isStripeKeyBodyRunBefore reads before
+			// admitting a prefix glued to a word: twenty-two letters and digits
+			// standing unbroken in front of the prefix is enough to read it as
+			// a key written against a key rather than as a name closing on the
+			// key type, so the key here is located exactly as one behind a
+			// separator would be. The other side of this count is "a run one
+			// short of what excuses a glued prefix" in
+			// Test_StripePublishableKey_noMatch, and the two are what hold the
+			// count to being the count.
+			name: "a run of twenty-two letters and digits excusing a prefix glued to a word",
+			src:  "_0123456789abcdefghijklpk_live_0123456789abcdef01234567",
+			want: []Span{{23, 55}},
+		},
+		{
 			// The same two with an underscore between them, which is a byte a
 			// key may be written after.
 			name: "an underscore between a secret key and one of these",
@@ -202,6 +216,19 @@ func Test_StripePublishableKey_noMatch(t *testing.T) {
 			// where a key may begin.
 			name: "a letter in front of the prefix",
 			src:  "xpk_live_0123456789abcdef01234567",
+		},
+		{
+			// The near side of the floor isStripeKeyBodyRunBefore reads: a run
+			// of letters and digits one character short of what excuses a prefix
+			// glued to a word is not enough, so this reads as a name closing on
+			// the key type rather than as a key written against a key, and the
+			// letter in front of the prefix turns it away exactly as it would
+			// with only one letter there. The other side of this count is "a run
+			// of twenty-two letters and digits excusing a prefix glued to a
+			// word" in Test_StripePublishableKey, and the two are what hold the
+			// count to being the count.
+			name: "a run one short of what excuses a glued prefix",
+			src:  "_0123456789abcdefghijkpk_live_0123456789abcdef01234567",
 		},
 		{
 			// What does close on this key type: topk_ is how the top-k

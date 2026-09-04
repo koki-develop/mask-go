@@ -232,6 +232,215 @@ func TestMasker_Mask(t *testing.T) {
 			src:      "日本語abc",
 			want:     "日本語***",
 		},
+		// The rows below hold Span{Start, End} against the edges of a
+		// six-byte input, both sides of len(src): a span landing exactly
+		// there is usable only where Start still falls short of it.
+		{
+			name:     "empty span at offset zero",
+			patterns: []Pattern{fixed("p", Span{0, 0})},
+			redactor: Fixed("X"),
+			src:      "abcdef",
+			want:     "abcdef",
+		},
+		{
+			name:     "empty span exactly at the end",
+			patterns: []Pattern{fixed("p", Span{6, 6})},
+			redactor: Fixed("X"),
+			src:      "abcdef",
+			want:     "abcdef",
+		},
+		{
+			name:     "span starting exactly at the end reaches past it",
+			patterns: []Pattern{fixed("p", Span{6, 7})},
+			redactor: Fixed("X"),
+			src:      "abcdef",
+			want:     "abcdef",
+		},
+		{
+			name:     "span wholly in front of the input",
+			patterns: []Pattern{fixed("p", Span{-1, 0})},
+			redactor: Fixed("X"),
+			src:      "abcdef",
+			want:     "abcdef",
+		},
+		{
+			name:     "span starting inside the input but reaching one past its end",
+			patterns: []Pattern{fixed("p", Span{0, 7})},
+			redactor: Fixed("X"),
+			src:      "abcdef",
+			want:     "abcdef",
+		},
+		{
+			name:     "the last byte alone is usable",
+			patterns: []Pattern{fixed("p", Span{5, 6})},
+			redactor: Fixed("X"),
+			src:      "abcdef",
+			want:     "abcdeX",
+		},
+		{
+			name:     "one Find reports overlapping spans in descending order",
+			patterns: []Pattern{fixed("p", Span{4, 8}, Span{0, 6})},
+			redactor: Fixed("X"),
+			src:      "abcdefghij",
+			want:     "Xij",
+		},
+		{
+			name:     "an unusable span reaching between two usable ones does not bridge them",
+			patterns: []Pattern{fixed("p", Span{0, 2}, Span{1, 9}, Span{4, 6})},
+			redactor: Fixed("X"),
+			src:      "abcdef",
+			want:     "XcdX",
+		},
+		{
+			name:     "a contained span is reported before its container in one Find call",
+			patterns: []Pattern{fixed("p", Span{2, 4}, Span{0, 6})},
+			redactor: Fixed("X"),
+			src:      "abcdef",
+			want:     "X",
+		},
+		{
+			name: "one Find mixes a duplicate, an empty span, a reversed span, a negative-start span, a past-the-end span and two overlapping usable ones",
+			patterns: []Pattern{fixed("p",
+				Span{4, 7}, Span{2, 4}, Span{-1, 1}, Span{3, 3}, Span{0, 3}, Span{2, 4}, Span{5, 2},
+			)},
+			redactor: Fixed("X"),
+			src:      "abcdef",
+			want:     "Xef",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := []Option{WithPatterns(tt.patterns...)}
+			if tt.redactor != nil {
+				opts = append(opts, WithRedactor(tt.redactor))
+			}
+			if got := New(opts...).Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestMasker_Mask_spanCuttingARune holds Mask to what Pattern.Find's doc says
+// of a span whose ends do not fall on a rune boundary: "the bytes either side
+// of it are written back as they were found, so what is left of that rune
+// stands beside the redaction and the output is not valid UTF-8." Such a span
+// is not among the ones Pattern.Find ignores — only a span reaching outside
+// src, or one whose Start is not less than its End, is — and it is not
+// repaired to the rune it falls inside either: Match.Value is exactly
+// src[Start:End], whatever that cuts through, and Fill counts the runes of
+// that raw slice the same way it counts any other value's.
+//
+// "日本語abc" is 日=[0,3), 本=[3,6), 語=[6,9), a=9, b=10, c=11, so the offsets
+// 1, 2, 4, 5, 7 and 8 fall inside a rune rather than at its start.
+func TestMasker_Mask_spanCuttingARune(t *testing.T) {
+	src := "日本語abc"
+	tests := []struct {
+		name      string
+		span      Span
+		wantValue string
+		want      string
+	}{
+		{
+			// Ends one byte into 日 (0xe6 0x97 0xa5): Value holds only its
+			// lead byte, which utf8.RuneCountInString counts as one invalid
+			// rune, so Fill writes one '*'. 日's two continuation bytes are
+			// written back untouched, now with no lead byte in front of them.
+			name:      "span ends inside a rune",
+			span:      Span{0, 1},
+			wantValue: "\xe6",
+			want:      "*\x97\xa5本語abc",
+		},
+		{
+			// Starts one byte into 日 and ends on the boundary in front of
+			// "abc": Value holds 日's two continuation bytes (one invalid
+			// rune apiece) followed by all of 本 and all of 語 (one rune
+			// each), four runes altogether, so Fill writes four '*'. 日's lead
+			// byte is written back alone in front of the redaction.
+			name:      "span starts inside a rune",
+			span:      Span{1, 9},
+			wantValue: "\x97\xa5本語",
+			want:      "\xe6****abc",
+		},
+		{
+			// Starts one byte into 日 and ends one byte into 語 (0xe8 0xaa
+			// 0x9e), so Value holds 日's two continuation bytes, all of 本 and
+			// 語's lead byte alone — four runes again, so Fill writes four
+			// '*'. 日's lead byte and 語's two trailing bytes are both written
+			// back untouched, one on each side of the redaction.
+			name:      "span starts and ends inside a rune",
+			span:      Span{1, 7},
+			wantValue: "\x97\xa5本\xe8",
+			want:      "\xe6****\xaa\x9eabc",
+		},
+		{
+			// Falls entirely between 日's lead byte and its two continuation
+			// bytes: Value is one invalid byte, one rune, one '*'.
+			name:      "span falls entirely inside one rune",
+			span:      Span{1, 2},
+			wantValue: "\x97",
+			want:      "\xe6*\xa5本語abc",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotValue string
+			capture := NewRedactor(func(m Match) string {
+				gotValue = m.Value
+				return "*"
+			})
+			New(WithPatterns(fixed("p", tt.span)), WithRedactor(capture)).Mask(src)
+			if gotValue != tt.wantValue {
+				t.Errorf("Match.Value = %q, want %q", gotValue, tt.wantValue)
+			}
+
+			// The default redactor, Fill('*'), is what the doc's claim about
+			// the output is checked against.
+			got := New(WithPatterns(fixed("p", tt.span))).Mask(src)
+			if got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", src, got, tt.want)
+			}
+			if utf8.ValidString(got) {
+				t.Errorf("Mask(%q) = %q, want invalid UTF-8: a span cutting a multi-byte rune leaves what is left of that rune beside the redaction", src, got)
+			}
+		})
+	}
+}
+
+// TestMasker_Mask_invalidUTF8Value holds Mask end to end to what Test_Fill
+// already holds Fill to alone: a located value made of bytes that are not
+// valid UTF-8 counts one rune per bad byte, under the default redactor, under
+// an explicit multi-byte fill rune, and standing in the middle of otherwise
+// ordinary text rather than only at its start.
+func TestMasker_Mask_invalidUTF8Value(t *testing.T) {
+	tests := []struct {
+		name     string
+		patterns []Pattern
+		redactor Redactor
+		src      string
+		want     string
+	}{
+		{
+			name:     "invalid utf-8 at the start under the default redactor",
+			patterns: []Pattern{fixed("p", Span{0, 3})},
+			src:      "\xff\xfe\x00abc",
+			want:     "***abc",
+		},
+		{
+			name:     "invalid utf-8 at the start under a multi-byte fill rune",
+			patterns: []Pattern{fixed("p", Span{0, 3})},
+			redactor: Fill('●'),
+			src:      "\xff\xfe\x00abc",
+			want:     "●●●abc",
+		},
+		{
+			name:     "invalid utf-8 standing in the middle of the input",
+			patterns: []Pattern{fixed("p", Span{3, 5})},
+			src:      "abc\xff\xfedef",
+			want:     "abc**def",
+		},
 	}
 
 	for _, tt := range tests {
@@ -251,6 +460,7 @@ func TestMasker_Mask_attribution(t *testing.T) {
 	tests := []struct {
 		name     string
 		patterns []Pattern
+		src      string // defaults to "abcdef" where empty
 		want     string
 	}{
 		{
@@ -273,13 +483,106 @@ func TestMasker_Mask_attribution(t *testing.T) {
 			patterns: []Pattern{fixed("second", Span{0, 6}), fixed("first", Span{0, 6})},
 			want:     "<second>",
 		},
+		{
+			// A third span, tied with neither of the two that tie on the
+			// earliest start, still extends the merged run. The tie is broken
+			// among "short" and "long" alone: "long" is longer at the same
+			// start, so it wins whatever "tail" goes on to add to the run.
+			name: "a tie on the earliest start is broken before a later span extends the run",
+			patterns: []Pattern{
+				fixed("short", Span{0, 2}),
+				fixed("long", Span{0, 4}),
+				fixed("tail", Span{3, 10}),
+			},
+			src:  "abcdefghij",
+			want: "<long>",
+		},
+		{
+			// "first" and "second" are the only spans tied on the earliest
+			// start; "third" merely overlaps into a wider run without taking
+			// part in that tie, so it cannot win it by being the longest span
+			// anywhere in the run.
+			name: "a tie on the earliest start is not reopened by a span the run only later grows to include",
+			patterns: []Pattern{
+				fixed("first", Span{0, 4}),
+				fixed("second", Span{0, 4}),
+				fixed("third", Span{2, 8}),
+			},
+			src:  "abcdefgh",
+			want: "<first>",
+		},
+		{
+			// "a" only touches "b" (its End equals "b"'s Start), so it stays a
+			// redaction of its own; "b" and "c" truly overlap and merge, with
+			// "b" attributed for starting earlier.
+			name:     "a value that only touches a merged run stays a separate redaction",
+			patterns: []Pattern{fixed("a", Span{0, 2}), fixed("b", Span{2, 6}), fixed("c", Span{4, 8})},
+			src:      "abcdefgh",
+			want:     "<a><b>",
+		},
+		{
+			// "first", "second" and "third" chain into one run transitively —
+			// "first" and "third" do not themselves overlap — registered in
+			// the reverse of where they start.
+			name:     "a chain of three is attributed by where the spans start, not by registration order",
+			patterns: []Pattern{fixed("third", Span{4, 7}), fixed("second", Span{2, 5}), fixed("first", Span{0, 3})},
+			src:      "abcdefgh",
+			want:     "<first>h",
+		},
+		{
+			// "second" starts later than "first" but is registered first;
+			// the two spans only touch, so sorting by position rather than by
+			// registration order is what keeps them apart correctly ordered.
+			name:     "touching values from two patterns are ordered by position however they are registered",
+			patterns: []Pattern{fixed("second", Span{2, 4}), fixed("first", Span{0, 2})},
+			src:      "abcd",
+			want:     "<first><second>",
+		},
+		{
+			name:     "a span that would have started earliest is out of the running once it is ignored (negative start)",
+			patterns: []Pattern{fixed("unusable-first", Span{-1, 4}), fixed("usable", Span{1, 5})},
+			want:     "a<usable>f",
+		},
+		{
+			name:     "a span that would have started earliest is out of the running once it is ignored (reversed)",
+			patterns: []Pattern{fixed("unusable-first", Span{4, 2}), fixed("usable", Span{1, 5})},
+			want:     "a<usable>f",
+		},
+		{
+			name:     "a pattern reporting only ignored spans cannot win attribution from the one reporting the real value",
+			patterns: []Pattern{fixed("ghost", Span{0, 0}, Span{-1, 4}), fixed("real", Span{0, 4})},
+			want:     "<real>ef",
+		},
+		{
+			name:     "the same, with the real value's pattern registered first",
+			patterns: []Pattern{fixed("real", Span{0, 4}), fixed("ghost", Span{0, 0}, Span{-1, 4})},
+			want:     "<real>ef",
+		},
+		{
+			name:     "an empty span strictly inside another pattern's usable span neither splits it nor is attributed",
+			patterns: []Pattern{fixed("p", Span{0, 6}), fixed("q", Span{3, 3})},
+			want:     "<p>",
+		},
+		{
+			// "x日本語x" is x=[0,1), 日=[1,4), 本=[4,7), 語=[7,10), x=[10,11):
+			// the two spans overlap on 本 and merge into one three-rune run,
+			// attributed to "p" for starting earlier.
+			name:     "a merged run spanning multi-byte runes is attributed to the earlier-starting pattern",
+			patterns: []Pattern{fixed("p", Span{1, 7}), fixed("q", Span{4, 10})},
+			src:      "x日本語x",
+			want:     "x<p>x",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			src := tt.src
+			if src == "" {
+				src = "abcdef"
+			}
 			m := New(WithPatterns(tt.patterns...), WithRedactor(naming))
-			if got := m.Mask("abcdef"); got != tt.want {
-				t.Errorf("Mask() = %q, want %q", got, tt.want)
+			if got := m.Mask(src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", src, got, tt.want)
 			}
 		})
 	}
@@ -383,10 +686,17 @@ func TestMasker_Mask_concurrentUse(t *testing.T) {
 		}
 	})
 
+	// valueNaming carries Match.Value into the output along with the pattern's
+	// name, unlike the package-level naming redactor, so a Value read by one
+	// goroutine's text but written by another's would fail a case here rather
+	// than only Match.Pattern, which mask_test.go's other concurrency
+	// assertions already hold to the right answer.
+	valueNaming := NewRedactor(func(m Match) string { return "<" + m.Pattern.Name() + ":" + m.Value + ">" })
+
 	m := New(
 		WithPatterns(AllBuiltinPatterns()...),
 		WithPatterns(MustRegexp("internal-token", `INT-[0-9a-f]{32}`), shared),
-		WithRedactor(naming),
+		WithRedactor(valueNaming),
 	)
 
 	tests := []struct {
@@ -402,24 +712,24 @@ func TestMasker_Mask_concurrentUse(t *testing.T) {
 		{
 			name: "a github token",
 			src:  "GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz",
-			want: "GITHUB_TOKEN=<github-token>",
+			want: "GITHUB_TOKEN=<github-token:ghp_0123456789abcdefghijklmnopqrstuvwxyz>",
 		},
 		{
 			name: "a jwt",
 			src:  "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
-			want: "Authorization: Bearer <jwt>",
+			want: "Authorization: Bearer <jwt:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef>",
 		},
 		{
 			// Both built-in patterns fire here, so the merge runs concurrently
 			// too.
 			name: "a stateless installation token",
 			src:  "token=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
-			want: "token=<github-token>",
+			want: "token=<github-token:ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef>",
 		},
 		{
 			name: "a pattern given by the caller",
 			src:  "INT-0123456789abcdef0123456789abcdef and password=s3cr3t-value",
-			want: "<internal-token> and password=<shared-secret>",
+			want: "<internal-token:INT-0123456789abcdef0123456789abcdef> and password=<shared-secret:s3cr3t-value>",
 		},
 		{
 			// A run dense in header prefixes drives the decoder hard without
@@ -481,4 +791,315 @@ func Test_New_optionOrder(t *testing.T) {
 	if forward != want || backward != want {
 		t.Errorf("Mask() = %q and %q, want %q for both", forward, backward, want)
 	}
+}
+
+// wordPattern is a caller-authored Pattern implementation rather than one
+// built from NewPattern: a struct holding a slice, so a value of it is not
+// comparable, which is exactly the kind of Pattern the Pattern doc invites a
+// caller to hand to WithPatterns.
+//
+// The word is held as bytes rather than as a string for that alone. A field
+// carried only to make the type non-comparable is a field nothing reads, which
+// is what the unused check reports; a field the scan itself reads says the same
+// thing about the type and says it in code that runs.
+type wordPattern struct {
+	word []byte
+}
+
+func (p wordPattern) Name() string { return "word" }
+
+func (p wordPattern) Find(src string) ([]Span, int) {
+	word := string(p.word)
+	var spans []Span
+	for i := 0; ; {
+		j := strings.Index(src[i:], word)
+		if j < 0 {
+			// len(src)-len(word)+1 is where a word could still be forming
+			// at the end of src: the bytes before it can never become a
+			// match no matter what text follows, but a partial word
+			// standing at the tail can, so those are not settled.
+			return spans, max(0, len(src)-len(word)+1)
+		}
+		spans = append(spans, Span{Start: i + j, End: i + j + len(word)})
+		i += j + len(word)
+	}
+}
+
+func TestMasker_Mask_callerPatternImplementation(t *testing.T) {
+	p := wordPattern{word: []byte("s3cr3t")}
+
+	t.Run("alone", func(t *testing.T) {
+		m := New(WithPatterns(p), WithRedactor(naming))
+		if got, want := m.Mask("pw=s3cr3t"), "pw=<word>"; got != want {
+			t.Errorf("Mask() = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("mixed with a built-in whose value stands against it", func(t *testing.T) {
+		m := New(WithPatterns(GitHubToken(), p))
+		src := "s3cr3tghp_0123456789abcdefghijklmnopqrstuvwxyz"
+		want := strings.Repeat("*", len(src))
+		if got := m.Mask(src); got != want {
+			t.Errorf("Mask(%q) = %q, want %q", src, got, want)
+		}
+	})
+}
+
+// TestMasker_Mask_doesNotMutateAPatternsOwnSpanSlice holds Mask to leaving a
+// Pattern's own returned slice as it found it. A Pattern may return a slice it
+// keeps rather than allocating one per call — fixed does, and a hand-written
+// Find avoiding an allocation would too — so a Masker that sorted spans in
+// place would silently reorder it for whoever calls Find again.
+func TestMasker_Mask_doesNotMutateAPatternsOwnSpanSlice(t *testing.T) {
+	shared := []Span{{4, 6}, {0, 2}}
+	p := NewPattern("shared", func(src string) ([]Span, int) { return shared, len(src) })
+
+	if got, want := New(WithPatterns(p)).Mask("abcdef"), "**cd**"; got != want {
+		t.Errorf("Mask() = %q, want %q", got, want)
+	}
+	if want := ([]Span{{4, 6}, {0, 2}}); !slices.Equal(shared, want) {
+		t.Errorf("the pattern's own slice changed to %v, want %v", shared, want)
+	}
+}
+
+// TestMasker_Mask_secondPassRedactsMoreAWSAgainstSlack pins the example
+// Mask's own doc names: an AWS access key ID written against a Slack prefix is
+// redacted on the first pass, and the asterisk Fill('*') leaves behind reopens
+// the prefix Slack's scan declined the first time — the byte in front of a
+// Slack prefix may not be a letter or a digit, and the last byte of the AWS
+// key was a letter until the first pass wrote over it.
+func TestMasker_Mask_secondPassRedactsMoreAWSAgainstSlack(t *testing.T) {
+	m := New(WithPatterns(slices.Concat(AWSPatterns(), SlackPatterns())...))
+
+	awsKey := "AKIA0123456789ABCDEF"
+	slackToken := "xoxb-0123456789-0123456789012-0123456789abcdefghijklmn"
+	src := awsKey + slackToken
+
+	first := m.Mask(src)
+	want1 := strings.Repeat("*", len(awsKey)) + slackToken
+	if first != want1 {
+		t.Fatalf("Mask(%q) = %q, want %q", src, first, want1)
+	}
+
+	second := m.Mask(first)
+	want2 := strings.Repeat("*", len(src))
+	if second != want2 {
+		t.Errorf("Mask(%q) = %q, want %q", first, second, want2)
+	}
+	if second == first {
+		t.Error("a second pass located nothing more here, which this input is built to make happen")
+	}
+	checkSecondPass(t, m, src)
+}
+
+// TestMasker_Mask_fixedEmptySplicesUnwrittenText pins Fixed("")'s doc: taking
+// a value out altogether splices the text either side of it into text that
+// was never written, and masking again may then redact more than masking once
+// did. "sep" locates the boundary the doc calls out; "secret" locates the
+// six-digit run its removal creates, which neither three-digit half is on its
+// own.
+func TestMasker_Mask_fixedEmptySplicesUnwrittenText(t *testing.T) {
+	sep := MustRegexp("sep", `X`)
+	secret := MustRegexp("secret", `[0-9]{6}`)
+	m := New(WithPatterns(sep, secret), WithRedactor(Fixed("")))
+
+	src := "123X456"
+	first := m.Mask(src)
+	if want := "123456"; first != want {
+		t.Fatalf("Mask(%q) = %q, want %q", src, first, want)
+	}
+
+	second := m.Mask(first)
+	if want := ""; second != want {
+		t.Errorf("Mask(%q) = %q, want %q: the splice is a value neither pass alone could have located", first, second, want)
+	}
+}
+
+// TestMasker_Mask_mergedRunOverMultiByteRunesCountsRunes holds Fill to
+// counting runes of a value assembled from two patterns' spans, not the bytes
+// of the run: "x日本語x" is x=[0,1), 日=[1,4), 本=[4,7), 語=[7,10), x=[10,11),
+// and the two spans below overlap on 本 and merge into a three-rune run.
+func TestMasker_Mask_mergedRunOverMultiByteRunesCountsRunes(t *testing.T) {
+	m := New(WithPatterns(fixed("p", Span{1, 7}), fixed("q", Span{4, 10})))
+	if got, want := m.Mask("x日本語x"), "x***x"; got != want {
+		t.Errorf("Mask() = %q, want %q", got, want)
+	}
+}
+
+// TestMasker_Mask_callerPatternOverlapsABuiltin holds attribution to the
+// merge/tie-break rule alone, not to whether a span came from a built-in or
+// from a caller's own Pattern, in both directions of overlap and however the
+// two are registered.
+func TestMasker_Mask_callerPatternOverlapsABuiltin(t *testing.T) {
+	wide := MustRegexp("wide", `GITHUB_TOKEN=ghp_[0-9a-z]{36}`)
+	src := "GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+
+	t.Run("a caller pattern starting before the built-in wins attribution however it is registered", func(t *testing.T) {
+		if got, want := New(WithPatterns(GitHubToken()), WithPatterns(wide), WithRedactor(naming)).Mask(src), "<wide>"; got != want {
+			t.Errorf("Mask() = %q, want %q", got, want)
+		}
+		if got, want := New(WithPatterns(wide), WithPatterns(GitHubToken()), WithRedactor(naming)).Mask(src), "<wide>"; got != want {
+			t.Errorf("Mask() = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("which pattern wins does not change what is redacted", func(t *testing.T) {
+		want := strings.Repeat("*", len(src))
+		if got := New(WithPatterns(GitHubToken()), WithPatterns(wide)).Mask(src); got != want {
+			t.Errorf("Mask() = %q, want %q", got, want)
+		}
+		if got := New(WithPatterns(wide), WithPatterns(GitHubToken())).Mask(src); got != want {
+			t.Errorf("Mask() = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("a built-in starting before a looser caller pattern wins attribution", func(t *testing.T) {
+		hexRun := MustRegexp("hex-run", `[0-9a-z]{30}`)
+		src := "ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+		if got, want := New(WithPatterns(GitHubToken()), WithPatterns(hexRun), WithRedactor(naming)).Mask(src), "<github-token>"; got != want {
+			t.Errorf("Mask() = %q, want %q", got, want)
+		}
+	})
+}
+
+// TestMasker_Mask_twoRegexpPatternsOverlap holds two caller-built Regexp
+// patterns to the same merge rule a built-in and a caller pattern are held to
+// above: "Authorization: Bearer \S+" opens before "Bearer [...]+" does, so the
+// merged match is attributed to the pattern that opens the line.
+func TestMasker_Mask_twoRegexpPatternsOverlap(t *testing.T) {
+	t.Run("whole matches overlap", func(t *testing.T) {
+		auth := MustRegexp("auth-header", `Authorization: Bearer \S+`)
+		bearer := MustRegexp("bearer", `Bearer [A-Za-z0-9._-]+`)
+		m := New(WithPatterns(auth, bearer), WithRedactor(naming))
+		src := "Authorization: Bearer abc.def"
+		if got, want := m.Mask(src), "<auth-header>"; got != want {
+			t.Errorf("Mask(%q) = %q, want %q", src, got, want)
+		}
+	})
+
+	t.Run("the matches nest while their mask groups only overlap", func(t *testing.T) {
+		// "id=12-34" is id=[0,3), then the mask group of "outer" spans [3,8)
+		// ("12-34") and the mask group of "inner" spans [6,8) ("34"): the two
+		// matches nest, but it is the mask groups' overlap that a Masker
+		// merges.
+		outer := MustRegexp("outer", `id=(?P<mask>\d+-\d+)`)
+		inner := MustRegexp("inner", `-(?P<mask>\d+)`)
+		m := New(WithPatterns(outer, inner), WithRedactor(naming))
+		src := "id=12-34"
+		if got, want := m.Mask(src), "id=<outer>"; got != want {
+			t.Errorf("Mask(%q) = %q, want %q", src, got, want)
+		}
+	})
+}
+
+// TestMasker_Mask_vendorAccessorsCombineWithoutEnablingOthers drives a Masker
+// built from two vendor accessors concatenated — the README's own idiom for
+// narrowing the set to some vendors and not all — and holds it to redacting
+// both while leaving a third vendor's credential alone: "a Masker scans only
+// with the patterns given to it".
+func TestMasker_Mask_vendorAccessorsCombineWithoutEnablingOthers(t *testing.T) {
+	m := New(WithPatterns(slices.Concat(AWSPatterns(), GitHubPatterns())...))
+
+	awsKey := "AKIA0123456789ABCDEF"
+	githubToken := "ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+	slackToken := "xoxb-0123456789-0123456789012-0123456789abcdefghijklmn"
+	src := awsKey + " " + githubToken + " " + slackToken
+	want := strings.Repeat("*", len(awsKey)) + " " + strings.Repeat("*", len(githubToken)) + " " + slackToken
+
+	if got := m.Mask(src); got != want {
+		t.Errorf("Mask(%q) = %q, want %q", src, got, want)
+	}
+}
+
+// TestMasker_Mask_agreesWithASinglePatternUnderTheFullRegistry holds a value
+// only one built-in locates to being located the same way — no wider, no
+// narrower, not lost — when the Masker scans with the whole registry instead
+// of with that pattern alone, which is the arrangement the gram prefilter is
+// built in and one pattern could in principle shadow or lose another in.
+func TestMasker_Mask_agreesWithASinglePatternUnderTheFullRegistry(t *testing.T) {
+	tests := []struct {
+		name    string
+		pattern Pattern
+		src     string
+	}{
+		{name: "github token", pattern: GitHubToken(), src: "GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"},
+		{name: "aws access key id", pattern: AWSAccessKeyID(), src: "AWS_ACCESS_KEY_ID=AKIA0123456789ABCDEF"},
+		{name: "stripe secret key", pattern: StripeSecretKey(), src: "STRIPE_KEY=sk_live_0123456789abcdef01234567"},
+		{name: "jwt", pattern: JWT(), src: "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			alone := New(WithPatterns(tt.pattern), WithRedactor(Fixed(""))).Mask(tt.src)
+			full := New(WithPatterns(AllBuiltinPatterns()...), WithRedactor(Fixed(""))).Mask(tt.src)
+			if full != alone {
+				t.Errorf("Mask() under the full registry = %q, want %q (same as the pattern alone)", full, alone)
+			}
+		})
+	}
+}
+
+func TestMasker_Mask_atSize(t *testing.T) {
+	t.Run("one span covering a megabyte-scale input", func(t *testing.T) {
+		src := strings.Repeat("a", 1<<20)
+		m := New(WithPatterns(fixed("p", Span{0, len(src)})))
+		want := strings.Repeat("*", len(src))
+		if got := m.Mask(src); got != want {
+			// len(got) alone says nothing here: an unmasked src is 1<<20
+			// runes of "a", the masked want is 1<<20 runes of "*", so a
+			// defect that fails to mask anything at all still produces
+			// output of the right length. Count the asterisks and show
+			// where the output starts differing instead.
+			stars := strings.Count(got, "*")
+			i := strings.IndexFunc(got, func(r rune) bool { return r != '*' })
+			t.Errorf("Mask() produced %d asterisk(s) of %d runes, want %d; first divergence at byte offset %d",
+				stars, len(got), len(want), i)
+		}
+	})
+
+	t.Run("hundreds of thousands of densely overlapping spans merge into one region", func(t *testing.T) {
+		const n = 1<<17 + 3
+		src := strings.Repeat("x", n)
+		var spans []Span
+		for i := 0; i+3 <= n; i++ {
+			spans = append(spans, Span{i, i + 3}) // every span overlaps its neighbour
+		}
+		m := New(WithPatterns(fixed("p", spans...)), WithRedactor(Fixed("X")))
+		if got, want := m.Mask(src), "X"; got != want {
+			t.Errorf("Mask() = %q, want %q", got, want)
+		}
+	})
+}
+
+// TestMasker_Mask_manyOverlappingSpans holds the merge to correctness at a
+// span count no other test in this file reaches: a run built from many
+// overlapping spans, and a run built from many spans sharing a start with
+// growing ends.
+func TestMasker_Mask_manyOverlappingSpans(t *testing.T) {
+	t.Run("a chain of many overlapping spans from one pattern merges into one region", func(t *testing.T) {
+		const n = 100
+		var spans []Span
+		for i := 0; i+3 <= n; i++ {
+			spans = append(spans, Span{i, i + 3})
+		}
+		src := strings.Repeat("a", n)
+
+		if got, want := New(WithPatterns(fixed("chain", spans...)), WithRedactor(naming)).Mask(src), "<chain>"; got != want {
+			t.Errorf("Mask() = %q, want %q", got, want)
+		}
+		fillWant := strings.Repeat("*", n)
+		if got := New(WithPatterns(fixed("chain", spans...))).Mask(src); got != fillWant {
+			t.Errorf("Mask() = %q, want %q", got, fillWant)
+		}
+	})
+
+	t.Run("spans sharing a start and growing merge into one region as wide as the widest", func(t *testing.T) {
+		spans := make([]Span, 30)
+		for i := range spans {
+			spans[i] = Span{0, 2 * (i + 1)} // {0,2}, {0,4}, ..., {0,60}
+		}
+		src := strings.Repeat("a", 60)
+		if got, want := New(WithPatterns(fixed("p", spans...)), WithRedactor(naming)).Mask(src), "<p>"; got != want {
+			t.Errorf("Mask() = %q, want %q", got, want)
+		}
+	})
 }

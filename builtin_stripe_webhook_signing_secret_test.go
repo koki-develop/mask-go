@@ -78,6 +78,11 @@ func Test_StripeWebhookSigningSecret(t *testing.T) {
 			src:  "whsec_0123456789abcdef0123456789awhsec_0123456789abcdef0123456789abcdef",
 			want: []Span{{0, 38}, {33, 71}},
 		},
+		{
+			name: "one secret per line",
+			src:  "whsec_0123456789abcdef0123456789abcdef\nwhsec_0123456789ABCDEF0123456789ABCDEF",
+			want: []Span{{0, 38}, {39, 77}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -190,6 +195,32 @@ func Test_StripeWebhookSigningSecret_noMatch(t *testing.T) {
 			// holds no prefix to be found at however long it runs.
 			name: "a git sha",
 			src:  "0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// A prefix with one letter in the other case. The comparison is
+			// exact rather than folded, so a mix of the two cases is neither
+			// spelling.
+			name: "a prefix with its first letter capitalized",
+			src:  "Whsec_0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a prefix with a letter in the middle capitalized",
+			src:  "whSec_0123456789abcdef0123456789abcdef",
+		},
+		{
+			// The excluded characters at the body's first position rather than
+			// in the middle of an otherwise long enough run: the run each opens
+			// is nothing at all.
+			name: "a hyphen where the body opens",
+			src:  "whsec_-0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "the padding character where the body opens",
+			src:  "whsec_=0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a dot where the body opens",
+			src:  "whsec_.0123456789abcdef0123456789abcdef",
 		},
 	}
 
@@ -473,6 +504,88 @@ func Test_StripeWebhookSigningSecret_insideAnOpaqueRun(t *testing.T) {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_StripeWebhookSigningSecret_nextToRunesAndInvalidBytes(t *testing.T) {
+	// There is no boundary on either side of a match, and neither a multi-byte
+	// rune nor an invalid byte is one: no continuation byte of a rune's
+	// encoding, and no byte above the ASCII range, is a base62 character, so
+	// each ends a run exactly where an ASCII punctuation byte would and neither
+	// stands in the way of a secret being located in front of or behind it.
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			// 日本語 is three runes of three bytes each, so the secret begins at
+			// byte nine.
+			name: "a secret after japanese text",
+			src:  "日本語whsec_0123456789abcdef0123456789abcdef",
+			want: []Span{{9, 47}},
+		},
+		{
+			name: "a secret before japanese text",
+			src:  "whsec_0123456789abcdef0123456789abcdef日本語",
+			want: []Span{{0, 38}},
+		},
+		{
+			name: "a secret behind an invalid byte",
+			src:  "\xffwhsec_0123456789abcdef0123456789abcdef",
+			want: []Span{{1, 39}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := StripeWebhookSigningSecret().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_StripeWebhookSigningSecret_settlesTheCandidateTheInputCutShort(t *testing.T) {
+	// What this scan settles where the input ends inside a candidate: the
+	// candidate's own start, whether it is a piece of the prefix standing at
+	// the end of the input or the whole prefix with a body too short to judge.
+	tests := []struct {
+		name   string
+		src    string
+		retain int
+	}{
+		{
+			// "whs" stands at the end of the input and is a proper prefix of
+			// whsec_.
+			name:   "the input ends inside a piece of the prefix",
+			src:    "log whs",
+			retain: 4,
+		},
+		{
+			// The whole prefix stands, and behind it a body of twenty
+			// characters where thirty-two are asked for: more of it could
+			// still arrive, so the candidate starting at the prefix is
+			// unsettled.
+			name:   "the input ends inside a body short of the floor",
+			src:    "log whsec_0123456789abcdef0123",
+			retain: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, retain := StripeWebhookSigningSecret().Find(tt.src); retain != tt.retain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.retain)
+			}
+		})
+	}
+
+	// The other side of the same claim: nothing behind a whole secret is held
+	// back, however much text stands in front of it.
+	src := "log whsec_0123456789abcdef0123456789abcdef "
+	if _, retain := StripeWebhookSigningSecret().Find(src); retain != len(src) {
+		t.Errorf("Find(%q) retain = %d, want %d", src, retain, len(src))
 	}
 }
 

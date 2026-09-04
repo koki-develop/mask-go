@@ -87,6 +87,29 @@ func Test_NotionAPIToken(t *testing.T) {
 			src:  "secret_0123456789abcdef0123456789abcdef01234secret_0123456789abcdef0123456789abcdef0123456789a",
 			want: []Span{{0, 50}, {44, 94}},
 		},
+		{
+			// base62 is the letters of both cases and the digits behind either
+			// prefix, and the main table above pins it for ntn_ alone: this is
+			// the same claim for the older format.
+			name: "an older-format body written in capitals",
+			src:  "secret_0123456789ABCDEF0123456789ABCDEF0123456789A",
+			want: []Span{{0, 50}},
+		},
+		{
+			// The newer prefix's own underscore stands where a body of the
+			// older prefix would be reading its fifth character, so a whole
+			// ntn_ token can open right where a secret_ candidate has already
+			// been declined for carrying an underscore too soon — the two
+			// prefixes crowded together rather than one nested in the other.
+			name: "the newer prefix in front of an older-format token",
+			src:  "ntn_secret_0123456789abcdef0123456789abcdef0123456789a",
+			want: []Span{{4, 54}},
+		},
+		{
+			name: "the older prefix in front of a newer-format token",
+			src:  "secret_ntn_0123456789abcdef0123456789abcdef0123456789abcd",
+			want: []Span{{7, 57}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -187,6 +210,21 @@ func Test_NotionAPIToken_noMatch(t *testing.T) {
 			name: "an environment variable name",
 			src:  "NOTION_API_KEY=",
 		},
+		{
+			// The three run-enders pinned inside an ntn_ body above hold the
+			// same way behind the older prefix, since neither prefix's
+			// alphabet differs.
+			name: "a hyphen inside an older-format body",
+			src:  "secret_0123456789abcdef0123-456789abcdef0123456789",
+		},
+		{
+			name: "a further underscore inside an older-format body",
+			src:  "secret_0123456789abcdef0123_456789abcdef0123456789",
+		},
+		{
+			name: "an older-format body broken by a space",
+			src:  "secret_0123456789abcdef0123 456789abcdef0123456789",
+		},
 	}
 
 	for _, tt := range tests {
@@ -285,6 +323,23 @@ func Test_NotionAPIToken_nextToWordCharacters(t *testing.T) {
 			src:  "ntn_0123456789abcdef0123456789abcdef0123456789abcd0",
 			want: "**************************************************0",
 		},
+		{
+			name: "letter before an older-format token",
+			src:  "xsecret_0123456789abcdef0123456789abcdef0123456789a",
+			want: "x**************************************************",
+		},
+		{
+			// A multi-byte rune is no word character, but it is worth pinning
+			// beside the ASCII cases above: no boundary is asked of it either.
+			name: "a multi-byte rune before and after",
+			src:  "日本語ntn_0123456789abcdef0123456789abcdef0123456789abcd日本語",
+			want: "日本語**************************************************日本語",
+		},
+		{
+			name: "an invalid utf-8 byte before",
+			src:  "\xffntn_0123456789abcdef0123456789abcdef0123456789abcd",
+			want: "\xff**************************************************",
+		},
 	}
 
 	m := New(WithPatterns(NotionAPIToken()))
@@ -327,6 +382,21 @@ func Test_NotionAPIToken_leavesWhatFollowsAlone(t *testing.T) {
 		{
 			name: "underscored word",
 			src:  "ntn_0123456789abcdef0123456789abcdef0123456789abcd_suffix",
+			want: "**************************************************_suffix",
+		},
+		{
+			name: "sentence, older format",
+			src:  "the token is secret_0123456789abcdef0123456789abcdef0123456789a.",
+			want: "the token is **************************************************.",
+		},
+		{
+			name: "dashed word, older format",
+			src:  "secret_0123456789abcdef0123456789abcdef0123456789a-suffix",
+			want: "**************************************************-suffix",
+		},
+		{
+			name: "underscored word, older format",
+			src:  "secret_0123456789abcdef0123456789abcdef0123456789a_suffix",
 			want: "**************************************************_suffix",
 		},
 	}
@@ -435,6 +505,78 @@ func Test_NotionAPIToken_aDigestBehindThePrefix(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_NotionAPIToken_holdsATokenTheInputCutShort(t *testing.T) {
+	// What Find's second return settles. builtin_scan.go and the rationale in
+	// builtin_notion_api_token.go give two shapes: a piece of a prefix
+	// standing at the end of the input, and a candidate the end of the input
+	// cut short. Everything else is settled to the end of the input, since
+	// nothing there could still become a token.
+	tests := []struct {
+		name   string
+		src    string
+		retain int
+	}{
+		{
+			// Neither prefix, nor a piece of one, stands anywhere in the text,
+			// so the whole of it is settled.
+			name:   "no credential at all",
+			src:    "there is no credential in this sentence",
+			retain: len("there is no credential in this sentence"),
+		},
+		{
+			// The candidate is found by the underscore its own prefix closes
+			// with, so a body one character short of a whole ntn_ token, with
+			// nothing after it, ends in a candidate the input cut short: the
+			// prefix and the forty-five characters that follow are held.
+			name:   "a candidate the input cut short of the count",
+			src:    "xxx ntn_0123456789abcdef0123456789abcdef0123456789abc",
+			retain: 4,
+		},
+		{
+			// A body cut short by fewer characters still leaves the same
+			// candidate open.
+			name:   "a shorter candidate the input cut short of the count",
+			src:    "xxx ntn_0123456789",
+			retain: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, retain := NotionAPIToken().Find(tt.src); retain != tt.retain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.retain)
+			}
+		})
+	}
+}
+
+func Test_NotionAPIToken_scanIsLinear(t *testing.T) {
+	// The scan keeps no cursor, so what has to be bounded is the work a single
+	// candidate does rather than work repeated across candidates: it reads at
+	// most fifty bytes and stops. A line dense in anchors holds a candidate at
+	// every underscore, and the bound here is far above a linear scan and far
+	// below a quadratic one.
+	sources := map[string]string{
+		// An anchor at every byte, none of them opening a candidate at all,
+		// which is the cheapest way a position is declined.
+		"an anchor every byte": strings.Repeat("_", 2000000),
+		// A candidate at every four characters, none with a body long
+		// enough to be one.
+		"a candidate every four characters": strings.Repeat("ntn_", 500000),
+		// A candidate at every seven characters, under the longer prefix.
+		"a candidate every seven characters": strings.Repeat("secret_", 300000),
+		// One candidate whose body is the whole line, which is the walk
+		// finding no token because the run never closes on a count of
+		// exactly fifty.
+		"a body that runs the length of the line": "ntn_" + strings.Repeat("a", 1800000),
+		// A token beginning inside every token before it, so every candidate
+		// the scan opens is a token and none of the walks is wasted.
+		"a token beginning inside every token": strings.Repeat("ntn_0123456789abcdef0123456789abcdef0123456789abcd", 40000),
+	}
+
+	checkScanIsLinear(t, NotionAPIToken(), sources)
 }
 
 func Test_NotionAPIToken_spansAreAscending(t *testing.T) {

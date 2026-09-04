@@ -62,6 +62,30 @@ case:     an oauth token in a bearer token header
 in:       Authorization: Bearer sbp_oauth_0123456789abcdef0123456789abcdef01234567
 out:      Authorization: Bearer «supabase-access-token»
 
+case:     a token in a yaml value
+in:       supabase:\n  access_token: sbp_0123456789abcdef0123456789abcdef01234567
+out:      supabase:\n  access_token: «supabase-access-token»
+
+case:     a token in a query string
+in:       https://api.supabase.com/v1/oauth/callback?access_token=sbp_oauth_0123456789abcdef0123456789abcdef01234567&state=xyz
+out:      https://api.supabase.com/v1/oauth/callback?access_token=«supabase-access-token»&state=xyz
+
+case:     a token in a netrc entry
+in:       machine api.supabase.com login token password sbp_0123456789abcdef0123456789abcdef01234567
+out:      machine api.supabase.com login token password «supabase-access-token»
+
+case:     a token added in a diff
+in:       +SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567
+out:      +SUPABASE_ACCESS_TOKEN=«supabase-access-token»
+
+case:     a token in a markdown code span
+in:       Set `SUPABASE_ACCESS_TOKEN=sbp_0123456789abcdef0123456789abcdef01234567` before running the script.
+out:      Set `SUPABASE_ACCESS_TOKEN=«supabase-access-token»` before running the script.
+
+case:     a token in a ci job log line
+in:       [2026-08-17T00:00:00Z] INFO Authenticating with sbp_0123456789abcdef0123456789abcdef01234567
+out:      [2026-08-17T00:00:00Z] INFO Authenticating with «supabase-access-token»
+
 # The alphabet. A body is written in lowercase hexadecimal digits, which is what
 # the validator asks for and what it refuses an uppercase token against, with a
 # test named for refusing one. The letters stop at f, so the run of lowercase
@@ -94,6 +118,14 @@ case:     a hyphen inside the body
 in:       sbp_0123456789abcdef-123456789abcdef01234567
 out:      sbp_0123456789abcdef-123456789abcdef01234567
 
+case:     a letter past f at the first body character
+in:       sbp_g0123456789abcdef0123456789abcdef0123456
+out:      sbp_g0123456789abcdef0123456789abcdef0123456
+
+case:     an uppercase letter at the first body character of an oauth token
+in:       sbp_oauth_G123456789abcdef0123456789abcdef01234567
+out:      sbp_oauth_G123456789abcdef0123456789abcdef01234567
+
 # The lengths either side of the count. Forty is a count in the vendor's own
 # expression with a test on each side of it, so like the AWS access key ID, the
 # Google API key, the SendGrid key, the Sentry token, the Notion token and the
@@ -115,6 +147,10 @@ out:      sbp_oauth_0123456789abcdef0123456789abcdef0123456
 
 case:     a body run one character longer is a token and the character after it
 in:       sbp_0123456789abcdef0123456789abcdef012345678
+out:      «supabase-access-token»8
+
+case:     an oauth body run one character longer is a token and the character after it
+in:       sbp_oauth_0123456789abcdef0123456789abcdef012345678
 out:      «supabase-access-token»8
 
 # What a token may be written against. There is no boundary on either side of
@@ -170,6 +206,18 @@ out:      «supabase-access-token»«supabase-access-token»
 case:     two tokens separated by a space
 in:       sbp_0123456789abcdef0123456789abcdef01234567 sbp_oauth_0123456789abcdef0123456789abcdef01234567
 out:      «supabase-access-token» «supabase-access-token»
+
+case:     three tokens with nothing between them
+in:       sbp_0123456789abcdef0123456789abcdef01234567sbp_0123456789abcdef0123456789abcdef01234567sbp_0123456789abcdef0123456789abcdef01234567
+out:      «supabase-access-token»«supabase-access-token»«supabase-access-token»
+
+case:     an oauth prefix in front of an oauth token
+in:       sbp_oauth_sbp_oauth_0123456789abcdef0123456789abcdef01234567
+out:      sbp_oauth_«supabase-access-token»
+
+case:     a prefix in front of an oauth token
+in:       sbp_sbp_oauth_0123456789abcdef0123456789abcdef01234567
+out:      sbp_«supabase-access-token»
 
 # A digest written behind the prefix, which this format pays for where the
 # Grafana one rules it out. There the character thirty-two past the prefix has to
@@ -256,6 +304,38 @@ case:     a log line
 in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.supabase.com/v1/projects
 out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.supabase.com/v1/projects
 
+# A token written straight against text of every other shape: a multi-byte
+# rune with nothing between it and the token, an invalid byte, a tab and a
+# line ending written the network way. A token is located wherever it is
+# written, with no word boundary either side, so none of these hold it back.
+
+case:     a token immediately against japanese text
+in:       日本語sbp_0123456789abcdef0123456789abcdef01234567日本語
+out:      日本語«supabase-access-token»日本語
+
+case:     a token immediately followed by an invalid byte
+in:       sbp_0123456789abcdef0123456789abcdef01234567\xff\xfe
+out:      «supabase-access-token»\xff\xfe
+
+case:     a token between tabs
+in:       \tsbp_0123456789abcdef0123456789abcdef01234567\t
+out:      \t«supabase-access-token»\t
+
+case:     a token followed by a windows line ending
+in:       sbp_0123456789abcdef0123456789abcdef01234567\r\n
+out:      «supabase-access-token»\r\n
+
+# A candidate cut short by an ellipsis or elided in its middle, which is not a
+# run of forty hexadecimal characters and so is not a token.
+
+case:     a token cut short by an ellipsis
+in:       the token is sbp_0123456789abcdef0123456789abcdef0123...
+out:      the token is sbp_0123456789abcdef0123456789abcdef0123...
+
+case:     a token with its middle elided
+in:       sbp_0123456789...abcdef0123456789abcdef01234567
+out:      sbp_0123456789...abcdef0123456789abcdef01234567
+
 # The other credentials Supabase issues, none of which this pattern reads. The
 # project API keys open with sb_publishable_ and sb_secret_ and are located by
 # patterns of their own; the anon and service_role keys those replaced are JWTs
@@ -284,3 +364,24 @@ out:      sb_publishable_0123456789abcdef012345_01234567
 case:     an anon key of the format the project keys replaced
 in:       eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.0123456789abcdef
 out:      eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.0123456789abcdef
+
+# The same boundary with nothing standing between the two credentials rather
+# than elsewhere in the text: a project key carries no letter the prefix here
+# opens with in its own prefix, so a token written straight against one is
+# located whole and the project key beside it is left untouched.
+
+case:     a token immediately followed by a project secret key
+in:       sbp_0123456789abcdef0123456789abcdef01234567sb_secret_0123456789abcdef012345_01234567
+out:      «supabase-access-token»sb_secret_0123456789abcdef012345_01234567
+
+case:     a project secret key immediately followed by a token
+in:       sb_secret_0123456789abcdef012345_01234567sbp_0123456789abcdef0123456789abcdef01234567
+out:      sb_secret_0123456789abcdef012345_01234567«supabase-access-token»
+
+case:     a token immediately followed by a project publishable key
+in:       sbp_0123456789abcdef0123456789abcdef01234567sb_publishable_0123456789abcdef012345_01234567
+out:      «supabase-access-token»sb_publishable_0123456789abcdef012345_01234567
+
+case:     a project publishable key immediately followed by a token
+in:       sb_publishable_0123456789abcdef012345_01234567sbp_0123456789abcdef0123456789abcdef01234567
+out:      sb_publishable_0123456789abcdef012345_01234567«supabase-access-token»

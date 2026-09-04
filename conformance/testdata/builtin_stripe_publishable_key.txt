@@ -132,6 +132,19 @@ case:     a snake_case name closing on the publishable key type
 in:       the topk_live_0123456789abcdef01234567 fixture was rebuilt
 out:      the topk_live_0123456789abcdef01234567 fixture was rebuilt
 
+# What excuses a key glued to a word rather than turning it away: twenty-two
+# letters and digits standing unbroken in front of the prefix, which is a body
+# and not the tail of a name. One character short of that is not enough, so the
+# letter in front of the prefix turns the key away exactly as one letter would.
+
+case:     a run of twenty-two letters and digits excusing a key glued to a word
+in:       _0123456789abcdefghijklpk_live_0123456789abcdef01234567
+out:      _0123456789abcdefghijkl«stripe-publishable-key»
+
+case:     a run one short of what excuses a key glued to a word
+in:       _0123456789abcdefghijkpk_live_0123456789abcdef01234567
+out:      _0123456789abcdefghijkpk_live_0123456789abcdef01234567
+
 case:     a key at the end of a sentence
 in:       the key is pk_live_0123456789abcdef01234567.
 out:      the key is «stripe-publishable-key».

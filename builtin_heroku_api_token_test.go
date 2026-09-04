@@ -68,6 +68,14 @@ func Test_HerokuAPIToken(t *testing.T) {
 			src:  "new=HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab old=HRKU-01234567-89ab-cdef-0123-456789abcdef",
 			want: []Span{{4, 69}, {74, 115}},
 		},
+		{
+			// The alphabet is base64url, and the run every other case here is
+			// written in happens to be lowercase. A body drawn from the upper
+			// half of the letters is a token exactly the same.
+			name: "a body written in capitals",
+			src:  "HRKU-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789AB",
+			want: []Span{{0, 65}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -138,6 +146,24 @@ func Test_HerokuAPIToken_noMatch(t *testing.T) {
 		{
 			name: "a uuid one character short",
 			src:  "HRKU-01234567-89ab-cdef-0123-456789abcde",
+		},
+		{
+			// Hexadecimal without the separators of a UUID: the shorter
+			// reading's exact width with the layout removed entirely.
+			name: "thirty-six hexadecimal characters with no separators",
+			src:  "HRKU-012345678901234567890123456789012345",
+		},
+		{
+			name: "a uuid whose separators are underscores",
+			src:  "HRKU-01234567_89ab_cdef_0123_456789abcdef",
+		},
+		{
+			name: "a prefix with one letter lowered",
+			src:  "HRKu-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+		},
+		{
+			name: "the anchor letter lowered",
+			src:  "hRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
 		},
 		{
 			name: "prose",
@@ -253,6 +279,82 @@ func Test_HerokuAPIToken_nextToWordCharacters(t *testing.T) {
 	}
 }
 
+func Test_HerokuAPIToken_theUUIDShapeNextToWordCharacters(t *testing.T) {
+	// The word-boundary claim above is written out for the longer shape alone;
+	// the shorter reading carries no boundary either, which these drive against
+	// a whole token of that shape.
+	const token = "HRKU-01234567-89ab-cdef-0123-456789abcdef"
+
+	tests := []struct {
+		name  string
+		src   string
+		start int
+	}{
+		{
+			name:  "a token of the shorter shape after a letter",
+			src:   "x" + token,
+			start: 1,
+		},
+		{
+			name:  "a token of the shorter shape after an underscore",
+			src:   "HEROKU_API_KEY_" + token,
+			start: 15,
+		},
+		{
+			name:  "a word written against a token of the shorter shape",
+			src:   token + "zz",
+			start: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			want := []Span{{tt.start, tt.start + len(token)}}
+			if got, _ := HerokuAPIToken().Find(tt.src); !slices.Equal(got, want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, want)
+			}
+		})
+	}
+}
+
+func Test_HerokuAPIToken_nextToNonASCIIAndInvalidBytes(t *testing.T) {
+	// A token is located wherever it is written, with no word boundary either
+	// side, and neither a multi-byte rune nor an invalid UTF-8 byte is a
+	// character of any alphabet this pattern reads — so both leave a token's
+	// span exactly where it would otherwise be.
+	const token = "HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab"
+
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			name: "a token between japanese",
+			src:  "日本語" + token + "日本語",
+			want: []Span{{9, 74}},
+		},
+		{
+			name: "a token after an invalid byte",
+			src:  "\xff" + token,
+			want: []Span{{1, 66}},
+		},
+		{
+			name: "a token before an invalid byte",
+			src:  token + "\xff",
+			want: []Span{{0, 65}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := HerokuAPIToken().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_HerokuAPIToken_leavesWhatFollowsAlone(t *testing.T) {
 	// A token is sixty-five characters, or forty-one in the shorter shape, and
 	// no more — so what is written after one stays whatever it is written in.
@@ -338,6 +440,31 @@ func Test_HerokuAPIToken_theUUIDReadingInsideTheLongerOne(t *testing.T) {
 	}
 }
 
+func Test_HerokuAPIToken_twoShorterTokensWithNothingBetween(t *testing.T) {
+	// Two tokens of the shorter shape, one written straight after the other. A
+	// UUID is written in base64url, so the sixty characters at offset 5 of the
+	// concatenation — the last thirty-six of the first token and the first
+	// twenty-four of the second, prefix included — are themselves all
+	// base64url, and the longer reading matches there first. The shorter
+	// reading is then tried at the second token's own prefix, where the
+	// longer reading runs past the end of the input, and matches there too.
+	//
+	// So the two overlapping spans a Masker resolves into one cover the whole
+	// of both tokens, and Mask redacts the concatenation entirely rather than
+	// leaving any of the second token's tail in the clear.
+	src := "HRKU-01234567-89ab-cdef-0123-456789abcdefHRKU-01234567-89ab-cdef-0123-456789abcdef"
+	want := []Span{{0, 65}, {41, 82}}
+
+	if got, _ := HerokuAPIToken().Find(src); !slices.Equal(got, want) {
+		t.Fatalf("Find(%q) = %v, want %v", src, got, want)
+	}
+
+	m := New(WithPatterns(HerokuAPIToken()))
+	if got, want := m.Mask(src), strings.Repeat("*", len(src)); got != want {
+		t.Errorf("Mask(%q) = %q, want %q", src, got, want)
+	}
+}
+
 func Test_HerokuAPIToken_holdsATokenTheInputCutShort(t *testing.T) {
 	// The other half of the order the two readings are walked in, which no span
 	// above reports. A token of the longer shape whose body opens on a UUID
@@ -416,6 +543,37 @@ func Test_HerokuAPIToken_aTokenBeginningInsideAnother(t *testing.T) {
 			}
 			if got, want := m.Mask(tt.src), strings.Repeat("*", len(tt.src)); got != want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, want)
+			}
+		})
+	}
+}
+
+// Test_HerokuAPIToken_theBytesJustOutsideTheAlphabet drives a byte the
+// alphabet forbids at the front of a body and at its last character, with a
+// run of the alphabet otherwise long enough to be one either side of it.
+// builtins_test.go's generic properties never place such a byte there: every
+// input they build from a sample is a whole sample or a prefix of one, so the
+// body of a candidate is either entirely valid or cut off, and never wrong at
+// one specific character.
+func Test_HerokuAPIToken_theBytesJustOutsideTheAlphabet(t *testing.T) {
+	// A body of sixty valid characters, the same run every other case in this
+	// file is built from.
+	const validBody = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab"
+
+	forbidden := []byte{'.', '+', '/', ':', '@', '[', '`', '{'}
+
+	for _, c := range forbidden {
+		front := "HRKU-" + string(c) + validBody[1:]
+		t.Run("at the front of the body: "+string(c), func(t *testing.T) {
+			if got, _ := HerokuAPIToken().Find(front); got != nil {
+				t.Errorf("Find(%q) = %v, want no span", front, got)
+			}
+		})
+
+		back := "HRKU-" + validBody[:len(validBody)-1] + string(c)
+		t.Run("at the last character of the body: "+string(c), func(t *testing.T) {
+			if got, _ := HerokuAPIToken().Find(back); got != nil {
+				t.Errorf("Find(%q) = %v, want no span", back, got)
 			}
 		})
 	}

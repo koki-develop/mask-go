@@ -34,6 +34,18 @@ case:     a token in a json body
 in:       {"api_token":"r8_0123456789abcdef0123456789abcdef01234"}
 out:      {"api_token":"«replicate-api-token»"}
 
+case:     a token in yaml
+in:       replicate_api_token: r8_0123456789abcdef0123456789abcdef01234
+out:      replicate_api_token: «replicate-api-token»
+
+case:     a token in a query string
+in:       https://api.replicate.com/v1/predictions?token=r8_0123456789abcdef0123456789abcdef01234&limit=10
+out:      https://api.replicate.com/v1/predictions?token=«replicate-api-token»&limit=10
+
+case:     a token in a markdown code span
+in:       `r8_0123456789abcdef0123456789abcdef01234`
+out:      `«replicate-api-token»`
+
 # The alphabet the thirty-seven characters are written in: the letters of both
 # cases with the digits, which is what the tokens kingfisher publishes as its
 # examples are spelled in. Replicate states the length and not the alphabet, so
@@ -44,6 +56,14 @@ out:      {"api_token":"«replicate-api-token»"}
 
 case:     an uppercase body
 in:       r8_0123456789ABCDEF0123456789ABCDEF01234
+out:      «replicate-api-token»
+
+case:     a body written in the letters past f
+in:       r8_0123456789abcdefghijklmnopqrstuvwxyzG
+out:      «replicate-api-token»
+
+case:     a body written in the letters past f in uppercase
+in:       r8_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZa
 out:      «replicate-api-token»
 
 case:     a body carrying a hyphen
@@ -94,6 +114,14 @@ case:     a token at the end of a sentence
 in:       the token is r8_0123456789abcdef0123456789abcdef01234.
 out:      the token is «replicate-api-token».
 
+case:     a token immediately against japanese on both sides
+in:       鍵r8_0123456789abcdef0123456789abcdef01234鍵
+out:      鍵«replicate-api-token»鍵
+
+case:     a token against an invalid byte
+in:       \xffr8_0123456789abcdef0123456789abcdef01234\xff
+out:      \xff«replicate-api-token»\xff
+
 # Two tokens written together. A token can begin inside another, and the
 # underscore is what bounds where: a candidate opens at an underscore two
 # characters behind its start, and the one underscore a token holds is the one
@@ -107,6 +135,10 @@ out:      the token is «replicate-api-token».
 case:     two tokens with nothing between them
 in:       r8_0123456789abcdef0123456789abcdef01234r8_0123456789abcdef0123456789abcdef01234
 out:      «replicate-api-token»«replicate-api-token»
+
+case:     three tokens separated by spaces
+in:       r8_0123456789abcdef0123456789abcdef01234 r8_0123456789ABCDEF0123456789ABCDEF01234 r8_0123456789abcdef0123456789abcdef01234
+out:      «replicate-api-token» «replicate-api-token» «replicate-api-token»
 
 case:     a token beginning at the end of the token before it
 in:       r8_0123456789abcdef0123456789abcdef012r8_0123456789abcdef0123456789abcdef01234
@@ -169,6 +201,14 @@ out:      r8_0123456789abcdef 123456789abcdef01234
 case:     a character outside the alphabet in the body
 in:       r8_0123456789abcdef.123456789abcdef01234
 out:      r8_0123456789abcdef.123456789abcdef01234
+
+case:     a hyphen straight behind the prefix
+in:       r8_-123456789abcdef0123456789abcdef01234
+out:      r8_-123456789abcdef0123456789abcdef01234
+
+case:     an underscore straight behind the prefix
+in:       r8__123456789abcdef0123456789abcdef01234
+out:      r8__123456789abcdef0123456789abcdef01234
 
 case:     a run of the right length opening with no prefix
 in:       xxx0123456789abcdef0123456789abcdef01234

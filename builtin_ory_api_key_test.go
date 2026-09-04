@@ -120,6 +120,30 @@ func Test_OryAPIKey_noMatch(t *testing.T) {
 			src:  "ory_pat_0123456789abcdef_123456789abcdef",
 		},
 		{
+			// The same alphabet boundary as the two cases above, held under the
+			// workspace prefix rather than under ory_pat_ alone: every prefix
+			// reads its body in the same alphabet.
+			name: "a workspace key whose body carries a hyphen",
+			src:  "ory_wak_0123456789abcdef-123456789abcdef",
+		},
+		{
+			name: "the other project key whose body carries an underscore",
+			src:  "ory_apikey_0123456789abcdef_123456789abcdef",
+		},
+		{
+			// A word that opens on a kind but carries one more letter before
+			// the separator. The loop matches pat, finds x rather than the
+			// separator directly behind it and gives up on the candidate
+			// without trying apikey or wak — so no key of any kind is found
+			// here.
+			name: "a kind word with a letter appended",
+			src:  "ory_patx_0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "the workspace kind with a letter appended",
+			src:  "ory_waks_0123456789abcdef0123456789abcdef",
+		},
+		{
 			name: "an uppercase prefix",
 			src:  "ORY_PAT_0123456789abcdef0123456789abcdef",
 		},
@@ -629,6 +653,38 @@ func Test_OryAPIKey_aDigestBehindThePrefix(t *testing.T) {
 	}
 }
 
+func Test_OryAPIKey_settlesNothingAboutAnOpenRun(t *testing.T) {
+	// A key standing at the very end of the input closes no run: more text
+	// could still carry it on, so the scan holds the candidate open from its
+	// own start rather than reporting the input settled up to the span it
+	// already found.
+	src := "ory_pat_0123456789abcdef0123456789abcdef"
+
+	spans, retain := OryAPIKey().Find(src)
+	if want := []Span{{0, 40}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != 0 {
+		t.Errorf("Find(%q) settled from %d, want 0", src, retain)
+	}
+}
+
+func Test_OryAPIKey_settlesOnceTheRunCloses(t *testing.T) {
+	// The other side of the same decision. A period does not belong to the
+	// alphabet a body is written in, so it closes the run behind the key: no
+	// text arriving after it can widen what was already found, and the whole
+	// of the input is settled.
+	src := "the key is ory_pat_0123456789abcdef0123456789abcdef."
+
+	spans, retain := OryAPIKey().Find(src)
+	if want := []Span{{11, 51}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != len(src) {
+		t.Errorf("Find(%q) settled %d of %d, want the whole of it", src, retain, len(src))
+	}
+}
+
 func Test_oryAPIKeyOpening(t *testing.T) {
 	// The scan resumes one byte past the start of a candidate because a key can
 	// begin inside the one before it, and that holds only while the opening is
@@ -827,16 +883,20 @@ func FuzzOryAPIKey_matchesReference(f *testing.F) {
 	f.Add("ORY_API_KEY=ory_pat_0123456789abcdef0123456789abcdef")
 	f.Add("ory_apikey_0123456789abcdef0123456789abcdef")
 	f.Add("ory_wak_0123456789ABCDEF0123456789ABCDEF")
-	f.Add("ory_pat_0123456789abcdef0123456789abcde")   // one short of a body
-	f.Add("ory_pat_0123456789abcdef0123456789abcdef0") // and a run longer than one
-	f.Add("ory_pat_0123456789abcdef-123456789abcdef")  // a hyphen, which base64url admits and base62 does not
-	f.Add("ory_pat_0123456789abcdef_123456789abcdef")  // an underscore, likewise
-	f.Add("ory_pat_0123456789abcdef.123456789abcdef")  // a dot ends the body
-	f.Add("ORY_PAT_0123456789abcdef0123456789abcdef")  // an uppercase prefix
-	f.Add("ory-pat-0123456789abcdef0123456789abcdef")  // hyphens where the prefix carries underscores
-	f.Add("ory_pat0123456789abcdef0123456789abcdef")   // the prefix without its closing underscore
-	f.Add("ory_0123456789abcdef0123456789abcdef")      // the opening with no word naming a kind
-	f.Add("ory_key_0123456789abcdef0123456789abcdef")  // a word no key is issued with
+	f.Add("ory_pat_0123456789abcdef0123456789abcde")     // one short of a body
+	f.Add("ory_pat_0123456789abcdef0123456789abcdef0")   // and a run longer than one
+	f.Add("ory_pat_0123456789abcdef-123456789abcdef")    // a hyphen, which base64url admits and base62 does not
+	f.Add("ory_pat_0123456789abcdef_123456789abcdef")    // an underscore, likewise
+	f.Add("ory_wak_0123456789abcdef-123456789abcdef")    // the same hyphen, under the workspace prefix
+	f.Add("ory_apikey_0123456789abcdef_123456789abcdef") // the same underscore, under the other project prefix
+	f.Add("ory_patx_0123456789abcdef0123456789abcdef")   // a kind word with a letter appended
+	f.Add("ory_waks_0123456789abcdef0123456789abcdef")
+	f.Add("ory_pat_0123456789abcdef.123456789abcdef") // a dot ends the body
+	f.Add("ORY_PAT_0123456789abcdef0123456789abcdef") // an uppercase prefix
+	f.Add("ory-pat-0123456789abcdef0123456789abcdef") // hyphens where the prefix carries underscores
+	f.Add("ory_pat0123456789abcdef0123456789abcdef")  // the prefix without its closing underscore
+	f.Add("ory_0123456789abcdef0123456789abcdef")     // the opening with no word naming a kind
+	f.Add("ory_key_0123456789abcdef0123456789abcdef") // a word no key is issued with
 	f.Add("ory_pat_0123456789abcdef0123456789abcdef-suffix")
 	f.Add("ory_pat_0123456789abcdef0123456789abcdef_suffix")
 	f.Add("ory_pat_0123456789abcdef0123456789abcdef\nory_wak_0123456789ABCDEF0123456789ABCDEF")

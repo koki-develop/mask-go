@@ -139,6 +139,45 @@ func Test_CloudflareAPIKey_noMatch(t *testing.T) {
 			src:  "cfk_0123456789abcdef_123456789abcdef0123456789abcdef",
 		},
 		{
+			// A hyphen at the first and at the fortieth character of the
+			// body — the character the prefix hands the secret and the one
+			// standing immediately in front of the checksum — rather than in
+			// the middle of the secret, where the existing case above breaks
+			// it.
+			name: "a hyphen at the first character of the secret",
+			src:  "cfk_-123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a hyphen at the last character of the secret",
+			src:  "cfk_0123456789abcdef0123456789abcdef0123456-89abcdef",
+		},
+		{
+			name: "a dot inside the secret",
+			src:  "cfk_0123456789.bcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a dot inside the checksum",
+			src:  "cfk_0123456789abcdef0123456789abcdef0123456789abc.ef",
+		},
+		{
+			// A letter past f in the middle of the eight checksum
+			// characters, rather than at either end of them.
+			name: "a letter past f in the middle of the checksum",
+			src:  "cfk_0123456789abcdef0123456789abcdef0123456789agcdef",
+		},
+		{
+			name: "a capital at the start of the prefix",
+			src:  "Cfk_0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a capital at the end of the prefix",
+			src:  "cfK_0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a body broken by an invalid byte",
+			src:  "cfk_0123456789abcdef\xff123456789abcdef0123456789abcdef",
+		},
+		{
 			name: "a key broken by a space",
 			src:  "cfk_0123456789abcdef0123456789 abcdef0123456789abcdef",
 		},
@@ -277,6 +316,13 @@ func Test_CloudflareAPIKey_nextToWordCharacters(t *testing.T) {
 			name: "a character of the checksum's class after",
 			src:  "cfk_0123456789abcdef0123456789abcdef0123456789abcdef0",
 			want: "****************************************************0",
+		},
+		{
+			// A multi-byte rune flush against the key on both sides, with no
+			// space between them.
+			name: "a multi-byte rune flush against the key on both sides",
+			src:  "日本語cfk_0123456789abcdef0123456789abcdef0123456789abcdef日本語",
+			want: "日本語****************************************************日本語",
 		},
 	}
 
@@ -503,6 +549,65 @@ func Test_CloudflareAPIKey_scanIsLinear(t *testing.T) {
 	}
 
 	checkScanIsLinear(t, CloudflareAPIKey(), sources)
+}
+
+// Test_CloudflareAPIKey_settlesWhatTheInputCutShort holds Find's second
+// return to the offset in front of which nothing further back can still
+// become a key, which is either a piece of the prefix standing at the end of
+// the input or a candidate the end of the input cut short. What every
+// built-in owes about this offset over generated text and over the samples is
+// driven in builtins_test.go and fuzz_test.go; what is written out here is
+// which inputs of this pattern's own shape hold anything back, since nothing
+// else names them.
+func Test_CloudflareAPIKey_settlesWhatTheInputCutShort(t *testing.T) {
+	const key = "cfk_0123456789abcdef0123456789abcdef0123456789abcdef"
+
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			name: "the prefix alone",
+			src:  "cfk_",
+			want: 0,
+		},
+		{
+			name: "a body the end of the input cut short",
+			src:  "cfk_0123456789abcdef0123456789ab",
+			want: 0,
+		},
+		{
+			// A whole key reaching the end of the input. Nothing is read
+			// behind the count, and the key's own alphabets carry none of
+			// the bytes the prefix is written with at the position a piece
+			// of it would have to close on, so nothing is held back.
+			name: "a whole key reaching the end of the input",
+			src:  key,
+			want: 52,
+		},
+		{
+			name: "a whole key followed by a character that opens no prefix",
+			src:  key + " ",
+			want: 53,
+		},
+		{
+			// A whole prefix at the end of the input with no body behind it,
+			// held back from its own start rather than from the prose in
+			// front.
+			name: "a whole prefix at the end of the input",
+			src:  "nothing here yet cfk_",
+			want: 17,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, got := CloudflareAPIKey().Find(tt.src); got != tt.want {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, got, tt.want)
+			}
+		})
+	}
 }
 
 func Test_cloudflareAPIKeyPrefix(t *testing.T) {

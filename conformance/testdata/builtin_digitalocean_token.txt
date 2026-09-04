@@ -103,6 +103,18 @@ case:     a token at the end of a sentence
 in:       the token is dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.
 out:      the token is «digitalocean-token».
 
+case:     a token between tabs
+in:       field\tdop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\tnext
+out:      field\t«digitalocean-token»\tnext
+
+case:     a token followed by crlf
+in:       DIGITALOCEAN_TOKEN=dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\r\n
+out:      DIGITALOCEAN_TOKEN=«digitalocean-token»\r\n
+
+case:     a token between multi-byte text with nothing between them
+in:       日本語dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef日本語
+out:      日本語«digitalocean-token»日本語
+
 # Two tokens written together. A token can begin inside another at one position
 # and no other: the o of an opening is no hexadecimal character, so the two
 # letters a prefix opens with cannot both fall inside a body, and no character of
@@ -124,6 +136,10 @@ out:      «digitalocean-token»
 case:     a prefix written where a body would stand
 in:       dop_v1_dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      dop_v1_«digitalocean-token»
+
+case:     one token of each kind, one per line over three lines
+in:       dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\ndoo_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\ndor_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «digitalocean-token»\n«digitalocean-token»\n«digitalocean-token»
 
 # What this pattern redacts that nobody issued. A SHA-256 is sixty-four
 # lowercase hexadecimal characters and a body is exactly that, so the prefix and

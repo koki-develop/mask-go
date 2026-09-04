@@ -78,6 +78,14 @@ case:     a body carrying a dot
 in:       mlsn.0123456789abcdefghij.lmnopqrst
 out:      mlsn.0123456789abcdefghij.lmnopqrst
 
+case:     a hyphen at the first character of the body, with a full run behind it
+in:       mlsn.-0123456789abcdefghijklmnopqrst
+out:      mlsn.-0123456789abcdefghijklmnopqrst
+
+case:     an underscore at the first character of the body, with a full run behind it
+in:       mlsn._0123456789abcdefghijklmnopqrst
+out:      mlsn._0123456789abcdefghijklmnopqrst
+
 # The lengths either side of thirty. MailerSend states no length for a token,
 # and thirty is where the one source that states one puts the shortest body. It
 # is read as a floor rather than exactly, and the hundred that source closes its
@@ -144,6 +152,38 @@ case:     two tokens separated by a space
 in:       mlsn.0123456789abcdefghijklmnopqrst mlsn.0123456789ABCDEFGHIJKLMNOPQRST
 out:      «mailersend-api-token» «mailersend-api-token»
 
+case:     a token followed immediately by japanese
+in:       mlsn.0123456789abcdefghijklmnopqrst日本語
+out:      «mailersend-api-token»日本語
+
+case:     a token preceded immediately by japanese
+in:       日本語mlsn.0123456789abcdefghijklmnopqrst
+out:      日本語«mailersend-api-token»
+
+case:     a token in a fragment of yaml
+in:       MAILERSEND_API_TOKEN: mlsn.0123456789abcdefghijklmnopqrst
+out:      MAILERSEND_API_TOKEN: «mailersend-api-token»
+
+case:     a token in a url query string
+in:       https://example.com/send?api_token=mlsn.0123456789abcdefghijklmnopqrst&to=a
+out:      https://example.com/send?api_token=«mailersend-api-token»&to=a
+
+case:     two tokens in parentheses
+in:       (mlsn.0123456789abcdefghijklmnopqrst, mlsn.0123456789ABCDEFGHIJKLMNOPQRST)
+out:      («mailersend-api-token», «mailersend-api-token»)
+
+case:     a token in a diff line
+in:       +MAILERSEND_API_TOKEN=mlsn.0123456789abcdefghijklmnopqrst
+out:      +MAILERSEND_API_TOKEN=«mailersend-api-token»
+
+case:     a token followed by a carriage return and a newline
+in:       token:\tmlsn.0123456789abcdefghijklmnopqrst\r\n
+out:      token:\t«mailersend-api-token»\r\n
+
+case:     a token cut short with an ellipsis
+in:       token mlsn.0123456789abcdefghij... elided
+out:      token mlsn.0123456789abcdefghij... elided
+
 # What this pattern redacts that nobody issued. The prefix closes with a dot,
 # which neither base64url nor standard base64 writes, so no encoded payload can
 # carry it inside itself however long it runs — and the two shapes left are the
@@ -172,14 +212,13 @@ in:       mlsn.aaaaaaaaaabbbbbbbbbbcccccccccc
 out:      «mailersend-api-token»
 
 # A digest written behind the prefix, an over-match that takes a value a reader
-# had a use for. The floor sits below the three digests a log is most often
-# written with: hexadecimal digits are base62 and a digest carries nothing that
-# ends a run, so the prefix and an MD5, a git SHA or a SHA-256 are a token's
-# format exactly. Declining them would mean declining every token MailerSend
-# happened to write in the digits alone, which is a whole credential against a
-# cache key. What holds the other side of it is the prefix: a digest behind a
-# hyphen, or behind nothing at all, carries no dot for a candidate to be found
-# at.
+# had a use for. The floor sits below digests a log is often written with:
+# hexadecimal digits are base62 and a digest carries nothing that ends a run,
+# so the prefix and an MD5 or a SHA-256 are a token's format exactly. Declining
+# them would mean declining every token MailerSend happened to write in the
+# digits alone, which is a whole credential against a cache key. What holds
+# the other side of it is the prefix: a digest behind a hyphen, or behind
+# nothing at all, carries no dot for a candidate to be found at.
 
 case:     an md5 behind the prefix
 in:       mlsn.0123456789abcdef0123456789abcdef
@@ -193,7 +232,7 @@ case:     a sha256 behind a hyphen rather than the prefix
 in:       mlsn-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      mlsn-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
-# And what this pattern leaves alone. Three of the cases below are the prefix,
+# And what this pattern leaves alone. Four of the cases below are the prefix,
 # read in the case MailerSend writes it, in the dot it closes with and in that
 # dot being there at all. The rest are the alphabet and the anchor: a body a
 # space has broken, a run of the right length with no prefix in front of it, a
@@ -202,6 +241,10 @@ out:      mlsn-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 case:     an uppercase prefix
 in:       MLSN.0123456789abcdefghijklmnopqrst
 out:      MLSN.0123456789abcdefghijklmnopqrst
+
+case:     the prefix with one letter capitalised
+in:       Mlsn.0123456789abcdefghijklmnopqrst
+out:      Mlsn.0123456789abcdefghijklmnopqrst
 
 case:     an underscore where the prefix carries a dot
 in:       mlsn_0123456789abcdefghijklmnopqrst

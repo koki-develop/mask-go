@@ -4,7 +4,10 @@
 # Every token here is built from the ordered run 0123456789abcdef, which no real
 # credential is: a body is twenty-seven base64url characters, so the run and
 # eleven more of it are one, and the nine character prefix in front brings a
-# token to thirty-six.
+# token to thirty-six. Two cases carry the alphabet's other letters and are
+# built from ordered runs of their own instead: the twenty-six letters of the
+# upper case ascending, and the twenty-six of the lower case descending, each
+# with a trailing digit to reach the count.
 
 patterns: docker-personal-access-token
 
@@ -28,6 +31,18 @@ case:     a token in the file a workflow writes it into
 in:       registry-password: dckr_pat_0123456789abcdef0123456789a
 out:      registry-password: «docker-personal-access-token»
 
+case:     a token in a docker config.json
+in:       {"auths":{"registry.example.com":{"auth":"dckr_pat_0123456789abcdef0123456789a"}}}
+out:      {"auths":{"registry.example.com":{"auth":"«docker-personal-access-token»"}}}
+
+case:     a token between tabs
+in:       field\tdckr_pat_0123456789abcdef0123456789a\tnext
+out:      field\t«docker-personal-access-token»\tnext
+
+case:     a token followed by crlf
+in:       DOCKER_TOKEN=dckr_pat_0123456789abcdef0123456789a\r\n
+out:      DOCKER_TOKEN=«docker-personal-access-token»\r\n
+
 # The alphabet the twenty-seven characters are written in: base64url, which is
 # the letters of both cases, the digits, the hyphen and the underscore. What it
 # leaves out is the two characters standard base64 writes in place of the last
@@ -47,6 +62,14 @@ case:     a slash in the body
 in:       dckr_pat_0123456789abcdef/123456789a
 out:      dckr_pat_0123456789abcdef/123456789a
 
+case:     a body of uppercase letters
+in:       dckr_pat_0123456789ABCDEFGHIJKLMNOPQ
+out:      «docker-personal-access-token»
+
+case:     a body carrying the lowercase letters past the run
+in:       dckr_pat_0123456789abcdefghijklmnopq
+out:      «docker-personal-access-token»
+
 case:     an uppercase prefix
 in:       DCKR_PAT_0123456789abcdef0123456789a
 out:      DCKR_PAT_0123456789abcdef0123456789a
@@ -54,6 +77,10 @@ out:      DCKR_PAT_0123456789abcdef0123456789a
 case:     hyphens where the prefix carries its underscores
 in:       dckr-pat-0123456789abcdef0123456789a
 out:      dckr-pat-0123456789abcdef0123456789a
+
+case:     the kind with one letter capitalized
+in:       dckr_Pat_0123456789abcdef0123456789a
+out:      dckr_Pat_0123456789abcdef0123456789a
 
 # The lengths either side of twenty-seven. Docker states no length, so the count
 # is read off the published tokens and the rulesets that agree on them, and it
@@ -95,6 +122,10 @@ case:     a token at the end of a sentence
 in:       the token is dckr_pat_0123456789abcdef0123456789a.
 out:      the token is «docker-personal-access-token».
 
+case:     a token between multi-byte text with nothing between them
+in:       日本語dckr_pat_0123456789abcdef0123456789a日本語
+out:      日本語«docker-personal-access-token»日本語
+
 # Two tokens written together. Every character of the prefix belongs to the
 # alphabet a body is written in, so a token can begin anywhere inside the one
 # before it: the prefix written twice with a body behind the second is a token
@@ -108,6 +139,10 @@ out:      «docker-personal-access-token»«docker-personal-access-token»
 case:     a prefix written where a body would stand
 in:       dckr_pat_dckr_pat_0123456789abcdef0123456789a
 out:      «docker-personal-access-token»
+
+case:     two different tokens on one line separated by a space
+in:       dckr_pat_0123456789abcdef0123456789a dckr_pat_0123456789abcdef-123456789_
+out:      «docker-personal-access-token» «docker-personal-access-token»
 
 # What this pattern redacts that nobody issued. The prefix is nine characters of
 # an alphabet of sixty-four, so a base64url payload long enough to spell it

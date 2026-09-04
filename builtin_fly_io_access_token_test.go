@@ -115,6 +115,29 @@ func Test_FlyIOAccessToken(t *testing.T) {
 			src:  flyIOAccessTokenValue + flyIOAccessTokenValue,
 			want: []Span{{0, 71}, {68, 136}},
 		},
+		{
+			// The alphabet holds uppercase letters as well as lowercase, and a
+			// body mixing the two is read exactly as one holding either alone.
+			name: "a body carrying uppercase letters",
+			src:  "fm2_0123456789ABCDEF0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{0, 68}},
+		},
+		{
+			// A body of uppercase letters alone, holding the alphabet's upper
+			// half without any of its lower half beside it.
+			name: "a body of uppercase letters alone",
+			src:  "fm2_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+			want: []Span{{0, 68}},
+		},
+		{
+			// The whole standard base64 alphabet in order, sixty-four
+			// characters exactly: the uppercase letters from A to Z, the
+			// lowercase letters from a to z, the digits from 0 to 9, and the
+			// two characters, + and /, that tell this alphabet from base64url.
+			name: "a body of the whole base64 alphabet in order",
+			src:  "fm2_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+			want: []Span{{0, 68}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -189,6 +212,50 @@ func Test_FlyIOAccessToken_noMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := FlyIOAccessToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
+			}
+		})
+	}
+}
+
+func Test_FlyIOAccessToken_inContext(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "assignment",
+			src:  "FLY_API_TOKEN=fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: "FLY_API_TOKEN=********************************************************************",
+		},
+		{
+			name: "quoted",
+			src:  `"fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`,
+			want: `"********************************************************************"`,
+		},
+		{
+			// The header a token is sent under.
+			name: "header",
+			src:  "Authorization: FlyV1 fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: "Authorization: FlyV1 ********************************************************************",
+		},
+		{
+			name: "json",
+			src:  `{"token":"fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}`,
+			want: `{"token":"********************************************************************"}`,
+		},
+		{
+			name: "twice",
+			src:  "fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef fm2_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: "******************************************************************** ********************************************************************",
+		},
+	}
+
+	m := New(WithPatterns(FlyIOAccessToken()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
 			}
 		})
 	}

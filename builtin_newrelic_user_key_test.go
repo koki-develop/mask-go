@@ -93,6 +93,31 @@ func Test_NewRelicUserKey(t *testing.T) {
 			src:  newRelicIssuedKey + newRelicIssuedKey,
 			want: []Span{{0, 36}, {32, 64}},
 		},
+		{
+			// The hyphen both prefixes close with is what a migrated body may
+			// never carry, so two migrated keys written together do not merge
+			// the way two issued ones do: the first body ends at the floor,
+			// and the N of the second prefix is not hexadecimal.
+			name: "two migrated keys written together",
+			src:  newRelicMigratedKey + newRelicMigratedKey,
+			want: []Span{{0, 32}, {32, 64}},
+		},
+		{
+			// The far end of the issued alphabet, which no sample or case
+			// elsewhere here carries: every published example is drawn from
+			// the run 0123456789ABCDEFGHIJKLMNOPQ, so T through Y appear in no
+			// issued body anywhere else in this file.
+			name: "an issued body drawn from the far end of the alphabet",
+			src:  "NRAK-STUVWXYZ0123456789ABCDEFGHI",
+			want: []Span{{0, 32}},
+		},
+		{
+			// The far end of the migrated alphabet, the mirror image of the
+			// case above.
+			name: "a migrated body drawn from the far end of the alphabet",
+			src:  "NRAA-fedcba9876543210fedcba98765",
+			want: []Span{{0, 32}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -216,6 +241,25 @@ func Test_NewRelicUserKey_noMatch(t *testing.T) {
 			name: "a new relic environment variable holding a host name",
 			src:  "NEW_RELIC_HOST=https://api.newrelic.com",
 		},
+		{
+			// The four characters that end a run, tested inside a migrated
+			// body rather than an issued one: a body broken by any of them is
+			// too short to be one, whichever floor it runs up against.
+			name: "a migrated body broken by a space",
+			src:  "NRAA-0123456789abcdef 0123456789a",
+		},
+		{
+			name: "a migrated body broken by a hyphen",
+			src:  "NRAA-0123456789abcdef-0123456789a",
+		},
+		{
+			name: "a migrated body broken by an underscore",
+			src:  "NRAA-0123456789abcdef_0123456789a",
+		},
+		{
+			name: "a migrated body broken by a dot",
+			src:  "NRAA-0123456789abcdef.0123456789a",
+		},
 	}
 
 	for _, tt := range tests {
@@ -324,6 +368,30 @@ func Test_NewRelicUserKey_nextToWordCharacters(t *testing.T) {
 			src:  key + "ZZZ",
 			want: []Span{{0, len(key) + 3}},
 		},
+		{
+			// The mirror of that for a migrated key: a lowercase letter past f
+			// is a word character the alphabet leaves out, so it ends the run
+			// exactly where it stands rather than carrying the span on.
+			name: "a lowercase suffix written against a migrated key",
+			src:  newRelicMigratedKey + "suffix",
+			want: []Span{{0, len(newRelicMigratedKey)}},
+		},
+		{
+			// Capitals past F are outside the migrated alphabet as well, so
+			// they end the run rather than carrying it on the way they do for
+			// an issued key.
+			name: "capitals outside hexadecimal written against a migrated key",
+			src:  newRelicMigratedKey + "ZZZ",
+			want: []Span{{0, len(newRelicMigratedKey)}},
+		},
+		{
+			// Where the run carrying on is itself hexadecimal, it is read as
+			// part of the same body and the span reaches its end, the same as
+			// the issued case above.
+			name: "a migrated run longer than the floor written against the key",
+			src:  newRelicMigratedKey + "abc",
+			want: []Span{{0, len(newRelicMigratedKey) + 3}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -408,6 +476,52 @@ func Test_NewRelicUserKey_cutShortOfTheFloor(t *testing.T) {
 	}
 	if got, _ := NewRelicUserKey().Find(newRelicIssuedKey); !slices.Equal(got, []Span{{0, 32}}) {
 		t.Errorf("Find(%q) = %v, want the whole key", newRelicIssuedKey, got)
+	}
+}
+
+func Test_NewRelicUserKey_holdsAKeyTheInputCutShort(t *testing.T) {
+	// What Find's second return settles. builtin_scan.go and the rationale in
+	// builtin_newrelic_user_key.go give two shapes: a piece of a prefix
+	// standing at the end of the input, and a candidate the end of the input
+	// cut short. Everything else is settled to the end of the input, since
+	// nothing there could still become a key.
+	tests := []struct {
+		name   string
+		src    string
+		retain int
+	}{
+		{
+			// No prefix and no piece of one anywhere in the text, so the whole
+			// of it is settled.
+			name:   "no credential at all",
+			src:    "there is no credential in this sentence",
+			retain: len("there is no credential in this sentence"),
+		},
+		{
+			// The three letters shared by both prefixes stand at the end of
+			// the input, so what comes next could still complete either one:
+			// the text from there on is held.
+			name:   "a piece of the opening at the end of the input",
+			src:    "xxx NRA",
+			retain: 4,
+		},
+		{
+			// A candidate whose body has not reached the floor, with the run
+			// carrying on to the end of the input. What comes next either
+			// carries the run on to a key or ends it, so this candidate's
+			// start is held rather than settled.
+			name:   "a candidate the input cut short of the floor",
+			src:    "xxx NRAK-0123456789ABCDE",
+			retain: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, retain := NewRelicUserKey().Find(tt.src); retain != tt.retain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.retain)
+			}
+		})
 	}
 }
 

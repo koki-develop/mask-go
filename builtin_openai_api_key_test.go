@@ -109,6 +109,16 @@ func Test_OpenAIAPIKey(t *testing.T) {
 			src:  "sk-sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef",
 			want: []Span{{0, 51}, {3, 51}},
 		},
+		{
+			// Two whole keys with nothing at all between them. Every character
+			// of both keys belongs to the run alphabet, so the second key's
+			// prefix stands inside the run the first one closes on, and the
+			// scan reports both: the first reaching over the second entirely,
+			// the second beginning where its own prefix stands.
+			name: "two whole keys with nothing between them",
+			src:  "sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdefsk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef",
+			want: []Span{{0, 96}, {48, 96}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -394,6 +404,39 @@ func Test_OpenAIAPIKey_insideAnOpaqueRun(t *testing.T) {
 	}
 }
 
+func Test_OpenAIAPIKey_settlesNothingAboutAnOpenRun(t *testing.T) {
+	// A key standing at the very end of the input closes no run: the next byte
+	// could carry the run on, and a longer run could still fail to carry a
+	// marker where this one already found one, or carry one where it did not.
+	// So the scan reports the candidate it has found and holds the answer open
+	// from its own start, not from the end of the span it already located.
+	src := "sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef"
+
+	spans, retain := OpenAIAPIKey().Find(src)
+	if want := []Span{{0, 48}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != 0 {
+		t.Errorf("Find(%q) settled from %d, want 0", src, retain)
+	}
+}
+
+func Test_OpenAIAPIKey_settlesOnceTheRunCloses(t *testing.T) {
+	// The other side of the same decision. A period does not belong to the
+	// alphabet a run is written in, so it closes the run behind the key: no
+	// text arriving after it can widen or narrow what was already found, and
+	// the whole of the input is settled.
+	src := "the key is sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef."
+
+	spans, retain := OpenAIAPIKey().Find(src)
+	if want := []Span{{11, 59}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != len(src) {
+		t.Errorf("Find(%q) settled %d of %d, want the whole of it", src, retain, len(src))
+	}
+}
+
 func Test_openAIAPIKeyPrefix(t *testing.T) {
 	// The scan resumes one byte past the start of a candidate because a key can
 	// begin inside the run of the one before it, and that holds only while
@@ -567,6 +610,9 @@ func FuzzOpenAIAPIKey_matchesReference(f *testing.F) {
 	// match steps over, and a run carrying the marker twice, where the scan
 	// takes the first and the reference's greediness takes the second.
 	f.Add("sk-sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef")
+	// Two whole keys with nothing at all between them, so the second key's
+	// prefix stands inside the run the first one closes on.
+	f.Add("sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdefsk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef")
 	f.Add("sk-T3BlbkFJT3BlbkFJ0123456789abcdef")
 	f.Add("sk-T3BlbkFJ")
 	// Candidate positions crowded as close as they can be: every third byte,

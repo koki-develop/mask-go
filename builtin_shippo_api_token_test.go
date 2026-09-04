@@ -74,6 +74,31 @@ func Test_ShippoAPIToken(t *testing.T) {
 			src:  "shippo_live_0123456789abcdef0123456789abcdef01234567shippo_test_0123456789abcdef0123456789abcdef01234567",
 			want: []Span{{0, 52}, {52, 104}},
 		},
+		{
+			// A body is hexadecimal of either case, so a run mixing the two
+			// cases within one body is a body just as either case alone is.
+			name: "a body mixing both cases at once",
+			src:  "shippo_live_0123456789abcdef0123456789ABCDEF01234567",
+			want: []Span{{0, 52}},
+		},
+		{
+			// A token immediately preceded by a digit, by a hyphen, and by a
+			// multi-byte rune, and followed by one. The pattern reads no word
+			// boundary either side of a match.
+			name: "a digit before",
+			src:  "9shippo_live_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{1, 53}},
+		},
+		{
+			name: "a hyphen before",
+			src:  "build-shippo_live_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{6, 58}},
+		},
+		{
+			name: "between japanese",
+			src:  "トークンはshippo_live_0123456789abcdef0123456789abcdef01234567です",
+			want: []Span{{15, 67}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -120,6 +145,21 @@ func Test_ShippoAPIToken_noMatch(t *testing.T) {
 			src:  "shippo_live_0123456789abcdef0123456789abcdefg1234567",
 		},
 		{
+			// The uppercase half of the letters past f, driven the same as the
+			// lowercase g above: the run in front of it is thirty-two
+			// characters, short of the floor.
+			name: "a body carrying an uppercase letter past f",
+			src:  "shippo_live_0123456789ABCDEF0123456789ABCDEFG1234567",
+		},
+		{
+			// A full forty-character hexadecimal run standing directly behind
+			// a non-hex first body character, so nothing here distinguishes
+			// "the run is measured from the opening" from "the run resumes
+			// past the offending byte".
+			name: "a forbidden character at the first body position with a full run behind it",
+			src:  "shippo_live_g0123456789abcdef0123456789abcdef01234567",
+		},
+		{
 			name: "a body carrying a hyphen",
 			src:  "shippo_live_0123456789abcdef0123456789abcdef-1234567",
 		},
@@ -138,6 +178,17 @@ func Test_ShippoAPIToken_noMatch(t *testing.T) {
 		{
 			name: "an uppercase prefix",
 			src:  "SHIPPO_LIVE_0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// A prefix whose letters are neither all lowercase nor all
+			// uppercase, which a scan comparing case-insensitively or
+			// lower-casing before comparing would pass.
+			name: "a prefix in the case the vendor's own name is written in",
+			src:  "Shippo_Live_0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "a mode written in capitals",
+			src:  "shippo_LIVE_0123456789abcdef0123456789abcdef01234567",
 		},
 		{
 			// The prefix is written with the underscores Shippo divides it by,
@@ -219,6 +270,48 @@ func Test_ShippoAPIToken_inContext(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_ShippoAPIToken_retain holds the second return of Find to a literal
+// offset, on the two shapes builtin_scan.go names: a piece of a prefix
+// standing at the end of the input, and a candidate the end of the input cut
+// short of the floor.
+func Test_ShippoAPIToken_retain(t *testing.T) {
+	tests := []struct {
+		name       string
+		src        string
+		wantRetain int
+	}{
+		{
+			// The last eleven characters are "shippo_live", a piece of the
+			// twelve-character prefix "shippo_live_" cut short by the end of
+			// the input.
+			name:       "a piece of a prefix standing at the end of the input",
+			src:        "key shippo_live",
+			wantRetain: 4,
+		},
+		{
+			// A whole prefix with a body behind it too short to reach the
+			// floor, standing at the end of the input. More characters
+			// arriving could still carry the run to the floor, so the
+			// candidate is unsettled from its own start.
+			name:       "a candidate the end of the input cut short of the floor",
+			src:        "shippo_live_0123456789abcdef01234",
+			wantRetain: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := ShippoAPIToken().Find(tt.src)
+			if len(got) != 0 {
+				t.Fatalf("Find(%q) located %v, want no span", tt.src, got)
+			}
+			if retain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.wantRetain)
 			}
 		})
 	}
@@ -328,6 +421,13 @@ func Test_ShippoAPIToken_reachesTheEndOfTheRun(t *testing.T) {
 			name: "a hexadecimal word against the token",
 			src:  "shippo_live_0123456789abcdef0123456789abcdef01234567deadbeef",
 			want: "************************************************************",
+		},
+		{
+			// The uppercase half of "a letter past f", driven the same as the
+			// lowercase suffix case below.
+			name: "an uppercase letter past f against the token",
+			src:  "shippo_live_0123456789abcdef0123456789abcdef01234567G",
+			want: "****************************************************G",
 		},
 		{
 			name: "a word past f against the token",

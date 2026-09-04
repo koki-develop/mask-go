@@ -73,6 +73,14 @@ func Test_AWSAccessKeyID(t *testing.T) {
 			src:  "ASIAKIA0123456789ABCDEF",
 			want: []Span{{0, 20}, {3, 23}},
 		},
+		{
+			// A key beginning inside a longer uppercase run that is itself no
+			// candidate: the run has no prefix at its own start, but a key
+			// stands at the point AKIA opens inside it.
+			name: "a key opening inside a longer uppercase run",
+			src:  "MYROLEAKIA0123456789ABCDEF",
+			want: []Span{{6, 26}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -152,6 +160,40 @@ func Test_AWSAccessKeyID_noMatch(t *testing.T) {
 		{
 			name: "lowercase prefix",
 			src:  "akia0123456789ABCDEF",
+		},
+		{
+			name: "a prefix with one letter in the wrong case",
+			src:  "AkIA0123456789ABCDEF",
+		},
+		{
+			name: "a prefix with the second letter lowercase",
+			src:  "AKiA0123456789ABCDEF",
+		},
+		{
+			name: "a prefix with the last letter lowercase",
+			src:  "AKIa0123456789ABCDEF",
+		},
+		{
+			name: "a prefix with the first letter lowercase",
+			src:  "aKIA0123456789ABCDEF",
+		},
+		{
+			// The legacy access key prefix a public ruleset carries. AWS
+			// documents no such prefix, and the pattern admits only the two
+			// it does.
+			name: "the legacy shape a ruleset carries and aws documents nowhere",
+			src:  "A3TX0123456789ABCDEF",
+		},
+		{
+			// A lowercase letter at the last position of the count, which is
+			// the position furthest from the prefix and so the one a scan
+			// checking only the characters closest to it would miss.
+			name: "a lowercase letter at the last position of the body",
+			src:  "AKIA0123456789ABCDEa",
+		},
+		{
+			name: "a space at the nineteenth character",
+			src:  "AKIA0123456789ABCD F",
 		},
 		{
 			// AROA names a role. It is a unique identifier rather than a
@@ -280,6 +322,13 @@ func Test_AWSAccessKeyID_nextToWordCharacters(t *testing.T) {
 			src:  "AKIA0123456789ABCDEFGHIJ",
 			want: "********************GHIJ",
 		},
+		{
+			// A multi-byte rune flush against the key on both sides, with no
+			// space between them.
+			name: "a multi-byte rune flush against the key on both sides",
+			src:  "日本語AKIA0123456789ABCDEF日本語",
+			want: "日本語********************日本語",
+		},
 	}
 
 	m := New(WithPatterns(AWSAccessKeyID()))
@@ -322,6 +371,65 @@ func Test_AWSAccessKeyID_leavesWhatFollowsAlone(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_AWSAccessKeyID_settlesWhatTheInputCutShort holds Find's second return
+// to the offset in front of which nothing further back can still become a
+// key, which is either a piece of a prefix standing at the end of the input
+// or a candidate the end of the input cut short. What every built-in owes
+// about that offset over generated text and over the samples is driven in
+// builtins_test.go and fuzz_test.go; what is written out here is which inputs
+// of this pattern's own shape hold anything back, since nothing else names
+// them.
+func Test_AWSAccessKeyID_settlesWhatTheInputCutShort(t *testing.T) {
+	const key = "AKIA0123456789ABCDEF"
+
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			name: "a prefix alone",
+			src:  "AKIA",
+			want: 0,
+		},
+		{
+			name: "a body the end of the input cut short",
+			src:  "AKIA0123456789ABCDE",
+			want: 0,
+		},
+		{
+			// A whole key reaching the end of the input. Nothing is read
+			// behind the count, and the key's own alphabet carries none of
+			// the bytes a prefix is written with, so nothing is held back.
+			name: "a whole key reaching the end of the input",
+			src:  key,
+			want: 20,
+		},
+		{
+			name: "a whole key followed by a character that opens no prefix",
+			src:  key + " ",
+			want: 21,
+		},
+		{
+			// A whole prefix at the end of the input with no body behind it:
+			// the candidate it opens is cut short by the end of the input,
+			// and what is held back is the whole of it rather than the prose
+			// in front.
+			name: "a whole prefix at the end of the input",
+			src:  "nothing here yet AKIA",
+			want: 17,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, got := AWSAccessKeyID().Find(tt.src); got != tt.want {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, got, tt.want)
 			}
 		})
 	}
@@ -413,10 +521,9 @@ var referenceAWSAccessKeyID = regexp.MustCompile(`(?:AKIA|ASIA)[0-9A-Z]{16}`)
 // would never go on to try. The scan finds both and reports the two spans
 // overlapping for a Masker to resolve, so the reference must ask about both.
 //
-// Unlike the GitHub reference, resuming a byte along costs this one nothing
-// beyond a constant: every candidate reads at most twenty characters, here as
-// in the scan, so neither has a run to walk and there is no cursor for either
-// to be wrong about.
+// Resuming a byte along costs this one nothing beyond a constant: every
+// candidate reads at most twenty characters, here as in the scan, so neither
+// has a run to walk and there is no cursor for either to be wrong about.
 func referenceAWSAccessKeyIDFind(src string) []Span {
 	var spans []Span
 	for i := 0; i < len(src); {

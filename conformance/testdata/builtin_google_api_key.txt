@@ -45,6 +45,14 @@ case:     a body carrying the two characters standard base64 uses instead
 in:       AIza0123456789abcdef+hijklmnopqrstuvwx/
 out:      AIza0123456789abcdef+hijklmnopqrstuvwx/
 
+case:     a slash alone in the body
+in:       AIza0123456789abcdef/hijklmnopqrstuvwxy
+out:      AIza0123456789abcdef/hijklmnopqrstuvwxy
+
+case:     an equals sign in the body
+in:       AIza0123456789abcdef=hijklmnopqrstuvwxy
+out:      AIza0123456789abcdef=hijklmnopqrstuvwxy
+
 # The lengths either side of thirty-nine. Google states no length for an API key
 # anywhere the pattern's author could find; what it states is that the string is
 # encrypted, beside one example. Thirty-nine is what that example is and what
@@ -79,6 +87,10 @@ case:     an api key after a letter
 in:       xAIza0123456789abcdefghijklmnopqrstuvwxy
 out:      x«google-api-key»
 
+case:     an api key after a digit
+in:       0AIza0123456789abcdefghijklmnopqrstuvwxy
+out:      0«google-api-key»
+
 # Two keys written together. The prefix is written in the alphabet a body is, so
 # a key can begin inside the span of the one before it; the two spans overlap
 # and are redacted as one. Written without that overlap the two are separate
@@ -107,6 +119,18 @@ out:      the key is «google-api-key».
 case:     an api key before a hyphenated word
 in:       AIza0123456789abcdefghijklmnopqrstuvwxy-suffix
 out:      «google-api-key»-suffix
+
+case:     an api key between multi-byte text with nothing between them
+in:       日本語AIza0123456789abcdefghijklmnopqrstuvwxy日本語
+out:      日本語«google-api-key»日本語
+
+case:     an api key followed by crlf
+in:       GOOGLE_API_KEY=AIza0123456789abcdefghijklmnopqrstuvwxy\r\n
+out:      GOOGLE_API_KEY=«google-api-key»\r\n
+
+case:     two api keys on one line separated by a space
+in:       AIza0123456789abcdefghijklmnopqrstuvwxy AIza0123456789abcdef-hijklmnopqrstuvwx_
+out:      «google-api-key» «google-api-key»
 
 # What this pattern redacts that nobody issued. The prefix is four characters of
 # an alphabet of sixty-four, so a base64 value long enough carries it about once

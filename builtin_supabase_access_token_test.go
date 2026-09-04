@@ -61,6 +61,15 @@ func Test_SupabaseAccessToken(t *testing.T) {
 			want: []Span{{0, 44}, {44, 88}},
 		},
 		{
+			// Three rather than two: the anchor standing at a token's first
+			// character and nowhere else in one, which
+			// Test_SupabaseAccessToken_noTokenBeginsInsideAnother holds in
+			// general, holds however many are chained, not only for a pair.
+			name: "three tokens with nothing between them",
+			src:  "sbp_0123456789abcdef0123456789abcdef01234567sbp_0123456789abcdef0123456789abcdef01234567sbp_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{0, 44}, {44, 88}, {88, 132}},
+		},
+		{
 			name: "an oauth token written straight after a personal one",
 			src:  "sbp_0123456789abcdef0123456789abcdef01234567sbp_oauth_0123456789abcdef0123456789abcdef01234567",
 			want: []Span{{0, 44}, {44, 94}},
@@ -74,6 +83,32 @@ func Test_SupabaseAccessToken(t *testing.T) {
 			name: "a prefix in front of a token",
 			src:  "sbp_sbp_0123456789abcdef0123456789abcdef01234567",
 			want: []Span{{4, 48}},
+		},
+		{
+			// The count behind the marker is exact as well: a run one
+			// character longer than the vendor's forty is a token with a
+			// character left over, the same trade the personal form makes.
+			name: "an oauth body run longer than the count is a token and what follows it",
+			src:  "sbp_oauth_0123456789abcdef0123456789abcdef012345678",
+			want: []Span{{0, 50}},
+		},
+		{
+			// The candidate a declined oauth prefix stands in front of. The
+			// outer sbp_oauth_ opens a candidate whose body would begin with
+			// the s of the second marker, which no body carries, and the scan
+			// advancing a byte rather than stepping over what it declined is
+			// what reaches the token ten characters in.
+			name: "an oauth prefix in front of an oauth token",
+			src:  "sbp_oauth_sbp_oauth_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{10, 60}},
+		},
+		{
+			// The same candidate, opened by the shorter prefix instead: sbp_
+			// alone declines against the s of the marker behind it, and the
+			// token four characters in is what the same advance reaches.
+			name: "a prefix in front of an oauth token",
+			src:  "sbp_sbp_oauth_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{4, 54}},
 		},
 	}
 
@@ -148,6 +183,17 @@ func Test_SupabaseAccessToken_noMatch(t *testing.T) {
 		{
 			name: "a token broken by a line break",
 			src:  "sbp_0123456789abcdef\n123456789abcdef01234567",
+		},
+		{
+			// The letters a body may carry stop at f, and the very first
+			// character of the body is where that rule is asked here rather
+			// than in the middle of a run.
+			name: "a letter past f at the first body character",
+			src:  "sbp_g0123456789abcdef0123456789abcdef0123456",
+		},
+		{
+			name: "an uppercase letter at the first body character of an oauth token",
+			src:  "sbp_oauth_G123456789abcdef0123456789abcdef01234567",
 		},
 		{
 			name: "a hyphen where the prefix carries its underscore",
@@ -285,6 +331,14 @@ func Test_SupabaseAccessToken_nextToWordCharacters(t *testing.T) {
 			src:  "sbp_0123456789abcdef0123456789abcdef012345678",
 			want: "********************************************8",
 		},
+		{
+			// The same claim on the oauth form: a letter directly in front of
+			// it is trimmed rather than dropped, exactly as in front of the
+			// personal form above.
+			name: "letter before an oauth token",
+			src:  "xsbp_oauth_0123456789abcdef0123456789abcdef01234567",
+			want: "x**************************************************",
+		},
 	}
 
 	m := New(WithPatterns(SupabaseAccessToken()))
@@ -337,6 +391,14 @@ func Test_SupabaseAccessToken_leavesWhatFollowsAlone(t *testing.T) {
 			name: "word written against a token",
 			src:  "sbp_0123456789abcdef0123456789abcdef01234567suffix",
 			want: "********************************************suffix",
+		},
+		{
+			// The same claim on the oauth form: fifty characters are
+			// redacted and the one written after them, which is part of no
+			// credential, stays in the text.
+			name: "word written against an oauth token",
+			src:  "sbp_oauth_0123456789abcdef0123456789abcdef01234567suffix",
+			want: "**************************************************suffix",
 		},
 	}
 
@@ -495,6 +557,104 @@ func Test_SupabaseAccessToken_theOtherSupabaseCredentials(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := SupabaseAccessToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
+			}
+		})
+	}
+}
+
+func Test_SupabaseAccessToken_holdsATokenTheInputCutShort(t *testing.T) {
+	// What this scan settles where the input ends inside a candidate: the
+	// candidate's own start, held there until what comes next either carries
+	// the body on to a token or closes it. builtin_scan.go and
+	// .claude/rules/builtin-patterns.md say why a scan may report the
+	// candidate but not read what is written of it.
+	tests := []struct {
+		name       string
+		src        string
+		wantSpans  []Span
+		wantRetain int
+	}{
+		{
+			// A body cut three characters short of the count. The candidate
+			// is reported, not read, so its start is held rather than
+			// released.
+			name:       "a body the input cuts short",
+			src:        "the token is sbp_0123456789abcdef0123456789abcdef0123",
+			wantSpans:  nil,
+			wantRetain: 13,
+		},
+		{
+			// The prefix stands whole and the marker is cut inside, so which
+			// of the two forms this candidate would be is not settled either.
+			name:       "the marker the input cuts short",
+			src:        "the token is sbp_oau",
+			wantSpans:  nil,
+			wantRetain: 13,
+		},
+		{
+			// A whole token followed by ordinary text settles the whole
+			// input: nothing behind it can turn the token into anything else
+			// or open a further candidate.
+			name:       "a whole token followed by prose",
+			src:        "the token is sbp_0123456789abcdef0123456789abcdef01234567 done",
+			wantSpans:  []Span{{13, 57}},
+			wantRetain: 62,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotSpans, gotRetain := SupabaseAccessToken().Find(tt.src)
+			if !slices.Equal(gotSpans, tt.wantSpans) {
+				t.Errorf("Find(%q) spans = %v, want %v", tt.src, gotSpans, tt.wantSpans)
+			}
+			if gotRetain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, gotRetain, tt.wantRetain)
+			}
+		})
+	}
+}
+
+// Test_SupabaseAccessToken_adjacentToTheOtherSupabaseCredentials drives what
+// Test_SupabaseAccessToken_theOtherSupabaseCredentials does not: a project key
+// standing with nothing between it and a token rather than elsewhere in the
+// text. Neither prefix can be found inside the other's — a project key opens
+// with sb_ and a letter naming its kind rather than sbp_, and a token carries
+// no sb_secret_ or sb_publishable_ in its prefix, its marker or its
+// hexadecimal body — so the join holds on both sides and this pattern locates
+// the token alone, wherever in the pair it stands.
+func Test_SupabaseAccessToken_adjacentToTheOtherSupabaseCredentials(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			name: "a token immediately followed by a project secret key",
+			src:  "sbp_0123456789abcdef0123456789abcdef01234567sb_secret_0123456789abcdef012345_01234567",
+			want: []Span{{0, 44}},
+		},
+		{
+			name: "a project secret key immediately followed by a token",
+			src:  "sb_secret_0123456789abcdef012345_01234567sbp_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{41, 85}},
+		},
+		{
+			name: "a token immediately followed by a project publishable key",
+			src:  "sbp_0123456789abcdef0123456789abcdef01234567sb_publishable_0123456789abcdef012345_01234567",
+			want: []Span{{0, 44}},
+		},
+		{
+			name: "a project publishable key immediately followed by a token",
+			src:  "sb_publishable_0123456789abcdef012345_01234567sbp_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{46, 90}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := SupabaseAccessToken().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}
@@ -716,6 +876,11 @@ func FuzzSupabaseAccessToken_matchesReference(f *testing.F) {
 	// A prefix in front of a token, which a scan stepping over what it declined
 	// would never reach, and two tokens with nothing between them.
 	f.Add("sbp_sbp_0123456789abcdef0123456789abcdef01234567")
+	f.Add("sbp_oauth_sbp_oauth_0123456789abcdef0123456789abcdef01234567")
+	f.Add("sbp_sbp_oauth_0123456789abcdef0123456789abcdef01234567")
+	f.Add("sbp_g0123456789abcdef0123456789abcdef0123456")
+	f.Add("sbp_oauth_G123456789abcdef0123456789abcdef01234567")
+	f.Add("sbp_oauth_0123456789abcdef0123456789abcdef012345678")
 	f.Add("sbp_0123456789abcdef0123456789abcdef01234567sbp_0123456789abcdef0123456789abcdef01234567")
 	f.Add("sbp_0123456789abcdef0123456789abcdef01234567sbp_oauth_0123456789abcdef0123456789abcdef01234567")
 	// Candidate positions crowded as close as they can be, with and without the

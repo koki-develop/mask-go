@@ -75,6 +75,21 @@ func Test_ShopifyAppSecretKey(t *testing.T) {
 			src:  "app_shpss_0123456789abcdef0123456789abcdef",
 			want: []Span{{4, 42}},
 		},
+		{
+			name: "a digit before",
+			src:  "7shpss_0123456789abcdef0123456789abcdef",
+			want: []Span{{1, 39}},
+		},
+		{
+			name: "a hyphenated word before",
+			src:  "app-shpss_0123456789abcdef0123456789abcdef",
+			want: []Span{{4, 42}},
+		},
+		{
+			name: "between japanese",
+			src:  "シークレットはshpss_0123456789abcdef0123456789abcdefです",
+			want: []Span{{21, 59}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -102,6 +117,37 @@ func Test_ShopifyAppSecretKey_noMatch(t *testing.T) {
 		{
 			name: "a letter past f in the body",
 			src:  "shpss_0123456789abcdefg123456789abcdef",
+		},
+		{
+			// A space is one of the characters the doc comment names as
+			// ending the reading.
+			name: "a space inside the body",
+			src:  "shpss_0123456789abcdef 123456789abcdef",
+		},
+		{
+			// The uppercase half of "a letter past f": the alphabet reads
+			// case-insensitively, so G ends the run exactly as g does above.
+			name: "an uppercase letter past f inside the body",
+			src:  "shpss_0123456789ABCDEFG123456789ABCDEF",
+		},
+		{
+			// A full thirty-two character hexadecimal run standing directly
+			// behind a non-hex first body character, so nothing here
+			// distinguishes "the count is measured from the prefix" from
+			// "the count resumes past the offending byte".
+			name: "a forbidden character at the first body position with a full run behind it",
+			src:  "shpss_g0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "the opening missing its first character",
+			src:  "hpss_0123456789abcdef0123456789abcdef0",
+		},
+		{
+			// The right shape with no prefix in front of it: five characters
+			// of no alphabet the opening is written in, then the separator
+			// and a whole body.
+			name: "the right shape with no prefix in front of it",
+			src:  "xxxxx_0123456789abcdef0123456789abcdef",
 		},
 		{
 			name: "a hyphen inside the body",
@@ -249,6 +295,13 @@ func Test_ShopifyAppSecretKey_leavesWhatFollowsAlone(t *testing.T) {
 			src:  `"shpss_0123456789abcdef0123456789abcdef",`,
 			want: `"**************************************",`,
 		},
+		{
+			// The uppercase half of "a letter past f", written straight
+			// behind a complete body rather than inside one.
+			name: "an uppercase letter past f written straight after a key",
+			src:  "shpss_0123456789abcdef0123456789abcdefG",
+			want: "**************************************G",
+		},
 	}
 
 	m := New(WithPatterns(ShopifyAppSecretKey()))
@@ -287,6 +340,15 @@ func Test_ShopifyAppSecretKey_aDigestBehindThePrefix(t *testing.T) {
 			name: "a bare md5 with no prefix in front of it",
 			src:  "0123456789abcdef0123456789abcdef",
 			want: nil,
+		},
+		{
+			// A run of exactly forty characters behind the prefix, bracketed
+			// by the thirty-three-character case above it and the
+			// sixty-four-character one below: the count reads the first
+			// thirty-two of it and the eight past it stay in the text.
+			name: "a run of forty characters behind the prefix",
+			src:  "shpss_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{0, 38}},
 		},
 	}
 
@@ -329,6 +391,48 @@ func Test_ShopifyAppSecretKey_theKeyFormatItReplaced(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := ShopifyAppSecretKey().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
+			}
+		})
+	}
+}
+
+// Test_ShopifyAppSecretKey_retain holds the second return of Find to a
+// literal offset, on the two shapes builtin_scan.go names: a piece of the
+// prefix standing at the end of the input, and a candidate the end of the
+// input cut short of the count.
+func Test_ShopifyAppSecretKey_retain(t *testing.T) {
+	tests := []struct {
+		name       string
+		src        string
+		wantRetain int
+	}{
+		{
+			// The last five characters are "shpss", a piece of the
+			// six-character prefix "shpss_" cut short by the end of the
+			// input.
+			name:       "a piece of the prefix standing at the end of the input",
+			src:        "key shpss",
+			wantRetain: 4,
+		},
+		{
+			// A whole prefix with a body behind it too short to reach the
+			// count, standing at the end of the input. More characters
+			// arriving could still complete the key, so the candidate is
+			// unsettled from its own start.
+			name:       "a candidate the end of the input cut short of the count",
+			src:        "shpss_0123456789abcdef01234",
+			wantRetain: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := ShopifyAppSecretKey().Find(tt.src)
+			if len(got) != 0 {
+				t.Fatalf("Find(%q) located %v, want no span", tt.src, got)
+			}
+			if retain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.wantRetain)
 			}
 		})
 	}

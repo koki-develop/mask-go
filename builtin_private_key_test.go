@@ -185,6 +185,31 @@ func Test_PrivateKey(t *testing.T) {
 			src:  "-----BEGIN PRIVATE KEY-----\n0\n-----END PRIVATE KEY-----",
 			want: []Span{{0, 55}},
 		},
+		{
+			// A closing boundary naming a longer label that opens with this
+			// one. HasPrefix matches PRIVATE KEY at the start of PRIVATE KEY
+			// BLOCK, but what follows is a space rather than the boundary's
+			// five dashes, so the line closes nothing: the block ends at its
+			// last base64 line and the boundary stays in the text.
+			name: "a closing boundary naming a longer label than this one opens",
+			src:  "-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY BLOCK-----",
+			want: []Span{{0, 44}},
+		},
+		{
+			// A block written immediately against a multi-byte rune on either
+			// side, with no ASCII byte between the two. The rune stands
+			// outside every alphabet this grammar reads, so it neither opens
+			// nor closes anything and the span is exactly the block "a block
+			// on its own" above locates.
+			name: "a block between multi-byte runes with nothing between them",
+			src:  "日本語-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----日本語",
+			want: []Span{{9, 79}},
+		},
+		{
+			name: "a block between invalid bytes with nothing between them",
+			src:  "\xff-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\xff",
+			want: []Span{{1, 71}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -396,6 +421,31 @@ func Test_PrivateKey_noMatch(t *testing.T) {
 		{
 			name: "a git sha",
 			src:  "0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// A block whose only body line is cut short by a character that is
+			// neither a line break nor the end of the input, with the rest of
+			// the log record standing behind it. No whole base64 line ever
+			// forms, so nothing is located and the fragment stays whole.
+			name: "a block cut short by a quote with a log record behind it",
+			src:  `msg="-----BEGIN PRIVATE KEY-----` + "\n0123456789ab" + `" level=info`,
+		},
+		{
+			// Six dashes rather than five on both boundaries. A five-dash
+			// boundary stands at offset one, so the label matches and a body
+			// opens there — but the sixth dash left over in front of the line
+			// break closes the boundary line on something that is neither a
+			// space nor a tab, so no block opens even from that position.
+			name: "boundaries written with six dashes instead of five",
+			src:  "------BEGIN PRIVATE KEY------\n0123456789abcdef\n------END PRIVATE KEY------",
+		},
+		{
+			// Three padding characters. Base64 carries at most two, so the
+			// run stops after the first two and the third leaves the line not
+			// base64 to its end — the same rejection two in the middle draws
+			// above, at the one position padding may otherwise stand.
+			name: "a body line carrying three padding characters",
+			src:  "-----BEGIN PRIVATE KEY-----\n0123456789a===\n-----END PRIVATE KEY-----",
 		},
 	}
 
@@ -1087,6 +1137,16 @@ func FuzzPrivateKey_matchesReference(f *testing.F) {
 	// that opens with this one's.
 	f.Add("-----BEGIN RSA PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----")
 	f.Add("-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY BLOCK-----")
+	// A block cut short by a character that is neither a line break nor the
+	// end of the input, with a log record standing behind it, six-dash
+	// boundaries, and three padding characters.
+	f.Add(`msg="-----BEGIN PRIVATE KEY-----` + "\n0123456789ab" + `" level=info`)
+	f.Add("------BEGIN PRIVATE KEY------\n0123456789abcdef\n------END PRIVATE KEY------")
+	f.Add("-----BEGIN PRIVATE KEY-----\n0123456789a===\n-----END PRIVATE KEY-----")
+	// A block against a multi-byte rune and against an invalid byte, with
+	// nothing between the two.
+	f.Add("日本語-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----日本語")
+	f.Add("\xff-----BEGIN PRIVATE KEY-----\n0123456789abcdef\n-----END PRIVATE KEY-----\xff")
 	// Candidate positions crowded as close as they can be.
 	f.Add(strings.Repeat("-----BEGIN PRIVATE KEY-----", 8))
 	f.Add(strings.Repeat("-----BEGIN PRIVATE KEY-----\n", 8))

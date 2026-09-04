@@ -104,6 +104,30 @@ case:     a token at the end of a sentence
 in:       the token is pul-0123456789abcdef0123456789abcdef01234567.
 out:      the token is «pulumi-access-token».
 
+case:     a token after a multi-byte rune with nothing between them
+in:       日本語pul-0123456789abcdef0123456789abcdef01234567
+out:      日本語«pulumi-access-token»
+
+case:     a token before a multi-byte rune with nothing between them
+in:       pul-0123456789abcdef0123456789abcdef01234567日本語
+out:      «pulumi-access-token»日本語
+
+case:     a token followed by a carriage return
+in:       pul-0123456789abcdef0123456789abcdef01234567\r\n
+out:      «pulumi-access-token»\r\n
+
+case:     a token between tabs
+in:       \tpul-0123456789abcdef0123456789abcdef01234567\t
+out:      \t«pulumi-access-token»\t
+
+case:     a token in a markdown link with a query string
+in:       [token](https://app.pulumi.com/?access_token=pul-0123456789abcdef0123456789abcdef01234567)
+out:      [token](https://app.pulumi.com/?access_token=«pulumi-access-token»)
+
+case:     three tokens on one line
+in:       pul-0123456789abcdef0123456789abcdef01234567 pul-0123456789abcdef0123456789abcdef01234567 pul-0123456789abcdef0123456789abcdef01234567
+out:      «pulumi-access-token» «pulumi-access-token» «pulumi-access-token»
+
 # Two tokens written together. No token can begin inside another here: everything
 # a span covers past the prefix is hexadecimal, and the p the prefix opens with
 # is neither of the letters behind it, is not the hyphen closing it and is no
@@ -155,6 +179,22 @@ out:      assets/vi«pulumi-access-token»89abcdef0123456789abcdef.png
 case:     an uppercase prefix
 in:       PUL-0123456789abcdef0123456789abcdef01234567
 out:      PUL-0123456789abcdef0123456789abcdef01234567
+
+case:     the prefix with its first letter capital
+in:       Pul-0123456789abcdef0123456789abcdef01234567
+out:      Pul-0123456789abcdef0123456789abcdef01234567
+
+case:     the prefix with its last letter capital
+in:       puL-0123456789abcdef0123456789abcdef01234567
+out:      puL-0123456789abcdef0123456789abcdef01234567
+
+case:     an uppercase letter at the first body character
+in:       pul-A123456789abcdef0123456789abcdef01234567
+out:      pul-A123456789abcdef0123456789abcdef01234567
+
+case:     a letter past f at the first body character
+in:       pul-g123456789abcdef0123456789abcdef01234567
+out:      pul-g123456789abcdef0123456789abcdef01234567
 
 case:     the prefix without the hyphen closing it
 in:       pul0123456789abcdef0123456789abcdef012345678

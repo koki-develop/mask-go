@@ -8,6 +8,9 @@
 # and is told only which prefix to put in front — so what this file states about
 # a body is stated in builtin_supabase_secret_key.txt too, and what is its own is
 # the prefix and the count that prefix makes: forty-six characters.
+#
+# The case about a body of underscores alone carries no ordered run, for the
+# reason builtin_supabase_secret_key.txt states it for the same case there.
 
 patterns: supabase-publishable-key
 
@@ -42,6 +45,26 @@ case:     a key at the end of a sentence
 in:       the key is sb_publishable_0123456789abcdef012345_01234567.
 out:      the key is «supabase-publishable-key».
 
+case:     a key in a yaml value
+in:       supabase:\n  publishable_key: sb_publishable_0123456789abcdef012345_01234567
+out:      supabase:\n  publishable_key: «supabase-publishable-key»
+
+case:     a key in a query string
+in:       https://example.com/?apikey=sb_publishable_0123456789abcdef012345_01234567
+out:      https://example.com/?apikey=«supabase-publishable-key»
+
+case:     a key added in a diff
+in:       +NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_0123456789abcdef012345_01234567
+out:      +NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=«supabase-publishable-key»
+
+case:     a key in a markdown code span
+in:       Set `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_0123456789abcdef012345_01234567` in your frontend config.
+out:      Set `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=«supabase-publishable-key»` in your frontend config.
+
+case:     a key in a ci job log line
+in:       [2026-08-17T00:00:00Z] INFO Building with sb_publishable_0123456789abcdef012345_01234567
+out:      [2026-08-17T00:00:00Z] INFO Building with «supabase-publishable-key»
+
 # The body, which is the secret keys' body exactly: both cases, the digits, the
 # hyphen and the underscore throughout, the separator the generator writes
 # twenty-three characters behind the prefix, and the two counts read exactly
@@ -59,13 +82,37 @@ case:     an underscore in the random part
 in:       sb_publishable_0123456789_bcdef012345_01234567
 out:      «supabase-publishable-key»
 
+case:     a hyphen in the checksum
+in:       sb_publishable_0123456789abcdef012345_0123456-
+out:      «supabase-publishable-key»
+
+case:     an underscore in the checksum
+in:       sb_publishable_0123456789abcdef012345_0123456_
+out:      «supabase-publishable-key»
+
+case:     a body spanning the alphabet
+in:       sb_publishable_ABCDEFGHIJKLMNOPQRSTUV_wxyz-_09
+out:      «supabase-publishable-key»
+
 case:     a dot in the random part
 in:       sb_publishable_0123456789.bcdef012345_01234567
 out:      sb_publishable_0123456789.bcdef012345_01234567
 
+case:     a character outside the alphabet at the first body character
+in:       sb_publishable_.123456789abcdef012345_01234567
+out:      sb_publishable_.123456789abcdef012345_01234567
+
+case:     a character outside the alphabet in the checksum
+in:       sb_publishable_0123456789abcdef012345_0123456.
+out:      sb_publishable_0123456789abcdef012345_0123456.
+
 case:     a hyphen where the separator stands
 in:       sb_publishable_0123456789abcdef012345-01234567
 out:      sb_publishable_0123456789abcdef012345-01234567
+
+case:     the separator one character late
+in:       sb_publishable_0123456789abcdef0123450_1234567
+out:      sb_publishable_0123456789abcdef0123450_1234567
 
 case:     a body of the right length with no separator
 in:       sb_publishable_0123456789abcdef012345001234567
@@ -111,6 +158,10 @@ case:     two keys separated by a space
 in:       sb_publishable_0123456789abcdef012345_01234567 sb_publishable_0123456789abcdef012345_01234567
 out:      «supabase-publishable-key» «supabase-publishable-key»
 
+case:     three keys with nothing between them
+in:       sb_publishable_0123456789abcdef012345_01234567sb_publishable_0123456789abcdef012345_01234567sb_publishable_0123456789abcdef012345_01234567
+out:      «supabase-publishable-key»«supabase-publishable-key»«supabase-publishable-key»
+
 case:     a prefix in front of a key
 in:       sb_publishable_sb_publishable_0123456789abcdef012345_01234567
 out:      sb_publishable_«supabase-publishable-key»
@@ -118,6 +169,34 @@ out:      sb_publishable_«supabase-publishable-key»
 case:     a key beginning inside another
 in:       sb_publishable_sb_publishable_0123456_01234567012345_01234567
 out:      «supabase-publishable-key»
+
+case:     a body of underscores alone
+in:       sb_publishable________________________________
+out:      «supabase-publishable-key»
+
+# A key written straight against text of every other shape: a multi-byte rune
+# with nothing between it and the key, an invalid byte, a tab and a line
+# ending written the network way.
+
+case:     a key immediately against japanese text
+in:       日本語sb_publishable_0123456789abcdef012345_01234567日本語
+out:      日本語«supabase-publishable-key»日本語
+
+case:     a key immediately followed by an invalid byte
+in:       sb_publishable_0123456789abcdef012345_01234567\xff\xfe
+out:      «supabase-publishable-key»\xff\xfe
+
+case:     a key between tabs
+in:       \tsb_publishable_0123456789abcdef012345_01234567\t
+out:      \t«supabase-publishable-key»\t
+
+case:     a key followed by a windows line ending
+in:       sb_publishable_0123456789abcdef012345_01234567\r\n
+out:      «supabase-publishable-key»\r\n
+
+case:     a key cut short by an ellipsis
+in:       the key is sb_publishable_0123456789abcdef012345...
+out:      the key is sb_publishable_0123456789abcdef012345...
 
 # And what this pattern leaves alone. First the prefix: the case the vendor
 # writes it in, the underscore it closes with written as a hyphen and then left
@@ -142,6 +221,20 @@ out:      sb_publishable0123456789abcdef012345_01234567
 case:     a secret key
 in:       sb_secret_0123456789abcdef012345_01234567
 out:      sb_secret_0123456789abcdef012345_01234567
+
+# The two project keys with nothing standing between them rather than
+# elsewhere in the text. Neither prefix reads inside the other's — this half's
+# closes five characters and a second underscore later than the secret key's
+# does — so a publishable key written straight against a secret key is
+# located whole and the secret key beside it is left for that pattern alone.
+
+case:     a secret key immediately followed by a publishable key
+in:       sb_secret_0123456789abcdef012345_01234567sb_publishable_0123456789abcdef012345_01234567
+out:      sb_secret_0123456789abcdef012345_01234567«supabase-publishable-key»
+
+case:     a publishable key immediately followed by a secret key
+in:       sb_publishable_0123456789abcdef012345_01234567sb_secret_0123456789abcdef012345_01234567
+out:      «supabase-publishable-key»sb_secret_0123456789abcdef012345_01234567
 
 case:     a personal access token
 in:       sbp_0123456789abcdef0123456789abcdef01234567

@@ -244,3 +244,30 @@ out:      nfc_normalized = nfc_normalize(nfc_quick_check(input_string))
 case:     a token of the format netlify issued before this one
 in:       NETLIFY_AUTH_TOKEN=0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
 out:      NETLIFY_AUTH_TOKEN=0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+
+# Further text shapes a token is written in, and further adjacency the prefix
+# and the run carry no boundary against.
+
+case:     a token in a netrc entry
+in:       machine api.netlify.com login user password nfp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      machine api.netlify.com login user password «netlify-auth-token»
+
+case:     a token in a url query string
+in:       https://api.netlify.com/api/v1/sites?access_token=nfo_0123456789abcdefghijklmnopqrstuvwxyz&page=2
+out:      https://api.netlify.com/api/v1/sites?access_token=«netlify-auth-token»&page=2
+
+case:     two tokens in parentheses
+in:       (nfp_0123456789abcdefghijklmnopqrstuvwxyz, nfb_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ)
+out:      («netlify-auth-token», «netlify-auth-token»)
+
+case:     a token followed by a carriage return and a newline
+in:       NETLIFY_AUTH_TOKEN=nfc_0123456789abcdefghijklmnopqrstuvwxyz\r\n
+out:      NETLIFY_AUTH_TOKEN=«netlify-auth-token»\r\n
+
+case:     a token between tabs
+in:       \tnfp_0123456789abcdefghijklmnopqrstuvwxyz\t
+out:      \t«netlify-auth-token»\t
+
+case:     a token between japanese
+in:       日本語nfp_0123456789abcdefghijklmnopqrstuvwxyz日本語
+out:      日本語«netlify-auth-token»日本語

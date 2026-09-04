@@ -126,6 +126,26 @@ case:     a token at the end of a sentence
 in:       the token is 0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012.
 out:      the token is «hcp-terraform-api-token».
 
+case:     a token between multi-byte text with nothing between them
+in:       日本語0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012日本語
+out:      日本語«hcp-terraform-api-token»日本語
+
+case:     a token followed by crlf
+in:       token=0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012\r\n
+out:      token=«hcp-terraform-api-token»\r\n
+
+case:     a token in a query string
+in:       https://app.terraform.io/x?token=0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012&page=2
+out:      https://app.terraform.io/x?token=«hcp-terraform-api-token»&page=2
+
+case:     a token in parentheses
+in:       (0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012)
+out:      («hcp-terraform-api-token»)
+
+case:     a token cut short with an ellipsis
+in:       0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef...
+out:      0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef...
+
 # Two tokens written together. A separator carries two full stops and neither
 # portion may hold one, so the tokens below are two values and are redacted
 # apart whether or not anything is written between them.

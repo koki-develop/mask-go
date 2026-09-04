@@ -95,3 +95,47 @@ out:      日本語«jwt»日本語
 case:     a space at either end of the text
 in:       \x20ghp_0123456789abcdefghijklmnopqrstuvwxyz\x20
 out:      \x20«github-token»\x20
+
+case:     text truncated inside a multi-byte rune
+in:       \xe6\x97
+out:      \xe6\x97
+
+case:     a token followed by a truncated multi-byte rune
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz\xe6\x97
+out:      «github-token»\xe6\x97
+
+case:     a token between four byte runes
+in:       🔑ghp_0123456789abcdefghijklmnopqrstuvwxyz🔑
+out:      🔑«github-token»🔑
+
+case:     a token between lone continuation bytes
+in:       \x80ghp_0123456789abcdefghijklmnopqrstuvwxyz\x80
+out:      \x80«github-token»\x80
+
+case:     a token followed by a lone carriage return
+in:       token=ghp_0123456789abcdefghijklmnopqrstuvwxyz\rnext
+out:      token=«github-token»\rnext
+
+case:     a lone carriage return
+in:       \r
+out:      \r
+
+case:     an overlong encoding
+in:       \xc0\xaf
+out:      \xc0\xaf
+
+case:     a token between overlong bytes
+in:       \xc0\xafghp_0123456789abcdefghijklmnopqrstuvwxyz\xc0\xaf
+out:      \xc0\xaf«github-token»\xc0\xaf
+
+case:     a surrogate written in utf-8
+in:       \xed\xa0\x80
+out:      \xed\xa0\x80
+
+case:     a combining mark against a token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyź
+out:      «github-token»́
+
+case:     text that is nothing but whitespace
+in:       \x20 \t\t\n\n \r\n
+out:      \x20 \t\t\n\n \r\n

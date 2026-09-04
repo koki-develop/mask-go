@@ -74,6 +74,19 @@ func Test_CircleCIAPIToken(t *testing.T) {
 			src:  "CCIPAT_0123456789abcdefOIl012_0123456789abcdef0123456789abcdef01234567",
 			want: []Span{{0, 70}},
 		},
+		{
+			// A middle of uppercase letters alone, and one of lowercase
+			// letters past f alone, driving the rest of the base62 alphabet
+			// the ordered runs elsewhere in this file never reach.
+			name: "a middle of uppercase letters",
+			src:  "CCIPAT_ABCDEFGHIJKLMNOPQRSTUV_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{0, 70}},
+		},
+		{
+			name: "a middle of lowercase letters past f",
+			src:  "CCIPAT_abcdefghijklmnopqrstuv_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{0, 70}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -131,6 +144,65 @@ func Test_CircleCIAPIToken_noMatch(t *testing.T) {
 		{
 			name: "a hyphen where the middle and the tail are divided",
 			src:  "CCIPAT_0123456789abcdef012345-0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// A character outside hexadecimal at the first and at the last
+			// character of the tail, and an uppercase letter past F at the
+			// last — the two ends of the run, where the existing case in this
+			// table breaks the run only in the middle.
+			name: "a letter outside hexadecimal at the start of the tail",
+			src:  "CCIPAT_0123456789abcdef012345_g123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "a letter outside hexadecimal at the end of the tail",
+			src:  "CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef0123456g",
+		},
+		{
+			name: "an uppercase letter past F at the end of the tail",
+			src:  "CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef0123456G",
+		},
+		{
+			// A hyphen at the first and at the last character of the middle,
+			// which are the two positions closest to the anchor and the
+			// separator and so the ones a scan checking only the middle of
+			// the run would miss.
+			name: "a hyphen at the start of the middle",
+			src:  "CCIPAT_-123456789abcdef012345_0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "a hyphen at the end of the middle",
+			src:  "CCIPAT_0123456789abcdef01234-_0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "a tail broken by a space",
+			src:  "CCIPAT_0123456789abcdef012345_0123456789abcdef0123 56789abcdef01234567",
+		},
+		{
+			name: "a tail broken by a line break",
+			src:  "CCIPAT_0123456789abcdef012345_0123456789abcdef0123\n56789abcdef01234567",
+		},
+		{
+			name: "a prefix in mixed case",
+			src:  "CciPat_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "the kind in lowercase",
+			src:  "CCIpat_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// A kind sharing the personal token's opening, and one sharing
+			// the project token's, neither of which names a kind CircleCI
+			// writes a token with.
+			name: "a kind sharing the personal token's opening",
+			src:  "CCIPAX_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "a kind sharing the project token's opening",
+			src:  "CCIPRX_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "a tail broken by an invalid byte",
+			src:  "CCIPAT_0123456789abcdef012345_0123456789abcdef\xff123456789abcdef01234567",
 		},
 		{
 			name: "a lowercase prefix",
@@ -270,6 +342,13 @@ func Test_CircleCIAPIToken_nextToWordCharacters(t *testing.T) {
 			src:  token + "-suffix",
 			want: []Span{{0, len(token)}},
 		},
+		{
+			// A multi-byte rune flush against the token on both sides, with
+			// no space between them.
+			name: "a multi-byte rune flush against the token on both sides",
+			src:  "日本語" + token + "日本語",
+			want: []Span{{9, 9 + len(token)}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -372,6 +451,87 @@ func Test_CircleCIAPIToken_theOlderFormat(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Test_CircleCIAPIToken_settlesWhatTheInputCutShort holds Find's second
+// return to the offset in front of which nothing further back can still
+// become a token, which is either a piece of a prefix standing at the end of
+// the input or a candidate the end of the input cut short. Both counts here
+// are read exactly rather than as floors, so a token reaching the end of the
+// input is a finished value and settles as it stands: a further character
+// could not carry it, where a count read as a floor would leave the run open
+// and the candidate held. What every built-in owes about this
+// offset over generated text and over the samples is driven in
+// builtins_test.go and fuzz_test.go; what is written out here is which inputs
+// of this pattern's own shape hold anything back, since nothing else names
+// them.
+func Test_CircleCIAPIToken_settlesWhatTheInputCutShort(t *testing.T) {
+	const token = "CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef01234567"
+
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			name: "a prefix alone",
+			src:  "CCIPAT_",
+			want: 0,
+		},
+		{
+			name: "a middle with no separator or tail behind it",
+			src:  "CCIPAT_0123456789abcdef012345",
+			want: 0,
+		},
+		{
+			name: "a tail the end of the input cut short",
+			src:  "CCIPAT_0123456789abcdef012345_01234",
+			want: 0,
+		},
+		{
+			// A whole token reaching the end of the input. Nothing is read
+			// behind the count, and the token's own alphabets carry none of
+			// the bytes a prefix is written with, so nothing is held back.
+			name: "a whole token reaching the end of the input",
+			src:  token,
+			want: 70,
+		},
+		{
+			name: "a whole token followed by a character that opens no prefix",
+			src:  token + " ",
+			want: 71,
+		},
+		{
+			// A whole prefix at the end of the input with no body behind it,
+			// held back from its own start rather than from the prose in
+			// front.
+			name: "a whole prefix at the end of the input",
+			src:  "nothing here yet CCIPAT_",
+			want: 17,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, got := CircleCIAPIToken().Find(tt.src); got != tt.want {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_CircleCIAPIToken_scanIsLinear drives the crowding this scan is most
+// exposed to: the anchor is the underscore every prefix closes with, and a
+// candidate reads a bounded stretch behind it with no cursor kept between
+// candidates, so nothing here is expected to cost more than that bound times
+// the number of candidates.
+func Test_CircleCIAPIToken_scanIsLinear(t *testing.T) {
+	checkScanIsLinear(t, CircleCIAPIToken(), map[string]string{
+		"a prefix every seven characters":             strings.Repeat("CCIPAT_", 300000),
+		"an anchor with no prefix behind it":          strings.Repeat("_", 2000000),
+		"an opening the byte test does not turn away": strings.Repeat("CIRCLE_", 300000),
+		"candidates walked to their last character":   strings.Repeat("CCIPAT_0123456789abcdef012345_0123456789abcdef0123456789abcdef0123456. ", 30000),
+	})
 }
 
 func Test_circleCIAPITokenPrefixes(t *testing.T) {

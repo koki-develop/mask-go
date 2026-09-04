@@ -129,6 +129,34 @@ func Test_StripeSecretKey(t *testing.T) {
 			src:  "sk_live_0123456789abcdef01234567 rk_live_0123456789abcdef01234567",
 			want: []Span{{0, 32}, {33, 65}},
 		},
+		{
+			// The alphabet the body is written in past the ordered run every
+			// other case here carries: the letters past f count towards the
+			// floor exactly as a hexadecimal digit does.
+			name: "a body written in the letters past f",
+			src:  "rk_live_0123456789abcdefghijklmn",
+			want: []Span{{0, 32}},
+		},
+		{
+			// sk_org_ read as the shorter of its two readings, where what
+			// stands behind it opens with the letters of a mode but carries no
+			// separator behind them: the body is the whole run rather than the
+			// four characters a mode segment would have left.
+			name: "an organization key whose body opens with the letters of a mode",
+			src:  "sk_org_test0123456789abcdef01234567",
+			want: []Span{{0, 35}},
+		},
+		{
+			// A key written straight onto the end of another. The first span
+			// reaches through the second key's own key type to the underscore
+			// behind it, two characters short of the second key's body; the
+			// second begins at its own prefix. A Masker merges the two, which
+			// is what Test_StripeSecretKey_locatesEveryKeyOfARun holds for
+			// every pair of prefixes without pinning either span.
+			name: "a key written straight onto the end of another",
+			src:  "sk_live_0123456789abcdef01234567sk_live_0123456789abcdef01234567",
+			want: []Span{{0, 34}, {32, 64}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -255,6 +283,55 @@ func Test_StripeSecretKey_noMatch(t *testing.T) {
 			// it holds no prefix to be found at however long it runs.
 			name: "a git sha",
 			src:  "0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// The plus, the slash and the padding character of standard base64,
+			// none of which is in the base62 alphabet a body is written in: each
+			// ends the run at sixteen characters, short of the floor.
+			name: "a body broken by a plus",
+			src:  "sk_live_0123456789abcdef+01234567",
+		},
+		{
+			name: "a body broken by a slash",
+			src:  "sk_live_0123456789abcdef/01234567",
+		},
+		{
+			name: "a body broken by an equals sign",
+			src:  "sk_live_0123456789abcdef=01234567",
+		},
+		{
+			// The same character at the body's first position rather than in
+			// the middle of an otherwise long enough run: the run it opens is
+			// nothing at all.
+			name: "a body opening with an equals sign",
+			src:  "sk_live_=0123456789abcdef01234567",
+		},
+		{
+			// A prefix with one letter in the other case. The comparison is
+			// exact rather than folded, so a mix of the two cases is neither
+			// spelling.
+			name: "a mode with its first letter capitalized",
+			src:  "sk_Live_0123456789abcdef01234567",
+		},
+		{
+			name: "a key type with its first letter capitalized",
+			src:  "Sk_live_0123456789abcdef01234567",
+		},
+		{
+			name: "a restricted mode with its first letter capitalized",
+			src:  "rk_TEST_0123456789abcdef01234567",
+		},
+		{
+			name: "an organization scope with its first letter capitalized",
+			src:  "sk_Org_0123456789abcdef01234567",
+		},
+		{
+			// The mode segment one character short of the floor. sk_org_live_
+			// is read here rather than falling back to sk_org_ with a body
+			// opening live_0123..., because the scan takes the first prefix
+			// that matches and tries no other at the same position.
+			name: "an organization key with a mode segment one character short of the floor",
+			src:  "sk_org_live_0123456789abcdef0123456",
 		},
 	}
 
@@ -552,6 +629,164 @@ func coversFrom(src string, spans []Span, from int) bool {
 		at = max(at, s.End)
 	}
 	return at >= len(src)
+}
+
+func Test_StripeSecretKey_theRunThatReadmitsACandidate(t *testing.T) {
+	// The exact width of the run of body characters in front of a candidate
+	// that readmits it despite standing against a word: twenty-two, a body's
+	// floor of twenty-four less the two characters and the underscore every
+	// prefix's own head takes off it. One character short of that and the
+	// candidate is turned away exactly as any other word closing on a key type
+	// is.
+	key := "sk_live_0123456789abcdef01234567"
+
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			name: "a run of twenty-one characters does not readmit the candidate",
+			src:  strings.Repeat("z", 21) + key,
+			want: nil,
+		},
+		{
+			name: "a run of twenty-two characters readmits the candidate",
+			src:  strings.Repeat("z", 22) + key,
+			want: []Span{{22, 22 + len(key)}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := StripeSecretKey().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_StripeSecretKey_nextToRunesAndInvalidBytes(t *testing.T) {
+	// There is no boundary on either side of a match, and neither a multi-byte
+	// rune nor an invalid byte is one: no continuation byte of a rune's
+	// encoding, and no byte above the ASCII range, is a letter or a digit, so
+	// none of them is written in the alphabet a body or the byte-in-front rule
+	// reads.
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			// 日本語 is three runes of three bytes each, so the key begins at
+			// byte nine.
+			name: "a key after japanese text",
+			src:  "日本語sk_live_0123456789abcdef01234567",
+			want: []Span{{9, 41}},
+		},
+		{
+			name: "a key before japanese text",
+			src:  "sk_live_0123456789abcdef01234567日本語",
+			want: []Span{{0, 32}},
+		},
+		{
+			name: "a key behind an invalid byte",
+			src:  "\xffsk_live_0123456789abcdef01234567",
+			want: []Span{{1, 33}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := StripeSecretKey().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_StripeSecretKey_insideAnOpaqueRun(t *testing.T) {
+	// The byte in front read against a run rather than against a single
+	// character: a prefix standing behind four letters is turned away exactly
+	// as one behind a whole word is, and a prefix standing behind an
+	// underscore is admitted, with the run of letters that follows the key
+	// joining its span since the alphabet the run is walked in is the body's
+	// own.
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{
+			name: "a prefix turned away inside a run",
+			src:  "payload=zzzzsk_live_0123456789abcdef01234567zzzz",
+			want: "payload=zzzzsk_live_0123456789abcdef01234567zzzz",
+		},
+		{
+			name: "a prefix admitted behind an underscore inside a run",
+			src:  "payload=zzzz_sk_live_0123456789abcdef01234567zzzz",
+			want: "payload=zzzz_" + strings.Repeat("*", 36),
+		},
+	}
+
+	m := New(WithPatterns(StripeSecretKey()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_StripeSecretKey_settlesTheCandidateTheInputCutShort(t *testing.T) {
+	// What this scan settles where the input ends inside a candidate: the
+	// candidate's own start, whether it is a piece of a prefix standing at the
+	// end of the input or a whole prefix with a body too short to judge.
+	tests := []struct {
+		name   string
+		src    string
+		retain int
+	}{
+		{
+			// "sk_" stands at the end of the input and is a proper prefix of
+			// five of the seven this pattern reads.
+			name:   "the input ends inside a shared piece of the prefix",
+			src:    "log sk_",
+			retain: 4,
+		},
+		{
+			// "sk_org_li" carries every character sk_org_live_ opens with, so
+			// what stands here could still become that prefix.
+			name:   "the input ends inside a longer piece of one prefix",
+			src:    "log sk_org_li",
+			retain: 4,
+		},
+		{
+			// The whole prefix stands, and behind it a body of seventeen
+			// characters where twenty-four are asked for: more of it could
+			// still arrive, so the candidate starting at the prefix is
+			// unsettled.
+			name:   "the input ends inside a body short of the floor",
+			src:    "log sk_live_0123456789abcdef0",
+			retain: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, retain := StripeSecretKey().Find(tt.src); retain != tt.retain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.retain)
+			}
+		})
+	}
+
+	// The other side of the same claim: nothing behind a whole key is held
+	// back, however much text stands in front of it.
+	src := "log sk_live_0123456789abcdef01234567 "
+	if _, retain := StripeSecretKey().Find(src); retain != len(src) {
+		t.Errorf("Find(%q) retain = %d, want %d", src, retain, len(src))
+	}
 }
 
 func Test_stripeSecretKeyPrefixes(t *testing.T) {

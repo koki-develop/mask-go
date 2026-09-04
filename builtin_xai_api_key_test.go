@@ -59,6 +59,14 @@ func Test_XAIAPIKey(t *testing.T) {
 			src:  "xai-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
 			want: []Span{{0, 84}},
 		},
+		{
+			// The samples above carry only the ordered hexadecimal run; the
+			// alphabet reaches on past it to the letters no hexadecimal digit
+			// is, in both cases.
+			name: "a body carried out to the ends of the alphabet",
+			src:  "xai-0123456789abcdefghijklmnopqrstuvwxyzGHIJKLMNOPQRSTUVWXYZ012345678901234567890123",
+			want: []Span{{0, 84}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -140,6 +148,49 @@ func Test_XAIAPIKey_noMatch(t *testing.T) {
 		{
 			name: "an xai environment variable holding a host name",
 			src:  "XAI_API_BASE_URL=https://api.x.ai/v1",
+		},
+		{
+			// A character outside the alphabet at the first position of the
+			// body, rather than in the middle of an otherwise long enough run:
+			// the run it opens is nothing at all.
+			name: "a forbidden character where the body opens",
+			src:  "xai-_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+		},
+		{
+			name: "a forbidden character where the body opens behind the management infix",
+			src:  "xai-token-.123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// A hyphen one character short of the floor rather than well behind
+			// it: the run it ends is seventy-nine characters, one short of a
+			// body.
+			name: "a hyphen one character short of the floor",
+			src:  "xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde-",
+		},
+		{
+			// The prefix as xAI writes it, with one letter capitalized. Neither
+			// spelling is xai-, so neither opens a candidate.
+			name: "a prefix with its first letter capitalized",
+			src:  "Xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a prefix with its second letter capitalized",
+			src:  "xAi-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// A newline is no character of the body's alphabet, so it ends the
+			// run exactly as a space does, well short of the floor either side.
+			name: "a body broken by a newline",
+			src:  "xai-0123456789abcdef0123456789abcdef\n123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// A run of the prefix alone, none of it a body: the run behind
+			// every candidate's own prefix reads the xai of the prefix
+			// following it — three characters of the alphabet a body is
+			// written in — and stops at the hyphen closing that one, three
+			// short of even the shortest candidate this scan could accept.
+			name: "a run of prefixes",
+			src:  strings.Repeat("xai-", 32),
 		},
 	}
 
@@ -242,6 +293,54 @@ func Test_XAIAPIKey_nextToWordCharacters(t *testing.T) {
 			src:  key + "-suffix",
 			want: []Span{{0, len(key)}},
 		},
+		{
+			// The other word character no body admits: an underscore ends the
+			// run exactly where a hyphen does, and stays out of the span with
+			// whatever follows it.
+			name: "an underscore written against the end of a key",
+			src:  key + "_suffix",
+			want: []Span{{0, len(key)}},
+		},
+		{
+			name: "a key after a digit",
+			src:  "7" + key,
+			want: []Span{{1, 1 + len(key)}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := XAIAPIKey().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_XAIAPIKey_nextToNonASCII(t *testing.T) {
+	// There is no boundary on either side of a match, and neither a multi-byte
+	// rune nor an invalid byte is one: no continuation byte of a rune's
+	// encoding and no byte above the ASCII range is a letter or a digit, so
+	// none of them is written in the alphabet a body or the prefix is read in.
+	const key = "xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			// キー is two runes of three bytes each, so the key begins at byte
+			// six.
+			name: "a key between japanese",
+			src:  "キー" + key + "です",
+			want: []Span{{6, 6 + len(key)}},
+		},
+		{
+			name: "a key behind an invalid byte",
+			src:  "\xff" + key,
+			want: []Span{{1, 1 + len(key)}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -293,6 +392,17 @@ func Test_XAIAPIKey_aKeyInsideAKey(t *testing.T) {
 			name: "a prefix in front of a key",
 			src:  "xai-xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			want: []Span{{4, 88}},
+		},
+		{
+			// The management form beginning inside the plain one, by the same
+			// three characters: a body may close with xai and the hyphen
+			// opening the next key's prefix stand directly behind it, whether
+			// or not that next key carries the infix. The first span runs
+			// through the second key's xai to the hyphen closing its own run;
+			// the second begins at its own prefix and reads a plain body.
+			name: "a management key immediately followed by a plain key",
+			src:  "xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" + "xai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{0, 93}, {90, 174}},
 		},
 	}
 
@@ -349,6 +459,37 @@ func Test_XAIAPIKey_aManagementKey(t *testing.T) {
 			name: "the infix written twice",
 			src:  "xai-token-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			want: nil,
+		},
+		{
+			// The infix is read in the one case osv-scalibr and the prefix in
+			// front of it both write it, and a mix of the two is neither.
+			name: "a mixed-case infix",
+			src:  "xai-Token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: nil,
+		},
+		{
+			// The floor is the body's, so a run longer than it behind the
+			// infix is one key read to the end of the run, exactly as behind
+			// the prefix alone.
+			name: "a management run longer than the floor is one key to the end of it",
+			src:  "xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0",
+			want: []Span{{0, 91}},
+		},
+		{
+			name: "a word written against a management key",
+			src:  "xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefsuffix",
+			want: []Span{{0, 96}},
+		},
+		{
+			// A key can be written inside another here too, by the same three
+			// characters the plain form is: a body may close with xai and the
+			// hyphen opening the next key's infix stand directly behind it, so
+			// the first span reaches through the second key's xai to that
+			// hyphen and the second begins at its own prefix.
+			name: "two management keys with nothing between them",
+			src: "xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" +
+				"xai-token-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{0, 93}, {90, 180}},
 		},
 	}
 
@@ -554,6 +695,70 @@ func Test_XAIAPIKey_scanIsLinear(t *testing.T) {
 	}
 
 	checkScanIsLinear(t, XAIAPIKey(), sources)
+}
+
+// Test_XAIAPIKey_retainedCandidates holds xaiAPIKey's second return, the
+// offset from which the input is not settled, to a value derived by hand from
+// the walk in the scan rather than copied from what it reports. Every table
+// above discards this return with got, _ :=, so this is the one place it is
+// checked at all.
+func Test_XAIAPIKey_retainedCandidates(t *testing.T) {
+	tests := []struct {
+		name       string
+		src        string
+		wantSpans  []Span
+		wantRetain int
+	}{
+		{
+			// The infix is asked for with HasPrefix, which a text shorter than
+			// "token-" can never satisfy, so "tok" is read as the opening three
+			// characters of a body instead. That body is three characters long
+			// and the input ends there, so the candidate is retained from its
+			// own start rather than from wherever the three characters read it
+			// to.
+			name:       "an infix cut short reads as a body cut short, retained from the candidate's start",
+			src:        "xai-tok",
+			wantSpans:  nil,
+			wantRetain: 0,
+		},
+		{
+			// The infix reads whole, so the body begins behind it; sixteen of
+			// its eighty letters and digits stand before the input ends, far
+			// short of the floor. The run reaching the end of the input is what
+			// the scan cannot tell from one that goes on to reach the floor, so
+			// the whole candidate is retained from its own start.
+			name:       "a management body cut short of the floor retains from the candidate's start",
+			src:        "xai-token-0123456789abcdef",
+			wantSpans:  nil,
+			wantRetain: 0,
+		},
+		{
+			// The prefix stands whole and nothing behind it does: the infix does
+			// not match and the body it falls back to is empty, both settled by
+			// the same end-of-input rule as the two cases above.
+			name:       "the prefix alone retains from its own start",
+			src:        "xai-",
+			wantSpans:  nil,
+			wantRetain: 0,
+		},
+		{
+			// No x stands anywhere in this text, so no candidate is ever opened
+			// and nothing is held back.
+			name:       "text carrying no anchor settles the whole input",
+			src:        "there is no credential in this sentence",
+			wantSpans:  nil,
+			wantRetain: 39,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotSpans, gotRetain := XAIAPIKey().Find(tt.src)
+			if !slices.Equal(gotSpans, tt.wantSpans) || gotRetain != tt.wantRetain {
+				t.Errorf("Find(%q) = (%v, %d), want (%v, %d)", tt.src, gotSpans, gotRetain, tt.wantSpans, tt.wantRetain)
+			}
+		})
+	}
 }
 
 // referenceXAIAPIKeyFind locates keys the plain way: every position in turn,

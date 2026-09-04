@@ -67,3 +67,18 @@ out:      «whole»
 case:     a span over the whole text of an empty text is ignored
 in:
 out:
+
+patterns: span-inside-a-rune
+
+# Both ends of a span must fall on a rune boundary, and the built-in patterns
+# and Regexp cannot report one that does not — every built-in decides its ends
+# on an ASCII alphabet, and Go's regexp matches runes. This is the one shape
+# Pattern.Find documents as a demand on a Find written by hand rather than as
+# a possibility any pattern above can reach: neither ignored nor repaired, so
+# the bytes either side of it are written back as they were found and what is
+# left of the rune stands beside the mark. "日本" is two three-byte runes, and
+# the span here cuts the first of them after its lead byte.
+
+case:     a span cutting a rune in half is used as it is
+in:       日本
+out:      «half»\x97\xa5本

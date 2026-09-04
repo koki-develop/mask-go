@@ -57,6 +57,22 @@ case:     a number longer than one digit is a tail and what follows it
 in:       dapi0123456789abcdef0123456789abcdef-2026-01-01
 out:      «databricks-personal-access-token»026-01-01
 
+case:     a tail digit at the bottom of its class
+in:       dapi0123456789abcdef0123456789abcdef-0
+out:      «databricks-personal-access-token»
+
+case:     a tail digit at the top of its class
+in:       dapi0123456789abcdef0123456789abcdef-9
+out:      «databricks-personal-access-token»
+
+case:     a run longer than the body's count with a tail behind it
+in:       dapi0123456789abcdef0123456789abcdef0-2
+out:      «databricks-personal-access-token»0-2
+
+case:     two tagged tokens with nothing between them
+in:       dapi0123456789abcdef0123456789abcdef-2dapi0123456789abcdef0123456789abcdef-2
+out:      «databricks-personal-access-token»«databricks-personal-access-token»
+
 # The alphabet the thirty-two characters are written in: lowercase hexadecimal,
 # which is what the rulesets that read this format agree on and what a
 # hexadecimal encoder settles once for all of its output. Uppercase is the
@@ -119,6 +135,14 @@ case:     a token at the end of a sentence
 in:       the token is dapi0123456789abcdef0123456789abcdef.
 out:      the token is «databricks-personal-access-token».
 
+case:     a token after a digit
+in:       9dapi0123456789abcdef0123456789abcdef
+out:      9«databricks-personal-access-token»
+
+case:     a token flush against a multi-byte rune on both sides
+in:       日本語dapi0123456789abcdef0123456789abcdef日本語
+out:      日本語«databricks-personal-access-token»日本語
+
 # Two tokens written together. A token can begin inside another, and the p of the
 # prefix is what bounds where: a candidate is found at that character and read
 # back two places from it, and the only p a token holds is the one its own prefix
@@ -165,13 +189,15 @@ case:     the prefix in front of a sha-256
 in:       dapi0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      «databricks-personal-access-token»0123456789abcdef0123456789abcdef
 
-# And what this pattern leaves alone. The first two are the prefix, which is read
-# in the case Databricks writes it and with every character of it; the third is a
-# UUID, whose hyphens are no character a body may hold, so a hexadecimal run
-# divided that way is no body however many characters it comes to. Then a word
-# written against the prefix, whose body runs out at the first character
-# hexadecimal has not got. The last three carry no prefix at all: a hexadecimal
-# run holds neither the p nor the i, so no digest carries one partway along.
+# And what this pattern leaves alone. The first three are the prefix, read in
+# the case Databricks writes it — plain uppercase and title case both — and with
+# every character of it. Then a letter outside hexadecimal at the front of the
+# body. Then a UUID, whose hyphens are no character a body may hold, so a
+# hexadecimal run divided that way is no body however many characters it comes
+# to. Then a word written against the prefix, whose body runs out at the first
+# character hexadecimal has not got. The last three carry no prefix at all: a
+# hexadecimal run holds neither the p nor the i, so no digest carries one
+# partway along.
 
 case:     an uppercase prefix
 in:       DAPI0123456789abcdef0123456789abcdef
@@ -180,6 +206,14 @@ out:      DAPI0123456789abcdef0123456789abcdef
 case:     the prefix without its closing letter
 in:       dap0123456789abcdef0123456789abcdef01
 out:      dap0123456789abcdef0123456789abcdef01
+
+case:     a title case prefix
+in:       Dapi0123456789abcdef0123456789abcdef
+out:      Dapi0123456789abcdef0123456789abcdef
+
+case:     a letter outside hexadecimal at the first character of the body
+in:       dapig123456789abcdef0123456789abcdef0
+out:      dapig123456789abcdef0123456789abcdef0
 
 case:     a uuid behind the prefix
 in:       dapi01234567-89ab-cdef-0123-456789abcdef

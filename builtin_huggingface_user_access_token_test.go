@@ -107,12 +107,36 @@ func Test_HuggingFaceUserAccessToken_noMatch(t *testing.T) {
 			src:  "HF_0123456789abcdef0123456789abcdef01",
 		},
 		{
+			name: "the prefix with its first letter capitalised",
+			src:  "Hf_0123456789abcdef0123456789abcdef01",
+		},
+		{
+			name: "the prefix with its second letter capitalised",
+			src:  "hF_0123456789abcdef0123456789abcdef01",
+		},
+		{
 			name: "the prefix without its closing underscore",
 			src:  "hf0123456789abcdef0123456789abcdef012",
 		},
 		{
 			name: "a hyphen where the prefix closes",
 			src:  "hf-0123456789abcdef0123456789abcdef01",
+		},
+		{
+			name: "a hyphen at the first character of the body",
+			src:  "hf_-123456789abcdef0123456789abcdef01",
+		},
+		{
+			name: "an underscore at the first character of the body",
+			src:  "hf__123456789abcdef0123456789abcdef01",
+		},
+		{
+			name: "a hyphen at the last character of the body",
+			src:  "hf_0123456789abcdef0123456789abcdef0-",
+		},
+		{
+			name: "a space at the last character of the body",
+			src:  "hf_0123456789abcdef0123456789abcdef0 ",
 		},
 		{
 			// The OAuth access token an application receives, whose body opens
@@ -252,6 +276,145 @@ func Test_HuggingFaceUserAccessToken_nextToWordCharacters(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_HuggingFaceUserAccessToken_nextToNonASCIIAndInvalidBytes(t *testing.T) {
+	// A token is located wherever it is written, with no word boundary either
+	// side, and neither a multi-byte rune nor an invalid UTF-8 byte belongs to
+	// the alphabet a prefix or a body is read in — so both leave a token's
+	// span exactly where it would otherwise be.
+	const token = "hf_0123456789abcdef0123456789abcdef01"
+
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			name: "a token between japanese",
+			src:  "日本語" + token + "日本語",
+			want: []Span{{9, 9 + len(token)}},
+		},
+		{
+			name: "a token after an invalid byte",
+			src:  "\xff" + token,
+			want: []Span{{1, 1 + len(token)}},
+		},
+		{
+			name: "a token before an invalid byte",
+			src:  token + "\xff",
+			want: []Span{{0, len(token)}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := HuggingFaceUserAccessToken().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_HuggingFaceUserAccessToken_theBytesJustOutsideTheAlphabet drives a byte
+// the alphabet forbids at the front of a body and at its last character, with
+// a run of the alphabet otherwise long enough to be one either side of it.
+// builtins_test.go's generic properties never place such a byte there: every
+// input they build from a sample is a whole sample or a prefix of one, so a
+// candidate's body is either entirely valid or cut off, and never wrong at one
+// specific character away from the ones already written out above.
+func Test_HuggingFaceUserAccessToken_theBytesJustOutsideTheAlphabet(t *testing.T) {
+	// A body of thirty-four valid characters, the same run every other case in
+	// this file is built from.
+	const validBody = "0123456789abcdef0123456789abcdef01"
+
+	forbidden := []byte{'/', ':', '@', '[', '`', '{'}
+
+	for _, c := range forbidden {
+		front := "hf_" + string(c) + validBody[1:]
+		t.Run("at the front of the body: "+string(c), func(t *testing.T) {
+			if got, _ := HuggingFaceUserAccessToken().Find(front); got != nil {
+				t.Errorf("Find(%q) = %v, want no span", front, got)
+			}
+		})
+
+		back := "hf_" + validBody[:len(validBody)-1] + string(c)
+		t.Run("at the last character of the body: "+string(c), func(t *testing.T) {
+			if got, _ := HuggingFaceUserAccessToken().Find(back); got != nil {
+				t.Errorf("Find(%q) = %v, want no span", back, got)
+			}
+		})
+	}
+}
+
+// Test_HuggingFaceUserAccessToken_holdsATokenTheInputCutShort holds what
+// builtin_huggingface_user_access_token.go settles for a candidate the end of
+// the input cut short: its own start, since the count is exact and is the
+// whole of what tells a token from any other run behind the prefix. A piece
+// of the prefix with nothing else behind it settles at its own start as well,
+// which is prefixTail's to report. Where no candidate stands open at all, the
+// whole of the input is settled.
+func Test_HuggingFaceUserAccessToken_holdsATokenTheInputCutShort(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{
+			name: "a body one character short of the count",
+			src:  "hf_0123456789abcdef0123456789abcdef0",
+		},
+		{
+			name: "a piece of the prefix",
+			src:  "hf",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spans, retain := HuggingFaceUserAccessToken().Find(tt.src)
+			if spans != nil {
+				t.Fatalf("Find(%q) = %v, want no span", tt.src, spans)
+			}
+			if retain != 0 {
+				t.Errorf("Find(%q) settled from %d, want 0", tt.src, retain)
+			}
+		})
+	}
+
+	t.Run("no candidate at all", func(t *testing.T) {
+		src := "there is no credential in this sentence"
+		spans, retain := HuggingFaceUserAccessToken().Find(src)
+		if spans != nil {
+			t.Fatalf("Find(%q) = %v, want no span", src, spans)
+		}
+		if retain != len(src) {
+			t.Errorf("Find(%q) settled from %d, want %d", src, retain, len(src))
+		}
+	})
+}
+
+func Test_HuggingFaceUserAccessToken_scanIsLinear(t *testing.T) {
+	// This scan keeps no cursor and needs none: a candidate reads at most
+	// thirty-four bytes and stops, which bounds what it reads with no state to
+	// be wrong about. The generic guard in builtins_test.go repeats the
+	// samples, and the crowding a whole line of anchors or prefixes can carry
+	// stays here.
+	sources := map[string]string{
+		// The anchor at every byte, each turned away by the two characters in
+		// front of it not spelling the rest of the prefix.
+		"the anchor at every byte": strings.Repeat("_", 2000000),
+		// A whole prefix every three characters, with nothing between them, so
+		// every candidate reads thirty-four characters of body and most
+		// report nothing.
+		"a prefix every three characters": strings.Repeat("hf_", 660000),
+		// A prefix every four characters, each followed by a run that fails at
+		// its last character before the count is reached.
+		"a prefix every four characters with a body that fails last": strings.Repeat("hf_0123456789abcdef0123456789abcdef0.", 54000),
+		// A run of the body alphabet carrying no prefix at all.
+		"a base62 run with no prefix": strings.Repeat("0123456789abcdef", 125000),
+	}
+
+	checkScanIsLinear(t, HuggingFaceUserAccessToken(), sources)
 }
 
 func Test_HuggingFaceUserAccessToken_aTokenInsideAToken(t *testing.T) {

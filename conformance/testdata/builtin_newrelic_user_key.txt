@@ -73,6 +73,22 @@ case:     a body broken by an underscore
 in:       NRAK-0123456789ABCDEF_GHIJKLMNOPQ
 out:      NRAK-0123456789ABCDEF_GHIJKLMNOPQ
 
+case:     a migrated body broken by a space
+in:       NRAA-0123456789abcdef 0123456789a
+out:      NRAA-0123456789abcdef 0123456789a
+
+case:     a migrated body broken by a hyphen
+in:       NRAA-0123456789abcdef-0123456789a
+out:      NRAA-0123456789abcdef-0123456789a
+
+case:     a migrated body broken by an underscore
+in:       NRAA-0123456789abcdef_0123456789a
+out:      NRAA-0123456789abcdef_0123456789a
+
+case:     a migrated body broken by a dot
+in:       NRAA-0123456789abcdef.0123456789a
+out:      NRAA-0123456789abcdef.0123456789a
+
 # The count either side of twenty-seven. New Relic states no length for a key,
 # and no alphabet and no checksum either; three rulesets read twenty-seven
 # characters behind NRAK- and one reads twenty-seven behind NRAA-, and every key
@@ -92,6 +108,14 @@ out:      NRAK-0123456789ABCDEFGHIJKLMNOP
 
 case:     an alphabet run longer than the floor is a key to the end of it
 in:       NRAK-0123456789ABCDEFGHIJKLMNOPQRS
+out:      «newrelic-user-key»
+
+case:     a migrated body of twenty-six characters is not a key
+in:       NRAA-0123456789abcdef0123456789
+out:      NRAA-0123456789abcdef0123456789
+
+case:     a migrated alphabet run longer than the floor is a key to the end of it
+in:       NRAA-0123456789abcdef0123456789abcdef
 out:      «newrelic-user-key»
 
 # The prefix, which is five characters and is the whole of what tells this
@@ -255,3 +279,19 @@ out:      time=2026-08-17T00:00:00Z level=info msg="querying nerdgraph" url=http
 case:     an environment variable holding a host name
 in:       NEW_RELIC_HOST=https://api.newrelic.com
 out:      NEW_RELIC_HOST=https://api.newrelic.com
+
+# Adjacency the properties in conformance drive on generated text but never
+# assert an expected output for: a multi-byte rune, a byte outside the New
+# Relic prefixes' own alphabet, a tab and a carriage return.
+
+case:     a key between japanese
+in:       日本語NRAK-0123456789ABCDEFGHIJKLMNOPQ日本語
+out:      日本語«newrelic-user-key»日本語
+
+case:     a key between tabs
+in:       \tNRAA-0123456789abcdef0123456789a\t
+out:      \t«newrelic-user-key»\t
+
+case:     a key followed by a carriage return and a newline
+in:       key=NRAK-0123456789ABCDEFGHIJKLMNOPQ\r\n
+out:      key=«newrelic-user-key»\r\n

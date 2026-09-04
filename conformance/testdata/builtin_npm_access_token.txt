@@ -223,3 +223,49 @@ out:      npm_package_version=1.0.0 npm_lifecycle_event=prepublishOnly
 case:     a token of the uuid format npm issued before this one
 in:       0123456789ab-cdef-0123-4567-89abcdef0123
 out:      0123456789ab-cdef-0123-4567-89abcdef0123
+
+# A token written against text outside ASCII and against bytes no valid string
+# holds. The alphabet ends the run before either is reached, so what stands on
+# either side of a token is left exactly as it was.
+
+case:     a token between japanese
+in:       日本語npm_0123456789abcdefghijklmnopqrstuvwxyz日本語
+out:      日本語«npm-access-token»日本語
+
+case:     a token before bytes that are not valid utf-8
+in:       npm_0123456789abcdefghijklmnopqrstuvwxyz\xff\xfe
+out:      «npm-access-token»\xff\xfe
+
+case:     a token between control bytes
+in:       \x00npm_0123456789abcdefghijklmnopqrstuvwxyz\x00
+out:      \x00«npm-access-token»\x00
+
+case:     a token between tabs
+in:       \tnpm_0123456789abcdefghijklmnopqrstuvwxyz\t
+out:      \t«npm-access-token»\t
+
+case:     a token followed by a carriage return and a newline
+in:       token=npm_0123456789abcdefghijklmnopqrstuvwxyz\r\n
+out:      token=«npm-access-token»\r\n
+
+# Further shapes a token is ordinarily written in.
+
+case:     a token in a diff line adding it to an npmrc
+in:       +//registry.npmjs.org/:_authToken=npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      +//registry.npmjs.org/:_authToken=«npm-access-token»
+
+case:     a token in a url query string
+in:       https://registry.npmjs.org/-/whoami?token=npm_0123456789abcdefghijklmnopqrstuvwxyz
+out:      https://registry.npmjs.org/-/whoami?token=«npm-access-token»
+
+case:     a token in a markdown code span
+in:       run `npm config set //registry.npmjs.org/:_authToken npm_0123456789abcdefghijklmnopqrstuvwxyz`
+out:      run `npm config set //registry.npmjs.org/:_authToken «npm-access-token»`
+
+case:     a token in parentheses
+in:       (npm_0123456789abcdefghijklmnopqrstuvwxyz)
+out:      («npm-access-token»)
+
+case:     a token cut short with an ellipsis
+in:       token=npm_0123456789abcdefghij…
+out:      token=npm_0123456789abcdefghij…

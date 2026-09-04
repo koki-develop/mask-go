@@ -167,6 +167,12 @@ func Test_PostHogPersonalAPIKey_noMatch(t *testing.T) {
 			name: "a git sha",
 			src:  "0123456789abcdef0123456789abcdef01234567",
 		},
+		{
+			// An invalid UTF-8 byte inside the run. It belongs to no encoding
+			// at all, so it ends the run exactly where a space or a dot does.
+			name: "an invalid byte in the run",
+			src:  "phx_0123456789abcdefghijklmnopqrstuvwxyz\xff1234",
+		},
 	}
 
 	for _, tt := range tests {
@@ -294,6 +300,23 @@ func Test_PostHogPersonalAPIKey_nextToWordCharacters(t *testing.T) {
 			src:  "POSTHOG_PERSONAL_API_KEY_phx_0123456789abcdefghijklmnopqrstuvwxyz01234",
 			want: "POSTHOG_PERSONAL_API_KEY_*********************************************",
 		},
+		{
+			name: "digit before",
+			src:  "0phx_0123456789abcdefghijklmnopqrstuvwxyz01234",
+			want: "0*********************************************",
+		},
+		{
+			// The byte that ends a run standing immediately in front of the
+			// prefix rather than only behind a whole word.
+			name: "hyphen before",
+			src:  "key-phx_0123456789abcdefghijklmnopqrstuvwxyz01234",
+			want: "key-*********************************************",
+		},
+		{
+			name: "a multi-byte rune before",
+			src:  "日本語phx_0123456789abcdefghijklmnopqrstuvwxyz01234",
+			want: "日本語*********************************************",
+		},
 	}
 
 	m := New(WithPatterns(PostHogPersonalAPIKey()))
@@ -343,6 +366,14 @@ func Test_PostHogPersonalAPIKey_reachesTheEndOfTheRun(t *testing.T) {
 			src:  "phx_0123456789abcdefghijklmnopqrstuvwxyz01234_suffix",
 			want: "*********************************************_suffix",
 		},
+		{
+			// A multi-byte rune stands outside base62 either way, so it ends
+			// the run exactly where an ordinary word boundary does and
+			// nothing of it is drawn into the redaction.
+			name: "a multi-byte rune after the key",
+			src:  "phx_0123456789abcdefghijklmnopqrstuvwxyz01234日本語",
+			want: "*********************************************日本語",
+		},
 	}
 
 	m := New(WithPatterns(PostHogPersonalAPIKey()))
@@ -376,6 +407,17 @@ func Test_PostHogPersonalAPIKey_cutShortOfTheFloor(t *testing.T) {
 		{
 			name: "a key cut off at its prefix",
 			src:  "POSTHOG_PERSONAL_API_KEY=phx_",
+		},
+		{
+			// A run at exactly the floor's boundary, ended by a hyphen with
+			// more text carrying on behind it — the floor and the alphabet
+			// boundary reached together rather than one at a time.
+			name: "a run of forty ended by a hyphen",
+			src:  "phx_0123456789abcdefghijklmnopqrstuvwxyz0123-suffix",
+		},
+		{
+			name: "a run of forty ended by an underscore",
+			src:  "phx_0123456789abcdefghijklmnopqrstuvwxyz0123_suffix",
 		},
 	}
 
@@ -506,6 +548,38 @@ func Test_PostHogPersonalAPIKey_aDigestBehindThePrefix(t *testing.T) {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_PostHogPersonalAPIKey_settlesNothingAboutAnOpenRun(t *testing.T) {
+	// A key standing at the very end of the input closes no run: more text
+	// could still carry it on, so the scan holds the candidate open from its
+	// own start rather than reporting the input settled up to the span it
+	// already found.
+	src := "phx_0123456789abcdefghijklmnopqrstuvwxyz01234"
+
+	spans, retain := PostHogPersonalAPIKey().Find(src)
+	if want := []Span{{0, 45}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != 0 {
+		t.Errorf("Find(%q) settled from %d, want 0", src, retain)
+	}
+}
+
+func Test_PostHogPersonalAPIKey_settlesOnceTheRunCloses(t *testing.T) {
+	// The other side of the same decision. A period does not belong to the
+	// alphabet a body is written in, so it closes the run behind the key: no
+	// text arriving after it can widen what was already found, and the whole
+	// of the input is settled.
+	src := "the key is phx_0123456789abcdefghijklmnopqrstuvwxyz01234."
+
+	spans, retain := PostHogPersonalAPIKey().Find(src)
+	if want := []Span{{11, 56}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != len(src) {
+		t.Errorf("Find(%q) settled %d of %d, want the whole of it", src, retain, len(src))
 	}
 }
 
@@ -652,6 +726,13 @@ func FuzzPostHogPersonalAPIKey_matchesReference(f *testing.F) {
 	f.Add("PHX_0123456789abcdefghijklmnopqrstuvwxyz01234")        // an uppercase prefix
 	f.Add("phx-0123456789abcdefghijklmnopqrstuvwxyz01234")        // a hyphen where the prefix carries an underscore
 	f.Add("phx0123456789abcdefghijklmnopqrstuvwxyz01234")         // the prefix without its closing underscore
+	f.Add("phx_0123456789abcdefghijklmnopqrstuvwxyz0123-suffix")  // a run of forty ended by a hyphen, with text carrying on
+	f.Add("phx_0123456789abcdefghijklmnopqrstuvwxyz0123_suffix")  // and by an underscore
+	f.Add("0phx_0123456789abcdefghijklmnopqrstuvwxyz01234")       // a digit before the prefix
+	f.Add("key-phx_0123456789abcdefghijklmnopqrstuvwxyz01234")    // a hyphen before the prefix
+	f.Add("日本語phx_0123456789abcdefghijklmnopqrstuvwxyz01234")     // a multi-byte rune before the key
+	f.Add("phx_0123456789abcdefghijklmnopqrstuvwxyz01234日本語")     // and after it
+	f.Add("phx_0123456789abcdefghijklmnopqrstuvwxyz\xff1234")     // an invalid byte in the run
 	f.Add("phx_0123456789abcdefghijklmnopqrstuvwxyz01234-suffix")
 	f.Add("phx_0123456789abcdefghijklmnopqrstuvwxyz01234_suffix")
 	f.Add("phx_0123456789abcdefghijklmnopqrstuvwxyz01234\nphx_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ01234")

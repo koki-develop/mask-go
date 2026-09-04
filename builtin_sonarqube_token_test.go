@@ -67,6 +67,29 @@ func Test_SonarQubeToken(t *testing.T) {
 			src:  "squ_0123456789abcdef0123456789abcdef01234567sqa_0123456789abcdef0123456789abcdef01234567",
 			want: []Span{{0, 44}, {44, 88}},
 		},
+		{
+			// The same shape as the squ_ case above, driven against another
+			// kind: the forty-first character is not part of the token and
+			// stays in the text.
+			name: "a hexadecimal run longer than a token is a token and what follows it, for another kind",
+			src:  "sqa_0123456789abcdef0123456789abcdef012345678",
+			want: []Span{{0, 44}},
+		},
+		{
+			// A multi-byte rune is neither hexadecimal nor the underscore a
+			// prefix closes with, so it opens a candidate in front of a token
+			// exactly as an ASCII byte would.
+			name: "a token after a multi-byte rune",
+			src:  "日本語squ_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{9, 53}},
+		},
+		{
+			// And it ends the body behind one: none of its bytes are lowercase
+			// hexadecimal.
+			name: "a token before a multi-byte rune",
+			src:  "squ_0123456789abcdef0123456789abcdef01234567日本語",
+			want: []Span{{0, 44}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -144,6 +167,41 @@ func Test_SonarQubeToken_noMatch(t *testing.T) {
 			// A commit hash is the body without the prefix in front of it.
 			name: "a git sha",
 			src:  "0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// The character the prefix itself closes with, standing inside the
+			// forty rather than in front of them: it is outside lowercase
+			// hexadecimal wherever it stands.
+			name: "an underscore inside the body",
+			src:  "squ_0123456789abcdef_123456789abcdef01234567",
+		},
+		{
+			name: "an uppercase prefix naming another kind",
+			src:  "SQB_0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "a prefix with only its first letter uppercase",
+			src:  "Squ_0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// The alphabet a body is read in ends at the boundary wherever it
+			// stands, not only in the middle of the forty: an uppercase
+			// hexadecimal digit at the very first character ends the reading
+			// exactly as one further in does.
+			name: "an uppercase hexadecimal character at the start of the body",
+			src:  "squ_A123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "an uppercase hexadecimal character at the end of the body",
+			src:  "squ_0123456789abcdef0123456789abcdef0123456F",
+		},
+		{
+			name: "a letter outside hexadecimal at the start of the body",
+			src:  "squ_g123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			name: "a letter outside hexadecimal at the end of the body",
+			src:  "squ_0123456789abcdef0123456789abcdef0123456z",
 		},
 	}
 
@@ -365,6 +423,68 @@ func Test_SonarQubeToken_theShapeItReplaced(t *testing.T) {
 
 	if got, _ := SonarQubeToken().Find(src); len(got) != 0 {
 		t.Errorf("Find(%q) = %v, want no span", src, got)
+	}
+}
+
+// Test_SonarQubeToken_noTokenBeginsInsideAnother holds the claim that a
+// matched token's forty-four characters can never carry the start of a second
+// token's prefix. Every prefix opens on 's' and then 'q', and a body admits
+// neither byte — isSonarQubeTokenBodyByte reads lowercase hexadecimal alone —
+// so the forty characters behind a matched prefix hold no 's' for a second
+// prefix to open on, and the matched prefix's own four characters carry the
+// one 's' and the one 'q' the span has, both already spent on the match
+// itself. Nothing this scan locates can begin inside a span it already
+// reported, so no case here needs to spell out a nested pair that cannot be
+// written.
+func Test_SonarQubeToken_noTokenBeginsInsideAnother(t *testing.T) {
+	if isSonarQubeTokenBodyByte('s') {
+		t.Error("a body admits 's', so a second prefix could open inside one")
+	}
+	if isSonarQubeTokenBodyByte('q') {
+		t.Error("a body admits 'q', so a second prefix could open inside one")
+	}
+}
+
+func Test_SonarQubeToken_settlesACandidateTheInputCutShort(t *testing.T) {
+	// What Find's second result reports on an input ending inside a candidate:
+	// a candidate's own start where a prefix stands with too little of a body
+	// behind it, or where only a piece of a prefix stands. Prose with no
+	// opening at all settles the whole input.
+	tests := []struct {
+		name   string
+		src    string
+		retain int
+	}{
+		{
+			// The prefix is whole and the body behind it, seventeen
+			// characters, is short of the forty the count asks for.
+			name:   "a candidate the input cut short",
+			src:    "log line token=squ_0123456789abcdef",
+			retain: 15,
+		},
+		{
+			// The text ends inside the prefix itself, which might still
+			// complete to squ_.
+			name:   "a piece of the prefix",
+			src:    "log line with squ",
+			retain: 14,
+		},
+		{
+			// No anchor stands anywhere in this text, so the search never
+			// opens a candidate and the whole input is settled.
+			name:   "prose with no prefix at all",
+			src:    "log line with nothing",
+			retain: len("log line with nothing"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, retain := SonarQubeToken().Find(tt.src)
+			if retain != tt.retain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.retain)
+			}
+		})
 	}
 }
 

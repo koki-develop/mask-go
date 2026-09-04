@@ -38,6 +38,22 @@ case:     a key at the end of a sentence
 in:       the key is cfk_0123456789abcdef0123456789abcdef0123456789abcdef.
 out:      the key is «cloudflare-api-key».
 
+case:     a key flush against a multi-byte rune on both sides
+in:       日本語cfk_0123456789abcdef0123456789abcdef0123456789abcdef日本語
+out:      日本語«cloudflare-api-key»日本語
+
+case:     a key in a tab separated field
+in:       api_key\tcfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      api_key\t«cloudflare-api-key»
+
+case:     a key followed by a crlf
+in:       CLOUDFLARE_API_KEY=cfk_0123456789abcdef0123456789abcdef0123456789abcdef\r\n
+out:      CLOUDFLARE_API_KEY=«cloudflare-api-key»\r\n
+
+case:     a key in a markdown code span
+in:       `cfk_0123456789abcdef0123456789abcdef0123456789abcdef`
+out:      `«cloudflare-api-key»`
+
 # The alphabets, which are two rather than one. The forty characters of the
 # secret are letters and digits, so they run past f and admit neither the hyphen
 # nor the underscore; the eight behind them are hexadecimal, so a letter past f
@@ -70,6 +86,26 @@ out:      cfk_0123456789abcdef-123456789abcdef0123456789abcdef
 case:     an underscore inside the secret
 in:       cfk_0123456789abcdef_123456789abcdef0123456789abcdef
 out:      cfk_0123456789abcdef_123456789abcdef0123456789abcdef
+
+case:     a hyphen at the first character of the secret
+in:       cfk_-123456789abcdef0123456789abcdef0123456789abcdef
+out:      cfk_-123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a hyphen at the last character of the secret
+in:       cfk_0123456789abcdef0123456789abcdef0123456-89abcdef
+out:      cfk_0123456789abcdef0123456789abcdef0123456-89abcdef
+
+case:     a dot inside the secret
+in:       cfk_0123456789.bcdef0123456789abcdef0123456789abcdef
+out:      cfk_0123456789.bcdef0123456789abcdef0123456789abcdef
+
+case:     a dot inside the checksum
+in:       cfk_0123456789abcdef0123456789abcdef0123456789abc.ef
+out:      cfk_0123456789abcdef0123456789abcdef0123456789abc.ef
+
+case:     a letter past f in the middle of the checksum
+in:       cfk_0123456789abcdef0123456789abcdef0123456789agcdef
+out:      cfk_0123456789abcdef0123456789abcdef0123456789agcdef
 
 # The lengths. Forty is what Cloudflare's page on token formats writes, and both
 # forty and eight are what the Credentials and Secrets row of its predefined DLP
@@ -172,8 +208,8 @@ out:      cfk_«cloudflare-api-key»
 # characters of a SHA-256 are a body and the sixteen left over stay in the
 # text. Redacting it is right rather than a fault: the vendor's format is a
 # prefix and forty-eight characters whose last eight are hexadecimal, so a
-# scan declining a digest behind this prefix declines the keys whose secret is
-# written in the same sixteen characters — which every key in this file is.
+# scan declining a digest behind this prefix declines the keys whose secret
+# happens to be written in the same sixteen characters, as one is above.
 # The shorter digests are turned away by the counts, and a digest on its own
 # carries no underscore and so holds no prefix to be found in.
 
@@ -207,6 +243,14 @@ out:      key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 case:     an uppercase prefix
 in:       CFK_0123456789abcdef0123456789abcdef0123456789abcdef
 out:      CFK_0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a capital at the start of the prefix
+in:       Cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      Cfk_0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a capital at the end of the prefix
+in:       cfK_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      cfK_0123456789abcdef0123456789abcdef0123456789abcdef
 
 case:     the api token prefix a user owns
 in:       cfut_0123456789abcdef0123456789abcdef0123456789abcdef

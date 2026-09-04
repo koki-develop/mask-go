@@ -36,13 +36,41 @@ case:     a key in the json body creating one returns
 in:       {"id":"0123456789abcdef","object":"api_key","token":"re_01234567_0123456789abcdef01234567"}
 out:      {"id":"0123456789abcdef","object":"api_key","token":"«resend-api-key»"}
 
+case:     a key as the password of the smtp endpoint
+in:       smtp://resend:re_01234567_0123456789abcdef01234567@smtp.resend.com:465
+out:      smtp://resend:«resend-api-key»@smtp.resend.com:465
+
+case:     a key in yaml
+in:       resend_api_key: re_01234567_0123456789abcdef01234567
+out:      resend_api_key: «resend-api-key»
+
+case:     a key in a diff line
+in:       +RESEND_API_KEY=re_01234567_0123456789abcdef01234567
+out:      +RESEND_API_KEY=«resend-api-key»
+
+case:     a key in a markdown code span
+in:       `re_01234567_0123456789abcdef01234567`
+out:      `«resend-api-key»`
+
 # The alphabet both segments are written in: the letters of both cases with the
 # digits, which is what the expression Resend redacts its own recorded fixtures
 # with spells out. What that alphabet leaves out is everything else, the hyphen
 # and the underscore among them, so a segment carrying either is no segment.
+#
+# One case below carries no run: "segments written in the letters past f" is a
+# body of one class alone, the letters between g and z and between G and R,
+# which the ordered run this file opens on never reaches.
 
 case:     an uppercase second segment
 in:       re_01234567_0123456789ABCDEF01234567
+out:      «resend-api-key»
+
+case:     an uppercase first segment
+in:       re_ABCDEFGH_0123456789abcdef01234567
+out:      «resend-api-key»
+
+case:     segments written in the letters past f
+in:       re_ghijklmn_opqrstuvwxyzGHIJKLMNOPQR
 out:      «resend-api-key»
 
 case:     a second segment carrying a hyphen
@@ -52,6 +80,26 @@ out:      re_01234567_0123456789abcdef-1234567
 case:     a second segment carrying an underscore
 in:       re_01234567_0123456789abcdef_1234567
 out:      re_01234567_0123456789abcdef_1234567
+
+case:     a hyphen in the first segment
+in:       re_0123-567_0123456789abcdef01234567
+out:      re_0123-567_0123456789abcdef01234567
+
+case:     a third underscore in the first segment
+in:       re_0123_567_0123456789abcdef01234567
+out:      re_0123_567_0123456789abcdef01234567
+
+case:     a hyphen straight behind the separator
+in:       re_01234567_-0123456789abcdef0123456
+out:      re_01234567_-0123456789abcdef0123456
+
+case:     a second separator straight behind the first
+in:       re_01234567__0123456789abcdef0123456
+out:      re_01234567__0123456789abcdef0123456
+
+case:     a hyphen where the twenty-fourth character stands
+in:       re_01234567_0123456789abcdef0123456-
+out:      re_01234567_0123456789abcdef0123456-
 
 # The lengths either side of the two counts. Resend states that a key is a
 # segment of eight and a segment of twenty-four, and both are used as counts
@@ -102,6 +150,14 @@ case:     a key at the end of a sentence
 in:       the key is re_01234567_0123456789abcdef01234567.
 out:      the key is «resend-api-key».
 
+case:     a key immediately against japanese on both sides
+in:       鍵はre_01234567_0123456789abcdef01234567です
+out:      鍵は«resend-api-key»です
+
+case:     a key against an invalid byte
+in:       \xffre_01234567_0123456789abcdef01234567\xff
+out:      \xff«resend-api-key»\xff
+
 # Two keys written together. A key can begin inside another, and the underscore
 # is what bounds where: a candidate opens two characters in front of one, and
 # the two underscores a key holds are its prefix's and its separator's. Reading
@@ -117,6 +173,10 @@ out:      the key is «resend-api-key».
 case:     two keys with nothing between them
 in:       re_01234567_0123456789abcdef01234567re_01234567_0123456789abcdef01234567
 out:      «resend-api-key»«resend-api-key»
+
+case:     three keys separated by spaces
+in:       re_01234567_0123456789abcdef01234567 re_01234567_0123456789ABCDEF01234567 re_01234567_0123456789abcdef01234567
+out:      «resend-api-key» «resend-api-key» «resend-api-key»
 
 case:     a key beginning at the end of the key before it
 in:       re_01234567_0123456789abcdef012345re_01234567_0123456789abcdef01234567

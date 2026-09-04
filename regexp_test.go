@@ -2,6 +2,7 @@ package mask
 
 import (
 	"errors"
+	"regexp"
 	"regexp/syntax"
 	"slices"
 	"strconv"
@@ -111,6 +112,113 @@ func Test_MustRegexp_find(t *testing.T) {
 			src:  "id=none",
 			want: nil,
 		},
+		{
+			name: "case-insensitive matching locates a folded literal",
+			expr: `(?i)INT-[0-9a-f]{4}`,
+			src:  "a int-DEAD b",
+			want: []Span{{len("a "), len("a int-DEAD")}},
+		},
+		{
+			name: "case-insensitive matching locates a mixed-case fold",
+			expr: `(?i)INT-[0-9a-f]{4}`,
+			src:  "a Int-dEaD b",
+			want: []Span{{len("a "), len("a Int-dEaD")}},
+		},
+		{
+			name: "(?m) locates a line-start occurrence and declines a mid-line one",
+			expr: `(?m)^token=[0-9a-f]{6}`,
+			src:  "token=012345\nkey token=abcdef\ntoken=beefff",
+			want: []Span{
+				{0, len("token=012345")},
+				{len("token=012345\nkey token=abcdef\n"), len("token=012345\nkey token=abcdef\ntoken=beefff")},
+			},
+		},
+		{
+			name: `\b declines a literal abutting a word character and one running past its width`,
+			expr: `\bkey-[0-9]{3}\b`,
+			src:  "xkey-123 key-123 key-1234",
+			want: []Span{{len("xkey-123 "), len("xkey-123 key-123")}},
+		},
+		{
+			name: `\B locates only where a match runs on from a word character`,
+			expr: `\B[a-z]{3}`,
+			src:  "abcd",
+			want: []Span{{1, 4}},
+		},
+		{
+			name: "(?s) admits a match carrying a newline",
+			expr: `(?s)BEGIN.{0,20}END`,
+			src:  "a BEGIN one\ntwo END b",
+			want: []Span{{len("a "), len("a BEGIN one\ntwo END")}},
+		},
+		{
+			// A mask group standing at the very start of the match means
+			// every position inside a match is tried as a candidate of its
+			// own, so the overlapping matches this expression admits over a
+			// run of hex are merged rather than stepped over the way Go's
+			// own FindAll would step over them.
+			name: "a mask group at the start of a bounded match locates every overlapping match merged",
+			expr: `(?P<mask>[0-9a-f]{4})`,
+			src:  "0123456789",
+			want: []Span{{0, 10}},
+		},
+		{
+			// Go's own submatch machinery reports only the last iteration of
+			// a group standing under a repetition; this is that answer,
+			// stated as a case so that it is a decision on the record rather
+			// than an accident of how the table above happens to read it.
+			name: "a mask group under a counted repetition locates only its last iteration",
+			expr: `id=(?P<mask>[0-9]){3}`,
+			src:  "id=123",
+			want: []Span{{len("id=12"), len("id=123")}},
+		},
+		{
+			name: "the (?<mask>...) spelling of a named group narrows the span the same as (?P<mask>...)",
+			expr: `id=(?<mask>\d+)`,
+			src:  "id=123 name=a",
+			want: []Span{{len("id="), len("id=123")}},
+		},
+		{
+			name: "a group named Mask, differing only in case, does not narrow the span",
+			expr: `id=(?P<Mask>\d+)`,
+			src:  "id=123",
+			want: []Span{{0, len("id=123")}},
+		},
+		{
+			name: "a non-greedy quantifier locates the shortest leftmost match",
+			expr: `a.*?b`,
+			src:  "axxbyyb",
+			want: []Span{{0, len("axxb")}},
+		},
+		{
+			name: "a mask group narrows the span to a run of multi-byte runes",
+			expr: `名前=(?P<mask>\p{Han}+)`,
+			src:  "a 名前=東京 b",
+			want: []Span{{len("a 名前="), len("a 名前=東京")}},
+		},
+		{
+			name: "an expression matching empty at most positions locates only where it matches something",
+			expr: `[0-9]*`,
+			src:  "a12b",
+			want: []Span{{1, 3}},
+		},
+		{
+			name: "a repeated group matching empty at most positions locates only where it matches something",
+			expr: `(?:ab)*`,
+			src:  "zabz",
+			want: []Span{{1, 3}},
+		},
+		{
+			// The negative side of the nested-match rule: with the mask
+			// group standing past LookBehind into the match, this locates
+			// only Go's own leftmost walk, which takes the first match and
+			// resumes past it — missing the second SECRET, whose own match
+			// begins inside the first.
+			name: "a mask group standing past LookBehind into a bounded match locates only Go's own walk",
+			expr: `(?s).{80}(?P<mask>SECRET)`,
+			src:  strings.Repeat("x", 80) + "SECRET" + strings.Repeat("x", 74) + "SECRET",
+			want: []Span{{len(strings.Repeat("x", 80)), len(strings.Repeat("x", 80) + "SECRET")}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -130,21 +238,34 @@ func Test_MustRegexp_name(t *testing.T) {
 }
 
 func Test_MustRegexp_invalidExpression(t *testing.T) {
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("MustRegexp did not panic on an invalid expression")
-		}
-		// A caller building several patterns at init reads the panic to find
-		// which of them is the invalid one, and the name is the one thing the
-		// error out of regexp does not carry: what it writes its complaint
-		// against is the expression.
-		msg, ok := r.(string)
-		if !ok || !strings.Contains(msg, `"my-pattern"`) {
-			t.Errorf("panic = %v, want a message naming my-pattern", r)
-		}
-	}()
-	MustRegexp("my-pattern", `(`)
+	// Several shapes of invalid expression, so the message is held for more
+	// than the one an unclosed group gives.
+	for _, expr := range []string{`(`, `[a-`, `a{2,1}`} {
+		t.Run(expr, func(t *testing.T) {
+			wantErr := func() error { _, err := regexp.Compile(expr); return err }()
+			if wantErr == nil {
+				t.Fatalf("regexp.Compile(%q) returned no error; this expression does not belong here", expr)
+			}
+
+			defer func() {
+				r := recover()
+				if r == nil {
+					t.Fatal("MustRegexp did not panic on an invalid expression")
+				}
+				// A caller building several patterns at init reads the panic
+				// to find which of them is the invalid one, and to see what
+				// regexp.Compile itself complained about.
+				msg, ok := r.(string)
+				if !ok || !strings.Contains(msg, `"my-pattern"`) {
+					t.Errorf("panic = %v, want a message naming my-pattern", r)
+				}
+				if ok && !strings.Contains(msg, wantErr.Error()) {
+					t.Errorf("panic = %v, want it to carry %v", r, wantErr)
+				}
+			}()
+			MustRegexp("my-pattern", expr)
+		})
+	}
 }
 
 // Test_Regexp holds the pattern Regexp returns for an expression that
@@ -166,20 +287,97 @@ func Test_Regexp(t *testing.T) {
 }
 
 func Test_Regexp_invalidExpression(t *testing.T) {
-	p, err := Regexp("my-pattern", `(`)
-	if err == nil {
-		t.Fatal("Regexp returned no error for an invalid expression")
+	for _, expr := range []string{
+		`(`,
+		`[a-`,
+		`a{2,1}`,
+		`*`,
+		`(?P<mask>`,
+		// PCRE syntax RE2 does not accept: a lookahead, a negative lookahead,
+		// a lookbehind (which must not be read as the (?<name>...) spelling of
+		// a named group) and a backreference.
+		`(?=abc)`,
+		`(?!abc)`,
+		`(?<=abc)`,
+		`(\w)\1`,
+	} {
+		t.Run(expr, func(t *testing.T) {
+			wantErr := func() error { _, err := regexp.Compile(expr); return err }()
+			if wantErr == nil {
+				t.Fatalf("regexp.Compile(%q) returned no error; this expression does not belong here", expr)
+			}
+
+			p, err := Regexp("my-pattern", expr)
+			if p != nil {
+				t.Errorf("Regexp() pattern = %v, want nil beside the error", p)
+			}
+			// The error regexp.Compile reports, handed back as it stands,
+			// rather than one written over the top of it: a caller printing
+			// or matching on it reads what regexp.Compile would have given
+			// directly.
+			if err == nil || err.Error() != wantErr.Error() {
+				t.Errorf("Regexp() error = %v, want %v", err, wantErr)
+			}
+
+			var serr *syntax.Error
+			if !errors.As(err, &serr) {
+				t.Errorf("Regexp() error = %T, want %T", err, serr)
+			}
+		})
 	}
-	if p != nil {
-		t.Errorf("Regexp() pattern = %v, want nil beside the error", p)
+}
+
+// Test_Regexp_emptyExpression holds Regexp to the one condition its doc names
+// for an error — "an error where expr is not one regexp.Compile accepts" —
+// which the empty expression is not: regexp.Compile accepts it, matching the
+// empty string everywhere, so Regexp must return a working Pattern for it.
+func Test_Regexp_emptyExpression(t *testing.T) {
+	p, err := Regexp("empty", "")
+	if err != nil {
+		t.Fatalf("Regexp() error = %v, want no error", err)
+	}
+	if p == nil {
+		t.Fatal("Regexp() pattern = nil, want a usable Pattern")
 	}
 
-	// The error regexp.Compile reports rather than one written over the top of
-	// it: a caller reading the code and the expression out of it is reading
-	// what regexp put there.
-	var serr *syntax.Error
-	if !errors.As(err, &serr) {
-		t.Errorf("Regexp() error = %T, want %T", err, serr)
+	const src = "abcdef"
+	spans, retain := p.Find(src)
+	if len(spans) != 0 {
+		t.Errorf("Find(%q) = %v, want no span: Mask ignores an empty match everywhere", src, spans)
+	}
+	// The expression can match at most zero bytes, so by the width rule
+	// everything is settled.
+	if retain != len(src) {
+		t.Errorf("Find(%q) settled %d, want %d", src, retain, len(src))
+	}
+
+	m := New(WithPatterns(p))
+	if got := m.Mask(src); got != src {
+		t.Errorf("Mask(%q) = %q, want %q", src, got, src)
+	}
+}
+
+// Test_Regexp_emptyName holds Regexp to the same one condition for an error:
+// an empty name is not "expr is not one regexp.Compile accepts", so it is not
+// an error either, and a Masker over the pattern still redacts and still
+// hands a redactor the empty name intact.
+func Test_Regexp_emptyName(t *testing.T) {
+	p, err := Regexp("", `\d+`)
+	if err != nil {
+		t.Fatalf("Regexp() error = %v, want no error", err)
+	}
+	if got := p.Name(); got != "" {
+		t.Errorf("Name() = %q, want %q", got, "")
+	}
+
+	var attributed Pattern
+	redactor := NewRedactor(func(m Match) string { attributed = m.Pattern; return "[R]" })
+	m := New(WithPatterns(p), WithRedactor(redactor))
+	if got, want := m.Mask("id 123"), "id [R]"; got != want {
+		t.Errorf("Mask() = %q, want %q", got, want)
+	}
+	if attributed != p {
+		t.Error("the redactor was not handed the pattern the caller gave")
 	}
 }
 
@@ -284,6 +482,73 @@ func Test_MustRegexp_retain(t *testing.T) {
 			src:  "0123456789",
 			want: 4,
 		},
+		{
+			// LiteralPrefix is what Regexp reads a literal opening from, and
+			// it reports the empty string for INT- case-folded, the same as
+			// it does for an expression naming no literal at all — so this is
+			// the "repetition with no ceiling and no literal settles
+			// nothing" case above, reached by a different route: an opening
+			// Go declines to fold into a literal rather than one that was
+			// never there.
+			name: "a case-folded literal opening settles nothing, matched in the source's own case",
+			expr: `(?i)INT-[0-9a-f]+`,
+			src:  "a token: int-dead",
+			want: 0,
+		},
+		{
+			// The same expression against text written in another case: were
+			// LiteralPrefix to report INT- despite the folding, a literal
+			// search run case-sensitively against int-dead would find nothing
+			// and settle the entire string, reporting a live match as
+			// complete. What holds this test's want at 0 rather than
+			// len(src) is that no such search ever runs here.
+			name: "a case-folded literal opening settles nothing, matched in another case",
+			expr: `(?i)INT-[0-9a-f]+`,
+			src:  "a token: Int-DEAD",
+			want: 0,
+		},
+		{
+			// A width ceiling and an opening literal both apply here, and the
+			// literal stands at the very start of the text: the width rule
+			// alone already guarantees this much settled, so the answer must
+			// be at least it, not the literal rule's 0.
+			name: "the width rule settles more than the literal rule where the literal stands early",
+			expr: `INT-[0-9a-f]{4}`,
+			src:  "INT-dead" + strings.Repeat("z", 20),
+			want: len(strings.Repeat("z", 20)),
+		},
+		{
+			// The mirror: only a fragment of the literal stands, at the very
+			// end, so the literal rule settles more than the width rule's
+			// len(src)-8 does.
+			name: "the literal rule settles more than the width rule where only a fragment stands at the end",
+			expr: `INT-[0-9a-f]{4}`,
+			src:  strings.Repeat("z", 20) + "IN",
+			want: len(strings.Repeat("z", 20)),
+		},
+		{
+			// The literal stands twice; what bounds retain is the first place
+			// it could stand, not the last.
+			name: "an unbounded expression's literal rule is taken from the first occurrence, not the last",
+			expr: `INT-[0-9a-f]+`,
+			src:  "INT-dead and INT-beef",
+			want: 0,
+		},
+		{
+			name: "an unbounded expression's literal rule from the first occurrence, padded in front of it",
+			expr: `INT-[0-9a-f]+`,
+			src:  "pad " + "INT-dead and INT-beef",
+			want: len("pad "),
+		},
+		{
+			// A non-greedy quantifier still admits a match of any width, so
+			// it settles by the same two rules its greedy twin does, to the
+			// same answer.
+			name: "a non-greedy unbounded quantifier settles the same as its greedy twin",
+			expr: `INT-[0-9a-f]+?`,
+			src:  "a token: INT-dead",
+			want: len("a token: "),
+		},
 	}
 
 	for _, tt := range tests {
@@ -323,6 +588,10 @@ func Test_MustRegexp_retainSettles(t *testing.T) {
 		`[0-9a-f]{4}$`,
 		`^INT-[0-9a-f]{4}`,
 		`INT-[0-9a-f]+`,
+		// A folded literal opening on an expression with no ceiling: Go
+		// reports no literal for it, so this settles nothing at all rather
+		// than by either half of the rule this test holds.
+		`(?i)INT-[0-9a-f]+`,
 	}
 	srcs := []string{
 		"",
@@ -634,6 +903,67 @@ func Test_MustRegexp_settlesNothingWithoutABoundOrALiteral(t *testing.T) {
 	}
 }
 
+func Test_MustRegexp_zeroWidthBoundedMatchTerminates(t *testing.T) {
+	// x{0,3}, [a-z]{0,2} and \b each bound the width of a match, and each
+	// admits one no wider than zero: a counted repetition run down to zero,
+	// and a boundary, which stands for nothing wherever it is written. p.probes
+	// tries every position inside a match for one of its own, so a match this
+	// narrow hands it a candidate reporting nothing at every position tried —
+	// a path Test_MustRegexp_find's one zero-width case, id=(?P<mask>\d*),
+	// does not reach, since the match around it stays non-empty on the id= it
+	// stands behind. What is asserted here is completion within the limit
+	// Test_MustRegexp_isLinear holds an unbounded scan to, and the text a
+	// Masker built on the pattern produces — not a wrong answer, since an empty
+	// span is one add already drops, but the scan failing to return at all.
+	limit := 2 * time.Second
+	if raceEnabled {
+		limit = 8 * time.Second
+	}
+
+	tests := []struct {
+		name string
+		expr string
+		src  string
+		want string
+	}{
+		{"x{0,3} over text with no x", `x{0,3}`, "yyyy", "yyyy"},
+		{"x{0,3} over the empty string", `x{0,3}`, "", ""},
+		{"x{0,3} over letters with no x", `x{0,3}`, "abc", "abc"},
+		{"x{0,3} over a run of x", `x{0,3}`, strings.Repeat("x", 64), strings.Repeat("*", 64)},
+		{"[a-z]{0,2} over a run of lowercase letters", `[a-z]{0,2}`, "yyyy", "****"},
+		{"[a-z]{0,2} over the empty string", `[a-z]{0,2}`, "", ""},
+		{"[a-z]{0,2} over lowercase letters", `[a-z]{0,2}`, "abc", "***"},
+		{"[a-z]{0,2} over a run of x, x being lowercase too", `[a-z]{0,2}`, strings.Repeat("x", 64), strings.Repeat("*", 64)},
+		{`\b over text with no x`, `\b`, "yyyy", "yyyy"},
+		{`\b over the empty string`, `\b`, "", ""},
+		{`\b over letters with no x`, `\b`, "abc", "abc"},
+		{`\b over a run of x`, `\b`, strings.Repeat("x", 64), strings.Repeat("x", 64)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := MustRegexp("p", tt.expr)
+
+			start := time.Now()
+			spans, _ := p.Find(tt.src)
+			if d := time.Since(start); d > limit {
+				t.Fatalf("Find(%q) with %q took %v, want under %v", tt.src, tt.expr, d, limit)
+			}
+			// Where nothing changes, nothing was there to redact: what the
+			// probe returned at every position it tried was the empty match,
+			// and add drops every one of those.
+			if tt.want == tt.src && len(spans) != 0 {
+				t.Errorf("Find(%q) with %q = %v, want no span", tt.src, tt.expr, spans)
+			}
+
+			m := New(WithPatterns(p))
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) with %q = %q, want %q", tt.src, tt.expr, got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_MustRegexp_maskGroupAtTheEdgeOfAWindow(t *testing.T) {
 	// A window opens LookBehind bytes in front of the text still to be written
 	// out. A match beginning in the first rune of that opening is one the
@@ -740,6 +1070,241 @@ func Test_MustRegexp_isLinear(t *testing.T) {
 			m.Mask(src)
 			if d := time.Since(start); d > limit {
 				t.Errorf("Mask() of %d bytes took %v", len(src), d)
+			}
+		})
+	}
+}
+
+// Test_MustRegexp_find_reportsRuneAlignedSpans holds a MustRegexp pattern to
+// what Pattern.Find documents as a demand on a Find written by hand rather
+// than something this package's own Finds can violate: "the built-in patterns
+// and Regexp cannot report such a span [cutting a multi-byte rune in half] —
+// every built-in decides its ends on an ASCII alphabet, and Go's regexp
+// matches runes."
+func Test_MustRegexp_find_reportsRuneAlignedSpans(t *testing.T) {
+	tests := []struct {
+		name string
+		expr string
+		srcs []string
+	}{
+		{
+			name: "a dot matching any rune",
+			expr: `(?s).`,
+			srcs: []string{"日本語", "a日b", "\xff\xfe"},
+		},
+		{
+			name: "a run of non-space characters",
+			expr: `[^ ]+`,
+			srcs: []string{"日本語", "a日b", "\xff\xfe"},
+		},
+		{
+			name: "a mask group narrowing a run between two literals",
+			expr: `x(?P<mask>.+)x`,
+			srcs: []string{"x日本語x", "xa日bx"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := MustRegexp("p", tt.expr)
+			for _, src := range tt.srcs {
+				spans, _ := p.Find(src)
+				for _, s := range spans {
+					if !utf8.RuneStart(src[s.Start]) {
+						t.Errorf("Find(%q) reported %v, whose Start does not fall on a rune boundary", src, s)
+					}
+					if s.End != len(src) && !utf8.RuneStart(src[s.End]) {
+						t.Errorf("Find(%q) reported %v, whose End does not fall on a rune boundary", src, s)
+					}
+				}
+			}
+		})
+	}
+}
+
+// Test_MustRegexp_masksInvalidUTF8 drives a MustRegexp pattern over invalid
+// UTF-8 deterministically: Go's regexp decodes a bad byte as the replacement
+// rune of width one, so a match runs across invalid UTF-8 without panicking,
+// and every span it reports still falls where regexp itself put a rune
+// boundary.
+func Test_MustRegexp_masksInvalidUTF8(t *testing.T) {
+	tests := []struct {
+		name string
+		expr string
+		src  string
+		want string
+	}{
+		{
+			// .{2} is a bounded expression with no mask group, so every
+			// position inside a match is tried as a candidate of its own: on
+			// a run this dense every position admits one, and the whole
+			// four-byte run — invalid bytes included — merges into a single
+			// redaction rather than the two 2-byte matches Go's own FindAll
+			// alone would give.
+			name: "a bounded expression over invalid bytes merges the whole dense run",
+			expr: `(?s).{2}`,
+			src:  "a\xff\xfeb",
+			want: "[R]",
+		},
+		{
+			name: "a run of non-ASCII characters over two invalid bytes",
+			expr: `[^\x00-\x7f]+`,
+			src:  "key=\xe6\x97 rest",
+			want: "key=[R] rest",
+		},
+		{
+			name: "a mask group narrowing to the same two invalid bytes",
+			expr: `key=(?P<mask>\S+)`,
+			src:  "key=\xe6\x97 rest",
+			want: "key=[R] rest",
+		},
+		{
+			name: "a lone-surrogate encoding matched whole",
+			expr: `(?s).+`,
+			src:  "\xed\xa0\x80",
+			want: "[R]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := New(WithPatterns(MustRegexp("p", tt.expr)), WithRedactor(Fixed("[R]")))
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_MustRegexp_masksAccordingToGoSemantics is the Mask-level half of three
+// of the Find-table cases above, so that the span they pin is also shown
+// redacting the text as documented: "The whole match is redacted", narrowed
+// to a mask group where the expression names one.
+func Test_MustRegexp_masksAccordingToGoSemantics(t *testing.T) {
+	tests := []struct {
+		name     string
+		p        Pattern
+		redactor Redactor
+		src      string
+		want     string
+	}{
+		{
+			name:     "case folding redacts a differently-cased match",
+			p:        MustRegexp("p", `(?i)INT-[0-9a-f]{4}`),
+			redactor: Fill('*'),
+			src:      "int-dead",
+			want:     "********",
+		},
+		{
+			name:     "(?m) redacts a line-start occurrence and leaves a mid-line one",
+			p:        MustRegexp("p", `(?m)^token=[0-9a-f]{6}`),
+			redactor: Fixed("[R]"),
+			src:      "token=012345\nkey token=abcdef\ntoken=beefff",
+			want:     "[R]\nkey token=abcdef\n[R]",
+		},
+		{
+			name:     "a mask group near the start redacts a run of overlapping matches whole",
+			p:        MustRegexp("p", `(?P<mask>[0-9a-f]{4})`),
+			redactor: Fixed("[R]"),
+			src:      "z0123456789z",
+			want:     "z[R]z",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := New(WithPatterns(tt.p), WithRedactor(tt.redactor))
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_MustRegexp_overlapsABuiltin holds Masker.Mask's overlap and attribution
+// rules to a pairing no other test drives: a caller's own MustRegexp pattern
+// and a built-in whose values overlap. "Values that overlap are redacted
+// together as one. The combined text is attributed to the pattern that
+// located the value starting earliest", which here is always the built-in,
+// whichever order the two are registered in.
+func Test_MustRegexp_overlapsABuiltin(t *testing.T) {
+	const token = "ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+	src := "t=" + token
+	// [0-9a-z]{20,} cannot open on "ghp_" (the underscore is not in the
+	// class), so it matches only the run of base62 characters behind the
+	// prefix — a span nested inside the github-token value.
+	hexRun := MustRegexp("hex-run", `[0-9a-z]{20,}`)
+	builtin := GitHubToken()
+
+	var name string
+	redactor := NewRedactor(func(m Match) string { name = m.Pattern.Name(); return "[R]" })
+
+	for _, tt := range []struct {
+		name     string
+		patterns []Pattern
+	}{
+		{"built-in added first", []Pattern{builtin, hexRun}},
+		{"caller's pattern added first", []Pattern{hexRun, builtin}},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			m := New(WithPatterns(tt.patterns...), WithRedactor(redactor))
+			if got, want := m.Mask(src), "t=[R]"; got != want {
+				t.Errorf("Mask(%q) = %q, want %q", src, got, want)
+			}
+			if name != "github-token" {
+				t.Errorf("attributed to %q, want %q (the value starting earliest)", name, "github-token")
+			}
+		})
+	}
+}
+
+// Test_MustRegexp_readsOnlyOneRuneBack holds the stated justification for
+// LookBehind's size to a narrower width than the constant itself: "A pattern
+// built by Regexp reads one rune, which is what \b, \B and ^ are decided by.
+// The limit is far above either so that a Pattern written by hand has room to
+// read a keyword or an assignment in front of what it locates." This drives
+// \b, \B and (?m)^ at utf8.UTFMax rather than at LookBehind, so a widening of
+// what Regexp itself needs — as opposed to the room the constant leaves for a
+// caller — would fail here even though LookBehind's own width still covers it.
+func Test_MustRegexp_readsOnlyOneRuneBack(t *testing.T) {
+	patterns := []Pattern{
+		MustRegexp("word-boundary", `\bkey-[0-9]{3}\b`),
+		MustRegexp("non-boundary", `\Bkey-[0-9]{3}`),
+		MustRegexp("line-anchor", `(?m)^token=[0-9a-f]{6}`),
+	}
+	for _, p := range patterns {
+		t.Run(p.Name(), func(t *testing.T) {
+			for _, src := range lookBehindInputs() {
+				spans, _ := p.Find(src)
+				for cut := range len(src) + 1 {
+					from := cut + utf8.UTFMax
+					if from > len(src) {
+						continue
+					}
+					straddles := false
+					for _, s := range spans {
+						if s.Start < from && from < s.End {
+							straddles = true
+						}
+					}
+					if straddles {
+						continue
+					}
+
+					var want []Span
+					for _, s := range spans {
+						if s.Start >= from {
+							want = append(want, s)
+						}
+					}
+					windowSpans, _ := p.Find(src[cut:])
+					var got []Span
+					for _, s := range windowSpans {
+						if s.Start >= from-cut {
+							got = append(got, Span{s.Start + cut, s.End + cut})
+						}
+					}
+					if !slices.Equal(got, want) {
+						t.Errorf("from %d on, %q gives %v and %q gives %v", from, src, want, src[cut:], got)
+					}
+				}
 			}
 		})
 	}

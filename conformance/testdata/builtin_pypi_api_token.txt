@@ -49,6 +49,18 @@ case:     a token on a twine command line
 in:       twine upload -u __token__ -p pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef dist/*
 out:      twine upload -u __token__ -p «pypi-api-token» dist/*
 
+case:     a token added on a diff line
+in:       +password = pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef
+out:      +password = «pypi-api-token»
+
+case:     a token in a markdown code span
+in:       `pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef`
+out:      `«pypi-api-token»`
+
+case:     a token followed by a crlf
+in:       PYPI_API_TOKEN=pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef\r\n
+out:      PYPI_API_TOKEN=«pypi-api-token»\r\n
+
 case:     a token in a workflow secret
 in:       {"secrets":{"PYPI_API_TOKEN":"pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef"}}
 out:      {"secrets":{"PYPI_API_TOKEN":"«pypi-api-token»"}}
@@ -59,11 +71,22 @@ out:      {"secrets":{"PYPI_API_TOKEN":"«pypi-api-token»"}}
 # writes in place of the last two, the plus and the slash, are not admitted —
 # and because the body is read to the end of its run, a character outside the
 # alphabet standing inside a token leaves what is in front of it short of the
-# floor rather than leaving a shorter token.
+# floor rather than leaving a shorter token. The padding character stripped
+# from the serialization is outside the alphabet the same way: written straight
+# after a token it ends the run there and stays in the text, and written inside
+# one it leaves the run in front of it short of the floor.
 
 case:     a body carrying a hyphen and an underscore
 in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef-0123456789abcdef_0123456789abcdef
 out:      «pypi-api-token»
+
+case:     padding written straight after a token
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef==
+out:      «pypi-api-token»==
+
+case:     padding inside the body
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef=0123456789abcdef0123456789abcdef
+out:      pypi-AgEIcHlwaS5vcmc0123456789abcdef=0123456789abcdef0123456789abcdef
 
 case:     a plus inside the body
 in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef+0123456789abcdef0123456789abcdef
@@ -128,6 +151,14 @@ case:     a token before a word
 in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdefsuffix
 out:      «pypi-api-token»
 
+case:     a token immediately against japanese on both sides
+in:       日本語pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef日本語
+out:      日本語«pypi-api-token»日本語
+
+case:     a token cut short with an ellipsis
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef...
+out:      pypi-AgEIcHlwaS5vcmc0123456789abcdef...
+
 # Two tokens written together. Every character of the anchor belongs to the
 # alphabet a body is, so a token can begin inside the span of the one before it;
 # the two spans overlap and are redacted as one. Written apart, both go.
@@ -139,6 +170,10 @@ out:      «pypi-api-token»
 case:     two tokens separated by a space
 in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef pypi-AgENdGVzdC5weXBpLm9yZw0123456789abcdef0123456789abcdef0123456789abcdef
 out:      «pypi-api-token» «pypi-api-token»
+
+case:     one token per line over three lines
+in:       pypi-AgEIcHlwaS5vcmc0123456789abcdef0123456789abcdef0123456789abcdef\npypi-AgENdGVzdC5weXBpLm9yZw0123456789abcdef0123456789abcdef0123456789abcdef\npypi-AgEEeC5pbw0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «pypi-api-token»\n«pypi-api-token»\n«pypi-api-token»
 
 # What this pattern redacts that nobody issued. The anchor is eight characters
 # of the base64url alphabet, so a long enough encoding written in that alphabet

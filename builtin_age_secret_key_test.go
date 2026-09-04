@@ -63,6 +63,25 @@ func Test_AgeSecretKey(t *testing.T) {
 			src:  "AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02 AGE-SECRET-KEY-PQ-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02",
 			want: []Span{{0, 74}, {75, 152}},
 		},
+		{
+			// The count behind the prefix is exact for the hybrid kind as well,
+			// so a run longer than a hybrid key is a key and what follows it,
+			// exactly as it is for the shorter prefix above.
+			name: "a hybrid alphabet run longer than a key is a key and what follows it",
+			src:  "AGE-SECRET-KEY-PQ-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF0234",
+			want: []Span{{0, 77}},
+		},
+		{
+			// A body that opens on the run every other case here uses and then
+			// carries on through the letters that run never reaches. Bech32
+			// leaves out 1 and B, so the run written into a body is
+			// 023456789ACDEF; QPZRYXGTVWSJNKHMUL is what the alphabet holds
+			// besides, which no other case in this file puts in front of the
+			// scan.
+			name: "a body carrying the letters the run never reaches",
+			src:  "AGE-SECRET-KEY-1023456789ACDEFQPZRYXGTVWSJNKHMULQPZRYXGTVWSJNKHMULQPZRYXGT",
+			want: []Span{{0, 74}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -141,6 +160,61 @@ func Test_AgeSecretKey_noMatch(t *testing.T) {
 			name: "prose in capitals",
 			src:  "THERE IS NO CREDENTIAL IN THIS SENTENCE",
 		},
+		{
+			// The hybrid kind is read in the same one case as the shorter
+			// prefix, and nowhere else: age dispatches on the uppercase prefix
+			// before it decodes anything, so a lowercase spelling of it is one
+			// nothing of age's writes or reads.
+			name: "a hybrid key written in lowercase",
+			src:  "age-secret-key-pq-1023456789acdef023456789acdef023456789acdef023456789acdef02",
+		},
+		{
+			// The separator Bech32 divides the human-readable part from the
+			// data by is what closes the hybrid prefix, and without it the scan
+			// never finishes reading a kind.
+			name: "the hybrid prefix without the separator behind it",
+			src:  "AGE-SECRET-KEY-PQ-023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02",
+		},
+		{
+			name: "the hybrid prefix without its hyphen",
+			src:  "AGE-SECRET-KEY-PQ1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02",
+		},
+		{
+			// The fifty-eighth character of the body, the last one the count
+			// reads, standing outside the alphabet. A scan checking only the
+			// characters in front of it would still call this a key.
+			name: "a character outside the alphabet at the last position of the body",
+			src:  "AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF0B",
+		},
+		{
+			name: "a lowercase letter at the last position of the body",
+			src:  "AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF0f",
+		},
+		{
+			// The separator standing one character short of where it would
+			// close a second candidate's human-readable part, deep inside a
+			// body rather than at the position the prefix reads it from.
+			name: "the separator near the end of the body",
+			src:  "AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF12",
+		},
+		{
+			// The alphabet and the case are both age's, so a body that is
+			// otherwise uppercase and carries one lowercase letter is no key,
+			// exactly as a body written wholly in lowercase is not.
+			name: "a body carrying one lowercase character",
+			src:  "AGE-SECRET-KEY-1023456789ACDEF023456789aCDEF023456789ACDEF023456789ACDEF02",
+		},
+		{
+			// An uppercase base32 blob, which is the nearest ordinary text
+			// comes to this alphabet without naming a key at all.
+			name: "an uppercase base32 blob",
+			src:  "MZXW6YTBOI======MZXW6YTBOI======MZXW6YTBOI======MZXW6YTBOI======",
+		},
+		{
+			// A kind naming nothing age issues, standing where PQ would.
+			name: "a kind this pattern was never told about",
+			src:  "BUILD_ID=AGE-SECRET-KEY-BUILD-1023456789ACDEF",
+		},
 	}
 
 	for _, tt := range tests {
@@ -184,6 +258,24 @@ func Test_AgeSecretKey_inContext(t *testing.T) {
 			name: "a key of each kind",
 			src:  "AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02 AGE-SECRET-KEY-PQ-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02",
 			want: "************************************************************************** *****************************************************************************",
+		},
+		{
+			// The hybrid kind written in the shapes the shorter prefix is
+			// exercised in above: an assignment, quoted, and a field of a json
+			// log line.
+			name: "a hybrid key in an environment assignment",
+			src:  "SOPS_AGE_KEY=AGE-SECRET-KEY-PQ-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02",
+			want: "SOPS_AGE_KEY=*****************************************************************************",
+		},
+		{
+			name: "a hybrid key quoted",
+			src:  `"AGE-SECRET-KEY-PQ-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02"`,
+			want: `"*****************************************************************************"`,
+		},
+		{
+			name: "a hybrid key in a json field",
+			src:  `{"identity":"AGE-SECRET-KEY-PQ-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02"}`,
+			want: `{"identity":"*****************************************************************************"}`,
 		},
 	}
 
@@ -230,6 +322,14 @@ func Test_AgeSecretKey_nextToWordCharacters(t *testing.T) {
 			src:  "AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF0234",
 			want: "**************************************************************************34",
 		},
+		{
+			// A multi-byte rune written flush against a key on both sides, with
+			// no space between them. Everywhere else in this file a rune of
+			// that kind stands a space away from the key.
+			name: "a multi-byte rune flush against the key on both sides",
+			src:  "日本語AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02日本語",
+			want: "日本語**************************************************************************日本語",
+		},
 	}
 
 	m := New(WithPatterns(AgeSecretKey()))
@@ -270,6 +370,89 @@ func Test_AgeSecretKey_leavesWhatFollowsAlone(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Test_AgeSecretKey_settlesWhatTheInputCutShort holds Find's second return to
+// the offset in front of which nothing further back can still become a key,
+// which is either a piece of a prefix standing at the end of the input or a
+// candidate the end of the input cut short. What every built-in owes about
+// that offset over generated text and over the samples is driven in
+// builtins_test.go and fuzz_test.go; what is written out here is which inputs
+// of this pattern's own shape hold anything back, since nothing else names
+// them.
+func Test_AgeSecretKey_settlesWhatTheInputCutShort(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			// The human-readable part alone, which is a piece of every prefix
+			// this pattern reads and stands at the very start of the input.
+			name: "the human-readable part alone",
+			src:  "AGE-SECRET-KEY-",
+			want: 0,
+		},
+		{
+			name: "the hybrid kind without its separator",
+			src:  "AGE-SECRET-KEY-PQ",
+			want: 0,
+		},
+		{
+			// A whole prefix at the end of the input with no body behind it:
+			// the candidate it opens is cut short by the end of the input, and
+			// what is held back is the whole of it rather than the prose in
+			// front.
+			name: "a whole prefix at the end of the input",
+			src:  "nothing here yet AGE-SECRET-KEY-1",
+			want: 17,
+		},
+		{
+			// A body the end of the input cut short, held back from its own
+			// start rather than from further back.
+			name: "a body the end of the input cut short",
+			src:  "AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF",
+			want: 0,
+		},
+		{
+			// A whole key reaching the end of the input. Nothing is read
+			// behind the count, and the key's own alphabet carries none of the
+			// bytes a prefix is written with, so nothing is held back.
+			name: "a whole key reaching the end of the input",
+			src:  "AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02",
+			want: 74,
+		},
+		{
+			// The same key with a character behind it that opens no prefix of
+			// its own, so the whole of the input settles.
+			name: "a whole key followed by a character that opens no prefix",
+			src:  "AGE-SECRET-KEY-1023456789ACDEF023456789ACDEF023456789ACDEF023456789ACDEF02 ",
+			want: 75,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, got := AgeSecretKey().Find(tt.src); got != tt.want {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_AgeSecretKey_scanIsLinear drives the crowding this scan is most exposed
+// to: the anchor stands once in every prefix, so a prefix repeated end to end
+// holds a candidate for every sixteen (or nineteen, for the hybrid kind) bytes
+// of the line, and the scan reads a fixed count at each rather than keeping a
+// cursor, so nothing here is expected to cost more than that count times the
+// number of candidates.
+func Test_AgeSecretKey_scanIsLinear(t *testing.T) {
+	checkScanIsLinear(t, AgeSecretKey(), map[string]string{
+		"a prefix every sixteen characters":         strings.Repeat("AGE-SECRET-KEY-1", 200000),
+		"a hybrid prefix every nineteen characters": strings.Repeat("AGE-SECRET-KEY-PQ-1", 200000),
+		"one body running the length of the line":   "AGE-SECRET-KEY-1" + strings.Repeat("0", 1800000),
+		"the anchor byte with no prefix behind it":  strings.Repeat("Y", 300000),
+	})
 }
 
 func Test_ageSecretKeyPrefixes(t *testing.T) {

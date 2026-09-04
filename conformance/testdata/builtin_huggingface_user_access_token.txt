@@ -95,6 +95,34 @@ case:     a token at the end of a sentence
 in:       the token is hf_0123456789abcdef0123456789abcdef01.
 out:      the token is «huggingface-user-access-token».
 
+case:     a token between japanese
+in:       日本語hf_0123456789abcdef0123456789abcdef01日本語
+out:      日本語«huggingface-user-access-token»日本語
+
+case:     a token in a yaml value
+in:       hf_token: hf_0123456789abcdef0123456789abcdef01
+out:      hf_token: «huggingface-user-access-token»
+
+case:     a token in a query string
+in:       https://huggingface.co/api/models?token=hf_0123456789abcdef0123456789abcdef01&full=1
+out:      https://huggingface.co/api/models?token=«huggingface-user-access-token»&full=1
+
+case:     a token followed by a carriage return and a newline
+in:       HF_TOKEN=hf_0123456789abcdef0123456789abcdef01\r\n
+out:      HF_TOKEN=«huggingface-user-access-token»\r\n
+
+case:     a token between tabs
+in:       \thf_0123456789abcdef0123456789abcdef01\t
+out:      \t«huggingface-user-access-token»\t
+
+case:     a token cut short with an ellipsis
+in:       hf_0123456789abcdef0123456789...
+out:      hf_0123456789abcdef0123456789...
+
+case:     a token at the very start and one at the very end
+in:       hf_0123456789abcdef0123456789abcdef01 in the middle hf_0123456789ABCDEF0123456789ABCDEF01
+out:      «huggingface-user-access-token» in the middle «huggingface-user-access-token»
+
 # Two tokens written together. A token can begin inside another, and the
 # underscore is what bounds where: a candidate opens at an underscore two
 # characters behind its start, and the one underscore a token holds is the one
@@ -148,7 +176,7 @@ case:     a standard base64 payload, which carries no underscore
 in:       payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhf0123456789abcdef
 out:      payload=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhf0123456789abcdef
 
-# And what this pattern leaves alone. The first two are the prefix, which is
+# And what this pattern leaves alone. The first three are the prefix, which is
 # read in the case Hugging Face writes it and with the underscore it closes on;
 # the two after them are a body a space has broken and a character the alphabet
 # has not got. The last three carry no prefix at all: a body holds no space and
@@ -162,6 +190,10 @@ out:      HF_0123456789abcdef0123456789abcdef01
 case:     a hyphen where the prefix closes
 in:       hf-0123456789abcdef0123456789abcdef01
 out:      hf-0123456789abcdef0123456789abcdef01
+
+case:     the prefix with its first letter capitalised
+in:       Hf_0123456789abcdef0123456789abcdef01
+out:      Hf_0123456789abcdef0123456789abcdef01
 
 case:     a body broken by a space
 in:       hf_0123456789abcdef 123456789abcdef01

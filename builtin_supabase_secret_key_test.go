@@ -52,6 +52,13 @@ func Test_SupabaseSecretKey(t *testing.T) {
 			want: []Span{{0, 41}, {41, 82}},
 		},
 		{
+			// Three rather than two: the shape a run of keys takes when it is
+			// longer than a pair.
+			name: "three keys with nothing between them",
+			src:  "sb_secret_0123456789abcdef012345_01234567sb_secret_0123456789abcdef012345_01234567sb_secret_0123456789abcdef012345_01234567",
+			want: []Span{{0, 41}, {41, 82}, {82, 123}},
+		},
+		{
 			// The candidate this scan resumes a byte along for. The prefix at
 			// the front of the input opens a candidate whose body would carry
 			// its separator eleven characters early; the key is the one
@@ -76,6 +83,16 @@ func Test_SupabaseSecretKey(t *testing.T) {
 		{
 			name: "an uppercase body",
 			src:  "sb_secret_0123456789ABCDEF012345_01234567",
+			want: []Span{{0, 41}},
+		},
+		{
+			// Every character the alphabet has, at once: uppercase past F,
+			// lowercase past f, both digits' neighbours and both of the
+			// characters standard base64 leaves out.
+			// Test_isSupabaseKeyBody already holds the helper to this body;
+			// here it stands behind this pattern's own prefix and count.
+			name: "a body spanning the alphabet",
+			src:  "sb_secret_ABCDEFGHIJKLMNOPQRSTUV_wxyz-_09",
 			want: []Span{{0, 41}},
 		},
 	}
@@ -126,6 +143,14 @@ func Test_SupabaseSecretKey_noMatch(t *testing.T) {
 		{
 			name: "a character outside the alphabet in the random part",
 			src:  "sb_secret_0123456789.bcdef012345_01234567",
+		},
+		{
+			// The same rejection at the first body character, which no case
+			// here reaches otherwise: the random part above puts it at the
+			// eleventh character of the body and the checksum below at the
+			// thirty-first.
+			name: "a character outside the alphabet at the first body character",
+			src:  "sb_secret_.123456789abcdef012345_01234567",
 		},
 		{
 			name: "a character outside the alphabet in the checksum",
@@ -395,6 +420,84 @@ func Test_SupabaseSecretKey_aBase64URLRunBehindThePrefix(t *testing.T) {
 	}
 }
 
+func Test_SupabaseSecretKey_holdsAKeyTheInputCutShort(t *testing.T) {
+	// What this scan settles where the input ends inside a candidate: the
+	// candidate's own start, reported but not read, held there until what
+	// comes next either carries the body on to a key or closes it.
+	tests := []struct {
+		name       string
+		src        string
+		wantSpans  []Span
+		wantRetain int
+	}{
+		{
+			name:       "a body the input cuts short",
+			src:        "apikey: sb_secret_0123456789abcdef",
+			wantSpans:  nil,
+			wantRetain: 8,
+		},
+		{
+			name:       "the prefix the input cuts short",
+			src:        "apikey: sb_sec",
+			wantSpans:  nil,
+			wantRetain: 8,
+		},
+		{
+			// A whole key followed by ordinary text settles the whole input:
+			// nothing behind it can turn the key into anything else.
+			name:       "a whole key followed by prose",
+			src:        "apikey: sb_secret_0123456789abcdef012345_01234567 done",
+			wantSpans:  []Span{{8, 49}},
+			wantRetain: 54,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotSpans, gotRetain := SupabaseSecretKey().Find(tt.src)
+			if !slices.Equal(gotSpans, tt.wantSpans) {
+				t.Errorf("Find(%q) spans = %v, want %v", tt.src, gotSpans, tt.wantSpans)
+			}
+			if gotRetain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, gotRetain, tt.wantRetain)
+			}
+		})
+	}
+}
+
+// Test_SupabaseSecretKey_adjacentToAPublishableKey drives the boundary
+// between the two project keys with nothing standing between them rather than
+// elsewhere in the text: sb_publishable_ closes five characters and a second
+// underscore later than sb_secret_ does, so neither prefix reads inside the
+// other's and this pattern locates the secret half alone, wherever in the
+// pair it stands.
+func Test_SupabaseSecretKey_adjacentToAPublishableKey(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			name: "a publishable key immediately followed by a secret key",
+			src:  "sb_publishable_0123456789abcdef012345_01234567sb_secret_0123456789abcdef012345_01234567",
+			want: []Span{{46, 87}},
+		},
+		{
+			name: "a secret key immediately followed by a publishable key",
+			src:  "sb_secret_0123456789abcdef012345_01234567sb_publishable_0123456789abcdef012345_01234567",
+			want: []Span{{0, 41}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := SupabaseSecretKey().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_supabaseSecretKeyPrefix(t *testing.T) {
 	// The prefix is the argument the generator is called with for this kind of
 	// key, and it is the whole of what tells one from a publishable key.
@@ -554,6 +657,8 @@ func FuzzSupabaseSecretKey_matchesReference(f *testing.F) {
 	f.Add("sb_secret_0123456789-bcdef012345_01234567")  // and a hyphen
 	f.Add("sb_secret_0123456789ABCDEF012345_01234567")  // an uppercase body
 	f.Add("sb_secret_0123456789.bcdef012345_01234567")  // a character outside the alphabet
+	f.Add("sb_secret_.123456789abcdef012345_01234567")  // the same, at the first body character
+	f.Add("sb_secret_ABCDEFGHIJKLMNOPQRSTUV_wxyz-_09")  // every character of the alphabet at once
 	f.Add("sb_secret_0123456789abcdef012345_0123456.")  // and one at the end of the checksum
 	f.Add("sb_secret_0123456789abcdef012345\n01234567")
 	f.Add("sb_secret-0123456789abcdef012345_01234567") // a hyphen where the prefix closes

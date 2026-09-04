@@ -50,6 +50,14 @@ case:     a body carrying an underscore
 in:       ory_pat_0123456789abcdef_123456789abcdef
 out:      ory_pat_0123456789abcdef_123456789abcdef
 
+case:     a workspace key whose body carries a hyphen
+in:       ory_wak_0123456789abcdef-123456789abcdef
+out:      ory_wak_0123456789abcdef-123456789abcdef
+
+case:     the other project key whose body carries an underscore
+in:       ory_apikey_0123456789abcdef_123456789abcdef
+out:      ory_apikey_0123456789abcdef_123456789abcdef
+
 # The lengths either side of thirty-two. The count is read as a floor rather
 # than exactly, so thirty-one characters are not a key and thirty-three are one
 # key to the end of its run rather than a key and a character left over. What
@@ -94,6 +102,19 @@ out:      ory_session_0123456789abcdef0123456789abcdef
 case:     the spelling the cli guide writes
 in:       ory_pt_0123456789abcdef0123456789abcdef
 out:      ory_pt_0123456789abcdef0123456789abcdef
+
+# A word that opens on a kind but carries one more letter before the closing
+# underscore. The loop matches the kind, finds the extra letter rather than the
+# separator directly behind it and gives up on the candidate without trying the
+# other two kinds, so no key of any kind is found.
+
+case:     a kind word with a letter appended
+in:       ory_patx_0123456789abcdef0123456789abcdef
+out:      ory_patx_0123456789abcdef0123456789abcdef
+
+case:     the workspace kind with a letter appended
+in:       ory_waks_0123456789abcdef0123456789abcdef
+out:      ory_waks_0123456789abcdef0123456789abcdef
 
 # The snake_case names ordinary code carries, since English has a shelf of words
 # closing on ory. What turns them away is the word naming the kind, which the
@@ -148,6 +169,10 @@ out:      «ory-api-key»_suffix
 case:     a key at the end of a sentence
 in:       the key is ory_pat_0123456789abcdef0123456789abcdef.
 out:      the key is «ory-api-key».
+
+case:     a key between Japanese
+in:       キーはory_pat_0123456789abcdef0123456789abcdefです
+out:      キーは«ory-api-key»です
 
 # Two keys written together. The three letters the opening is made of belong to
 # the alphabet a body is written in, so a body may close with ory and the

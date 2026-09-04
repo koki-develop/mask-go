@@ -55,9 +55,53 @@ case:     a letter past f in the body is no token
 in:       shpat_0123456789abcdefg123456789abcdef
 out:      shpat_0123456789abcdefg123456789abcdef
 
+case:     an uppercase letter past f in the body is no token
+in:       shpat_0123456789ABCDEFG123456789ABCDEF
+out:      shpat_0123456789ABCDEFG123456789ABCDEF
+
+case:     a space in the body is no token
+in:       shpat_0123456789abcdef 123456789abcdef
+out:      shpat_0123456789abcdef 123456789abcdef
+
+case:     a hyphen in the body is no token
+in:       shpat_0123456789abcdef-123456789abcdef
+out:      shpat_0123456789abcdef-123456789abcdef
+
+case:     an underscore in the body is no token
+in:       shpat_0123456789abcdef_123456789abcdef
+out:      shpat_0123456789abcdef_123456789abcdef
+
+case:     a forbidden character at the first body position with a full run behind it
+in:       shpat_g0123456789abcdef0123456789abcdef
+out:      shpat_g0123456789abcdef0123456789abcdef
+
 case:     an uppercase prefix is the shape a variable's name is written in
 in:       SHPAT_0123456789abcdef0123456789abcdef
 out:      SHPAT_0123456789abcdef0123456789abcdef
+
+case:     a hyphen where the separator stands
+in:       shpat-0123456789abcdef0123456789abcdef
+out:      shpat-0123456789abcdef0123456789abcdef
+
+case:     the separator missing altogether
+in:       shpat0123456789abcdef0123456789abcdef0
+out:      shpat0123456789abcdef0123456789abcdef0
+
+case:     the opening missing its first character
+in:       hpat_0123456789abcdef0123456789abcdef0
+out:      hpat_0123456789abcdef0123456789abcdef0
+
+case:     the right shape with no prefix in front of it
+in:       xxxxx_0123456789abcdef0123456789abcdef
+out:      xxxxx_0123456789abcdef0123456789abcdef
+
+case:     a custom app token with a body one character short
+in:       shpca_0123456789abcdef0123456789abcde
+out:      shpca_0123456789abcdef0123456789abcde
+
+case:     a private app token in a case an environment variable's name is written in
+in:       SHPPA_0123456789abcdef0123456789abcdef
+out:      SHPPA_0123456789abcdef0123456789abcdef
 
 # The count is exact. A body one character short is no token at all, and a run
 # longer than the count is a token with something written after it — only the
@@ -85,12 +129,48 @@ case:     a kind shopify names no prefix for
 in:       shpua_0123456789abcdef0123456789abcdef
 out:      shpua_0123456789abcdef0123456789abcdef
 
+case:     three characters where two name the kind
+in:       shpatx_0123456789abcdef0123456789abcdef
+out:      shpatx_0123456789abcdef0123456789abcdef
+
 # There is no word boundary either side of a match, so a token written straight
 # against a name or a letter is redacted rather than left whole.
 
 case:     a token written straight against a name
 in:       TOKEN_shpat_0123456789abcdef0123456789abcdef
 out:      TOKEN_«shopify-access-token»
+
+case:     a custom app token written straight against a name
+in:       TOKEN_shpca_0123456789abcdef0123456789abcdef
+out:      TOKEN_«shopify-access-token»
+
+case:     a token written straight against a letter
+in:       xshpat_0123456789abcdef0123456789abcdef
+out:      x«shopify-access-token»
+
+case:     a token written straight in front of a letter of its own class
+in:       shpat_0123456789abcdef0123456789abcdef0
+out:      «shopify-access-token»0
+
+case:     an uppercase letter past f written straight after a token
+in:       shpat_0123456789abcdef0123456789abcdefG
+out:      «shopify-access-token»G
+
+case:     a token at the end of a sentence
+in:       the token is shpat_0123456789abcdef0123456789abcdef.
+out:      the token is «shopify-access-token».
+
+case:     a token after a digit
+in:       9shpat_0123456789abcdef0123456789abcdef
+out:      9«shopify-access-token»
+
+case:     a token after a hyphenated word
+in:       store-shpat_0123456789abcdef0123456789abcdef
+out:      store-«shopify-access-token»
+
+case:     a token immediately against japanese on both sides
+in:       トークンはshpat_0123456789abcdef0123456789abcdefです
+out:      トークンは«shopify-access-token»です
 
 case:     two tokens with nothing between them
 in:       shpat_0123456789abcdef0123456789abcdefshppa_0123456789abcdef0123456789abcdef

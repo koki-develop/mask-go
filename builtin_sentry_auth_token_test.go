@@ -113,6 +113,68 @@ func Test_SentryAuthToken(t *testing.T) {
 			src:  "sntrys_0123456789abcdef0123456789sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 			want: []Span{{0, 83}, {33, 104}},
 		},
+		{
+			// The shortest a payload can be written: one whole group of four,
+			// no padding. A floor demanding thirty-two or more characters, or
+			// eight or more, would pass every other case in this file but
+			// locate nothing here.
+			name: "an organization token whose payload is one group of four",
+			src:  "sntrys_0123_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			want: []Span{{0, 55}},
+		},
+		{
+			// The same floor, written with two padding characters closing the
+			// one group.
+			name: "an organization token whose payload closes with two padding characters and is otherwise the shortest one can be",
+			src:  "sntrys_01==_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			want: []Span{{0, 55}},
+		},
+		{
+			// The base64 of an actual Sentry payload object — naming the
+			// organization, the url and the region url — rather than a
+			// payload shortened for readability. A cap between forty-five and
+			// a hundred and twenty-four characters would pass every other
+			// case here and locate nothing in this one.
+			name: "an organization token whose payload is the base64 of a payload object",
+			src:  "sntrys_eyJpYXQiOjE3MDAwMDAwMDAsInVybCI6Imh0dHBzOi8vc2VudHJ5LmlvIiwicmVnaW9uX3VybCI6Imh0dHBzOi8vdXMuc2VudHJ5LmlvIiwib3JnIjoiYWNtZSJ9_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			want: []Span{{0, 175}},
+		},
+		{
+			// A hexadecimal run one character longer than an internal
+			// integration body, which the exact count reads as the token and
+			// the character after it — driven for sntryi_ rather than only
+			// for sntryu_.
+			name: "a hexadecimal run longer than an internal integration body",
+			src:  "sntryi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefa",
+			want: []Span{{0, 71}},
+		},
+		{
+			// Two organization tokens with nothing between them. Unlike a
+			// hexadecimal body, a payload's own alphabet holds every letter
+			// standing in front of it, so the first token's secret does not
+			// stop the run on its own; the exact count is what cuts it where
+			// the second token's prefix begins.
+			name: "two organization tokens with nothing between them",
+			src:  "sntrys_0123456789abcdefghijklmnopqrstuv_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGsntrys_0123456789abcdefghijklmnopqrstuv_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			want: []Span{{0, 83}, {83, 166}},
+		},
+		{
+			// A token immediately against a multi-byte rune on both sides, of
+			// each of the two shapes.
+			name: "a user token between japanese",
+			src:  "トークンはsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefです",
+			want: []Span{{15, 86}},
+		},
+		{
+			name: "an organization token between japanese",
+			src:  "トークンはsntrys_0123456789abcdefghijklmnopqrstuv_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGです",
+			want: []Span{{15, 98}},
+		},
+		{
+			name: "a user token against an invalid byte",
+			src:  "\xffsntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\xff",
+			want: []Span{{1, 72}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -166,6 +228,45 @@ func Test_SentryAuthToken_noMatch(t *testing.T) {
 			// them, and sentry-cli's own tests carry it as a wrong prefix.
 			name: "a kind the enumeration does not name",
 			src:  "sntryt_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// The kinds are read case-sensitively: the opening is written in
+			// the case Sentry writes it, and the character naming the kind
+			// carries no case of its own to fold either.
+			name: "an uppercase kind character behind a lowercase opening",
+			src:  "sntryU_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "an uppercase organization kind",
+			src:  "sntryS_0123456789abcdefghijklmnopqrstuv_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+		},
+		{
+			// The separator standing where the kind belongs, so the byte the
+			// scan branches on names neither a hexadecimal kind nor the
+			// organization one.
+			name: "the separator where the kind belongs",
+			src:  "sntry__0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// The forbidden byte at the very first character of a hexadecimal
+			// body, with the rest of the shape otherwise a whole token.
+			name: "a letter past f at the first character of a hexadecimal body",
+			src:  "sntryu_g123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+		},
+		{
+			// And at the first character of an organization secret.
+			name: "a hyphen at the first character of an organization secret",
+			src:  "sntrys_0123456789abcdefghijklmnopqrstuv_-123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+		},
+		{
+			// A user application token, driven at the same boundary the user
+			// token above is driven at.
+			name: "a user application token with a body one character short",
+			src:  "sntrya_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+		},
+		{
+			name: "an internal integration token with a letter past f in its body",
+			src:  "sntryi_0123456789abcdefg123456789abcdef0123456789abcdef0123456789abcdef",
 		},
 		{
 			// The word the environment variable is spelled with carries an e
@@ -402,6 +503,14 @@ func Test_SentryAuthToken_leavesWhatFollowsAlone(t *testing.T) {
 			src:  "sntryu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef-suffix",
 			want: "***********************************************************************-suffix",
 		},
+		{
+			// The one forbidden character a scan reading the secret with
+			// padding admitted would have swallowed: a whole organization
+			// token with the padding character written straight after it.
+			name: "padding written after a whole organization token",
+			src:  "sntrys_0123456789abcdefghijklmnopqrstuv_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG=",
+			want: "***********************************************************************************=",
+		},
 	}
 
 	m := New(WithPatterns(SentryAuthToken()))
@@ -460,6 +569,56 @@ func Test_SentryAuthToken_aDigestBehindThePrefix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_SentryAuthToken_retain holds the second return of Find to a literal
+// offset, on the two shapes builtin_scan.go names: a piece of a prefix
+// standing at the end of the input, and a candidate the end of the input cut
+// short.
+func Test_SentryAuthToken_retain(t *testing.T) {
+	tests := []struct {
+		name       string
+		src        string
+		wantRetain int
+	}{
+		{
+			// The last six characters are "sntryu", a piece of the
+			// seven-character prefix "sntryu_" cut short by the end of the
+			// input.
+			name:       "a piece of a prefix standing at the end of the input",
+			src:        "token sntryu",
+			wantRetain: 6,
+		},
+		{
+			// A whole hexadecimal prefix with a body too short to reach the
+			// count, standing at the end of the input. More characters
+			// arriving could still complete the token, so the candidate is
+			// unsettled from its own start.
+			name:       "a hexadecimal candidate the end of the input cut short",
+			src:        "sntryu_0123456789abcdef",
+			wantRetain: 0,
+		},
+		{
+			// An organization prefix whose payload the end of the input cut
+			// short: no separator has arrived yet, so more characters could
+			// still complete the payload and the count behind it.
+			name:       "an organization candidate cut short inside its payload",
+			src:        "sntrys_0123456789",
+			wantRetain: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := SentryAuthToken().Find(tt.src)
+			if len(got) != 0 {
+				t.Fatalf("Find(%q) located %v, want no span", tt.src, got)
+			}
+			if retain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.wantRetain)
 			}
 		})
 	}

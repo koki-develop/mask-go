@@ -63,6 +63,14 @@ case:     a uuid with a group past hexadecimal
 in:       HRKU-0123456g-89ab-cdef-0123-456789abcdef
 out:      HRKU-0123456g-89ab-cdef-0123-456789abcdef
 
+case:     thirty-six hexadecimal characters with no separators
+in:       HRKU-012345678901234567890123456789012345
+out:      HRKU-012345678901234567890123456789012345
+
+case:     a uuid whose separators are underscores
+in:       HRKU-01234567_89ab_cdef_0123_456789abcdef
+out:      HRKU-01234567_89ab_cdef_0123_456789abcdef
+
 # A UUID is written in base64url, so a token of the shorter shape stands at the
 # front of any longer one whose first thirty-six characters fall that way, and
 # both readings are true of the same text. The longer one is walked first, so
@@ -115,6 +123,10 @@ out:      «heroku-api-token»
 
 case:     a body opening on anything else
 in:       HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      «heroku-api-token»
+
+case:     a body written in capitals
+in:       HRKU-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789AB
 out:      «heroku-api-token»
 
 # The lengths either side of sixty. That count is Heroku's own, stated as a
@@ -174,6 +186,42 @@ out:      «heroku-api-token»
 case:     a token of each shape on one line
 in:       new=HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab old=HRKU-01234567-89ab-cdef-0123-456789abcdef
 out:      new=«heroku-api-token» old=«heroku-api-token»
+
+case:     two tokens of the shorter shape with nothing between them
+in:       HRKU-01234567-89ab-cdef-0123-456789abcdefHRKU-01234567-89ab-cdef-0123-456789abcdef
+out:      «heroku-api-token»
+
+case:     a token between japanese
+in:       日本語HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab日本語
+out:      日本語«heroku-api-token»日本語
+
+case:     a token after an invalid byte
+in:       \xffHRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      \xff«heroku-api-token»
+
+case:     a token followed by a carriage return and a newline
+in:       HEROKU_API_KEY=HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab\r\n
+out:      HEROKU_API_KEY=«heroku-api-token»\r\n
+
+case:     a token between tabs
+in:       \tHRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab\t
+out:      \t«heroku-api-token»\t
+
+case:     a token in a yaml value
+in:       api_key: HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      api_key: «heroku-api-token»
+
+case:     a token in a query string
+in:       https://api.heroku.com/apps?token=HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab&page=2
+out:      https://api.heroku.com/apps?token=«heroku-api-token»&page=2
+
+case:     a token cut short with an ellipsis
+in:       HRKU-0123456789abcdef0123456789...
+out:      HRKU-0123456789abcdef0123456789...
+
+case:     one token per line over three lines
+in:       a=HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab\nb=HRKU-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789AB\nc=HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      a=«heroku-api-token»\nb=«heroku-api-token»\nc=«heroku-api-token»
 
 # What this pattern redacts that nobody issued. The alphabet holds the hyphen,
 # so an unbroken run of hyphenated words is a body and sixty of them behind the

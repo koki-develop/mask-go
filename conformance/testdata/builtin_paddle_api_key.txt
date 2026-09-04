@@ -62,6 +62,26 @@ case:     a first segment broken by a space
 in:       pdl_live_apikey_0123456789abcdef 123456789_0123456789abcdef012345_012
 out:      pdl_live_apikey_0123456789abcdef 123456789_0123456789abcdef012345_012
 
+case:     a space inside the second segment
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef 12345_012
+out:      pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef 12345_012
+
+case:     a space inside the third segment
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_0 2
+out:      pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_0 2
+
+case:     an underscore inside the first segment
+in:       pdl_live_apikey_0123456789_bcdef0123456789_0123456789abcdef012345_012
+out:      pdl_live_apikey_0123456789_bcdef0123456789_0123456789abcdef012345_012
+
+# A key written across the letters an ordered run never carries: g through p of
+# the first segment, carried on into the second and third — the anchor byte k
+# standing inside the value itself as well as inside the prefix.
+
+case:     a key written across the whole alphabet
+in:       pdl_live_apikey_0123456789abcdefghijklmnop_qrstuvwxyzABCDEFGHIJKL_MNO
+out:      «paddle-api-key»
+
 # A first segment carrying i, l, o and u, which Crockford's base32 leaves out
 # and a ULID is therefore never written with. The first segment of the key
 # Paddle publishes carries none of the four, and the expression it publishes
@@ -96,6 +116,10 @@ case:     a third segment of two characters is not
 in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_01
 out:      pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_01
 
+case:     a second segment of twenty-three characters is not
+in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef0123456_012
+out:      pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef0123456_012
+
 case:     a run longer than a key is a key and what follows it
 in:       pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_0123
 out:      «paddle-api-key»3
@@ -119,6 +143,10 @@ out:      «paddle-api-key»-suffix
 case:     a key at the end of a sentence
 in:       the key is pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012.
 out:      the key is «paddle-api-key».
+
+case:     a key between Japanese
+in:       キーはpdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012です
+out:      キーは«paddle-api-key»です
 
 # Two keys written together. A key can begin inside another: its opening starts
 # on three lowercase characters, which a second segment may close on, and where
@@ -152,6 +180,18 @@ out:      pdl_test_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
 case:     a run of the right lengths opening with no prefix
 in:       xxx_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
 out:      xxx_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+
+case:     the marker misspelled by one letter
+in:       pdl_live_apikez_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      pdl_live_apikez_0123456789abcdef0123456789_0123456789abcdef012345_012
+
+case:     the marker in capitals
+in:       pdl_live_APIKEY_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      pdl_live_APIKEY_0123456789abcdef0123456789_0123456789abcdef012345_012
+
+case:     a hyphen where the marker's closing underscore stands
+in:       pdl_live_apikey-0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      pdl_live_apikey-0123456789abcdef0123456789_0123456789abcdef012345_012
 
 # The other credentials Paddle issues, none of which this pattern reaches. The
 # webhook secret key carries the same opening and the marker ntfset_ instead,

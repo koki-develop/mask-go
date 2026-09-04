@@ -60,6 +60,43 @@ func Test_ResendAPIKey(t *testing.T) {
 			src:  "re_01234567_0123456789ABCDEF01234567",
 			want: []Span{{0, 36}},
 		},
+		{
+			// The first segment written in capitals too, which nothing else
+			// here exercises: every other case leaves it as digits or as the
+			// lowercase run.
+			name: "an uppercase first segment",
+			src:  "re_ABCDEFGH_0123456789abcdef01234567",
+			want: []Span{{0, 36}},
+		},
+		{
+			name: "both segments in capitals",
+			src:  "re_ABCDEFGH_0123456789ABCDEF01234567",
+			want: []Span{{0, 36}},
+		},
+		{
+			// The letters between g and z, and between G and R, never stand in
+			// the ordered runs the rest of this file is built from. base62
+			// holds them the same as any other letter: the first segment is
+			// g..n (eight characters) and the second is o..z (twelve) with
+			// G..R (twelve) behind it.
+			name: "segments written in the letters past f",
+			src:  "re_ghijklmn_opqrstuvwxyzGHIJKLMNOPQR",
+			want: []Span{{0, 36}},
+		},
+		{
+			// A key immediately against a multi-byte rune on both sides. The
+			// pattern reads no boundary either side of a match, so the key
+			// keeps its span at the byte offset the rune's encoding leaves it
+			// at.
+			name: "between japanese",
+			src:  "鍵はre_01234567_0123456789abcdef01234567です",
+			want: []Span{{6, 42}},
+		},
+		{
+			name: "against an invalid byte",
+			src:  "\xffre_01234567_0123456789abcdef01234567\xff",
+			want: []Span{{1, 37}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -97,6 +134,55 @@ func Test_ResendAPIKey_noMatch(t *testing.T) {
 		{
 			name: "a second segment broken by a space",
 			src:  "re_01234567_0123456789abcdef 1234567",
+		},
+		{
+			// The excluded byte inside the eight-character first segment,
+			// which every other case here leaves untouched.
+			name: "a hyphen in the first segment",
+			src:  "re_0123-567_0123456789abcdef01234567",
+		},
+		{
+			name: "a space in the first segment",
+			src:  "re_0123 567_0123456789abcdef01234567",
+		},
+		{
+			// A third underscore, which stands neither where the prefix closes
+			// nor where the separator divides the two segments.
+			name: "an underscore in the first segment",
+			src:  "re_0123_567_0123456789abcdef01234567",
+		},
+		{
+			name: "a character outside the alphabet in the first segment",
+			src:  "re_0123.567_0123456789abcdef01234567",
+		},
+		{
+			// The excluded byte standing at the very first character of the
+			// second segment, with a run of twenty-three valid characters
+			// behind it so the whole thirty-six character count is spent.
+			name: "a hyphen straight behind the separator",
+			src:  "re_01234567_-0123456789abcdef0123456",
+		},
+		{
+			// A second separator standing where the second segment opens.
+			name: "a second separator straight behind the first",
+			src:  "re_01234567__0123456789abcdef0123456",
+		},
+		{
+			name: "a space straight behind the separator",
+			src:  "re_01234567_ 0123456789abcdef0123456",
+		},
+		{
+			// The excluded byte at the last of the twenty-four second-segment
+			// positions, with a full run of valid characters in front of it.
+			name: "a hyphen where the twenty-fourth character stands",
+			src:  "re_01234567_0123456789abcdef0123456-",
+		},
+		{
+			// The underscore is the byte the whole scan rests on: written
+			// here it is the last character before the end of the input, so
+			// it can never open a candidate of its own.
+			name: "an underscore where the twenty-fourth character stands",
+			src:  "re_01234567_0123456789abcdef0123456_",
 		},
 		{
 			name: "a hyphen in the second segment",
@@ -399,6 +485,47 @@ func Test_ResendAPIKey_theShapesWrittenByAccident(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := ResendAPIKey().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_ResendAPIKey_retain holds the second return of Find to a literal
+// offset, on the two shapes builtin_scan.go names: a piece of the prefix
+// standing at the end of the input, and a candidate the end of the input cut
+// short of the count.
+func Test_ResendAPIKey_retain(t *testing.T) {
+	tests := []struct {
+		name       string
+		src        string
+		wantRetain int
+	}{
+		{
+			// The last two characters are "re", a piece of the three-character
+			// prefix "re_" cut short by the end of the input.
+			name:       "a piece of the prefix standing at the end of the input",
+			src:        "key re",
+			wantRetain: 4,
+		},
+		{
+			// A whole prefix and first segment with the separator and a
+			// partial second segment behind it, all standing at the end of
+			// the input. More characters arriving could still complete the
+			// key, so the candidate is unsettled from its own start.
+			name:       "a candidate the end of the input cut short of the count",
+			src:        "re_01234567_0123456789",
+			wantRetain: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := ResendAPIKey().Find(tt.src)
+			if len(got) != 0 {
+				t.Fatalf("Find(%q) located %v, want no span", tt.src, got)
+			}
+			if retain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.wantRetain)
 			}
 		})
 	}

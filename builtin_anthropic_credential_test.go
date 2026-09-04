@@ -19,8 +19,8 @@ import (
 // The keys written out below are made only of ordered characters: valid in
 // shape, obviously not real. The run they are built from, 0123456789abcdef, is
 // written out until the body is ninety-five characters, which is the shortest
-// the scan reads — a floor, unlike the runs the OpenAI cases stand in for, so a
-// body shortened for readability would leave a case holding no key at all.
+// the scan reads — a floor, so a body shortened for readability would leave a
+// case holding no key at all.
 
 func Test_AnthropicCredential(t *testing.T) {
 	tests := []struct {
@@ -91,6 +91,25 @@ func Test_AnthropicCredential(t *testing.T) {
 			name: "a key beginning inside the key before it",
 			src:  "sk-ant-a-sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
 			want: []Span{{0, 117}, {9, 117}},
+		},
+		{
+			// A session key of the version Anthropic documents. Every other
+			// kind is exercised above by a version, a made-up name or the
+			// version added beside it; this is the one the doc comment names
+			// and no case before this one spells.
+			name: "a session key of the documented version",
+			src:  "sk-ant-sid01-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			want: []Span{{0, 108}},
+		},
+		{
+			// Two whole keys with nothing between them. The second key's own
+			// prefix is written in the alphabet the first key's body is, so
+			// the first candidate's run carries straight through it, and the
+			// second candidate opens where the second key's own anchor
+			// stands.
+			name: "two whole keys with nothing between them",
+			src:  "sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdesk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+			want: []Span{{0, 216}, {108, 216}},
 		},
 	}
 
@@ -203,6 +222,23 @@ func Test_AnthropicCredential_noMatch(t *testing.T) {
 			name: "a git sha",
 			src:  "0123456789abcdef0123456789abcdef01234567",
 		},
+		{
+			// Ninety-four characters, closed by a character outside the
+			// alphabet with more text carried on after it — the two
+			// conditions the floor and the run's own end are held to
+			// separately, driven together.
+			name: "a body one character short of the floor, closed by a character outside the alphabet, with text after it",
+			src:  "sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd next",
+		},
+		{
+			// The character straight behind the separator standing outside
+			// the alphabet, with a run of the alphabet the length of a whole
+			// body written behind it — the position a scan restarting the
+			// body past a bad byte, rather than stopping at it, would still
+			// call a key.
+			name: "a character outside the alphabet at the first position of the body",
+			src:  "sk-ant-api03-+123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
+		},
 	}
 
 	for _, tt := range tests {
@@ -287,6 +323,13 @@ func Test_AnthropicCredential_nextToWordCharacters(t *testing.T) {
 			name: "underscore before",
 			src:  "ANTHROPIC_API_KEY_sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde",
 			want: "ANTHROPIC_API_KEY_************************************************************************************************************",
+		},
+		{
+			// A multi-byte rune flush against the key on both sides, with no
+			// space between them.
+			name: "a multi-byte rune flush against the key on both sides",
+			src:  "日本語sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde日本語",
+			want: "日本語************************************************************************************************************日本語",
 		},
 	}
 
@@ -420,6 +463,81 @@ func Test_AnthropicCredential_insideAnOpaqueRun(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_AnthropicCredential_settlesWhatTheInputCutShort holds Find's second
+// return to the offset in front of which nothing further back can still
+// become a key. Because the body is read as a floor rather than a count, a
+// run of the alphabet reaching the end of the input is never settled by
+// itself — the run might carry on, and carrying on might still clear the
+// floor — so even a key that already reaches the floor holds back to its own
+// start while its run is open, and settles only once something closes that
+// run. What every built-in owes about this offset over generated text and
+// over the samples is driven in builtins_test.go and fuzz_test.go; what is
+// written out here is which inputs of this pattern's own shape hold anything
+// back, since nothing else names them.
+func Test_AnthropicCredential_settlesWhatTheInputCutShort(t *testing.T) {
+	const key = "sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde"
+
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			name: "the prefix alone",
+			src:  "sk-ant-",
+			want: 0,
+		},
+		{
+			name: "a kind the end of the input cut short, with no separator behind it",
+			src:  "sk-ant-api03",
+			want: 0,
+		},
+		{
+			name: "a kind closed by the separator with no body behind it",
+			src:  "sk-ant-api03-",
+			want: 0,
+		},
+		{
+			// A body short of the floor, the end of the input cutting its run
+			// short as well.
+			name: "a body the end of the input cut short",
+			src:  "sk-ant-a-0123456789abcdef0123456789abcdef",
+			want: 0,
+		},
+		{
+			// A whole key reaching the end of the input. The floor is
+			// cleared, but the run that clears it is still open — the next
+			// byte, if there were one, could belong to it — so nothing here
+			// is settled yet.
+			name: "a whole key whose run is still open at the end of the input",
+			src:  key,
+			want: 0,
+		},
+		{
+			// The same key with a character behind it that does not belong to
+			// the alphabet, which closes the run and settles the whole of it.
+			name: "a whole key followed by a character that closes its run",
+			src:  key + " ",
+			want: len(key) + 1,
+		},
+		{
+			// The run closed and nothing left pending: the whole of the
+			// input settles.
+			name: "a whole key followed by prose that opens no prefix",
+			src:  key + ". done",
+			want: len(key) + len(". done"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, got := AnthropicCredential().Find(tt.src); got != tt.want {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, got, tt.want)
 			}
 		})
 	}

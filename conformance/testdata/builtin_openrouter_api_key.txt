@@ -85,6 +85,10 @@ case:     a body run one character longer is a key and the character after it
 in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0
 out:      «openrouter-api-key»0
 
+case:     a hexadecimal run twice the count behind the prefix
+in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «openrouter-api-key»0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
 # What a key may be written against. There is no boundary on either side of the
 # prefix — which is a disagreement with all three rulesets, since each of them
 # writes one at both ends — so a key keeps its span whatever word character it
@@ -118,6 +122,10 @@ case:     an underscored word written against a key
 in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef_suffix
 out:      «openrouter-api-key»_suffix
 
+case:     a key between Japanese
+in:       キーはsk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefです
+out:      キーは«openrouter-api-key»です
+
 # Two keys written together. No key can be written inside another, which only
 # the Stripe, Supabase and RubyGems patterns say beside this one: a candidate
 # begins where an s begins, and the only s a span covers is the one its prefix
@@ -135,6 +143,14 @@ out:      «openrouter-api-key»«openrouter-api-key»
 case:     a candidate whose body opens with a prefix
 in:       sk-or-v1-sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      sk-or-v1-«openrouter-api-key»
+
+case:     a prefix written inside a body too short to be one
+in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdesk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde«openrouter-api-key»
+
+case:     two keys separated by a hyphen
+in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef-sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «openrouter-api-key»-«openrouter-api-key»
 
 case:     two keys separated by a space
 in:       sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef sk-or-v1-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
@@ -177,6 +193,10 @@ out:      key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 case:     an uppercase prefix
 in:       SK-OR-V1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 out:      SK-OR-V1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     one segment of the prefix in capitals
+in:       sk-OR-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      sk-OR-v1-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 case:     a later version of the prefix
 in:       sk-or-v2-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef

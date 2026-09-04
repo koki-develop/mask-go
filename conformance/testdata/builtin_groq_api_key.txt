@@ -71,6 +71,10 @@ case:     a body of forty-nine characters is not
 in:       gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abc
 out:      gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abc
 
+case:     a key at the length every published key has
+in:       gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdef
+out:      «groq-api-key»
+
 case:     an alphabet run longer than the floor is a key to the end of it
 in:       gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcde
 out:      «groq-api-key»
@@ -100,6 +104,22 @@ out:      «groq-api-key»
 case:     a key after an underscore
 in:       GROQ_API_KEY_gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd
 out:      GROQ_API_KEY_«groq-api-key»
+
+case:     a key after a digit
+in:       0gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd
+out:      0«groq-api-key»
+
+case:     a key between multi-byte text with nothing between them
+in:       日本語gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd日本語
+out:      日本語«groq-api-key»日本語
+
+case:     a key followed by crlf
+in:       GROQ_API_KEY=gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd\r\n
+out:      GROQ_API_KEY=«groq-api-key»\r\n
+
+case:     a key in a query string
+in:       https://example.com/cb?api_key=gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd&model=x
+out:      https://example.com/cb?api_key=«groq-api-key»&model=x
 
 case:     a key after a letter
 in:       xgsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd

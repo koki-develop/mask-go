@@ -1029,18 +1029,55 @@ var noValueInputs = []string{
 	"----------------------------------------",
 }
 
+// builtinInputAdjacentBytes are what builtinInputs writes straight in front of
+// and straight after a whole sample, one input a byte a side. A byte from the
+// pattern's own alphabet is what a run closing only at a boundary must not be
+// opened or ended by; a byte from no alphabet at all — a digit, a case a hex
+// or base62 body excludes, a separator, a multi-byte rune, a byte invalid as
+// UTF-8 on its own — is what must open or end the run without leaving half of
+// that rune standing beside a span.
+//
+// Fixed across the whole registry rather than read out of one scan's own
+// alphabet, which would test that scan against its own declaration instead of
+// against these.
+var builtinInputAdjacentBytes = []string{
+	"0", "z", "Z", "-", "_", ".", " ", "\n", "日", "\xff",
+}
+
+// builtinInputInfixBefore and builtinInputInfixAfter are what builtinInputs
+// sandwiches a whole sample in, standing for a value written in the middle of
+// a line of prose rather than alone or led into by the name it is assigned
+// to.
+const (
+	builtinInputInfixBefore = "some prose leads into it, "
+	builtinInputInfixAfter  = ", and more prose follows it"
+)
+
 // builtinInputs returns what a built-in is driven with: text holding no value
-// at all, the samples the pattern named, and every prefix of each of them.
+// at all, the samples the pattern named, every prefix of each of them, each
+// sample with a byte written straight in front of it, each sample with a byte
+// written straight after it, and each sample sandwiched in prose.
 //
 // The prefixes stand for the truncation a log line cut to a column limit
 // leaves. A value cut short is where a scan reading past the end of its input,
-// or resuming past what it has not consumed, shows itself.
+// or resuming past what it has not consumed, shows itself. The bytes written
+// beside a sample and the prose it is sandwiched in stand for what a line
+// ordinarily carries beyond a value alone, which no prefix reaches: a prefix
+// only ever removes text from the end, so nothing built from one holds a
+// sample with anything standing in front of it or after it. The byte in front
+// is what LookBehind is for: a scan reading back from a value to decide
+// whether it stands there at all is reading exactly this byte.
 func builtinInputs(samples []string) []string {
 	inputs := slices.Clone(noValueInputs)
 	for _, src := range samples {
 		for i := range len(src) + 1 {
 			inputs = append(inputs, src[:i])
 		}
+		for _, c := range builtinInputAdjacentBytes {
+			inputs = append(inputs, src+c)
+			inputs = append(inputs, c+src)
+		}
+		inputs = append(inputs, builtinInputInfixBefore+src+builtinInputInfixAfter)
 	}
 	return inputs
 }

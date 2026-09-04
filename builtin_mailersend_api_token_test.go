@@ -73,6 +73,25 @@ func Test_MailerSendAPIToken(t *testing.T) {
 			src:  "mlsn.0123456789abcdefghijklmnopqrstmlsn.0123456789ABCDEFGHIJKLMNOPQRST",
 			want: []Span{{0, 39}, {35, 70}},
 		},
+		{
+			// The far side of the prefix rather than a word character: a
+			// multi-byte rune written straight against a token on either
+			// side keeps the token's span exactly as a single-byte word
+			// character would.
+			name: "a token followed immediately by japanese",
+			src:  "mlsn.0123456789abcdefghijklmnopqrst日本語",
+			want: []Span{{0, 35}},
+		},
+		{
+			name: "a token preceded immediately by japanese",
+			src:  "日本語mlsn.0123456789abcdefghijklmnopqrst",
+			want: []Span{{9, 44}},
+		},
+		{
+			name: "a token after an invalid utf-8 byte",
+			src:  "\xffmlsn.0123456789abcdefghijklmnopqrst",
+			want: []Span{{1, 36}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -113,8 +132,47 @@ func Test_MailerSendAPIToken_noMatch(t *testing.T) {
 			src:  "mlsn.0123456789abcdefghij_lmnopqrst",
 		},
 		{
+			// A hyphen at the first character of the body, with a full
+			// thirty character run behind it. The run's length is not what
+			// turns this away — it never begins, since the character behind
+			// the prefix is not one a body is written with.
+			name: "a hyphen at the first character of the body",
+			src:  "mlsn.-0123456789abcdefghijklmnopqrst",
+		},
+		{
+			name: "an underscore at the first character of the body",
+			src:  "mlsn._0123456789abcdefghijklmnopqrst",
+		},
+		{
+			name: "a dot at the first character of the body",
+			src:  "mlsn..0123456789abcdefghijklmnopqrst",
+		},
+		{
+			// A plus and a slash, the two characters standard base64 adds
+			// that base64url does not. Neither is base62 either, so both end
+			// a body the same way the hyphen and the underscore do.
+			name: "a plus in the body",
+			src:  "mlsn.0123456789abcdefghij+lmnopqrst",
+		},
+		{
+			name: "a slash in the body",
+			src:  "mlsn.0123456789abcdefghij/lmnopqrst",
+		},
+		{
+			name: "a tab in the body",
+			src:  "mlsn.0123456789abcdefghij\tlmnopqrst",
+		},
+		{
 			name: "an uppercase prefix",
 			src:  "MLSN.0123456789abcdefghijklmnopqrst",
+		},
+		{
+			name: "the prefix with its first letter capitalised",
+			src:  "Mlsn.0123456789abcdefghijklmnopqrst",
+		},
+		{
+			name: "the prefix with its last letter capitalised",
+			src:  "mlsN.0123456789abcdefghijklmnopqrst",
 		},
 		{
 			// The prefix is written with the dot MailerSend closes it with, not
@@ -333,6 +391,25 @@ func Test_MailerSendAPIToken_reachesTheEndOfTheRun(t *testing.T) {
 			src:  "mlsn.0123456789abcdefghijklmnopqrst_suffix",
 			want: "***********************************_suffix",
 		},
+		{
+			// Base64 padding is neither base62 nor a character the prefix
+			// carries, so it ends a body the same way any other character
+			// outside the alphabet does and is left standing beside the
+			// redaction.
+			name: "base64 padding against the token",
+			src:  "mlsn.0123456789abcdefghijklmnopqrst==",
+			want: "***********************************==",
+		},
+		{
+			name: "a tab against the token",
+			src:  "mlsn.0123456789abcdefghijklmnopqrst\tnext",
+			want: "***********************************\tnext",
+		},
+		{
+			name: "a carriage return and a newline against the token",
+			src:  "mlsn.0123456789abcdefghijklmnopqrst\r\n",
+			want: "***********************************\r\n",
+		},
 	}
 
 	m := New(WithPatterns(MailerSendAPIToken()))
@@ -494,6 +571,49 @@ func Test_MailerSendAPIToken_aDigestBehindThePrefix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_MailerSendAPIToken_retain(t *testing.T) {
+	// What Find's second return settles, held to literal offsets. Prose
+	// settling as the whole of the input is the ordinary case: nothing in
+	// "there is no credential in this sentence" is a piece of the prefix
+	// standing at the end, so what is not settled is nothing at all.
+	//
+	// A body cut short of the floor is not ruled out by what stands in front
+	// of it — the run might carry on past where the input ends — so what is
+	// not settled is the candidate's own start rather than the run behind
+	// it. A prefix cut short is the same claim one step earlier: "mlsn" is a
+	// piece of "mlsn." standing at the end of the input, so the candidate it
+	// might open is held from its own start as well.
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			name: "no candidate at all",
+			src:  "there is no credential in this sentence",
+			want: 39,
+		},
+		{
+			name: "a body cut short of the floor by the end of the input",
+			src:  "see mlsn.0123456789",
+			want: 4,
+		},
+		{
+			name: "a prefix cut short by the end of the input",
+			src:  "see mlsn",
+			want: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, retain := MailerSendAPIToken().Find(tt.src); retain != tt.want {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.want)
 			}
 		})
 	}
@@ -668,6 +788,13 @@ func FuzzMailerSendAPIToken_matchesReference(f *testing.F) {
 	// boundary and a label of a host name.
 	f.Add("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQmlsn.0123456789abcdefghijklmnopqrst")
 	f.Add("curl https://mlsn.0123456789abcdefghijklmnopqrst.example.com/")
+	// A forbidden byte at the first character of the body, base64 padding
+	// and a token beside a multi-byte rune or an invalid UTF-8 byte.
+	f.Add("mlsn.-0123456789abcdefghijklmnopqrst")
+	f.Add("mlsn.0123456789abcdefghijklmnopqrst==")
+	f.Add("mlsn.0123456789abcdefghijklmnopqrst日本語")
+	f.Add("日本語mlsn.0123456789abcdefghijklmnopqrst")
+	f.Add("\xffmlsn.0123456789abcdefghijklmnopqrst")
 
 	fuzzAgainstReference(f, MailerSendAPIToken().Find, referenceMailerSendAPITokenFind)
 }

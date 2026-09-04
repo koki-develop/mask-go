@@ -12,7 +12,9 @@
 # which is the sixty-four characters the floor asks for and no real credential
 # is. A real body is longer: it carries the MessagePack encoding of a macaroon,
 # and the floor is read off the sixteen-byte nonce and thirty-two-byte tail one
-# cannot be written without.
+# cannot be written without. One case below writes that run in its uppercase
+# form, 0123456789ABCDEF, since the alphabet a body is read in holds the
+# uppercase letters across its whole width and not the lowercase ones alone.
 
 patterns: fly-io-access-token
 
@@ -82,6 +84,10 @@ out:      FlyV1 «fly-io-access-token»,«fly-io-access-token»
 
 case:     a body carrying a plus and a slash
 in:       fm2_0123456789abcde+0123456789abcde/0123456789abcdef0123456789abcdef
+out:      «fly-io-access-token»
+
+case:     a body written in the uppercase half of the alphabet
+in:       fm2_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF
 out:      «fly-io-access-token»
 
 case:     a body broken by a hyphen

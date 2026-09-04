@@ -125,6 +125,23 @@ func Test_SendGridAPIKey_noMatch(t *testing.T) {
 			src:  "SG.0123456789abcdefghijkl_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
 		},
 		{
+			// A space is a non-alphabet, non-separator byte terminating the
+			// identifier run at exactly twenty-two — the position the
+			// separator itself stands at.
+			name: "a space where the separator belongs",
+			src:  "SG.0123456789abcdefghijkl 0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+		},
+		{
+			// The excluded byte at the very first character of the
+			// identifier, with the rest of the shape otherwise intact.
+			name: "a plus at the first character of the identifier",
+			src:  "SG.+123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+		},
+		{
+			name: "a second dot at the first character of the identifier",
+			src:  "SG..123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+		},
+		{
 			name: "a hyphen where the prefix carries its dot",
 			src:  "SG-0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
 		},
@@ -254,6 +271,19 @@ func Test_SendGridAPIKey_inContext(t *testing.T) {
 			src:  "SG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDESG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
 			want: "****************************************************************************************************************************************",
 		},
+		{
+			// A key immediately against a multi-byte rune on both sides. The
+			// pattern reads no word boundary either side of a match, so the
+			// key keeps its span.
+			name: "between japanese",
+			src:  "キーはSG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFGです",
+			want: "キーは*********************************************************************です",
+		},
+		{
+			name: "between bytes that are not utf-8",
+			src:  "\xffSG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG\xff",
+			want: "\xff*********************************************************************\xff",
+		},
 	}
 
 	m := New(WithPatterns(SendGridAPIKey()))
@@ -371,6 +401,24 @@ func Test_SendGridAPIKey_wordClosingOnThePrefix(t *testing.T) {
 			want: "M*********************************************************************",
 		},
 		{
+			// The rationale names four identifiers closing on the prefix;
+			// only MSG. is driven above. The other three are here so that
+			// each is on the record rather than assumed to follow from it.
+			name: "a chain whose first component is NSG",
+			src:  "NSG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			want: "N*********************************************************************",
+		},
+		{
+			name: "a chain whose first component is ESG",
+			src:  "ESG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			want: "E*********************************************************************",
+		},
+		{
+			name: "a chain whose first component is PSG",
+			src:  "PSG.0123456789abcdefghijkl.0123456789abcdefghijklmnopqrstuvwxyzABCDEFG",
+			want: "P*********************************************************************",
+		},
+		{
 			// The counts are what most of such a chain fails: the middle
 			// component has to be exactly twenty-two characters.
 			name: "the same chain with a component of another length",
@@ -384,6 +432,47 @@ func Test_SendGridAPIKey_wordClosingOnThePrefix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_SendGridAPIKey_retain holds the second return of Find to a literal
+// offset, on the two shapes builtin_scan.go names: a piece of the prefix
+// standing at the end of the input, and a candidate the end of the input cut
+// short of the count.
+func Test_SendGridAPIKey_retain(t *testing.T) {
+	tests := []struct {
+		name       string
+		src        string
+		wantRetain int
+	}{
+		{
+			// The last two characters are "SG", a piece of the three-character
+			// prefix "SG." cut short by the end of the input.
+			name:       "a piece of the prefix standing at the end of the input",
+			src:        "key SG",
+			wantRetain: 4,
+		},
+		{
+			// A whole prefix and identifier with the separator and a partial
+			// secret behind it, all standing at the end of the input. More
+			// characters arriving could still complete the key, so the
+			// candidate is unsettled from its own start.
+			name:       "a candidate the end of the input cut short of the count",
+			src:        "SG.0123456789abcdefghijkl.0123456789",
+			wantRetain: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := SendGridAPIKey().Find(tt.src)
+			if len(got) != 0 {
+				t.Fatalf("Find(%q) located %v, want no span", tt.src, got)
+			}
+			if retain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.wantRetain)
 			}
 		})
 	}

@@ -80,6 +80,34 @@ func Test_RenderAPIKey(t *testing.T) {
 			src:  "rnd_0123456789abcdef0123456789abrnd_0123456789ABCDEF0123456789AB",
 			want: []Span{{0, 35}, {32, 64}},
 		},
+		{
+			// The letters between g and z, and between G and Z, never stand
+			// in the ordered runs the rest of this file is built from.
+			// base62 holds them the same as any other letter. The body opens
+			// on the ordered run and carries both ranges whole behind it,
+			// well past the twenty-eight character floor.
+			name: "a body written in the letters past f",
+			src:  "rnd_0123456789abcdefghijklmnopqrstuvwxyzGHIJKLMNOPQRSTUVWXYZ",
+			want: []Span{{0, 60}},
+		},
+		{
+			// A whole key standing directly behind another key's prefix. The
+			// first candidate's body is the three letters "rnd" the second
+			// prefix opens with — three characters, short of the floor — so
+			// it locates nothing, and the underscore that closes the second
+			// prefix opens the candidate that becomes the key.
+			name: "a prefix in front of a key",
+			src:  "rnd_rnd_0123456789abcdef0123456789ab",
+			want: []Span{{4, 36}},
+		},
+		{
+			// A key immediately preceded and followed by a byte that is not
+			// valid UTF-8. Neither is a word character, and the pattern reads
+			// no boundary on either side, so the key keeps its span.
+			name: "against an invalid byte",
+			src:  "\xffrnd_0123456789abcdef0123456789ab\xff",
+			want: []Span{{1, 33}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -140,6 +168,22 @@ func Test_RenderAPIKey_noMatch(t *testing.T) {
 			src:  "rnd_0123456789abcdef 123456789ab",
 		},
 		{
+			// The excluded byte standing at the very first body position, with
+			// a run of twenty-eight valid characters behind it. The run
+			// starting there is what has to be turned away rather than read as
+			// a body a character short.
+			name: "a hyphen straight behind the prefix",
+			src:  "rnd_-0123456789abcdef0123456789ab",
+		},
+		{
+			name: "an underscore straight behind the prefix",
+			src:  "rnd__0123456789abcdef0123456789ab",
+		},
+		{
+			name: "a space straight behind the prefix",
+			src:  "rnd_ 0123456789abcdef0123456789ab",
+		},
+		{
 			name: "a dot in the body",
 			src:  "rnd_0123456789abcdef.123456789ab",
 		},
@@ -170,6 +214,49 @@ func Test_RenderAPIKey_noMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := RenderAPIKey().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
+			}
+		})
+	}
+}
+
+// Test_RenderAPIKey_retain holds the second return of Find to a literal
+// offset, on the two shapes builtin_scan.go names: a piece of the prefix
+// standing at the end of the input, and a candidate the end of the input cut
+// short of the floor.
+func Test_RenderAPIKey_retain(t *testing.T) {
+	tests := []struct {
+		name       string
+		src        string
+		wantRetain int
+	}{
+		{
+			// The last three characters are "rnd", a piece of the
+			// four-character prefix "rnd_" cut short by the end of the
+			// input. Nothing behind it can complete a candidate yet, so the
+			// text is unsettled from where that piece opens.
+			name:       "a piece of the prefix standing at the end of the input",
+			src:        "key rnd",
+			wantRetain: 4,
+		},
+		{
+			// A whole prefix with a body behind it too short to reach the
+			// floor, all of it standing at the end of the input. More
+			// characters arriving could still carry the run to the floor, so
+			// the candidate is unsettled from its own start.
+			name:       "a candidate the end of the input cut short of the floor",
+			src:        "rnd_0123456789abcdef0123",
+			wantRetain: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := RenderAPIKey().Find(tt.src)
+			if len(got) != 0 {
+				t.Fatalf("Find(%q) located %v, want no span", tt.src, got)
+			}
+			if retain != tt.wantRetain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.wantRetain)
 			}
 		})
 	}
@@ -219,6 +306,14 @@ func Test_RenderAPIKey_inContext(t *testing.T) {
 			name: "a key beginning inside the key before it",
 			src:  "rnd_0123456789abcdef0123456789rnd_0123456789abcdef0123456789ab",
 			want: "**************************************************************",
+		},
+		{
+			// A key immediately against a multi-byte rune on both sides. The
+			// pattern reads no boundary either side of a match, so the
+			// key keeps its span and the surrounding runes come through whole.
+			name: "between japanese",
+			src:  "鍵はrnd_0123456789abcdef0123456789abです",
+			want: "鍵は********************************です",
 		},
 	}
 

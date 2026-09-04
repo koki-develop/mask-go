@@ -45,9 +45,25 @@ case:     a body written in capitals
 in:       shippo_live_0123456789ABCDEF0123456789ABCDEF01234567
 out:      «shippo-api-token»
 
+case:     a body mixing both cases at once
+in:       shippo_live_0123456789abcdef0123456789ABCDEF01234567
+out:      «shippo-api-token»
+
 case:     a body carrying a letter past f
 in:       shippo_live_0123456789abcdef0123456789abcdefg1234567
 out:      shippo_live_0123456789abcdef0123456789abcdefg1234567
+
+case:     a body carrying an uppercase letter past f
+in:       shippo_live_0123456789ABCDEF0123456789ABCDEFG1234567
+out:      shippo_live_0123456789ABCDEF0123456789ABCDEFG1234567
+
+case:     a forbidden character at the first body position with a full run behind it
+in:       shippo_live_g0123456789abcdef0123456789abcdef01234567
+out:      shippo_live_g0123456789abcdef0123456789abcdef01234567
+
+case:     an uppercase letter past f written against a token
+in:       shippo_live_0123456789abcdef0123456789abcdef01234567G
+out:      «shippo-api-token»G
 
 case:     a body carrying a hyphen
 in:       shippo_live_0123456789abcdef0123456789abcdef-1234567
@@ -93,6 +109,14 @@ case:     the placeholder the documentation writes where a token goes
 in:       Authorization: ShippoToken shippo_test_token
 out:      Authorization: ShippoToken shippo_test_token
 
+case:     the prefix in a case neither all lowercase nor all uppercase
+in:       Shippo_Live_0123456789abcdef0123456789abcdef01234567
+out:      Shippo_Live_0123456789abcdef0123456789abcdef01234567
+
+case:     a mode written in capitals
+in:       shippo_LIVE_0123456789abcdef0123456789abcdef01234567
+out:      shippo_LIVE_0123456789abcdef0123456789abcdef01234567
+
 # What a token may be written against. There is no boundary on either side of
 # the prefix, so a token keeps its span whatever word character it abuts — and
 # where the run of its alphabet carries on past the floor, what carries it on is
@@ -106,6 +130,18 @@ out:      SHIPPO_API_TOKEN_«shippo-api-token»
 case:     a token after a letter
 in:       xshippo_live_0123456789abcdef0123456789abcdef01234567
 out:      x«shippo-api-token»
+
+case:     a token after a digit
+in:       9shippo_live_0123456789abcdef0123456789abcdef01234567
+out:      9«shippo-api-token»
+
+case:     a token after a hyphenated word
+in:       build-shippo_live_0123456789abcdef0123456789abcdef01234567
+out:      build-«shippo-api-token»
+
+case:     a token immediately against japanese on both sides
+in:       トークンはshippo_live_0123456789abcdef0123456789abcdef01234567です
+out:      トークンは«shippo-api-token»です
 
 case:     a hexadecimal word written against a token
 in:       shippo_live_0123456789abcdef0123456789abcdef01234567deadbeef

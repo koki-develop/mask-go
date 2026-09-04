@@ -41,6 +41,14 @@ case:     an uppercase body
 in:       squ_0123456789ABCDEF0123456789abcdef01234567
 out:      squ_0123456789ABCDEF0123456789abcdef01234567
 
+case:     an uppercase hexadecimal character at the start of the body
+in:       squ_A123456789abcdef0123456789abcdef01234567
+out:      squ_A123456789abcdef0123456789abcdef01234567
+
+case:     a letter outside hexadecimal at the end of the body
+in:       squ_0123456789abcdef0123456789abcdef0123456z
+out:      squ_0123456789abcdef0123456789abcdef0123456z
+
 case:     an uppercase prefix
 in:       SQU_0123456789abcdef0123456789abcdef01234567
 out:      SQU_0123456789abcdef0123456789abcdef01234567
@@ -73,6 +81,14 @@ case:     a hexadecimal run longer than a token is a token and what follows it
 in:       squ_0123456789abcdef0123456789abcdef012345678
 out:      «sonarqube-token»8
 
+case:     a hexadecimal run longer than a token, for another kind
+in:       sqa_0123456789abcdef0123456789abcdef012345678
+out:      «sonarqube-token»8
+
+case:     an underscore inside the body, which is outside lowercase hexadecimal
+in:       squ_0123456789abcdef_123456789abcdef01234567
+out:      squ_0123456789abcdef_123456789abcdef01234567
+
 # What a token may be written against. The prefix is the whole of the anchor and
 # there is no boundary on either side of it, so a token keeps its span whatever
 # word character it abuts.
@@ -104,6 +120,26 @@ out:      «sonarqube-token»«sonarqube-token»
 case:     a prefix written where a body would stand
 in:       squ_squ_0123456789abcdef0123456789abcdef01234567
 out:      squ_«sonarqube-token»
+
+case:     three tokens run together
+in:       squ_0123456789abcdef0123456789abcdef01234567sqa_0123456789abcdef0123456789abcdef01234567sqb_0123456789abcdef0123456789abcdef01234567
+out:      «sonarqube-token»«sonarqube-token»«sonarqube-token»
+
+case:     a token between tabs
+in:       \tsqu_0123456789abcdef0123456789abcdef01234567\t
+out:      \t«sonarqube-token»\t
+
+case:     a token before a carriage return
+in:       squ_0123456789abcdef0123456789abcdef01234567\r\n
+out:      «sonarqube-token»\r\n
+
+case:     a token in a yaml value
+in:       sonar_token: sqp_0123456789abcdef0123456789abcdef01234567
+out:      sonar_token: «sonarqube-token»
+
+case:     a token against japanese text on both sides
+in:       日本語squ_0123456789abcdef0123456789abcdef01234567日本語
+out:      日本語«sonarqube-token»日本語
 
 # What this pattern redacts that nobody issued. Every character of a prefix
 # belongs to base64url, so a payload written in that alphabet can spell one, and

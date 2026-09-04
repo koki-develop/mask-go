@@ -81,6 +81,14 @@ func Test_SourcegraphAccessToken(t *testing.T) {
 			want: []Span{{0, 44}, {44, 94}, {94, 155}},
 		},
 		{
+			// A chain of three rather than a pair, so the resumption past a
+			// candidate that failed is driven twice over on the same text
+			// rather than once.
+			name: "three tokens with nothing between them",
+			src:  "sgp_0123456789abcdef0123456789abcdef01234567sgp_0123456789abcdef0123456789abcdef01234567sgp_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{0, 44}, {44, 88}, {88, 132}},
+		},
+		{
 			// The candidate the scan resuming a byte along is for. The first
 			// prefix opens a candidate whose identifier would begin with the s
 			// of the second, which no identifier may hold; the whole token
@@ -117,6 +125,47 @@ func Test_SourcegraphAccessToken_noMatch(t *testing.T) {
 		{
 			name: "a value one character short behind an identifier",
 			src:  "sgp_0123456789abcdef_0123456789abcdef0123456789abcdef0123456",
+		},
+		{
+			// The local form one character short of its own total length. The
+			// separator behind the word local reads fine, so the value is read
+			// from there; thirty-nine hexadecimal characters and the end of the
+			// input follow, which is a candidate the input cuts short rather
+			// than one the text itself rules out, and Find reports no span
+			// either way.
+			name: "a value one character short behind the local identifier",
+			src:  "sgp_local_0123456789abcdef0123456789abcdef0123456",
+		},
+		{
+			// A character outside the alphabet at the very first position of a
+			// value rather than in its middle: the identifier reading is never
+			// reached, since the byte behind the prefix settles a local reading
+			// only for a letter l, and the walk for either hexadecimal reading
+			// fails on its first character.
+			name: "a forbidden character at the start of a value",
+			src:  "sgp_.123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// The same character at the value's last position rather than its
+			// first: thirty-nine hexadecimal characters read fine and the walk
+			// fails on the fortieth.
+			name: "a forbidden character at the end of a value",
+			src:  "sgp_0123456789abcdef0123456789abcdef0123456.",
+		},
+		{
+			// A character outside the alphabet at the identifier's first
+			// position: the hexadecimal identifier reading fails on its first
+			// character, and the fallback reading of the whole run as a value
+			// fails on the same byte.
+			name: "a forbidden character at the start of an identifier",
+			src:  "sgp_.123456789abcdef_0123456789abcdef0123456789abcdef01234567",
+		},
+		{
+			// The same character at the identifier's last position: fifteen
+			// hexadecimal characters read fine and the identifier walk fails on
+			// the sixteenth, which is also where the fallback value walk fails.
+			name: "a forbidden character at the end of an identifier",
+			src:  "sgp_0123456789abcde._0123456789abcdef0123456789abcdef01234567",
 		},
 		{
 			name: "a value carrying a space",
@@ -390,6 +439,41 @@ func Test_SourcegraphAccessToken_anUppercaseBody(t *testing.T) {
 			src:  "sgp_0123456789ABCDEF_0123456789abcdef0123456789abcdef01234567",
 			want: []Span{{0, 61}},
 		},
+		{
+			name: "an uppercase character at the start of a value",
+			src:  "sgp_F0123456789abcdef0123456789abcdef0123456",
+			want: []Span{{0, 44}},
+		},
+		{
+			name: "an uppercase character in the middle of a value",
+			src:  "sgp_0123456789abcdef0123A56789abcdef01234567",
+			want: []Span{{0, 44}},
+		},
+		{
+			// The earliest position an uppercase character can stand in an
+			// identifier: the ten characters in front of it are digits, which
+			// carry no case.
+			name: "an uppercase character at the start of an identifier",
+			src:  "sgp_0123456789Abcdef_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{0, 61}},
+		},
+		{
+			name: "an uppercase character in the middle of an identifier",
+			src:  "sgp_0123456789abcDef_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{0, 61}},
+		},
+		{
+			name: "an uppercase character at the end of an identifier",
+			src:  "sgp_0123456789abcdeF_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{0, 61}},
+		},
+		{
+			// Case mixed throughout both the identifier and the value, rather
+			// than uppercased as a block or at a single character.
+			name: "a token mixing case throughout",
+			src:  "sgp_0123456789abcdef_0123456789AbCdEf0123456789aBcDeF01234567",
+			want: []Span{{0, 61}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -579,6 +663,84 @@ func Test_SourcegraphAccessToken_aDigestBehindThePrefix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := SourcegraphAccessToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_SourcegraphAccessToken_nextToNonASCII(t *testing.T) {
+	// There is no boundary on either side of a match, and a multi-byte rune is
+	// no exception: the prefix opens with a byte no such rune's encoding holds,
+	// and a value's alphabet holds none of the continuation bytes such an
+	// encoding is written in either.
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			// 日本語 is three runes of three bytes each, so the token begins at
+			// byte nine.
+			name: "a token after japanese text",
+			src:  "日本語sgp_0123456789abcdef0123456789abcdef01234567",
+			want: []Span{{9, 53}},
+		},
+		{
+			name: "a token before japanese text",
+			src:  "sgp_local_0123456789abcdef0123456789abcdef01234567日本語",
+			want: []Span{{0, 50}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := SourcegraphAccessToken().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_SourcegraphAccessToken_settlesACandidateTheInputCutShort(t *testing.T) {
+	// What the scan settles where the input ends inside a candidate rather than
+	// after one: the candidate's own start, whichever of the three readings the
+	// text in front of the cut was heading towards.
+	tests := []struct {
+		name   string
+		src    string
+		retain int
+	}{
+		{
+			// The prefix and a whole identifier stand, but the value behind the
+			// separator is sixteen characters where forty are asked for: the walk
+			// runs out of input inside the value, so the whole candidate,
+			// starting at the prefix, is unsettled.
+			name:   "the input ends inside the value behind an identifier",
+			src:    "token=sgp_0123456789abcdef_0123456789abcdef",
+			retain: 6,
+		},
+		{
+			// The input ends inside the prefix itself: "sgp" is a proper prefix
+			// of "sgp_", so the candidate it might open is held back from its
+			// own first byte.
+			name:   "the input ends inside the prefix",
+			src:    "token=sgp",
+			retain: 6,
+		},
+		{
+			// No suffix of this input is the start of the prefix — the third
+			// character asked for is p and this one is q — so nothing here is
+			// held back at all.
+			name:   "the input ends on a byte the prefix could never continue",
+			src:    "token=sgq",
+			retain: 9,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, retain := SourcegraphAccessToken().Find(tt.src); retain != tt.retain {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.retain)
 			}
 		})
 	}

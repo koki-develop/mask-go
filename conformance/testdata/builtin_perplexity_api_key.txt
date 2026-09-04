@@ -55,6 +55,18 @@ case:     a body carrying an underscore
 in:       pplx-0123456789abcdefghij_lmnopqrstuvwxyz0123456789ab
 out:      pplx-0123456789abcdefghij_lmnopqrstuvwxyz0123456789ab
 
+case:     a plus in the body
+in:       pplx-0123456789abcdefghij+lmnopqrstuvwxyz0123456789ab
+out:      pplx-0123456789abcdefghij+lmnopqrstuvwxyz0123456789ab
+
+case:     a slash in the body
+in:       pplx-0123456789abcdefghij/lmnopqrstuvwxyz0123456789ab
+out:      pplx-0123456789abcdefghij/lmnopqrstuvwxyz0123456789ab
+
+case:     base64 padding against a key
+in:       pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab=
+out:      «perplexity-api-key»=
+
 # The lengths either side of forty-eight. Perplexity states no length for a key,
 # and no alphabet and no checksum either; one expression is published for the
 # format and it reads forty-eight characters. The count is read as a floor
@@ -117,6 +129,14 @@ out:      «perplexity-api-key»_suffix
 case:     a key at the end of a sentence
 in:       the key is pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab.
 out:      the key is «perplexity-api-key».
+
+case:     a key followed by japanese with nothing between them
+in:       キー=pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab、以上
+out:      キー=«perplexity-api-key»、以上
+
+case:     a key preceded by japanese with nothing between them
+in:       日本語pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      日本語«perplexity-api-key»
 
 # Two keys written together. The four letters the prefix opens with belong to
 # the alphabet a body is written in, so a body may close with pplx and the

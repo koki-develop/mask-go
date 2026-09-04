@@ -80,6 +80,25 @@ func Test_NeonAPIKey(t *testing.T) {
 			src:  "napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefnapi_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
 			want: []Span{{0, 73}, {69, 138}},
 		},
+		{
+			// The far side of the prefix rather than a word character: a
+			// multi-byte rune written straight against a key on either side
+			// keeps the key's span exactly as a single-byte word character
+			// would.
+			name: "a key followed immediately by japanese",
+			src:  "napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef日本語",
+			want: []Span{{0, 69}},
+		},
+		{
+			name: "a key preceded immediately by japanese",
+			src:  "日本語napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{9, 78}},
+		},
+		{
+			name: "a key after an invalid utf-8 byte",
+			src:  "\xffnapi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			want: []Span{{1, 70}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -120,8 +139,43 @@ func Test_NeonAPIKey_noMatch(t *testing.T) {
 			src:  "napi_0123456789abcdef0123456789abcdef_123456789abcdef0123456789abcdef",
 		},
 		{
+			// A hyphen at the first character of the body, with a full
+			// sixty-four character run behind it. The run's length is not
+			// what turns this away — it never begins, since the character
+			// behind the prefix is not one a body is written with.
+			name: "a hyphen at the first character of the body",
+			src:  "napi_-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "an underscore at the first character of the body",
+			src:  "napi__0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			// A plus and a slash, the two characters standard base64 adds
+			// that base64url does not. Neither is base62 either, so both
+			// end a body the same way the hyphen and the underscore do.
+			name: "a plus in the body",
+			src:  "napi_0123456789abcdef0123456789abcdef+123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a slash in the body",
+			src:  "napi_0123456789abcdef0123456789abcdef/123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "a tab in the body",
+			src:  "napi_0123456789abcdef0123456789abcdef\t123456789abcdef0123456789abcdef",
+		},
+		{
 			name: "an uppercase prefix",
 			src:  "NAPI_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "the prefix with its first letter capitalised",
+			src:  "Napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		{
+			name: "the prefix with its last letter capitalised",
+			src:  "napI_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 		},
 		{
 			// The prefix is written with the underscore Neon closes it with,
@@ -395,6 +449,20 @@ func Test_NeonAPIKey_reachesTheEndOfTheRun(t *testing.T) {
 			src:  "napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef_suffix",
 			want: "*********************************************************************_suffix",
 		},
+		{
+			// Base64 padding is neither base62 nor a character the prefix
+			// carries, so it ends a body the same way any other character
+			// outside the alphabet does and is left standing beside the
+			// redaction.
+			name: "base64 padding against the key",
+			src:  "napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef==",
+			want: "*********************************************************************==",
+		},
+		{
+			name: "a carriage return and a newline against the key",
+			src:  "napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\r\n",
+			want: "*********************************************************************\r\n",
+		},
 	}
 
 	m := New(WithPatterns(NeonAPIKey()))
@@ -534,6 +602,49 @@ func Test_NeonAPIKey_aDigestBehindThePrefix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_NeonAPIKey_retain(t *testing.T) {
+	// What Find's second return settles, held to literal offsets. Prose
+	// settling as the whole of the input is the ordinary case: nothing in
+	// "there is no credential in this sentence" is a piece of the prefix
+	// standing at the end, so what is not settled is nothing at all.
+	//
+	// A body cut short of the floor is not ruled out by what stands in front
+	// of it — the run might carry on past where the input ends — so what is
+	// not settled is the candidate's own start rather than the run behind
+	// it. A prefix cut short is the same claim one step earlier: "nap" is a
+	// piece of "napi_" standing at the end of the input, so the candidate it
+	// might open is held from its own start as well.
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			name: "no candidate at all",
+			src:  "there is no credential in this sentence",
+			want: 39,
+		},
+		{
+			name: "a body cut short of the floor by the end of the input",
+			src:  "see napi_0123456789",
+			want: 4,
+		},
+		{
+			name: "a prefix cut short by the end of the input",
+			src:  "see nap",
+			want: 4,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, retain := NeonAPIKey().Find(tt.src); retain != tt.want {
+				t.Errorf("Find(%q) retain = %d, want %d", tt.src, retain, tt.want)
 			}
 		})
 	}
@@ -727,6 +838,13 @@ func FuzzNeonAPIKey_matchesReference(f *testing.F) {
 	// pattern admits.
 	f.Add("payload=zzzznapi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefzzzz")
 	f.Add("eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzznapi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefzzzz")
+	// A forbidden byte at the first character of the body, base64 padding
+	// and a key beside a multi-byte rune or an invalid UTF-8 byte.
+	f.Add("napi_-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	f.Add("napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef==")
+	f.Add("napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef日本語")
+	f.Add("日本語napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	f.Add("\xffnapi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
 
 	fuzzAgainstReference(f, NeonAPIKey().Find, referenceNeonAPIKeyFind)
 }

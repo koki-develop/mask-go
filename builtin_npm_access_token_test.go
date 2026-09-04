@@ -113,6 +113,13 @@ func Test_NPMAccessToken_noMatch(t *testing.T) {
 			src:  "npm_0123456789abcdef_ghijklmnopqrstuvwxyz",
 		},
 		{
+			// The forbidden characters above stand in the middle of the run. A
+			// hyphen standing at its very first character ends it there just
+			// the same, whatever legal run follows.
+			name: "a hyphen at the first character of the body",
+			src:  "npm_-0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
 			name: "an uppercase prefix",
 			src:  "NPM_0123456789abcdefghijklmnopqrstuvwxyz",
 		},
@@ -350,6 +357,50 @@ func Test_NPMAccessToken_cutShortOfTheFloor(t *testing.T) {
 				t.Errorf("Mask(%q) = %q, want the text unchanged", tt.src, got)
 			}
 		})
+	}
+}
+
+func Test_NPMAccessToken_holdsATokenTheInputCutShort(t *testing.T) {
+	// What a scan settles for a run the end of the input cut short: nothing
+	// behind the run's own start, since neither whether it is long enough to
+	// be a body nor where it stops if it runs on is decided until more of the
+	// stream arrives. That holds whether or not the floor has already been
+	// met, which is why the answer is not monotone in how much of a token has
+	// arrived: a run one character short of the floor and a run already past
+	// it are both held from the same place.
+	whole := "see npm_0123456789abcdefghijklmnopqrstuvwxyz"
+	cut := whole[:len(whole)-1] // one character short of the floor
+
+	spans, retain := NPMAccessToken().Find(cut)
+	if len(spans) != 0 {
+		t.Errorf("Find(%q) = %v, want no span", cut, spans)
+	}
+	if want := 4; retain != want {
+		t.Errorf("Find(%q) settled from %d, want %d", cut, retain, want)
+	}
+
+	spans, retain = NPMAccessToken().Find(whole)
+	if want := []Span{{4, len(whole)}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", whole, spans, want)
+	}
+	if want := 4; retain != want {
+		t.Errorf("Find(%q) settled from %d, want %d", whole, retain, want)
+	}
+
+	m := New(WithPatterns(NPMAccessToken()))
+	var out strings.Builder
+	w := NewWriter(&out, m)
+	if _, err := w.Write([]byte(cut)); err != nil {
+		t.Fatalf("Write() = %v", err)
+	}
+	if _, err := w.Write([]byte(whole[len(whole)-1:])); err != nil {
+		t.Fatalf("Write() = %v", err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("Close() = %v", err)
+	}
+	if got, want := out.String(), "see "+strings.Repeat("*", len(whole)-4); got != want {
+		t.Errorf("a token written in two pieces came out %q, want %q", got, want)
 	}
 }
 

@@ -1364,3 +1364,268 @@ out:      «github-token»
 case:     a jwt written straight after a groq key
 in:       gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcd.eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
 out:      «groq-api-key».«jwt»
+
+# HashiCorp's OIDC provider client secret is written hvo_secret_ and a run of
+# hexadecimal, and hashicorp-vault-token does not read it: its own prefixes are
+# hvs., hvb. and hvr., never hvo_. What stands behind secret_ here is forty-three
+# characters of the alphabet a Notion token is written in, which is exactly what
+# notion-api-token asks for. The spelling is HashiCorp's own, chosen for a
+# reason that has nothing to do with Notion, so the two patterns are not coupled
+# and neither nests inside the other's format — the collision is coincidence,
+# and it is pinned here rather than left for a reader to find by hand.
+#
+# Notion's grammar is already as tight as its own published format: a fixed
+# prefix and an exact count. There is nothing left in it to narrow that would
+# not also leave a real Notion token of the same shape unredacted, so
+# notion-api-token reading this text is correct rather than a defect to fix.
+
+case:     a hashicorp oidc client secret spells a notion token
+in:       hvo_secret_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      hvo_«notion-api-token»bcdef0123456789abcdef
+
+# Several built-ins over-match into the signature segment of a compact JWT,
+# argued in each pattern's own file with the jwt pattern disabled. Below is the
+# whole registry against each of those inputs, which is where the two patterns
+# actually meet: the jwt span opens at the first byte and so is always the
+# earlier of the two, and the value nested behind the second dot is what it
+# takes with it.
+
+case:     a 1password service account token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.ops_eyJ0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc
+out:      «jwt»
+
+case:     a mailersend api token whose own dot supplies the jwt's second
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQmlsn.0123456789abcdefghijklmnopqrst
+out:      «jwt»
+
+case:     a neon api key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.napi_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «jwt»
+
+case:     a netlify auth token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.nfp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «jwt»
+
+case:     a perplexity api key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.pplx-0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
+out:      «jwt»
+
+case:     a pinecone api key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.pcsk_012345_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde
+out:      «jwt»
+
+case:     a render api key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.rnd_0123456789abcdef0123456789ab
+out:      «jwt»
+
+case:     a replicate api token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.r8_0123456789abcdef0123456789abcdef01234
+out:      «jwt»
+
+case:     a resend api key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.re_01234567_0123456789abcdef01234567
+out:      «jwt»
+
+case:     a hugging face token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.hf_0123456789abcdef0123456789abcdef01
+out:      «jwt»
+
+case:     a hugging face token a space away from a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef hf_0123456789abcdef0123456789abcdef01
+out:      «jwt» «huggingface-user-access-token»
+
+case:     a sonarqube token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.squ_0123456789abcdef0123456789abcdef01234567
+out:      «jwt»
+
+case:     a sourcegraph token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sgp_0123456789abcdef_0123456789abcdef0123456789abcdef01234567
+out:      «jwt»
+
+case:     a supabase publishable key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.sb_publishable_0123456789abcdef012345_01234567
+out:      «jwt»
+
+case:     a buildkite token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.bkua_0123456789abcdef0123456789abcdef01234567
+out:      «jwt»
+
+case:     a digitalocean token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «jwt»
+
+case:     a docker personal access token inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.dckr_pat_0123456789abcdef0123456789a
+out:      «jwt»
+
+case:     a paddle api key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012
+out:      «jwt»
+
+case:     a posthog personal api key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.phx_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      «jwt»
+
+case:     a langsmith api key inside the signature of a jwt
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789
+out:      «jwt»
+
+# A LangSmith key's body is base62 read to the end of its run, as a linear or
+# an npm body is, so a classic GitHub token written straight after one begins
+# inside that run and is swallowed by it rather than kept as a value of its
+# own.
+
+case:     a classic github token written straight after a langsmith api key
+in:       lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «langsmith-api-key»
+
+# A Buildkite token beside a GitHub token, the control the JWT-signature case
+# above is read against: each keeps a redaction of its own.
+
+case:     a buildkite token beside a github token
+in:       BUILDKITE_API_TOKEN=bkua_0123456789abcdef0123456789abcdef01234567 GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz
+out:      BUILDKITE_API_TOKEN=«buildkite-token» GITHUB_TOKEN=«github-token»
+
+# A classic GitHub token's base62 run reaches three characters into pul- (the
+# p, u and l) and stops at the hyphen behind them, so the two spans overlap
+# and are redacted as one, attributed to GitHub's, which starts earliest —
+# leaving no prefix behind for Pulumi's own scan to have found a candidate at.
+
+case:     a pulumi access token written straight after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzpul-0123456789abcdef0123456789abcdef01234567
+out:      «github-token»
+
+# The three-letter crates.io opening stands inside the alphabet a Groq body is
+# read in, so a token can begin inside one without ending it, exactly as an
+# access key ID does above; the two spans overlap and are redacted as one,
+# attributed to whichever starts earliest.
+
+case:     a crates.io token opening inside a groq key body
+in:       gsk_cio0123456789abcdef0123456789abcdefghijklmnopqrstu
+out:      «groq-api-key»
+
+# Databricks's two credentials, sharing no prefix and neither reaching into
+# the other: a personal access token and an oauth client secret written with
+# nothing between them each keep a redaction of their own.
+
+case:     a databricks personal access token and an oauth client secret with nothing between them
+in:       dapi0123456789abcdef0123456789abcdefdose0123456789abcdef0123456789abcdef
+out:      «databricks-personal-access-token»«databricks-oauth-client-secret»
+
+# A DigitalOcean token opens dop_v1_, every character of which belongs to the
+# base64url alphabet a Docker personal access token's body is read in, so a
+# DigitalOcean token can begin inside one without ending it and is located
+# there as well; the spans overlap and are redacted as one, attributed to
+# Docker's, which starts earliest.
+
+case:     a digitalocean token beginning inside a docker personal access token
+in:       dckr_pat_dop_v1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «docker-personal-access-token»
+
+# A classic GitHub token's body is read as a run of base62, which the letters
+# a Doppler prefix opens with belong to, so the run reaches two characters
+# into dp. before the dot stops it; the two spans overlap there and are
+# redacted as one, attributed to GitHub's, which starts earliest. Beside a
+# HashiCorp Vault token instead, with a space keeping the two apart, each
+# keeps a redaction of its own.
+
+case:     a doppler auth token written straight after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzdp.st.dev.0123456789abcdef0123456789abcdef0123456789a
+out:      «github-token»
+
+case:     a doppler auth token a space away from a hashicorp vault token
+in:       hvs.0123456789abcdef01234567 dp.st.dev.0123456789abcdef0123456789abcdef0123456789a
+out:      «hashicorp-vault-token» «doppler-auth-token»
+
+# An HCP Terraform token and a HashiCorp Vault token, the two dotted formats
+# HashiCorp issues. On one line, each keeps a redaction of its own; written
+# with nothing between them the HCP token's own count ends before the Vault
+# prefix begins, so neither reaches into the other and both are still located
+# whole.
+
+case:     an hcp terraform token and a hashicorp vault token on one line
+in:       TF_TOKEN_app_terraform_io=0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012 VAULT_TOKEN=hvs.0123456789abcdef01234567
+out:      TF_TOKEN_app_terraform_io=«hcp-terraform-api-token» VAULT_TOKEN=«hashicorp-vault-token»
+
+case:     a hashicorp vault token written straight after an hcp terraform token
+in:       0123456789abcd.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012hvs.0123456789abcdef01234567
+out:      «hcp-terraform-api-token»«hashicorp-vault-token»
+
+# A Heroku token's body is read as a run of base64url, which the underscore a
+# Hugging Face prefix closes with belongs to, so a Hugging Face token can open
+# inside a Heroku body without ending it and is located there as well; the
+# spans overlap and are redacted as one. A space between two whole tokens
+# keeps them apart instead, and each keeps a redaction of its own.
+
+case:     a hugging face token opening inside a heroku token body
+in:       HRKU-hf_0123456789abcdef0123456789abcdef0123456789abcdef012345678
+out:      «heroku-api-token»
+
+case:     a heroku token and a hugging face token with a space between them
+in:       HRKU-0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab hf_0123456789abcdef0123456789abcdef01
+out:      «heroku-api-token» «huggingface-user-access-token»
+
+# An Ory key's body is base62, which holds the uppercase letters and digits an
+# access key ID is written in, so a key can be written into one without ending
+# it and is located there as well; the two spans overlap and are redacted as
+# one. Written straight after a classic GitHub token instead, GitHub's own
+# base62 run reaches three characters into ory_pat_ (the o, r and y) and stops
+# at the underscore behind them, so the two spans overlap there too and are
+# redacted as one, attributed to GitHub's, which starts earliest.
+
+case:     an access key id written into an ory api key body
+in:       ory_pat_0123456789abcdef0123456789abcdefAKIA0123456789ABCDEF
+out:      «ory-api-key»
+
+case:     an ory api key written straight after a classic github token
+in:       ghp_0123456789abcdefghijklmnopqrstuvwxyzory_pat_0123456789abcdef0123456789abcdef
+out:      «github-token»
+
+# A PlanetScale token's body is a run of base64url, which is the alphabet a
+# PostHog prefix is written in as well, so a PostHog key can begin inside a
+# PlanetScale body without ending it and is located there too; the two spans
+# overlap and are redacted as one, attributed to PlanetScale's, which starts
+# earliest. Behind a Postman key instead the count is what decides: a PostHog
+# key written straight after one keeps a redaction of its own, since nothing
+# reaches into it.
+
+case:     a posthog personal api key opening inside a planetscale token body
+in:       pscale_tkn_phx_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      «planetscale-token»
+
+case:     a posthog personal api key written straight after a postman api key
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01phx_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      «postman-api-key»«posthog-personal-api-key»
+
+# A xAI key's body is base64url, which holds the letters and digits an access
+# key ID is written in, so a key can be written into one without ending it and
+# is located there as well; the spans overlap and are redacted as one. Written
+# straight after an Anthropic key instead, the Anthropic body is read to the
+# end of its own base64url run and reaches through xai-'s hyphen, swallowing
+# the whole of what follows exactly as it does an access key ID above.
+
+case:     an access key id written into a xai api key body
+in:       xai-AKIA0123456789ABCDEF0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd
+out:      «xai-api-key»
+
+case:     a xai api key written straight after an anthropic api key
+in:       sk-ant-api03-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdexai-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «anthropic-credential»
+
+# A SonarQube token and a Sourcegraph token each written against the end of an
+# access key ID. Both prefixes open there, which is not what a Stripe or a
+# Slack prefix does in the same position: the case named "a stripe prefix
+# written against the end of an access key id" and the one named "a slack
+# prefix written against the end of an access key id" show a prefix declining
+# to open behind a letter and a credential left whole in the clear. Neither
+# happens here — both values are located, each keeping a redaction of its own —
+# and it is stated so that a reader does not assume every prefix behaves the
+# way those two do.
+
+case:     a sonarqube token opening directly behind an access key id
+in:       AKIA0123456789ABCDEFsqu_0123456789abcdef0123456789abcdef01234567
+out:      «aws-access-key-id»«sonarqube-token»
+
+case:     a sourcegraph token opening directly behind an access key id
+in:       AKIA0123456789ABCDEFsgp_0123456789abcdef_0123456789abcdef0123456789abcdef01234567
+out:      «aws-access-key-id»«sourcegraph-access-token»

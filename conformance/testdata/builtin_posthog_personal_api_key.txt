@@ -103,6 +103,14 @@ case:     a body of the length a key is minted at today
 in:       phx_0123456789abcdefghijklmnopqrstuvwxyz0123456789ab
 out:      «posthog-personal-api-key»
 
+case:     a run of forty ended by a hyphen with more text behind it
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz0123-suffix
+out:      phx_0123456789abcdefghijklmnopqrstuvwxyz0123-suffix
+
+case:     a run of forty ended by an underscore with more text behind it
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz0123_suffix
+out:      phx_0123456789abcdefghijklmnopqrstuvwxyz0123_suffix
+
 # What a key may be written against. There is no boundary on either side of the
 # prefix, so a key keeps its span whatever word character it abuts — and where
 # the run of its alphabet carries on past the floor, what carries it on is
@@ -131,6 +139,26 @@ out:      «posthog-personal-api-key»_suffix
 case:     a key at the end of a sentence
 in:       the key is phx_0123456789abcdefghijklmnopqrstuvwxyz01234.
 out:      the key is «posthog-personal-api-key».
+
+case:     a digit before a key
+in:       0phx_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      0«posthog-personal-api-key»
+
+case:     a hyphen before a key
+in:       key-phx_0123456789abcdefghijklmnopqrstuvwxyz01234
+out:      key-«posthog-personal-api-key»
+
+case:     a key between japanese with nothing between them
+in:       日本語phx_0123456789abcdefghijklmnopqrstuvwxyz01234日本語
+out:      日本語«posthog-personal-api-key»日本語
+
+case:     a body broken by a line break
+in:       phx_0123456789abcdefghij\nlmnopqrstuvwxyz01234
+out:      phx_0123456789abcdefghij\nlmnopqrstuvwxyz01234
+
+case:     an invalid byte in the run
+in:       phx_0123456789abcdefghijklmnopqrstuvwxyz\xff1234
+out:      phx_0123456789abcdefghijklmnopqrstuvwxyz\xff1234
 
 # Two keys written together. The three letters the prefix opens with belong to
 # the alphabet a body is written in, so a body may close with phx and the

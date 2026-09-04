@@ -34,6 +34,14 @@ case:     a key at the end of a sentence
 in:       the key is PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01.
 out:      the key is «postman-api-key».
 
+case:     a key after a multi-byte rune with nothing between them
+in:       日本語PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      日本語«postman-api-key»
+
+case:     a key before a multi-byte rune with nothing between them
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01日本語
+out:      «postman-api-key»日本語
+
 # The body: the letters of both cases and the digits in both segments, which is
 # the wider of the two alphabets the rulesets that read this format divide on.
 # Postman publishes no expression of its own, so a key carrying a letter past f
@@ -132,6 +140,50 @@ out:      PMAK-0123456789abcdef01234567_0123456789abcdef0123456789abcdef01
 case:     a dot in the second segment
 in:       PMAK-0123456789abcdef01234567-0123456789abcdef.123456789abcdef01
 out:      PMAK-0123456789abcdef01234567-0123456789abcdef.123456789abcdef01
+
+case:     a first segment one character long
+in:       PMAK-0123456789abcdef012345678-0123456789abcdef0123456789abcdef01
+out:      PMAK-0123456789abcdef012345678-0123456789abcdef0123456789abcdef01
+
+case:     a space in the first segment
+in:       PMAK-0123456789abcdef 1234567-0123456789abcdef0123456789abcdef01
+out:      PMAK-0123456789abcdef 1234567-0123456789abcdef0123456789abcdef01
+
+case:     an underscore where the prefix closes
+in:       PMAK_0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+out:      PMAK_0123456789abcdef01234567-0123456789abcdef0123456789abcdef01
+
+case:     a second hyphen in the second segment
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef-123456789abcdef01
+out:      PMAK-0123456789abcdef01234567-0123456789abcdef-123456789abcdef01
+
+case:     a hyphen in the first segment
+in:       PMAK-0123456789ab-def01234567-0123456789abcdef0123456789abcdef01
+out:      PMAK-0123456789ab-def01234567-0123456789abcdef0123456789abcdef01
+
+case:     a hyphen at the last character of the second segment
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0-
+out:      PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0-
+
+case:     an underscore in the first segment
+in:       PMAK-0123456789abcdef_1234567-0123456789abcdef0123456789abcdef01
+out:      PMAK-0123456789abcdef_1234567-0123456789abcdef0123456789abcdef01
+
+case:     an underscore in the second segment
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef_123456789abcdef01
+out:      PMAK-0123456789abcdef01234567-0123456789abcdef_123456789abcdef01
+
+case:     a dot in the first segment
+in:       PMAK-0123456789abcdef.1234567-0123456789abcdef0123456789abcdef01
+out:      PMAK-0123456789abcdef.1234567-0123456789abcdef0123456789abcdef01
+
+case:     a space in the second segment
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef 123456789abcdef01
+out:      PMAK-0123456789abcdef01234567-0123456789abcdef 123456789abcdef01
+
+case:     an invalid byte in the second segment
+in:       PMAK-0123456789abcdef01234567-0123456789abcdef\xff123456789abcdef01
+out:      PMAK-0123456789abcdef01234567-0123456789abcdef\xff123456789abcdef01
 
 case:     a sha-256 digest behind the prefix
 in:       PMAK-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef

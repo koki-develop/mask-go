@@ -51,6 +51,18 @@ case:     a classic body longer than thirty-six characters is redacted whole
 in:       ghp_0123456789abcdefghijklmnopqrstuvwxyz0123456789
 out:      «github-token»
 
+case:     an oauth app access token longer than the floor is redacted whole
+in:       gho_0123456789abcdefghijklmnopqrstuvwxyz0123456789
+out:      «github-token»
+
+case:     an app installation access token longer than the floor is redacted whole
+in:       ghs_0123456789abcdefghijklmnopqrstuvwxyz0123456789
+out:      «github-token»
+
+case:     an app refresh token longer than the floor is redacted whole
+in:       ghr_0123456789abcdefghijklmnopqrstuvwxyz0123456789
+out:      «github-token»
+
 case:     a fine grained body of eighty-two characters is a token
 in:       github_pat_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789
 out:      «github-token»
@@ -114,9 +126,21 @@ case:     an app id followed by something that is not a jwt
 in:       ghs_123456_0123456789abcdef.0123456789.0123456789
 out:      ghs_123456_0123456789abcdef.0123456789.0123456789
 
+case:     a hyphen inside an app id short of either floor
+in:       ghs_12-34_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghs_12-34_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
+case:     an app id broken by an underscore with a real header further along
+in:       ghs_12_34_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+out:      ghs_12_34_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
+
 case:     an installation token followed by a file name is not drawn into one span
 in:       ghs_0123456789abcdefghijklmnopqrstuvwxyz_backup.tar.gz
 out:      «github-token»_backup.tar.gz
+
+case:     a stateless token between multi-byte text with nothing between them
+in:       日本語ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef日本語
+out:      日本語«github-token»日本語
 
 # The same file name, beginning with the two letters a JOSE header opens with.
 # What anchors the JWT of a stateless installation token is what anchors one
@@ -257,6 +281,18 @@ case:     an app id followed by a run one character above the four a space leave
 in:       ghs_123456_eyE0123456789abcdef.0123456789abcdef.0123456789abcdef
 out:      ghs_123456_eyE0123456789abcdef.0123456789abcdef.0123456789abcdef
 
+case:     a stateless installation token whose header opens on the second byte a space leaves
+in:       ghs_123456_eyB0123456789abcdef.0123456789abcdef.0123456789abcdef
+out:      «github-token»
+
+case:     a stateless installation token whose header opens on the third byte a space leaves
+in:       ghs_123456_eyC0123456789abcdef.0123456789abcdef.0123456789abcdef
+out:      «github-token»
+
+case:     a stateless installation token whose header opens on the fourth byte a space leaves
+in:       ghs_123456_eyD0123456789abcdef.0123456789abcdef.0123456789abcdef
+out:      «github-token»
+
 # Where a token sits.
 
 case:     a token in a json body
@@ -320,6 +356,18 @@ out:      gh_0123456789abcdefghijklmnopqrstuvwxyz
 case:     a prefix in capitals
 in:       GHP_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
 out:      GHP_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+case:     an oauth app prefix in capitals
+in:       GHO_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      GHO_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+case:     an app installation prefix in capitals
+in:       GHS_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      GHS_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+case:     a mixed-case prefix
+in:       Ghp_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      Ghp_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
 
 case:     a body broken by a hyphen
 in:       ghp_0123456789abcdef-ghijklmnopqrstuvwxyz0123456
@@ -425,6 +473,14 @@ out:      «github-token»
 case:     a fine grained token with a hyphen where the underscore goes
 in:       github_pat_0123456789abcdefABCDEF-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 out:      github_pat_0123456789abcdefABCDEF-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
+
+case:     a hyphenated word after a whole fine grained token
+in:       github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW-backup
+out:      «github-token»-backup
+
+case:     a fine grained token between multi-byte text with nothing between them
+in:       日本語github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW日本語
+out:      日本語«github-token»日本語
 
 # And what the underscore costs at the other end of the body. The body is read
 # as far as its alphabet runs and that alphabet holds the underscore, so a word

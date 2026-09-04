@@ -142,6 +142,49 @@ func Test_GitHubToken(t *testing.T) {
 				{44, 176}, {55, 176}, {66, 176}, {77, 176},
 			},
 		},
+		{
+			// GitHub documents no length for the other four classic kinds
+			// either, so a run longer than the floor is redacted whole for
+			// each of them exactly as it is for the personal access token.
+			name: "oauth app access token in a run longer than the floor",
+			src:  "gho_0123456789abcdefghijklmnopqrstuvwxyz0123456789",
+			want: []Span{{0, 50}},
+		},
+		{
+			name: "app user access token in a run longer than the floor",
+			src:  "ghu_0123456789abcdefghijklmnopqrstuvwxyz0123456789",
+			want: []Span{{0, 50}},
+		},
+		{
+			name: "app installation access token in a run longer than the floor",
+			src:  "ghs_0123456789abcdefghijklmnopqrstuvwxyz0123456789",
+			want: []Span{{0, 50}},
+		},
+		{
+			name: "app refresh token in a run longer than the floor",
+			src:  "ghr_0123456789abcdefghijklmnopqrstuvwxyz0123456789",
+			want: []Span{{0, 50}},
+		},
+		{
+			// The third character behind ey admits four bytes in each of two
+			// ranges; the earlier cases in this file only ever write J, the
+			// first of the second range. These are the other three of that
+			// range, each the third character of a header GitHub's own JWT
+			// carries a member name behind.
+			name: "a stateless token whose header opens with the third byte B",
+			src:  "ghs_123456_eyB0123456789abcdef.0123456789abcdef.0123456789abcdef",
+			want: []Span{{0, 64}},
+		},
+		{
+			name: "a stateless token whose header opens with the third byte C",
+			src:  "ghs_123456_eyC0123456789abcdef.0123456789abcdef.0123456789abcdef",
+			want: []Span{{0, 64}},
+		},
+		{
+			name: "a stateless token whose header opens with the third byte D",
+			src:  "ghs_123456_eyD0123456789abcdef.0123456789abcdef.0123456789abcdef",
+			want: []Span{{0, 64}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -197,6 +240,53 @@ func Test_GitHubToken_noMatch(t *testing.T) {
 		{
 			name: "an identifier that starts like the prefix",
 			src:  "github_pattern_for_matching",
+		},
+		{
+			// The wholly uppercase spelling is asserted only for ghp_ and
+			// github_pat_ elsewhere; these are the other four kinds and one
+			// mixed-case spelling.
+			name: "an uppercase oauth app prefix",
+			src:  "GHO_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			name: "an uppercase app user prefix",
+			src:  "GHU_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			name: "an uppercase app installation prefix",
+			src:  "GHS_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			name: "an uppercase app refresh prefix",
+			src:  "GHR_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			name: "a mixed-case personal access token prefix",
+			src:  "Ghp_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		{
+			// The byte just below the class the third character of a header
+			// admits: opensJOSEHeaderAt turns it away, and the app id in front
+			// of it is six characters, far short of the classic floor, so
+			// nothing is located at all.
+			name: "a stateless token whose header opens with the byte below the class",
+			src:  "ghs_123456_ey@0123456789abcdef.0123456789abcdef.0123456789abcdef",
+		},
+		{
+			// A hyphen inside an app id, which stops the base62 run at two
+			// characters — far short of what either alternative asks for — so
+			// the header behind it, real as it is, is never reached.
+			name: "a hyphen inside an app id short of either floor",
+			src:  "ghs_12-34_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
+		},
+		{
+			// An underscore inside an app id stops the same run at two
+			// characters, and what stands behind that underscore is a second
+			// base62 run rather than a header, so the stateless alternative is
+			// not reached from here either — the real header standing behind
+			// the second underscore is never asked about.
+			name: "an app id broken by an underscore with a real header further along",
+			src:  "ghs_12_34_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 		},
 		{
 			name: "plain prose",
@@ -323,6 +413,27 @@ func Test_GitHubToken_leavesWhatFollowsAlone(t *testing.T) {
 			src:  "ghs_0123456789abcdefghijklmnopqrstuvwxyz_backup.tar.gz",
 			want: "****************************************_backup.tar.gz",
 		},
+		{
+			// A hyphen is no character a fine grained body is written with, so
+			// it ends the run exactly as it ends a classic one.
+			name: "hyphenated word after a fine grained token",
+			src:  "github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW-backup",
+			want: "*********************************************************************************************-backup",
+		},
+		{
+			// A multi-byte rune written against a fine grained token. Neither
+			// its UTF-8 encoding nor the byte in front of it belongs to the
+			// body's alphabet, so the run stops exactly as it does against a
+			// single-byte character.
+			name: "a multi-byte rune after a fine grained token",
+			src:  "github_pat_0123456789abcdefABCDEF_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW日本語",
+			want: "*********************************************************************************************日本語",
+		},
+		{
+			name: "a multi-byte rune after a stateless token",
+			src:  "ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef日本語",
+			want: "***********************************************************************************日本語",
+		},
 	}
 
 	m := New(WithPatterns(GitHubToken()))
@@ -366,6 +477,56 @@ func Test_GitHubToken_statelessTokenLeavesNothingBehind(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_GitHubToken_holdsATokenTheInputCutShort states, with a literal number,
+// what the second return of Find settles: a piece of a prefix standing at the
+// end of the input, and a stateless candidate the end of the input cut short
+// before its signature arrives.
+func Test_GitHubToken_holdsATokenTheInputCutShort(t *testing.T) {
+	tests := []struct {
+		name   string
+		src    string
+		retain int
+	}{
+		{
+			// "gh" is a piece of every prefix this pattern reads, classic and
+			// fine grained alike, so nothing behind where it opens is
+			// settled.
+			name:   "the two letters every prefix opens with",
+			src:    "log gh",
+			retain: len("log "),
+		},
+		{
+			// A whole classic prefix carrying no body yet. It could still
+			// become the stateless form or the classic one depending on
+			// what follows, so it stays unsettled from where it opens.
+			name:   "a whole prefix with nothing behind it",
+			src:    "log ghs_",
+			retain: len("log "),
+		},
+		{
+			// A stateless candidate the input cuts short before its
+			// signature segment arrives. The candidate could still become a
+			// token were the input longer, so what is unsettled reaches
+			// back to where it opened.
+			name:   "a stateless candidate missing its signature",
+			src:    "log ghs_123456_eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ",
+			retain: len("log "),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := GitHubToken().Find(tt.src)
+			if len(got) != 0 {
+				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
+			}
+			if retain != tt.retain {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, retain, tt.retain)
 			}
 		})
 	}

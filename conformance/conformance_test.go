@@ -125,12 +125,48 @@ func checkCase(t *testing.T, c *corpusCase) {
 		// Fill leaves as many characters as the value had, so a scan that
 		// located all but a byte of a value would pass everything above and
 		// fail here.
-		for _, redactor := range []mask.Redactor{mask.Fill('*'), mask.Fixed("[REDACTED]"), markRedactor} {
-			got := maskerWith(patterns, redactor).Mask(c.in)
+		//
+		// Held only where a value's redaction can be told apart from the value
+		// itself: a value already written as "[REDACTED]" reads that way
+		// whether Fixed("[REDACTED]") reached it or not, and the same holds a
+		// value made of nothing but asterisks against Fill('*'). Where the two
+		// differ, finding value in the output still means the redaction left
+		// it standing, so the check is not weakened for any value it could
+		// tell apart.
+		checked := []struct {
+			name     string
+			redactor mask.Redactor
+			redacts  func(value string) string
+		}{
+			{name: "Fill('*')", redactor: mask.Fill('*'), redacts: func(value string) string {
+				return strings.Repeat("*", utf8.RuneCountInString(value))
+			}},
+			{name: `Fixed("[REDACTED]")`, redactor: mask.Fixed("[REDACTED]"), redacts: func(string) string {
+				return "[REDACTED]"
+			}},
+		}
+		for _, r := range checked {
+			got := maskerWith(patterns, r.redactor).Mask(c.in)
 			for _, value := range values {
-				if strings.Count(c.in, value) == 1 && strings.Contains(got, value) {
-					t.Errorf("Mask(%q) = %q, which still holds %q", c.in, got, value)
+				if strings.Count(c.in, value) != 1 {
+					continue
 				}
+				if r.redacts(value) == value {
+					continue // this value's own redaction is not distinguishable from it
+				}
+				if strings.Contains(got, value) {
+					t.Errorf("%s: Mask(%q) = %q, which still holds %q", r.name, c.in, got, value)
+				}
+			}
+		}
+
+		// The marking redactor's notation needs no such guard: a corpus in
+		// field may not hold "«" or "»" (conformance/CLAUDE.md), so
+		// «pattern-name» can never equal a value that came from in.
+		got := maskerWith(patterns, markRedactor).Mask(c.in)
+		for _, value := range values {
+			if strings.Count(c.in, value) == 1 && strings.Contains(got, value) {
+				t.Errorf("marking: Mask(%q) = %q, which still holds %q", c.in, got, value)
 			}
 		}
 	})
@@ -220,6 +256,8 @@ func checkCase(t *testing.T, c *corpusCase) {
 			{name: "around", before: "log: ", after: " (end)"},
 			{name: "on a line of its own", before: "first line\n", after: "\nlast line"},
 			{name: "between multi-byte text", before: "日本語 ", after: " 日本語"},
+			{name: "directly against multi-byte text", before: "日", after: "語"},
+			{name: "between control bytes", before: "\x00", after: "\x00"},
 			{name: "between tabs", before: "\t", after: "\t"},
 		}
 
@@ -302,6 +340,412 @@ func TestConformance_oneMaskerForEveryCase(t *testing.T) {
 			t.Errorf("%s: Mask(%q) = %q, want %q", c.id(), c.in, got, c.out)
 		}
 	}
+}
+
+// negativeCaseNames and negativeCaseNameEndings are phrases the corpus
+// already uses to say a case locates nothing, in its own name.
+// positiveCaseNames is the same for a case that does locate something.
+//
+// A case name carries the same weight as a comment: conformance/CLAUDE.md
+// holds it to naming the rule the scan reads rather than a property of the
+// input, and says no out can contradict it. A scan regression that widened or
+// narrowed what a case locates leaves the name stating what used to be true,
+// and -update rewrites the out field it sits beside without anyone noticing
+// the two have come apart.
+//
+// Every phrase here is verified against the corpus as it stands: grepping
+// case names for "is no ", "is not " and their plurals turns up as many that
+// name a component of a case that is still located as a whole — "a hyphen
+// with no digit behind it is no tail" locates the token beside the hyphen,
+// and "an installation token followed by a file name is not drawn into one
+// span" locates the token too — as ones that say the whole case locates
+// nothing. Contains would read the first kind as a false claim of its own,
+// so both are read as endings instead: the corpus's genuine nothing-located
+// cases put the predicate at the very end of the name ("... is no key",
+// "... is not a token") and name the credential itself there, where a
+// component fact names something narrower ("... is no tail") and is not
+// read as a claim about the case at all.
+var (
+	negativeCaseNames = []string{
+		"leaves it alone", "left alone", "leaves them alone",
+		"finds nothing", "matches nothing", "redacts nothing",
+		"is ignored", "are ignored", "is not located", "are not located",
+	}
+	negativeCaseNameEndings = []string{
+		"is no key", "is no token", "is no key of this kind", "is no armor header",
+		"is not a token", "is not a key", "is not an access key id",
+		"is not one of the kinds this library knows",
+	}
+	positiveCaseNames = []string{
+		"is located", "are located", "is redacted", "are redacted", "is used",
+	}
+)
+
+func TestCorpus_caseNamesAgreeWithTheirOut(t *testing.T) {
+	// out is generated and case names are not, so a name is the one place a
+	// claim about a case can drift from what -update just wrote without
+	// anything else here reporting it: conformance/CLAUDE.md's own words are
+	// "no out line can contradict" a name, which is what this test reads the
+	// two against each other to hold.
+	//
+	// The vocabulary above is deliberately the corpus's own rather than a
+	// general-purpose parse of English, so what this catches is a scan
+	// regression that changes whether a case locates anything at all —
+	// exactly what -update would rewrite silently — and not a name it cannot
+	// read confidently either way. A pattern arriving with a case named some
+	// other way for "locates nothing" is not reported by this: undercounting
+	// is the safe failure here, over-flagging a case that never claimed what
+	// the vocabulary reads into it is not.
+	cases := corpusCases(t)
+	checked := 0
+	for _, c := range cases {
+		lower := strings.ToLower(c.name)
+		names := c.names(t)
+
+		negative := false
+		for _, phrase := range negativeCaseNames {
+			if strings.Contains(lower, phrase) {
+				negative = true
+			}
+		}
+		for _, ending := range negativeCaseNameEndings {
+			if strings.HasSuffix(lower, ending) {
+				negative = true
+			}
+		}
+
+		positive := false
+		for _, phrase := range positiveCaseNames {
+			if strings.Contains(lower, phrase) {
+				positive = true
+			}
+		}
+
+		switch {
+		case negative && positive:
+			// A name matching both vocabularies claims a case locates
+			// something and claims it locates nothing, in the same name —
+			// no out field could agree with both halves at once, whichever
+			// way the scan comes out. That makes the name the defect
+			// rather than the scan, so it is reported here instead of
+			// running the two checks below, which would fail exactly one
+			// of them no matter what masking the case does. checked does
+			// not count this case: it was never held to its out field,
+			// only flagged as needing a reword.
+			t.Errorf("%s: the name matches both the vocabulary for locating nothing and the vocabulary for locating something — reword it to say only one", c.id())
+		case negative:
+			if len(names) != 0 {
+				t.Errorf("%s: the name says nothing is located, but masking it locates %v", c.id(), names)
+			}
+			// A name matching two phrases of the same vocabulary counts
+			// once here, not twice: checked counts the cases this held to
+			// their out field, not the phrases that matched along the way.
+			checked++
+		case positive:
+			if len(names) == 0 {
+				t.Errorf("%s: the name says something is located, but masking it locates nothing", c.id())
+			}
+			checked++
+		}
+	}
+	// checkedFraction is the floor checked is held to, as a fraction of the
+	// corpus. Measured against the corpus as it stands — 3583 cases, of which
+	// this vocabulary checks 49 — one in two hundred (17) is comfortably
+	// under half of that, roughly a third, so rewording a few of the
+	// phrases' current holders does not flake this, while a vocabulary that
+	// stopped matching nearly everything — the two lists above going stale
+	// as the corpus is renamed around them — still falls under it well
+	// before reaching zero. checked == 0 alone would let that slide all the
+	// way to nothing unnoticed; holding to a fraction of the corpus instead
+	// means a shrink is visible long before it gets there.
+	const checkedFraction = 200
+	if least := len(cases) / checkedFraction; checked < least {
+		t.Fatalf("checked %d case name(s) against their out field, want at least %d (%d corpus case(s) / %d) — the vocabulary above may no longer match how the corpus names cases",
+			checked, least, len(cases), checkedFraction)
+	}
+	t.Logf("checked %d case name(s) against their out field", checked)
+}
+
+func TestConformance_aPatternGivenTwice(t *testing.T) {
+	// WithPatterns: "Repeated options accumulate in the order given." Nothing
+	// says what a Pattern given twice — the same instance, once through one
+	// option and once through a second, or once through each of two calls to
+	// WithPatterns — does to the redaction count or to the attribution. A
+	// close analogue is pinned elsewhere (two distinct patterns reporting the
+	// same span merge into one redaction, Mask's own doc example), so what is
+	// new here is the identical-instance case: it must merge into the one
+	// redaction a caller assembling patterns from a list that happened to
+	// repeat one would still expect.
+	p := mask.GitHubToken()
+	const src = "GITHUB_TOKEN=ghp_0123456789abcdefghijklmnopqrstuvwxyz"
+	const want = "GITHUB_TOKEN=«github-token»"
+
+	variants := []struct {
+		name string
+		opts []mask.Option
+	}{
+		{name: "one pattern given once", opts: []mask.Option{mask.WithPatterns(p)}},
+		{name: "one pattern given twice in one option", opts: []mask.Option{mask.WithPatterns(p, p)}},
+		{name: "one pattern given twice across two options", opts: []mask.Option{mask.WithPatterns(p), mask.WithPatterns(p)}},
+	}
+
+	for _, v := range variants {
+		t.Run(v.name, func(t *testing.T) {
+			var seen int
+			redactor := mask.NewRedactor(func(m mask.Match) string {
+				seen++
+				return string(markOpen) + m.Pattern.Name() + string(markClose)
+			})
+			m := mask.New(append(v.opts, mask.WithRedactor(redactor))...)
+			if got := m.Mask(src); got != want {
+				t.Errorf("Mask(%q) = %q, want %q", src, got, want)
+			}
+			if seen != 1 {
+				t.Errorf("the redactor was called %d time(s), want 1", seen)
+			}
+		})
+	}
+}
+
+func TestConformance_regexpAnchor(t *testing.T) {
+	// LookBehind names ^ beside \b and \B as what the one rune of context a
+	// Pattern built by Regexp reads is decided by. ^ is a poor fit for a
+	// corpus case: checkCase's "in a longer text" and "twice over" wrap every
+	// case in more text by design, which is exactly the question ^ answers
+	// differently once asked of it, so a case built on it would fail
+	// properties that hold of every other case for a reason that is not a
+	// defect. This states the same rule directly instead.
+	p := mask.MustRegexp("line-start", `^TOKEN=[0-9a-f]{8}`)
+	m := mask.New(mask.WithPatterns(p), mask.WithRedactor(mask.Fill('*')))
+
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{name: "anchored at the start of the text", src: "TOKEN=0123456789", want: "**************89"},
+		{name: "not anchored once something stands in front of it", src: "x TOKEN=01234567", want: "x TOKEN=01234567"},
+		{name: "a byte order mark stands in front of the anchor", src: "\xef\xbb\xbfTOKEN=01234567", want: "\xef\xbb\xbfTOKEN=01234567"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Mask(tt.src); got != tt.want {
+				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestConformance_maskingTwiceMayRedactMoreThanOnce(t *testing.T) {
+	// Mask's own doc, concretely: "an AWS access key ID written against a
+	// Slack prefix is redacted on the first pass and takes a Slack token with
+	// it on the second." SlackToken's own doc explains why the first pass
+	// stops short: "A prefix written against a letter or a digit opens
+	// nothing." AWSAccessKeyID's twenty characters end in a letter or a digit
+	// whatever the key, so a Slack prefix written straight against one opens
+	// no candidate until that key is replaced — with an asterisk, which is
+	// neither.
+	m := mask.New(mask.WithPatterns(mask.AWSAccessKeyID(), mask.SlackToken()), mask.WithRedactor(mask.Fill('*')))
+	const slackBody = "xoxb-0123456789ab-0123456789abc-0123456789abcdefghijklmn"
+	const src = "AKIA0123456789ABCDEF" + slackBody
+
+	once := m.Mask(src)
+	if !strings.Contains(once, slackBody) {
+		t.Fatalf("Mask(%q) = %q, want the slack-shaped text to survive the first pass, its prefix standing against the letter the AWS key ends in", src, once)
+	}
+	if got, want := strings.Count(once, "*"), 20; got != want {
+		t.Fatalf("Mask(%q) = %q with %d asterisk(s), want %d: the AWS access key ID's twenty characters replaced and nothing else", src, once, got, want)
+	}
+
+	twice := m.Mask(once)
+	if got, want := strings.Count(twice, "*"), strings.Count(once, "*"); got <= want {
+		t.Errorf("masking twice gave %d asterisk(s), masking once gave %d; the asterisks standing where the AWS key was replace a letter and a digit no longer, so the Slack prefix beside them must now open", got, want)
+	}
+}
+
+func TestConformance_fixedEmptySplicingCanManufactureACredential(t *testing.T) {
+	// Mask's own doc: `Fixed("") ... splic[es] the text either side of it
+	// into text that was never written." A caller's own pattern can cut a
+	// span out of the middle of what will become, once spliced, a value a
+	// built-in locates — nothing about that is particular to this library's
+	// own patterns overlapping each other, and the doc's warning covers a
+	// pattern of a caller's doing it too.
+	cut := spansPattern("cut", mask.Span{Start: 3, End: 10})
+	const src = "sk_XXXXXXXlive_0123456789abcdef01234567"
+
+	spliced := mask.New(mask.WithPatterns(cut), mask.WithRedactor(mask.Fixed(""))).Mask(src)
+	const want = "sk_live_0123456789abcdef01234567"
+	if spliced != want {
+		t.Fatalf("Mask(%q) = %q, want %q", src, spliced, want)
+	}
+
+	// StripeSecretKey's own doc: "A key is located wherever it is written, so
+	// long as no letter or digit stands in front of it." Nothing stands in
+	// front of the splice at all, so if this text is now shaped like a
+	// Stripe secret key it is located — a credential the splice manufactured
+	// out of text neither half of which was one on its own.
+	again := mask.New(mask.WithPatterns(mask.StripeSecretKey()), mask.WithRedactor(mask.Fill('*'))).Mask(spliced)
+	if again == spliced {
+		t.Errorf("Mask(%q) = %q, want the spliced text located as a stripe-secret-key", spliced, again)
+	}
+}
+
+func TestConformance_scale_oneLine(t *testing.T) {
+	// TestConformance_scale builds its multi-mebibyte document out of the
+	// corpus joined with newlines, which is what a scan whose cost depends on
+	// where the newlines fall would pass without ever being asked the
+	// question: "A log stream is not a line" holds for the other direction
+	// too, and a minified bundle, a single-line JSON body or a stack trace
+	// joined with \n escapes is exactly that direction. The same corpus
+	// joined with spaces instead states scale over one line rather than over
+	// many, following TestConformance_scale's own reasoning for what a value
+	// may survive at scale: no more per copy than one properly masked unit
+	// already holds of its own raw text.
+	const (
+		size  = 1 << 20
+		limit = 4 * time.Second
+	)
+
+	var parts []string
+	values := make(map[string]bool)
+	for _, c := range corpusCases(t) {
+		if strings.ContainsAny(c.in, "\n\r") {
+			continue // a line holds neither
+		}
+		parts = append(parts, c.in)
+		_, vs := maskMarked(mask.AllBuiltinPatterns(), c.in)
+		for _, v := range vs {
+			values[v] = true
+		}
+	}
+	if len(parts) == 0 {
+		t.Fatal("no corpus case is free of newlines, so no one line could be built from it")
+	}
+	unit := strings.Join(parts, " ")
+	if unit == "" {
+		t.Fatal("the corpus contributed no text at all")
+	}
+	n := size/len(unit) + 1
+	src := strings.Repeat(unit+" ", n)
+	if strings.ContainsAny(src, "\n\r") {
+		t.Fatal("the line built for this test holds a newline after all")
+	}
+
+	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
+	wantUnit := m.Mask(unit)
+	start := time.Now()
+	masked := m.Mask(src)
+	if d := time.Since(start); d > limit {
+		t.Errorf("masking %d bytes on one line took %v, want under %v", len(src), d, limit)
+	}
+	if got, want := utf8.RuneCountInString(masked), utf8.RuneCountInString(src); got != want {
+		t.Errorf("masking with Fill left %d runes, the input had %d", got, want)
+	}
+
+	// A positive statement that the values in the middle of the huge line
+	// were found: a value surviving here more often than one masked copy of
+	// the unit already holds it is a value the scan lost once the line grew
+	// past whatever bounded it on a shorter input.
+	for v := range values {
+		if got, want := strings.Count(masked, v), n*strings.Count(wantUnit, v); got > want {
+			t.Errorf("the value %q appears %d time(s) in %d copies of the line, want at most %d", v, got, n, want)
+		}
+	}
+}
+
+func TestCorpus_cleanCasesLocateNothingNewAcrossTheRegistry(t *testing.T) {
+	// TestCorpus_coversEveryBuiltinPattern asks for cases masked with a set
+	// holding one built-in alone, locating nothing, so that a pattern's own
+	// near-misses are on the record: a prefix with no body, a body with no
+	// prefix, an upper-cased prefix, a body a hyphen breaks. A pattern added
+	// later, or a pattern's grammar widened, can turn one of those near-misses
+	// into a value some other pattern locates, and the per-pattern corpus
+	// never notices: the case is masked with one built-in alone everywhere
+	// else it is read, so a second pattern reacting to it is a redaction
+	// nothing here compares against.
+	//
+	// A clean case run through every built-in at once, as a caller who wants
+	// them all does, closes that. It is driven from the corpus rather than
+	// from a table of samples for the reason `Test_builtins_anchorsAreNotValues`
+	// is not enough on its own: the anchors that test holds are short
+	// fragments common to the whole registry, where a clean case is built
+	// against the one pattern its file is about and is the wider, more varied
+	// set of near-misses.
+	//
+	// It is not zero, and the corpus itself is why. A vendor issuing more than
+	// one credential in the one shape a caller cannot always be reading behind
+	// one name — Stripe's publishable and secret keys, Supabase's three
+	// project keys, Cloudflare's key and its token, AWS's access key ID and
+	// its secret — leaves a text that is one pattern's near-miss and another's
+	// real value, and a pattern's own file states as much where it does:
+	// builtin_aws_access_key_id.txt says outright that its clean cases "show
+	// where the boundary between the two falls rather than what a caller
+	// holding both would see." JWT and PrivateKey read the same way for a
+	// different reason: neither is a vendor's format, both are written wide
+	// enough that a placeholder standing in for one in another pattern's
+	// clean case is a genuine instance of it, and declining a genuine JWT
+	// because it stands beside ghp_ or hvs. would be declining every JWT
+	// written beside such a prefix in real text.
+	//
+	// A collision belonging to neither of those is one two vendors spelled the
+	// same way by coincidence, which is a thing to write down where the text
+	// that collides can be read: builtins_together.txt states the one this
+	// count holds, beside the case that shows it.
+	//
+	// So the bar this holds to is not zero, and holding it to zero would only
+	// have this fail on the corpus as it stands rather than on a registry that
+	// changed. It is the count above, held to exactly rather than to a
+	// ceiling: a ceiling alone misses the count staying put while one
+	// collision it already knew about is replaced by a different one, which
+	// is as much a change to the registry as a net increase is. More than
+	// knownCollisions says a pattern — added, or widened — now reacts to
+	// another pattern's clean text, the finding this property exists for.
+	// Fewer says a pattern that used to reach one of these no longer does,
+	// which is worth the same look: a grammar someone narrowed on purpose
+	// reads as fewer here, and so does one narrowed by accident, taking a
+	// value it used to locate with it. Either direction is reviewed the same
+	// way — read what the failure lists, decide whether the registry moved on
+	// purpose, and set knownCollisions to the count the failure reports.
+	const knownCollisions = 40
+
+	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
+	driven := 0
+	var found []string
+	for _, c := range corpusCases(t) {
+		// custom_patterns.txt is masked with MustRegexp, NewPattern or no
+		// pattern at all (conformance/CLAUDE.md); a clean case there says a
+		// built-in pattern was not asked to look, not that none of them would
+		// have found anything, so it states nothing this property could hold.
+		if c.file == "custom_patterns.txt" {
+			continue
+		}
+		if len(c.names(t)) > 0 {
+			continue // reads something under its own patterns; not a clean case
+		}
+		driven++
+		if got := m.Mask(c.in); got != c.in {
+			out, _ := maskMarked(mask.AllBuiltinPatterns(), c.in)
+			found = append(found, fmt.Sprintf("%s [set=%s]: clean under %s alone, the whole registry masks %q to %q",
+				c.id(), c.set, c.set, c.in, out))
+		}
+	}
+
+	if driven == 0 {
+		t.Fatal("no clean case was driven")
+	}
+	if collisions := len(found); collisions != knownCollisions {
+		// Every collision named on its own line, ahead of the count: a
+		// developer reading only the last failure of a run still sees the
+		// whole list, rather than one that needs -v to come back.
+		for _, line := range found {
+			t.Error(line)
+		}
+		t.Errorf("%d clean case(s) now locate something under the whole registry, knownCollisions says %d — "+
+			"review the case(s) above, and if the registry moved on purpose set knownCollisions to %d",
+			collisions, knownCollisions, collisions)
+	}
+	t.Logf("drove %d clean case(s), %d of them located something under the whole registry (knownCollisions=%d)",
+		driven, len(found), knownCollisions)
 }
 
 func TestCorpus_coversEveryBuiltinPattern(t *testing.T) {
@@ -526,28 +970,82 @@ func TestCorpus_summary(t *testing.T) {
 	t.Log(b.String())
 }
 
+func TestConformance_aCaseIsAtLeastOneKibibyteLong(t *testing.T) {
+	// TestConformance_scale states correctness at the scale of the whole
+	// corpus repeated; nothing states that a single case, on its own, is
+	// realistic key-material size — a PEM-encoded RSA key or a JWT with a
+	// real payload runs to kilobytes in one value. "a jwt with a large
+	// payload" (text_shapes.txt) is written to be that case; this counts
+	// rather than trusts it, so a rewrite that shortened it back down to a
+	// placeholder-sized value would be caught here rather than nowhere.
+	const want = 1024
+
+	longest := 0
+	for _, c := range corpusCases(t) {
+		longest = max(longest, len(c.in))
+	}
+	if longest < want {
+		t.Errorf("the longest case in the corpus is %d byte(s), want at least %d", longest, want)
+	}
+}
+
 func TestConformance_scale(t *testing.T) {
 	// A log stream is not a line. The whole corpus is written into one document
 	// of a few mebibytes and masked in one call, which a scan that costs time
 	// quadratic in the length of its input does not finish, and which holds the
 	// merge and the walk to what they do at size.
+	//
+	// Fill writes one rune for one rune whether or not anything was found, so
+	// the rune count alone says nothing about whether masking happened at all —
+	// a Masker given no patterns leaves it unchanged too. What says masking
+	// happened is asterisks, counted two ways: against the same corpus masked
+	// once and multiplied by how many times it was repeated, since nothing in a
+	// wider input turns a value this scan locates on its own into one it does
+	// not; and against the values themselves, since a count can rise by the
+	// right amount while every asterisk in it stands somewhere other than where
+	// a value was.
+	//
+	// A value is held to surviving no more often at scale than it does once,
+	// not to surviving nowhere at all. The corpus builds its values from one
+	// ordered run of characters, and more than one case is built to share a
+	// run of that alphabet on purpose — builtin_aws_secret_access_key.txt pairs
+	// a case whose name and assignment make its forty characters a value with
+	// cases holding the same forty behind no name at all, a git commit reads
+	// them the same way, and both belong in the one corpus. What is masked
+	// once therefore already carries the value's own raw text wherever a case
+	// says it must, and that count, not zero, is what n copies of the corpus
+	// may not exceed per copy: more occurrences of a value's raw text than one
+	// properly masked unit already has is the scan losing at scale what it
+	// caught on its own.
 	const (
 		size  = 2 << 20
 		limit = 4 * time.Second
 	)
 
 	var b strings.Builder
+	// values is what the built-in patterns locate in each case on its own,
+	// gathered before the corpus is repeated into src so that widening it
+	// cannot be what changes one. A case whose patterns locate nothing in it —
+	// prose, a case naming no built-in, a look-alike this library declines —
+	// contributes none, and the check below asks nothing of it either.
+	values := make(map[string]bool)
 	for _, c := range corpusCases(t) {
 		b.WriteString(c.in)
 		b.WriteString("\n")
+		_, vs := maskMarked(mask.AllBuiltinPatterns(), c.in)
+		for _, v := range vs {
+			values[v] = true
+		}
 	}
 	unit := b.String()
 	if unit == "" {
 		t.Fatal("the corpus is empty")
 	}
-	src := strings.Repeat(unit, size/len(unit)+1)
+	n := size/len(unit) + 1
+	src := strings.Repeat(unit, n)
 
 	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
+	wantUnit := m.Mask(unit)
 	start := time.Now()
 	masked := m.Mask(src)
 	if d := time.Since(start); d > limit {
@@ -555,6 +1053,14 @@ func TestConformance_scale(t *testing.T) {
 	}
 	if got, want := utf8.RuneCountInString(masked), utf8.RuneCountInString(src); got != want {
 		t.Errorf("masking with Fill left %d runes, the input had %d", got, want)
+	}
+	if got, want := strings.Count(masked, "*"), n*strings.Count(wantUnit, "*"); got < want {
+		t.Errorf("masking %d copies of the corpus left %d asterisk(s), want at least %d (%d per copy)", n, got, want, strings.Count(wantUnit, "*"))
+	}
+	for v := range values {
+		if got, want := strings.Count(masked, v), n*strings.Count(wantUnit, v); got > want {
+			t.Errorf("the value %q appears %d time(s) in %d copies of the corpus, want at most %d", v, got, n, want)
+		}
 	}
 
 	// Masking again may redact more than masking once did, which the root

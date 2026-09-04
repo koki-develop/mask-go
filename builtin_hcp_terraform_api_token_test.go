@@ -121,6 +121,52 @@ func Test_HCPTerraformAPIToken_noMatch(t *testing.T) {
 				"0123456789abcdef.123456789abcdef0123456789abcdef0123456789abcdef012",
 		},
 		{
+			// The doc comment names a space among the characters that end the
+			// reading; the class exclusions above never write one.
+			name: "a space in the secret",
+			src: "0123456789abcd.atlasv1." +
+				"0123456789abcdef 123456789abcdef0123456789abcdef0123456789abcdef012",
+		},
+		{
+			name: "a space in the identifier",
+			src: "0123456789a cd.atlasv1." +
+				"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+		},
+		{
+			// Each forbidden character above is written into one portion
+			// alone; these three cross them with the other portion.
+			name: "a hyphen in the identifier",
+			src: "0123456789ab-d.atlasv1." +
+				"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+		},
+		{
+			name: "an equals sign in the identifier",
+			src: "0123456789abc=.atlasv1." +
+				"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+		},
+		{
+			name: "an underscore in the secret",
+			src: "0123456789abcd.atlasv1." +
+				"0123456789abcdef_123456789abcdef0123456789abcdef0123456789abcdef012",
+		},
+		{
+			// No forbidden byte stands at the first character of either
+			// portion anywhere else in this file.
+			name: "a hyphen at the first character of the identifier",
+			src: "-123456789abcd.atlasv1." +
+				"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+		},
+		{
+			name: "a hyphen at the first character of the secret",
+			src: "0123456789abcd.atlasv1." +
+				"-123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+		},
+		{
+			name: "an equals sign at the first character of the secret",
+			src: "0123456789abcd.atlasv1." +
+				"=123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+		},
+		{
 			// The separator is read in the one case HashiCorp writes it, which
 			// is what gitleaks holds its own rule to as well.
 			name: "an uppercase separator",
@@ -145,6 +191,18 @@ func Test_HCPTerraformAPIToken_noMatch(t *testing.T) {
 		{
 			name: "the version the token format does not carry",
 			src: "0123456789abcd.atlasv2." +
+				"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+		},
+		{
+			// The separator is tested wholly lowercase and wholly uppercase
+			// elsewhere; this is one letter of it capitalised on its own.
+			name: "a separator with one letter capitalised",
+			src: "0123456789abcd.Atlasv1." +
+				"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
+		},
+		{
+			name: "the anchor letter capitalised",
+			src: "0123456789abcd.atlasV1." +
 				"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012",
 		},
 		{
@@ -266,12 +324,59 @@ func Test_HCPTerraformAPIToken_nextToWordCharacters(t *testing.T) {
 			src:  token + "-suffix",
 			want: []Span{{0, len(token)}},
 		},
+		{
+			// A multi-byte rune immediately against the token on both
+			// sides, rather than separated by a space as the affixes every
+			// corpus case is driven with are.
+			name: "a token between japanese",
+			src:  "日本語" + token + "日本語",
+			want: []Span{{9, 9 + len(token)}},
+		},
+		{
+			name: "a token after an invalid byte",
+			src:  "\xff" + token,
+			want: []Span{{1, 1 + len(token)}},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := HCPTerraformAPIToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_HCPTerraformAPIToken_theBytesJustOutsideTheAlphabet drives the six
+// bytes adjacent to the three ranges the alphabet is read in — '/' before '0',
+// ':' after '9', '@' before 'A', '[' after 'Z', '`' before 'a', '{' after 'z'
+// — at the last character of the identifier and inside the secret, so an
+// off-by-one at either end of any of the three ranges is caught rather than
+// left to a fuzz seed to happen to reach.
+func Test_HCPTerraformAPIToken_theBytesJustOutsideTheAlphabet(t *testing.T) {
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{name: "a slash at the last character of the identifier", src: "0123456789abc/.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012"},
+		{name: "a colon at the last character of the identifier", src: "0123456789abc:.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012"},
+		{name: "an at sign at the last character of the identifier", src: "0123456789abc@.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012"},
+		{name: "an open bracket at the last character of the identifier", src: "0123456789abc[.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012"},
+		{name: "a backtick at the last character of the identifier", src: "0123456789abc`.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012"},
+		{name: "an open brace at the last character of the identifier", src: "0123456789abc{.atlasv1.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012"},
+		{name: "a slash inside the secret", src: "0123456789abcd.atlasv1.0123456789abcdef/123456789abcdef0123456789abcdef0123456789abcdef012"},
+		{name: "a colon inside the secret", src: "0123456789abcd.atlasv1.0123456789abcdef:123456789abcdef0123456789abcdef0123456789abcdef012"},
+		{name: "an at sign inside the secret", src: "0123456789abcd.atlasv1.0123456789abcdef@123456789abcdef0123456789abcdef0123456789abcdef012"},
+		{name: "an open bracket inside the secret", src: "0123456789abcd.atlasv1.0123456789abcdef[123456789abcdef0123456789abcdef0123456789abcdef012"},
+		{name: "a backtick inside the secret", src: "0123456789abcd.atlasv1.0123456789abcdef`123456789abcdef0123456789abcdef0123456789abcdef012"},
+		{name: "an open brace inside the secret", src: "0123456789abcd.atlasv1.0123456789abcdef{123456789abcdef0123456789abcdef0123456789abcdef012"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := HCPTerraformAPIToken().Find(tt.src); len(got) != 0 {
+				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
 	}
@@ -425,6 +530,27 @@ func Test_hcpTerraformAPITokenTailStart(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_HCPTerraformAPIToken_scanIsLinear(t *testing.T) {
+	// This scan keeps no cursor and reads at most ninety bytes from any one
+	// anchor, which is what rules out a quadratic input. These are the
+	// densest lines that shape can be crowded into: a run of the anchor byte
+	// alone, the separator written back to back, an identifier and a
+	// separator with no secret behind it, and a run of the alphabet a
+	// portion is written in with no separator anywhere in it.
+	//
+	// The generic guard in builtins_test.go repeats the sample and its first
+	// half, so a separator lands roughly every forty-five bytes; the inputs
+	// here are denser than that.
+	sources := map[string]string{
+		"the anchor at every byte":                        strings.Repeat("v", 2000000),
+		"a separator every nine characters":               strings.Repeat(".atlasv1.", 220000),
+		"an identifier and a separator with no secret":    strings.Repeat("0123456789abcd.atlasv1.", 87000),
+		"a run of the portion alphabet with no separator": strings.Repeat("0123456789abcdefghijklmnopqrstuvwxyz", 55000),
+	}
+
+	checkScanIsLinear(t, HCPTerraformAPIToken(), sources)
 }
 
 // referenceHCPTerraformAPITokenFind locates tokens the plain way: every

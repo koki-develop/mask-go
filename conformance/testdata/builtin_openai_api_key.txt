@@ -142,6 +142,18 @@ case:     two keys separated by a space
 in:       sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef sk-admin-0123456789abcdefT3BlbkFJ0123456789abcdef
 out:      «openai-api-key» «openai-api-key»
 
+case:     two whole keys with nothing between them
+in:       sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdefsk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef
+out:      «openai-api-key»
+
+# A key written straight against a multi-byte rune, with no ASCII byte between
+# the two. The rune stands outside the run alphabet either way, so it neither
+# widens the key it sits against nor keeps the scan from finding one.
+
+case:     a key between Japanese
+in:       キーはsk-proj-0123456789abcdefT3BlbkFJ0123456789abcdefです
+out:      キーは«openai-api-key»です
+
 # What this pattern redacts that nobody issued. The marker is the base64
 # encoding of OpenAI, so base64url written over bytes holding that word at a
 # position divisible by three carries those eight characters; where such a run

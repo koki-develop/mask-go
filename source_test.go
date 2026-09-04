@@ -439,6 +439,43 @@ func scanReferences(d ast.Decl) []scanReference {
 	return found
 }
 
+func Test_builtinTests_declareNoMatchAndInContext(t *testing.T) {
+	// Every builtin_<name>_test.go keeps a test named _noMatch, stating what the
+	// pattern leaves alone, and a test named _inContext, stating what Mask does
+	// to a value standing in the kind of text it is written into. Those are the
+	// two chosen to hold here: a word-boundary test is carried too, but under
+	// different spellings across the files that have one, so it names no rule
+	// this can state without forcing files into a shape they do not share.
+	//
+	// Nothing else catches a file missing either slot: go test collects whatever
+	// a file declares and reports nothing for what it does not, so an empty slot
+	// compiles, runs and passes clean. This is read out of the syntax tree of
+	// builtin_*_test.go itself, so it holds without reading builtins.go or
+	// builtinPatterns and does not move when either grows.
+	_, files := sourceFiles(t)
+
+	for _, name := range sortedNames(files) {
+		if !strings.HasPrefix(name, "builtin_") || !strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		var hasNoMatch, hasInContext bool
+		for _, d := range files[name].Decls {
+			fn, ok := d.(*ast.FuncDecl)
+			if !ok || fn.Recv != nil || !strings.HasPrefix(fn.Name.Name, "Test_") {
+				continue
+			}
+			hasNoMatch = hasNoMatch || strings.HasSuffix(fn.Name.Name, "_noMatch")
+			hasInContext = hasInContext || strings.HasSuffix(fn.Name.Name, "_inContext")
+		}
+		if !hasNoMatch {
+			t.Errorf("%s declares no Test_<Pattern>_noMatch, stating what the pattern leaves alone", name)
+		}
+		if !hasInContext {
+			t.Errorf("%s declares no Test_<Pattern>_inContext, stating what Mask does to a value in context", name)
+		}
+	}
+}
+
 func Test_docComments_nameWhatTheyDocument(t *testing.T) {
 	// A doc comment opens with the name of what it documents, so that reading
 	// one tells you what you are reading about. A comment naming something else

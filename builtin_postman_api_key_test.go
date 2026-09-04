@@ -130,6 +130,41 @@ func Test_PostmanAPIKey_noMatch(t *testing.T) {
 			src:  "PMAK-0123456789abcdef01234567-0123456789abcdef-123456789abcdef01",
 		},
 		{
+			// A hyphen at an ordinary position of the first segment, with the
+			// rest of the key otherwise valid — the shape that would catch a
+			// first segment read too widely, since the separator's own
+			// position moves with it.
+			name: "a hyphen in the first segment",
+			src:  "PMAK-0123456789ab-def01234567-0123456789abcdef0123456789abcdef01",
+		},
+		{
+			name: "a hyphen at the last character of the second segment",
+			src:  "PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0-",
+		},
+		{
+			name: "an underscore in the first segment",
+			src:  "PMAK-0123456789abcdef_1234567-0123456789abcdef0123456789abcdef01",
+		},
+		{
+			name: "an underscore in the second segment",
+			src:  "PMAK-0123456789abcdef01234567-0123456789abcdef_123456789abcdef01",
+		},
+		{
+			name: "a dot in the first segment",
+			src:  "PMAK-0123456789abcdef.1234567-0123456789abcdef0123456789abcdef01",
+		},
+		{
+			name: "a space in the second segment",
+			src:  "PMAK-0123456789abcdef01234567-0123456789abcdef 123456789abcdef01",
+		},
+		{
+			// An invalid UTF-8 byte inside the second segment. It belongs to
+			// no encoding at all, so it ends the read exactly as the dot and
+			// the space do.
+			name: "an invalid byte in the second segment",
+			src:  "PMAK-0123456789abcdef01234567-0123456789abcdef\xff123456789abcdef01",
+		},
+		{
 			name: "a lowercase prefix",
 			src:  "pmak-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01",
 		},
@@ -262,6 +297,18 @@ func Test_PostmanAPIKey_nextToWordCharacters(t *testing.T) {
 			src:  key + "-suffix",
 			want: []Span{{0, len(key)}},
 		},
+		{
+			// A multi-byte rune written straight against a key with no ASCII
+			// byte between the two, on either side.
+			name: "a key after a multi-byte rune",
+			src:  "日本語" + key,
+			want: []Span{{9, 9 + len(key)}},
+		},
+		{
+			name: "a key before a multi-byte rune",
+			src:  key + "日本語",
+			want: []Span{{0, len(key)}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -390,6 +437,38 @@ func Test_PostmanAPIKey_aDigestBehindThePrefix(t *testing.T) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
+	}
+}
+
+func Test_PostmanAPIKey_settlesAWholeKey(t *testing.T) {
+	// A key of exactly the right counts standing at the very end of the input
+	// closes on its own counts rather than on a run, so nothing arriving
+	// after it can turn it into something else, and the whole input is
+	// settled.
+	src := "PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01"
+
+	spans, retain := PostmanAPIKey().Find(src)
+	if want := []Span{{0, 64}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != len(src) {
+		t.Errorf("Find(%q) settled %d of %d, want the whole of it", src, retain, len(src))
+	}
+}
+
+func Test_PostmanAPIKey_holdsAKeyTheInputCutShort(t *testing.T) {
+	// The other side of the same decision. A candidate one character short of
+	// the second segment's count is not a key, but more text could still
+	// complete it, so the scan holds the candidate open from its own start
+	// rather than reporting the whole input settled.
+	src := "PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0"
+
+	spans, retain := PostmanAPIKey().Find(src)
+	if len(spans) != 0 {
+		t.Errorf("Find(%q) = %v, want no span", src, spans)
+	}
+	if retain != 0 {
+		t.Errorf("Find(%q) settled from %d, want 0", src, retain)
 	}
 }
 
@@ -543,15 +622,24 @@ func referencePostmanAPIKeyFind(src string) []Span {
 func FuzzPostmanAPIKey_matchesReference(f *testing.F) {
 	f.Add("nothing to see here")
 	f.Add("POSTMAN_API_KEY=PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01")
-	f.Add("PMAK-0123456789abcdef0123456-0123456789abcdef0123456789abcdef01")   // a first segment one short
-	f.Add("PMAK-0123456789abcdef012345678-0123456789abcdef0123456789abcdef01") // and one long
-	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0")   // a second segment one short
-	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef012") // and one long
-	f.Add("PMAK-0123456789abcdef012345670123456789abcdef0123456789abcdef01")   // no separator at all
-	f.Add("PMAK-0123456789abcdef01234567_0123456789abcdef0123456789abcdef01")  // an underscore for one
-	f.Add("PMAK-0123456789abcdef 1234567-0123456789abcdef0123456789abcdef01")  // a space in the first segment
-	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef.123456789abcdef01")  // a dot in the second
-	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef-123456789abcdef01")  // a second hyphen in it
+	f.Add("PMAK-0123456789abcdef0123456-0123456789abcdef0123456789abcdef01")     // a first segment one short
+	f.Add("PMAK-0123456789abcdef012345678-0123456789abcdef0123456789abcdef01")   // and one long
+	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0")     // a second segment one short
+	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef012")   // and one long
+	f.Add("PMAK-0123456789abcdef012345670123456789abcdef0123456789abcdef01")     // no separator at all
+	f.Add("PMAK-0123456789abcdef01234567_0123456789abcdef0123456789abcdef01")    // an underscore for one
+	f.Add("PMAK-0123456789abcdef 1234567-0123456789abcdef0123456789abcdef01")    // a space in the first segment
+	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef.123456789abcdef01")    // a dot in the second
+	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef-123456789abcdef01")    // a second hyphen in it
+	f.Add("PMAK-0123456789ab-def01234567-0123456789abcdef0123456789abcdef01")    // a hyphen in the first segment
+	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0-")    // a hyphen at the last character of the second
+	f.Add("PMAK-0123456789abcdef_1234567-0123456789abcdef0123456789abcdef01")    // an underscore in the first segment
+	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef_123456789abcdef01")    // an underscore in the second
+	f.Add("PMAK-0123456789abcdef.1234567-0123456789abcdef0123456789abcdef01")    // a dot in the first segment
+	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef 123456789abcdef01")    // a space in the second segment
+	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef\xff123456789abcdef01") // an invalid byte in the second segment
+	f.Add("日本語PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01") // a key after a multi-byte rune
+	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef0123456789abcdef01日本語") // and before one
 	f.Add("PMAK-0123456789abcdef01234567-0123456789abcdef\n123456789abcdef01")
 	f.Add("PMAK-0123456789ABCDEF01234567-0123456789ABCDEF0123456789ABCDEF01") // an uppercase body
 	f.Add("PMAK-0123456789abcdefghijklmn-0123456789abcdefghijklmnopqrstuvwx") // letters past f

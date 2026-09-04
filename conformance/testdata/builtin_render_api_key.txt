@@ -35,12 +35,32 @@ case:     a key in a configuration environment block
 in:       "env": {"RENDER_API_KEY": "rnd_0123456789abcdef0123456789ab"}
 out:      "env": {"RENDER_API_KEY": "«render-api-key»"}
 
+case:     a key in yaml
+in:       render_api_key: rnd_0123456789abcdef0123456789ab
+out:      render_api_key: «render-api-key»
+
+case:     a key in a diff line
+in:       +RENDER_API_KEY=rnd_0123456789abcdef0123456789ab
+out:      +RENDER_API_KEY=«render-api-key»
+
+case:     a key in a markdown code span
+in:       `rnd_0123456789abcdef0123456789ab`
+out:      `«render-api-key»`
+
+case:     a key in a clone url
+in:       https://user:rnd_0123456789abcdef0123456789ab@api.render.com/v1
+out:      https://user:«render-api-key»@api.render.com/v1
+
 # The alphabet the twenty-eight characters are written in. It is base62 — the
 # letters of both cases and the digits. The two characters base64url adds, the
 # hyphen and the underscore, are not admitted, and either of them ends a body.
 
 case:     a body written in capitals
 in:       rnd_0123456789ABCDEF0123456789AB
+out:      «render-api-key»
+
+case:     a body written in the letters past f
+in:       rnd_0123456789abcdefghijklmnopqrstuvwxyzGHIJKLMNOPQRSTUVWXYZ
 out:      «render-api-key»
 
 case:     a body carrying a hyphen
@@ -50,6 +70,18 @@ out:      rnd_0123456789abcdef-123456789ab
 case:     a body carrying an underscore
 in:       rnd_0123456789abcdef_123456789ab
 out:      rnd_0123456789abcdef_123456789ab
+
+case:     a hyphen straight behind the prefix
+in:       rnd_-0123456789abcdef0123456789ab
+out:      rnd_-0123456789abcdef0123456789ab
+
+case:     an underscore straight behind the prefix
+in:       rnd__0123456789abcdef0123456789ab
+out:      rnd__0123456789abcdef0123456789ab
+
+case:     a space straight behind the prefix
+in:       rnd_ 0123456789abcdef0123456789ab
+out:      rnd_ 0123456789abcdef0123456789ab
 
 # The lengths either side of twenty-eight. The count is read as a floor rather
 # than exactly, so twenty-seven characters are not a key and twenty-nine are one
@@ -104,6 +136,10 @@ case:     a name closing on the prefix with a body behind it
 in:       seedrnd_0123456789abcdef0123456789ab
 out:      seed«render-api-key»
 
+case:     a rejected prefix standing directly in front of a whole key
+in:       rnd_rnd_0123456789abcdef0123456789ab
+out:      rnd_«render-api-key»
+
 case:     a word written against a key
 in:       rnd_0123456789abcdef0123456789absuffix
 out:      «render-api-key»
@@ -119,6 +155,14 @@ out:      «render-api-key»_suffix
 case:     a key at the end of a sentence
 in:       the key is rnd_0123456789abcdef0123456789ab.
 out:      the key is «render-api-key».
+
+case:     a key immediately against japanese on both sides
+in:       鍵はrnd_0123456789abcdef0123456789abです
+out:      鍵は«render-api-key»です
+
+case:     a key against an invalid byte
+in:       \xffrnd_0123456789abcdef0123456789ab\xff
+out:      \xff«render-api-key»\xff
 
 # Two keys written together. The three letters the prefix opens with belong to
 # the alphabet a body is written in, so a body may close with rnd and the

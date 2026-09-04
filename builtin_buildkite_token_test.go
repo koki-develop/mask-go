@@ -137,6 +137,32 @@ func Test_BuildkiteToken(t *testing.T) {
 			src:  "bkua_bkct_" + buildkiteBody,
 			want: []Span{{0, 50}, {5, 50}},
 		},
+		{
+			// A body carrying every uppercase letter past F, which the ordered
+			// runs elsewhere in this file never reach.
+			name: "a body of uppercase letters past F",
+			src:  "bkua_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCD",
+			want: []Span{{0, 45}},
+		},
+		{
+			// A six-character prefix beginning inside a five-character one,
+			// and the reverse: the widest gap this table's acronyms carry.
+			name: "a six character prefix beginning inside a five character one",
+			src:  "bkua_bkjat_" + buildkiteBody,
+			want: []Span{{0, 51}, {5, 51}},
+		},
+		{
+			name: "a five character prefix beginning inside a six character one",
+			src:  "bkpat_bkct_" + buildkiteBody,
+			want: []Span{{0, 51}, {6, 51}},
+		},
+		{
+			// The floor read past a six-character prefix, exactly as it is
+			// past a five-character one.
+			name: "a run longer than the floor behind a six character prefix",
+			src:  "bkpat_" + buildkiteBody + "0",
+			want: []Span{{0, 47}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -229,6 +255,31 @@ func Test_BuildkiteToken_noMatch(t *testing.T) {
 			name: "a git sha",
 			src:  "0123456789abcdef0123456789abcdef01234567",
 		},
+		{
+			// The head of a three-character acronym, one letter short of
+			// naming a kind, and a character written into one.
+			name: "the head of a three character acronym",
+			src:  "bkpa_" + buildkiteBody,
+		},
+		{
+			name: "the head of the job acquisition acronym",
+			src:  "bkja_" + buildkiteBody,
+		},
+		{
+			name: "a character written into a three character acronym",
+			src:  "bkpatt_" + buildkiteBody,
+		},
+		{
+			// A plus sign inside the body, which base64url does not admit and
+			// standard base64 does. Neither the sixteen characters in front of
+			// it nor the twenty-four behind it reach the floor on their own.
+			name: "a plus sign in the body",
+			src:  "bkua_0123456789abcdef+0123456789abcdef01234567",
+		},
+		{
+			name: "an agent token one character short of the floor",
+			src:  "bkct_0123456789abcdef0123456789abcdef0123456",
+		},
 	}
 
 	for _, tt := range tests {
@@ -317,6 +368,13 @@ func Test_BuildkiteToken_nextToWordCharacters(t *testing.T) {
 			src:  "BUILDKITE_API_TOKEN_bkua_" + buildkiteBody,
 			want: "BUILDKITE_API_TOKEN_" + strings.Repeat("*", 45),
 		},
+		{
+			// A multi-byte rune flush against the token on both sides, with no
+			// space between them.
+			name: "a multi-byte rune flush against the token on both sides",
+			src:  "日本語bkua_" + buildkiteBody + "日本語",
+			want: "日本語" + strings.Repeat("*", 45) + "日本語",
+		},
 	}
 
 	m := New(WithPatterns(BuildkiteToken()))
@@ -365,6 +423,18 @@ func Test_BuildkiteToken_reachesTheEndOfTheRun(t *testing.T) {
 			name: "an underscored word against the token",
 			src:  "bkua_" + buildkiteBody + "_suffix",
 			want: strings.Repeat("*", 52),
+		},
+		{
+			// Standard base64 padding, which belongs to neither alphabet and
+			// so ends the run exactly as a space or a dot does.
+			name: "base64 padding against the token",
+			src:  "bkua_" + buildkiteBody + "==",
+			want: strings.Repeat("*", 45) + "==",
+		},
+		{
+			name: "a slash against the token",
+			src:  "bkua_" + buildkiteBody + "/deliver",
+			want: strings.Repeat("*", 45) + "/deliver",
 		},
 	}
 
@@ -508,6 +578,75 @@ func Test_BuildkiteToken_anIdentifierBehindThePrefix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
 				t.Errorf("Mask(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_BuildkiteToken_settlesWhatTheInputCutShort holds Find's second return
+// to the offset in front of which nothing further back can still become a
+// token. Because the body is read as a floor rather than a count, a run of the
+// alphabet reaching the end of the input is never settled by itself — the run
+// might carry on, and carrying on might still clear the floor — so even a
+// token that already reaches the floor holds back to its own start while its
+// run is open, and settles only once something closes that run. What every
+// built-in owes about this offset over generated text and over the samples is
+// driven in builtins_test.go and fuzz_test.go; what is written out here is
+// which inputs of this pattern's own shape hold anything back, since nothing
+// else names them.
+func Test_BuildkiteToken_settlesWhatTheInputCutShort(t *testing.T) {
+	token := "bkua_" + buildkiteBody
+
+	tests := []struct {
+		name string
+		src  string
+		want int
+	}{
+		{
+			name: "the opening alone",
+			src:  "bk",
+			want: 0,
+		},
+		{
+			name: "a prefix closed by the separator with no body behind it",
+			src:  "bkua_",
+			want: 0,
+		},
+		{
+			name: "a body the end of the input cut short",
+			src:  "bkua_0123456789abcdef",
+			want: 0,
+		},
+		{
+			// A whole token reaching the end of the input. The floor is
+			// cleared, but the run that clears it is still open, so nothing
+			// here is settled yet.
+			name: "a whole token whose run is still open at the end of the input",
+			src:  token,
+			want: 0,
+		},
+		{
+			// The same token with a character behind it that does not belong
+			// to the alphabet, which closes the run and settles the whole of
+			// it.
+			name: "a whole token followed by a character that closes its run",
+			src:  token + " ",
+			want: len(token) + 1,
+		},
+		{
+			// A whole prefix at the end of the input with no body behind it,
+			// held back from its own start rather than from the prose in
+			// front.
+			name: "a whole prefix at the end of the input",
+			src:  "nothing here yet bkua_",
+			want: 17,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, got := BuildkiteToken().Find(tt.src); got != tt.want {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, got, tt.want)
 			}
 		})
 	}

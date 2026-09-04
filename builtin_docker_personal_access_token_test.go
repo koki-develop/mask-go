@@ -60,6 +60,24 @@ func Test_DockerPersonalAccessToken(t *testing.T) {
 			src:  "dckr_pat_0123456789abcdef0123456789adckr_pat_0123456789abcdef0123456789a",
 			want: []Span{{0, 36}, {36, 72}},
 		},
+		{
+			// The upper half of the alphabet, which every other case in this file
+			// leaves untouched: the run so far has been lowercase hexadecimal
+			// alone, and base64url reads every letter of both cases. The body
+			// opens on the run written in uppercase and carries on through the
+			// letters past F, so that the case a body is written in and the
+			// letters the run never reaches are both driven at once.
+			name: "a body of uppercase letters",
+			src:  "dckr_pat_0123456789ABCDEFGHIJKLMNOPQ",
+			want: []Span{{0, 36}},
+		},
+		{
+			// The same body in the other case, which base64url reads as
+			// readily: the run, and then the lowercase letters past f.
+			name: "a body carrying the lowercase letters past the run",
+			src:  "dckr_pat_0123456789abcdefghijklmnopq",
+			want: []Span{{0, 36}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -101,6 +119,21 @@ func Test_DockerPersonalAccessToken_noMatch(t *testing.T) {
 			src:  "dckr_pat_0123456789abcdef/123456789+",
 		},
 		{
+			// The three characters above stand in the middle of a body. These
+			// three stand at its last character, straight in front of where the
+			// count ends the token, where the same rejection has to hold.
+			name: "a dot at the last character of the body",
+			src:  "dckr_pat_0123456789abcdef0123456789.",
+		},
+		{
+			name: "a space at the last character of the body",
+			src:  "dckr_pat_0123456789abcdef0123456789 ",
+		},
+		{
+			name: "a plus at the last character of the body",
+			src:  "dckr_pat_0123456789abcdef0123456789+",
+		},
+		{
 			name: "a body broken by a space",
 			src:  "dckr_pat_0123456789abcdef 123456789a",
 		},
@@ -111,6 +144,16 @@ func Test_DockerPersonalAccessToken_noMatch(t *testing.T) {
 		{
 			name: "an uppercase prefix",
 			src:  "DCKR_PAT_0123456789abcdef0123456789a",
+		},
+		{
+			// One letter of the prefix in the other case, rather than the whole
+			// of it.
+			name: "the opening with one letter capitalized",
+			src:  "Dckr_pat_0123456789abcdef0123456789a",
+		},
+		{
+			name: "the kind with one letter capitalized",
+			src:  "dckr_Pat_0123456789abcdef0123456789a",
 		},
 		{
 			name: "hyphens where the prefix carries its underscores",
@@ -246,6 +289,15 @@ func Test_DockerPersonalAccessToken_nextToWordCharacters(t *testing.T) {
 			src:  "dckr_pat_0123456789abcdef0123456789ab",
 			want: "************************************b",
 		},
+		{
+			// A multi-byte rune written against the token on both sides. Neither
+			// UTF-8 encoding shares a byte with the prefix or the body's
+			// alphabet, so the token keeps its span exactly as it does against a
+			// single-byte character.
+			name: "a multi-byte rune before and after",
+			src:  "日本語dckr_pat_0123456789abcdef0123456789a日本語",
+			want: "日本語************************************日本語",
+		},
 	}
 
 	m := New(WithPatterns(DockerPersonalAccessToken()))
@@ -378,6 +430,62 @@ func Test_DockerPersonalAccessToken_theShapeItReplaced(t *testing.T) {
 
 	if got, _ := DockerPersonalAccessToken().Find(src); len(got) != 0 {
 		t.Errorf("Find(%q) = %v, want no span", src, got)
+	}
+}
+
+// Test_DockerPersonalAccessToken_holdsATokenTheInputCutShort states, with a
+// literal number, what the second return of Find settles: a piece of the
+// prefix standing at the end of the input, a candidate the end of the input
+// cut short, and a whole match with nothing left unsettled behind it.
+func Test_DockerPersonalAccessToken_holdsATokenTheInputCutShort(t *testing.T) {
+	tests := []struct {
+		name   string
+		src    string
+		want   []Span
+		retain int
+	}{
+		{
+			// A piece of the prefix stands at the very end of the input, so
+			// nothing behind where it opens is settled.
+			name:   "a piece of the prefix at the end of the input",
+			src:    "dckr_pat",
+			retain: 0,
+		},
+		{
+			name:   "a piece of the prefix behind prose",
+			src:    "the token starts with dckr_pat",
+			retain: len("the token starts with "),
+		},
+		{
+			// A whole prefix and a body the input cuts short before the
+			// count is met. The candidate could still become a token were
+			// the input longer, so what is unsettled reaches back to where
+			// the candidate opened.
+			name:   "a body the input cuts short of the count",
+			src:    "dckr_pat_0123456789abcdef01234",
+			retain: 0,
+		},
+		{
+			// A whole token with more text after it, ending in a byte that
+			// opens no piece of the prefix, so nothing at the end of the
+			// input is left unsettled.
+			name:   "a whole token followed by settled text",
+			src:    "dckr_pat_0123456789abcdef0123456789a tail",
+			want:   []Span{{0, 36}},
+			retain: len("dckr_pat_0123456789abcdef0123456789a tail"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := DockerPersonalAccessToken().Find(tt.src)
+			if retain != tt.retain {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, retain, tt.retain)
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
 	}
 }
 

@@ -69,6 +69,16 @@ func Test_PaddleAPIKey(t *testing.T) {
 			src:  "pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012",
 			want: []Span{{0, 69}, {62, 131}},
 		},
+		{
+			// The letters an ordered run never carries: g through z of the
+			// first segment, carried on into the second and third — the
+			// anchor byte k among them, in the first segment's own alphabet,
+			// so the search hits it again inside a value it has already
+			// opened a candidate on rather than only at a prefix.
+			name: "a key written across the whole alphabet",
+			src:  "pdl_live_apikey_0123456789abcdefghijklmnop_qrstuvwxyzABCDEFGHIJKL_MNO",
+			want: []Span{{0, 69}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -104,6 +114,46 @@ func Test_PaddleAPIKey_noMatch(t *testing.T) {
 		{
 			name: "a third segment one character short",
 			src:  "pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_01",
+		},
+		{
+			// The second segment's count is read exactly, the same as the
+			// first and third: one character past twenty-two lands the second
+			// separator where a body character has to stand instead, so the
+			// candidate the fixed width reads is turned away rather than
+			// widened to fit.
+			name: "a second segment one character long",
+			src:  "pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef0123456_012",
+		},
+		{
+			// The marker misspelled by one letter. The prefix is compared
+			// whole, so a byte wrong anywhere in it, including inside apikey_,
+			// opens no candidate.
+			name: "the marker misspelled by one letter",
+			src:  "pdl_live_apikez_0123456789abcdef0123456789_0123456789abcdef012345_012",
+		},
+		{
+			name: "the marker in capitals",
+			src:  "pdl_live_APIKEY_0123456789abcdef0123456789_0123456789abcdef012345_012",
+		},
+		{
+			// A hyphen where the marker's own closing underscore stands.
+			name: "a hyphen where the marker's closing underscore stands",
+			src:  "pdl_live_apikey-0123456789abcdef0123456789_0123456789abcdef012345_012",
+		},
+		{
+			// An underscore standing inside the first segment rather than
+			// missing as a separator. It fails the segment's own class at that
+			// byte, whatever the rest of the candidate goes on to hold.
+			name: "an underscore inside the first segment",
+			src:  "pdl_live_apikey_0123456789_bcdef0123456789_0123456789abcdef012345_012",
+		},
+		{
+			name: "a space inside the second segment",
+			src:  "pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef 12345_012",
+		},
+		{
+			name: "a space inside the third segment",
+			src:  "pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_0 2",
 		},
 		{
 			// The first segment is read in the lowercase letters and the
@@ -490,6 +540,38 @@ func Test_PaddleAPIKey_scanIsLinear(t *testing.T) {
 	checkScanIsLinear(t, PaddleAPIKey(), sources)
 }
 
+func Test_PaddleAPIKey_settlesAWholeKey(t *testing.T) {
+	// A key of exactly the right counts standing at the very end of the input
+	// closes on its own counts rather than on a run, so nothing arriving
+	// after it can turn it into something else, and the whole input is
+	// settled.
+	src := "pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_012"
+
+	spans, retain := PaddleAPIKey().Find(src)
+	if want := []Span{{0, 69}}; !slices.Equal(spans, want) {
+		t.Errorf("Find(%q) = %v, want %v", src, spans, want)
+	}
+	if retain != len(src) {
+		t.Errorf("Find(%q) settled %d of %d, want the whole of it", src, retain, len(src))
+	}
+}
+
+func Test_PaddleAPIKey_holdsAKeyTheInputCutShort(t *testing.T) {
+	// The other side of the same decision. A candidate one character short of
+	// the third segment's count is not a key, but more text could still
+	// complete it, so the scan holds the candidate open from its own start
+	// rather than reporting the whole input settled.
+	src := "pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_01"
+
+	spans, retain := PaddleAPIKey().Find(src)
+	if len(spans) != 0 {
+		t.Errorf("Find(%q) = %v, want no span", src, spans)
+	}
+	if retain != 0 {
+		t.Errorf("Find(%q) settled from %d, want 0", src, retain)
+	}
+}
+
 func Test_paddleAPIKeyPrefixes(t *testing.T) {
 	// What the scan needs of the prefixes, which nothing else here reports: a
 	// prefix nothing locates simply locates nothing, and the cases above would
@@ -637,6 +719,14 @@ func FuzzPaddleAPIKey_matchesReference(f *testing.F) {
 	f.Add("pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef01234_012")   // a second segment one short
 	f.Add("pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_01")   // a third segment one short
 	f.Add("pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_0123") // and a run longer than one
+	f.Add("pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef0123456_012") // a second segment one long
+	f.Add("pdl_live_apikez_0123456789abcdef0123456789_0123456789abcdef012345_012")  // the marker misspelled
+	f.Add("pdl_live_APIKEY_0123456789abcdef0123456789_0123456789abcdef012345_012")  // the marker in capitals
+	f.Add("pdl_live_apikey-0123456789abcdef0123456789_0123456789abcdef012345_012")  // a hyphen for the marker's closing underscore
+	f.Add("pdl_live_apikey_0123456789_bcdef0123456789_0123456789abcdef012345_012")  // an underscore inside the first segment
+	f.Add("pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef 12345_012")  // a space inside the second segment
+	f.Add("pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef012345_0 2")  // a space inside the third segment
+	f.Add("pdl_live_apikey_0123456789abcdefghijklmnop_qrstuvwxyzABCDEFGHIJKL_MNO")  // the whole alphabet, the anchor byte among it
 	f.Add("pdl_live_apikey_0123456789abcdef0123456789-0123456789abcdef012345-012")  // hyphens where the separators stand
 	f.Add("pdl_live_apikey_0123456789abcdef0123456789_0123456789abcdef\n12345_012") // a key a line break breaks
 	f.Add("pdl_ntfset_0123456789abcdef0123456789_0123456789abcdef0123456789abcdef") // a webhook secret key

@@ -243,6 +243,62 @@ case:     prose
 in:       there is no credential in this sentence
 out:      there is no credential in this sentence
 
+# A token as the shapes of ordinary text carry it, and next to the bytes that
+# are not the letters and digits this format is written among: tabs, a carriage
+# return, japanese text and an ellipsis cutting a value short of the count.
+
+case:     a token between tabs
+in:       \tsgp_0123456789abcdef0123456789abcdef01234567\t
+out:      \t«sourcegraph-access-token»\t
+
+case:     a token before a carriage return
+in:       sgp_local_0123456789abcdef0123456789abcdef01234567\r\n
+out:      «sourcegraph-access-token»\r\n
+
+case:     a token in a yaml value
+in:       accessToken: sgp_0123456789abcdef_0123456789abcdef0123456789abcdef01234567
+out:      accessToken: «sourcegraph-access-token»
+
+case:     a token in parentheses
+in:       (sgp_0123456789abcdef0123456789abcdef01234567)
+out:      («sourcegraph-access-token»)
+
+case:     a token after japanese text
+in:       日本語sgp_0123456789abcdef0123456789abcdef01234567
+out:      日本語«sourcegraph-access-token»
+
+case:     a token before japanese text
+in:       sgp_local_0123456789abcdef0123456789abcdef01234567日本語
+out:      «sourcegraph-access-token»日本語
+
+case:     a token cut short with an ellipsis
+in:       sgp_0123456789abcdef012345…
+out:      sgp_0123456789abcdef012345…
+
+case:     a token on each of three lines
+in:       sgp_0123456789abcdef0123456789abcdef01234567\nsgp_local_0123456789abcdef0123456789abcdef01234567\nsgp_0123456789abcdef_0123456789abcdef0123456789abcdef01234567
+out:      «sourcegraph-access-token»\n«sourcegraph-access-token»\n«sourcegraph-access-token»
+
+case:     a token in a netrc entry
+in:       machine sourcegraph.example.com login unused password sgp_0123456789abcdef0123456789abcdef01234567
+out:      machine sourcegraph.example.com login unused password «sourcegraph-access-token»
+
+case:     a token added on a diff line
+in:       +SRC_ACCESS_TOKEN=sgp_0123456789abcdef0123456789abcdef01234567
+out:      +SRC_ACCESS_TOKEN=«sourcegraph-access-token»
+
+case:     a token in a markdown code span
+in:       `sgp_0123456789abcdef0123456789abcdef01234567`
+out:      `«sourcegraph-access-token»`
+
+case:     a token in a query string
+in:       https://sourcegraph.example.com/.api/graphql?token=sgp_0123456789abcdef0123456789abcdef01234567
+out:      https://sourcegraph.example.com/.api/graphql?token=«sourcegraph-access-token»
+
+case:     a token in a ci job log line
+in:       ##[secret]SRC_ACCESS_TOKEN=sgp_0123456789abcdef0123456789abcdef01234567
+out:      ##[secret]SRC_ACCESS_TOKEN=«sourcegraph-access-token»
+
 # And the text a token is written among, which this pattern has nothing to say
 # about. The word Sourcegraph's own name, host names and paths are spelled with
 # opens with the letters of the prefix and runs on past the underscore closing

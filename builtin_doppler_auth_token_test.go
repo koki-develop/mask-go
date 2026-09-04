@@ -146,8 +146,50 @@ func Test_DopplerAuthToken_noMatch(t *testing.T) {
 			src:  "dp.pt.0123456789abcdef.123456789abcdef0123456789a",
 		},
 		{
+			// The characters above all stand in the middle of a body. These
+			// four stand at its first character, straight behind the prefix,
+			// where the same rejection holds and no segment reading rescues a
+			// personal token.
+			name: "a hyphen where the body opens",
+			src:  "dp.pt.-0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			name: "a space where the body opens",
+			src:  "dp.pt. 0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			name: "an underscore where the body opens",
+			src:  "dp.pt._0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			name: "a separator where the body opens",
+			src:  "dp.pt..0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
 			name: "a kind Doppler names no format for",
 			src:  "dp.xx.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			// A proper prefix of a real kind, rather than a kind Doppler simply
+			// never wrote: "sai" opens "said" but is not it.
+			name: "a kind that is a proper prefix of a real one",
+			src:  "dp.sai.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			name: "another kind that opens a real one",
+			src:  "dp.audi.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			// A real kind with one character added rather than removed.
+			name: "a real kind with a character added",
+			src:  "dp.saidx.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			// Six characters, past the widest kind Doppler names, so the walk
+			// bounded at that width never reaches the separator that would
+			// close this one.
+			name: "a kind wider than the widest there is",
+			src:  "dp.audits.0123456789abcdef0123456789abcdef0123456789a",
 		},
 		{
 			name: "a kind with no separator closing it",
@@ -160,6 +202,15 @@ func Test_DopplerAuthToken_noMatch(t *testing.T) {
 		{
 			name: "an uppercase prefix",
 			src:  "DP.PT.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			// The kind in capitals rather than the whole prefix.
+			name: "a kind in capitals",
+			src:  "dp.PT.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			name: "the literal in capitals",
+			src:  "DP.pt.0123456789abcdef0123456789abcdef0123456789a",
 		},
 		{
 			name: "the opening without the separator behind it",
@@ -270,6 +321,15 @@ func Test_DopplerAuthToken_nextToWordCharacters(t *testing.T) {
 			src:   token + "-suffix",
 			start: 0,
 		},
+		{
+			// A multi-byte rune written immediately in front, rather than
+			// separated by a space as every corpus affix writes one. Neither
+			// UTF-8 encoding shares a byte with the prefix, so the token
+			// keeps its span.
+			name:  "a multi-byte rune before",
+			src:   "日本語" + token,
+			start: 9,
+		},
 	}
 
 	for _, tt := range tests {
@@ -372,6 +432,30 @@ func Test_DopplerAuthToken_theSegmentOnlyAServiceTokenCarries(t *testing.T) {
 		{
 			name: "a segment written on an audit token",
 			src:  "dp.audit.dev.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			name: "a segment written on a cli token",
+			src:  "dp.ct.dev.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			name: "a segment written on a service account token",
+			src:  "dp.sa.dev.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			name: "a segment written on a service account identity token",
+			src:  "dp.said.dev.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			name: "a segment written on a scim token",
+			src:  "dp.scim.dev.0123456789abcdef0123456789abcdef0123456789a",
+		},
+		{
+			// The segment's floor: two characters, the shortest a run may be
+			// and still close on the separator rather than being read as the
+			// opening of a body.
+			name: "a segment at the shortest there is",
+			src:  "dp.st.qa.0123456789abcdef0123456789abcdef0123456789a",
+			want: []Span{{0, 52}},
 		},
 	}
 

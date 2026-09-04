@@ -118,11 +118,22 @@ func Test_LangSmithAPIKey_noMatch(t *testing.T) {
 			src:  "lsv2_pt_0123456789abcdefghijklmnopqrstu",
 		},
 		{
+			// The other of the two prefixes, held to the same floor. Every
+			// case above driving this boundary uses lsv2_pt_; this is the same
+			// shape behind lsv2_sk_.
+			name: "a service key first run one character too short",
+			src:  "lsv2_sk_0123456789abcdefghijklmnopqrstu",
+		},
+		{
 			// The hyphen is a base64url character and no base62 one, so it ends
 			// a run where what stands in front of it is too short to be a first
 			// run.
 			name: "a first run carrying a hyphen",
 			src:  "lsv2_pt_0123456789abcdef-hijklmnopqrstuv",
+		},
+		{
+			name: "a service key first run carrying a hyphen",
+			src:  "lsv2_sk_0123456789abcdef-hijklmnopqrstuv",
 		},
 		{
 			// The underscore joins a run to the one in front of it, and the
@@ -350,6 +361,100 @@ func Test_LangSmithAPIKey_nextToWordCharacters(t *testing.T) {
 	}
 }
 
+func Test_LangSmithAPIKey_nextToNonASCIIAndInvalidBytes(t *testing.T) {
+	// A key is located wherever it is written, with no word boundary either
+	// side, and neither a multi-byte rune nor an invalid UTF-8 byte belongs to
+	// the alphabet an opening or a run is read in — so both leave a key's span
+	// exactly where it would otherwise be.
+	const key = "lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789"
+
+	tests := []struct {
+		name string
+		src  string
+		want []Span
+	}{
+		{
+			name: "a key between japanese",
+			src:  "日本語" + key + "日本語",
+			want: []Span{{9, 9 + len(key)}},
+		},
+		{
+			name: "a key after an invalid byte",
+			src:  "\xff" + key,
+			want: []Span{{1, 1 + len(key)}},
+		},
+		{
+			name: "a key before an invalid byte",
+			src:  key + "\xff",
+			want: []Span{{0, len(key)}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := LangSmithAPIKey().Find(tt.src); !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
+			}
+		})
+	}
+}
+
+// Test_LangSmithAPIKey_holdsAKeyTheInputCutShort holds what
+// builtin_langsmith_api_key.go settles for a candidate the end of the input
+// cut short: its own start. That holds whether or not a span is reported for
+// it — the answer is not monotone, and builtin-patterns.md says so: a first
+// run already at the floor when the input runs out is a key exactly as a
+// whole one is, so it is reported as a span, and at the same time it is a key
+// whose tail could still be carried on by an underscore and a further run
+// arriving next, so it is also not settled. Where no candidate stands open at
+// all, the whole of the input is settled.
+func Test_LangSmithAPIKey_holdsAKeyTheInputCutShort(t *testing.T) {
+	t.Run("a first run cut short of the floor", func(t *testing.T) {
+		src := "lsv2_pt_0123456789abcdefghijklmnopqrstu"
+		spans, retain := LangSmithAPIKey().Find(src)
+		if spans != nil {
+			t.Fatalf("Find(%q) = %v, want no span", src, spans)
+		}
+		if retain != 0 {
+			t.Errorf("Find(%q) settled from %d, want 0", src, retain)
+		}
+	})
+
+	t.Run("a first run at the floor with the input cut short behind it", func(t *testing.T) {
+		src := "lsv2_pt_0123456789abcdefghijklmnopqrstuv"
+		want := []Span{{0, len(src)}}
+		spans, retain := LangSmithAPIKey().Find(src)
+		if !slices.Equal(spans, want) {
+			t.Fatalf("Find(%q) = %v, want %v", src, spans, want)
+		}
+		if retain != 0 {
+			t.Errorf("Find(%q) settled from %d, want 0", src, retain)
+		}
+	})
+
+	t.Run("a piece of the opening", func(t *testing.T) {
+		src := "lsv2"
+		spans, retain := LangSmithAPIKey().Find(src)
+		if spans != nil {
+			t.Fatalf("Find(%q) = %v, want no span", src, spans)
+		}
+		if retain != 0 {
+			t.Errorf("Find(%q) settled from %d, want 0", src, retain)
+		}
+	})
+
+	t.Run("no candidate at all", func(t *testing.T) {
+		src := "there is no credential in this sentence"
+		spans, retain := LangSmithAPIKey().Find(src)
+		if spans != nil {
+			t.Fatalf("Find(%q) = %v, want no span", src, spans)
+		}
+		if retain != len(src) {
+			t.Errorf("Find(%q) settled from %d, want %d", src, retain, len(src))
+		}
+	})
+}
+
 func Test_LangSmithAPIKey_reachesTheEndOfTheRuns(t *testing.T) {
 	// What reading the tail costs. A key is written in more than one run, so
 	// the span goes on for as long as an underscore joins another run to the
@@ -393,6 +498,13 @@ func Test_LangSmithAPIKey_reachesTheEndOfTheRuns(t *testing.T) {
 			name: "a dashed word against the key",
 			src:  "lsv2_pt_0123456789abcdefghijklmnopqrstuv_0123456789-suffix",
 			want: "***************************************************-suffix",
+		},
+		{
+			// The same underscored-word boundary, behind the other prefix. Every
+			// other case in this function is written against lsv2_pt_.
+			name: "an underscored word against a service key",
+			src:  "lsv2_sk_0123456789abcdefghijklmnopqrstuv_0123456789_suffix",
+			want: "**********************************************************",
 		},
 	}
 
@@ -528,6 +640,13 @@ func Test_LangSmithAPIKey_aDigestBehindThePrefix(t *testing.T) {
 			name: "an md5 behind a hyphen rather than the prefix",
 			src:  "lsv2-pt-0123456789abcdef0123456789abcdef",
 			want: "lsv2-pt-0123456789abcdef0123456789abcdef",
+		},
+		{
+			// The same collision behind the service key prefix, which every
+			// other case above drives behind lsv2_pt_ alone.
+			name: "an md5 behind the service key prefix",
+			src:  "lsv2_sk_0123456789abcdef0123456789abcdef",
+			want: "****************************************",
 		},
 	}
 

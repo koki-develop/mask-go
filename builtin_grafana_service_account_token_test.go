@@ -190,6 +190,24 @@ func Test_GrafanaServiceAccountToken_noMatch(t *testing.T) {
 			name: "the prefix with a second underscore at the wrong distance",
 			src:  "glsa_0123456789abcdef_0123456789abcdef_0123456789abcdef",
 		},
+		{
+			// The excluded characters above all stand in the middle of the
+			// secret or the checksum. These stand at the secret's first
+			// character, straight behind the prefix.
+			name: "a hyphen at the first character of the secret",
+			src:  "glsa_-123456789abcdef0123456789abcdef_01234567",
+		},
+		{
+			name: "a dot at the first character of the secret",
+			src:  "glsa_.123456789abcdef0123456789abcdef_01234567",
+		},
+		{
+			// And this one stands inside the checksum rather than at its
+			// last character, which is the only position driven elsewhere in
+			// this file.
+			name: "a hyphen inside the checksum",
+			src:  "glsa_0123456789abcdef0123456789abcdef_0123-567",
+		},
 	}
 
 	for _, tt := range tests {
@@ -277,6 +295,13 @@ func Test_GrafanaServiceAccountToken_nextToWordCharacters(t *testing.T) {
 			want: "GRAFANA_TOKEN_**********************************************",
 		},
 		{
+			// The third class of word character neither of the two above
+			// is: a bare digit immediately in front of the prefix.
+			name: "digit before",
+			src:  "0glsa_0123456789abcdef0123456789abcdef_01234567",
+			want: "0**********************************************",
+		},
+		{
 			// The far side of the same choice, and the one that costs
 			// something. A boundary behind the match would drop this token
 			// rather than trim it; without one the forty-six characters Grafana
@@ -332,6 +357,21 @@ func Test_GrafanaServiceAccountToken_leavesWhatFollowsAlone(t *testing.T) {
 			name: "underscored word",
 			src:  "glsa_0123456789abcdef0123456789abcdef_01234567_tail",
 			want: "**********************************************_tail",
+		},
+		{
+			// A multi-byte rune written against the token on both sides.
+			// Neither its UTF-8 encoding nor a byte of it belongs to the
+			// prefix, the secret's alphabet or the checksum's, so the
+			// token keeps its span exactly as it does against a
+			// single-byte character.
+			name: "a multi-byte rune before and after",
+			src:  "日本語glsa_0123456789abcdef0123456789abcdef_01234567日本語",
+			want: "日本語**********************************************日本語",
+		},
+		{
+			name: "an invalid byte before and after",
+			src:  "\xffglsa_0123456789abcdef0123456789abcdef_01234567\xff",
+			want: "\xff**********************************************\xff",
 		},
 	}
 
@@ -470,6 +510,56 @@ func Test_GrafanaServiceAccountToken_theCloudPrefix(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got, _ := GrafanaServiceAccountToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
+			}
+		})
+	}
+}
+
+// Test_GrafanaServiceAccountToken_holdsATokenTheInputCutShort states, with a
+// literal number, what the second return of Find settles: a piece of the
+// prefix standing at the end of the input, a candidate the end of the input
+// cut short, and a whole match with nothing left unsettled behind it.
+func Test_GrafanaServiceAccountToken_holdsATokenTheInputCutShort(t *testing.T) {
+	tests := []struct {
+		name   string
+		src    string
+		want   []Span
+		retain int
+	}{
+		{
+			// A piece of the prefix stands at the end of the input: it
+			// could still grow into "glsa_" with one more byte, so nothing
+			// behind where it opens is settled.
+			name:   "a piece of the prefix at the end of the input",
+			src:    "level=info token=glsa",
+			retain: len("level=info token="),
+		},
+		{
+			// A whole prefix and a secret the input cuts short before the
+			// count is met.
+			name:   "a secret the input cuts short of the count",
+			src:    "level=info token=glsa_0123456789abcdef012",
+			retain: len("level=info token="),
+		},
+		{
+			// A whole token with more text after it, ending in a byte
+			// that opens no piece of the prefix, so nothing at the end of
+			// the input is left unsettled.
+			name:   "a whole token followed by settled text",
+			src:    "glsa_0123456789abcdef0123456789abcdef_01234567 tail",
+			want:   []Span{{0, 46}},
+			retain: len("glsa_0123456789abcdef0123456789abcdef_01234567 tail"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, retain := GrafanaServiceAccountToken().Find(tt.src)
+			if retain != tt.retain {
+				t.Errorf("Find(%q) settled %d, want %d", tt.src, retain, tt.retain)
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}
