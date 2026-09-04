@@ -178,7 +178,8 @@ func FuzzBuiltins_retain(f *testing.F) {
 	patterns := AllBuiltinPatterns()
 	f.Fuzz(func(t *testing.T, src string, cut int) {
 		cut = normalizeCut(src, cut)
-		g := newGrams(src)
+		var g grams
+		g.fill(src)
 		for _, p := range patterns {
 			checkRetain(t, p, src, cut)
 			checkPrefilter(t, p, src, &g)

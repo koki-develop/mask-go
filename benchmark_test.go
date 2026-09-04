@@ -1,6 +1,7 @@
 package mask
 
 import (
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -266,6 +267,21 @@ func benchmarkMask(b *testing.B, m *Masker, cases []benchmarkCase) {
 	}
 }
 
+// timeLocate times m settling one case as a stream asks it to, holding the case
+// to the redactions it says it holds first. It is what the prefilter is weighed
+// on rather than timeMask, for the reason gramsWorthIt (mask.go) gives.
+func timeLocate(b *testing.B, m *Masker, bm benchmarkCase) {
+	found := m.locate(bm.src, 0).found
+	if got := len(found); got != bm.spans {
+		b.Fatalf("locate reported %d value(s) in %d bytes, the case says %d", got, len(bm.src), bm.spans)
+	}
+	b.SetBytes(int64(len(bm.src)))
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = m.locate(bm.src, 0)
+	}
+}
+
 // timeMask is benchmarkMask over one case, without the name, for the reason
 // timeFind gives.
 func timeMask(b *testing.B, m *Masker, bm benchmarkCase) {
@@ -301,12 +317,9 @@ func timeMask(b *testing.B, m *Masker, bm benchmarkCase) {
 // what it should be settles nothing by asking New.
 func maskerPrefiltered(m *Masker, on bool) *Masker {
 	c := *m
-	c.tails = nil
+	c.tails, c.opens = nil, nil
 	if on {
-		c.tails = make([]*prefixTail, len(m.patterns))
-		for i, p := range m.patterns {
-			c.tails[i] = filterableTail(p)
-		}
+		c.filterOn(m.patterns)
 	}
 	return &c
 }
@@ -355,15 +368,56 @@ func BenchmarkPrefilter_Patterns(b *testing.B) {
 			filterable = append(filterable, p)
 		}
 	}
-	bm := maskerMaskBenchmarks()[0]
-	for _, n := range []int{1, 2, 4, 6, 8, 9, 10, 11, 12, 16, 24, 32, len(filterable)} {
-		m := New(WithPatterns(filterable[:n]...))
-		b.Run(strconv.Itoa(n), func(b *testing.B) {
-			for _, arm := range prefilterArms(m) {
-				b.Run(arm.name, func(b *testing.B) { timeMask(b, arm.masker, bm) })
+	for _, chars := range prefilterLineLengths {
+		// The length carries its unit into the name so that it cannot be read,
+		// or matched by -bench, as one of the pattern counts nested under it.
+		bm := benchmarkCase{name: strconv.Itoa(chars) + "B", src: prefilterText(chars)}
+		b.Run(bm.name, func(b *testing.B) {
+			for _, n := range []int{1, 2, 4, 6, 7, 8, 9, 10, 12, 16, 24, 32, len(filterable)} {
+				m := New(WithPatterns(filterable[:n]...))
+				b.Run(strconv.Itoa(n), func(b *testing.B) {
+					for _, arm := range prefilterArms(m) {
+						b.Run(arm.name, func(b *testing.B) { timeLocate(b, arm.masker, bm) })
+					}
+				})
 			}
 		})
 	}
+}
+
+// prefilterLineLengths are the lengths BenchmarkPrefilter_Patterns drives, in
+// bytes, from a few characters to a handful of records.
+//
+// More than one of them because the two arrangements do not scale together: the
+// filter is emptied once a call whatever the text is, where the scans it saves
+// cost in proportion to the text, so the number of patterns at which it starts
+// winning moves with the length. gramsWorthIt (mask.go) is what reads that
+// off.
+var prefilterLineLengths = []int{8, 24, 48, 87, 348, 696}
+
+// prefilterText returns chars bytes of log holding no value, written as records
+// that differ from one another.
+//
+// Differing because the other half of what the width of a filter buys is what
+// it lets through, and that grows with how much of the alphabet of three-byte
+// pieces the text spells. One record repeated spells the same few dozen pieces
+// however long it is, so a filter weighed on it is weighed where letting a
+// pattern through costs nothing — and a pattern let through is a scan of the
+// whole text. Nothing here opens any prefix a built-in reads, which the count
+// on the case holds.
+func prefilterText(chars int) string {
+	levels := []string{"info", "warn", "debug", "error", "trace"}
+	events := []string{"calling upstream", "retrying request", "closing idle conn", "flushing buffer", "opening stream"}
+	hosts := []string{"api.github.com", "gitlab.example.net", "registry.npmjs.org", "storage.googleapis.com"}
+	paths := []string{"user", "repos/list", "v2/tokens", "healthz", "objects/batch"}
+
+	var b strings.Builder
+	for i := 0; b.Len() < chars; i++ {
+		fmt.Fprintf(&b, "time=2026-%02d-%02dT%02d:%02d:%02dZ level=%s msg=%q url=https://%s/%s took=%dms\n",
+			1+i%12, 1+i%28, i%24, (i*7)%60, (i*13)%60,
+			levels[i%len(levels)], events[i%len(events)], hosts[i%len(hosts)], paths[i%len(paths)], 3+i*11%900)
+	}
+	return b.String()[:chars]
 }
 
 // prefilterArms are the two arrangements of m the benchmarks above alternate,
