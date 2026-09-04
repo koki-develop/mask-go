@@ -98,6 +98,9 @@ narrow, not a number to raise.
 - `go test -bench . -benchmem` against `main` if `builtin_scan.go` or another
   scan's shared declarations moved.
 - `golangci-lint run` and `betterleaks git`.
+- Have the test-gap-auditor agent review this pattern. It starts without having
+  read the scan; you cannot ask yourself what the tests miss having just written
+  one.
 - `README.md` is in step with the change: its table is one row an accessor — a
   row a vendor, and a row apiece for the patterns of `patternsWithNoVendor`,
   which name a format and sit under no vendor accessor. So a pattern for a
