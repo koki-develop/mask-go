@@ -244,6 +244,23 @@ reported as itself.
   otherwise time a scan finding nothing and report it as a speedup.
   `Test_maskerMaskBenchmarks` does the same for `maskerMaskBenchmarks`.
 
+## What a pattern's tables answer
+
+Values here are built from an ordered run, so four things a table writes out for
+itself, because no value built that way reaches them:
+
+- The declared alphabet at its ends and just outside them, at the first
+  character of a body and the last as well as in the middle.
+- The count from either side: one character short, the count exactly, and a run
+  longer than it.
+- A character the body excludes, at the ends of a body and not only inside it.
+- The offset `Find` settles at. A table written `got, _ :=` throughout leaves
+  that to the shared properties, which cannot state it for a candidate of this
+  pattern's own shape.
+
+Adjacency is not one of them: `builtinInputs` (`builtins_test.go`) already
+drives every sample with a byte of a fixed set either side of it.
+
 ## References
 
 Every built-in scanner is checked against a reference kept beside it in

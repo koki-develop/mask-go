@@ -52,7 +52,9 @@ pattern locates. Points that don't follow from the file layout alone:
 
 - The exhaustive edge cases — what is located, what is left alone — belong in
   the behaviour tables of `builtin_<name>_test.go`, not in conformance. Writing
-  the tables before the scan is fine; they are the spec.
+  the tables before the scan is fine; they are the spec. The rules file's "What
+  a pattern's tables answer" is what says which edges a table has to write out
+  for itself.
 - The reference (`reference<Name>Find`) is written with the scan, never after
   it.
 - The fuzz target is `Fuzz<Name>_matchesReference`, one call to
@@ -78,11 +80,21 @@ built-in. The solo `patternSets` entry is derived and needs no writing. Then
 `go test ./conformance -update` and review the diff it leaves as a reviewer
 would.
 
+Two counts here move with a pattern and report the number to set them to when
+they fail: `TestCorpus_cleanCasesLocateNothingNewAcrossTheRegistry` and
+`TestProperties_everyPairOfBuiltins`. Read what the failure lists before
+changing either — this scan reaching past what its own file argues is a scan to
+narrow, not a number to raise.
+
 ## 4. Verify
 
 - `go test ./...` and `go test -race ./...` — the two do not cover the same
   thing.
 - `go test -fuzz Fuzz<Name>_matchesReference -fuzztime 30s .`
+- Where shared test machinery moved, every target `go test -list 'Fuzz.*' ./...`
+  reports, at the same 30s. A plain `go test` runs a target over its checked-in
+  corpus alone, so a property stated too broadly passes here and fails on
+  generated input in CI.
 - `go test -bench . -benchmem` against `main` if `builtin_scan.go` or another
   scan's shared declarations moved.
 - `golangci-lint run` and `betterleaks git`.

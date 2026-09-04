@@ -75,6 +75,11 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   `Mask` to allocating nothing cannot be measured under the race detector,
   which allocates on paths that otherwise do not, so that measurement stands
   down there and the two runs do not cover the same thing. CI does both.
+
+  The race run has a budget: CI gives each package a job of its own and each job
+  ten minutes on four cores. A set driven over every case at every offset is
+  where that goes, so measure `GOMAXPROCS=4 go test -race ./<package>` either
+  side of widening one.
 - `go test ./conformance -update` — regenerate the conformance corpus and check
   it in the same run (`conformance/CLAUDE.md`).
 - `go test -fuzz FuzzJWT_matchesReference .` — fuzzing. The root package has
@@ -130,6 +135,11 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   moving it, as it does for allocation counts, and say at the skip which of the
   two it is — a skipped test covers nothing, and the run without `-race` is
   then the only one holding it.
+
+  Cost is the other reason to branch on it: an input set quadratic in the length
+  of a text may drop that half under `-race`. What may not move is a property
+  the detector is the point of — a test of concurrent use drives what it drives
+  under `-race` or measures nothing.
 - Count before writing "every", "only", "the one" or "all of them", in a
   comment or in a test name, and where the count is worth keeping have a test
   do the counting rather than the prose. A claim about the set is as easy to
