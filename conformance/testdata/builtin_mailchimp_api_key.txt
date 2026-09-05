@@ -1,0 +1,98 @@
+# What Mailchimp API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, written twice,
+# which is the thirty-two characters of the body and which no real credential
+# is. Behind the body stands the separator and the number of the data center the
+# account is held in; that number is the data center's rather than the
+# credential's, so it carries no run and is written as 19 wherever the number is
+# not what a case is about.
+#
+# The cases about what the pattern leaves alone are built from the same run: in
+# uppercase where the case is about the case, carried on through the alphabet
+# where the value is longer than sixteen characters, and with more characters
+# written after it where the case is about a run too long to be a body. The one
+# case carrying no run is the region written after a word, which is a line with
+# no body in it at all.
+
+patterns: mailchimp-api-key
+
+# The one shape Mailchimp issues for the Marketing API. A key reaches the whole
+# of an account through that API — its audiences, the subscriber data behind
+# them and the campaigns sent to them — with no scope on it to narrow what it
+# can do, so there is a single kind of string here rather than a table of them.
+# The cases below are that shape in the places a key is written.
+
+case:     a key on its own
+in:       0123456789abcdef0123456789abcdef-us19
+out:      «mailchimp-api-key»
+
+case:     a key in an environment assignment
+in:       MAILCHIMP_API_KEY=0123456789abcdef0123456789abcdef-us19
+out:      MAILCHIMP_API_KEY=«mailchimp-api-key»
+
+case:     a key in the configuration of the client library Mailchimp publishes
+in:       mailchimp.setConfig({apiKey: "0123456789abcdef0123456789abcdef-us19", server: "us19"})
+out:      mailchimp.setConfig({apiKey: "«mailchimp-api-key»", server: "us19"})
+
+case:     a key in json
+in:       {"apiKey":"0123456789abcdef0123456789abcdef-us19","server":"us19"}
+out:      {"apiKey":"«mailchimp-api-key»","server":"us19"}
+
+case:     a key in a log line
+in:       time=2026-08-17T00:00:00Z level=info key=0123456789abcdef0123456789abcdef-us19
+out:      time=2026-08-17T00:00:00Z level=info key=«mailchimp-api-key»
+
+# The number behind the separator is read to the end of its digits with a floor
+# of one, so the data center Mailchimp's own documentation names is located as
+# readily as a two-digit one, and a number longer than any it has built is
+# redacted whole rather than to its first two digits.
+
+case:     a key whose data center number is one digit
+in:       MAILCHIMP_API_KEY=0123456789abcdef0123456789abcdef-us6
+out:      MAILCHIMP_API_KEY=«mailchimp-api-key»
+
+case:     a key whose data center number is longer than any Mailchimp has numbered
+in:       MAILCHIMP_API_KEY=0123456789abcdef0123456789abcdef-us123
+out:      MAILCHIMP_API_KEY=«mailchimp-api-key»
+
+# The body is held to being the whole of the run it stands in, which is what
+# keeps a digest with a region written behind it out of this pattern. Thirty-two
+# hexadecimal characters are an MD5 exactly, so the separator and a number are
+# the whole of what tells a key from one; a longer digest is a run too long to
+# be a body and is left where it stands, at either end of the run.
+
+case:     an md5 with no separator behind it
+in:       checksum=0123456789abcdef0123456789abcdef
+out:      checksum=0123456789abcdef0123456789abcdef
+
+case:     a sha-1 in front of the separator
+in:       artifact=0123456789abcdef0123456789abcdef01234567-us19
+out:      artifact=0123456789abcdef0123456789abcdef01234567-us19
+
+case:     a hexadecimal character written against the body
+in:       MAILCHIMP_API_KEY=a0123456789abcdef0123456789abcdef-us19
+out:      MAILCHIMP_API_KEY=a0123456789abcdef0123456789abcdef-us19
+
+# The separator and the number are read as they are written. The body's alphabet
+# is lowercase hexadecimal alone, which is what every source stating a shape for
+# this format reads it in.
+
+case:     the separator with no number behind it
+in:       MAILCHIMP_API_KEY=0123456789abcdef0123456789abcdef-us
+out:      MAILCHIMP_API_KEY=0123456789abcdef0123456789abcdef-us
+
+case:     a region written after a word, with no body in front of it
+in:       bucket=logs-us19
+out:      bucket=logs-us19
+
+case:     an uppercase body
+in:       MAILCHIMP_API_KEY=0123456789ABCDEF0123456789ABCDEF-us19
+out:      MAILCHIMP_API_KEY=0123456789ABCDEF0123456789ABCDEF-us19
+
+# The other Mailchimp credential this pattern's name covers and its grammar
+# reaches nowhere: the Transactional API key, which is twenty-two characters
+# with nothing in them to be recognised by.
+
+case:     a transactional api key
+in:       MANDRILL_API_KEY=0123456789abcdefghijkl
+out:      MANDRILL_API_KEY=0123456789abcdefghijkl

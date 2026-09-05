@@ -57,6 +57,7 @@ var builtins = []Pattern{
 	jsonWebToken,
 	langSmithAPIKey,
 	linearAPIKey,
+	mailchimpAPIKey,
 	mailerSendAPIToken,
 	neonAPIKey,
 	netlifyAuthToken,
