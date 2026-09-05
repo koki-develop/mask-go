@@ -55,9 +55,9 @@ out:      gsk_0123456789abcdefghij_lmnopqrstuvwxyz0123456789abcd
 
 # The lengths either side of fifty. Groq states no length for a key, and no
 # alphabet and no checksum either; three rulesets read fifty-two characters and
-# the fourth reads fifty to fifty-four, and every key any of them publishes is
-# fifty-two. The count is read as a floor rather than exactly, and at the
-# shortest of those: forty-nine characters are not a key, and fifty-one are one
+# the fourth reads fifty to fifty-four. The count is read as a floor rather
+# than exactly, and at the shortest of those: forty-nine characters are not a
+# key, and fifty-one are one
 # key to the end of its run rather than a key and a character left over. What
 # the floor costs is the middle case below — a key cut short of fifty keeps
 # every random character written in front of the cut, and none of them is
@@ -71,7 +71,7 @@ case:     a body of forty-nine characters is not
 in:       gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abc
 out:      gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abc
 
-case:     a key at the length every published key has
+case:     a key at the length three of the four rules ask for
 in:       gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdef
 out:      «groq-api-key»
 

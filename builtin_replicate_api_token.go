@@ -37,13 +37,12 @@ func ReplicateAPIToken() Pattern { return replicateAPIToken }
 // So the count below is the vendor's and the alphabet below is not, and the
 // rulesets are where the alphabet comes from. betterleaks reads r8_ and
 // thirty-seven letters and digits, matched in either case, with a delimiter
-// asked for behind. kingfisher reads the same prefix, count and alphabet, drops
-// what falls at or below an entropy floor or carries fewer than three digits,
-// and publishes four whole tokens as its examples — each of them forty
-// characters, spelled in the letters of both cases with the digits, which is
-// what pins the alphabet to something shown rather than only asked for.
-// trufflehog reads the same count and admits the hyphen and the underscore
-// besides. gitleaks and Google's osv-scalibr read this format not at all.
+// asked for behind. kingfisher reads the same prefix, count and alphabet, and
+// drops what falls at or below an entropy floor or carries fewer than three
+// digits. trufflehog reads the same count and admits the hyphen and the
+// underscore besides. gitleaks and Google's osv-scalibr read this format not at
+// all. So two rules against one is the whole of what the alphabet below rests
+// on, and the one is the wider reading.
 //
 // GitHub carries it as a partner pattern under the token identifier
 // replicate_api_token, with push protection and a validity check. A partner
@@ -57,8 +56,7 @@ func ReplicateAPIToken() Pattern { return replicateAPIToken }
 // that carries meaning: r8_ and thirty-seven characters of letters, digits,
 // hyphens and underscores is the shape a snake-cased identifier or a hyphenated
 // slug reaches, where the same run written in letters and digits alone is not
-// something anybody writes. None of the four tokens kingfisher publishes
-// carries either character, and the underscore is the one the whole scan below
+// something anybody writes. The underscore is the one the whole scan below
 // rests on besides — it closes the prefix, and a body admitting it would let a
 // run of a body open candidates the way a run of prefixes does.
 //

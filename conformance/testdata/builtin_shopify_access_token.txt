@@ -36,8 +36,7 @@ in:       curl -H 'X-Shopify-Access-Token: shpat_0123456789abcdef0123456789abcde
 out:      curl -H 'X-Shopify-Access-Token: «shopify-access-token»' https://example.myshopify.com/admin/api/2026-07/shop.json
 
 # The alphabet the thirty-two characters are written in: hexadecimal in either
-# case, which is what all four published rulesets reading this format ask for and
-# what a body trufflehog ships in its own tests carries both of. The prefix is
+# case, which is what all four rules reading this format ask for. The prefix is
 # read in lowercase alone, and the pattern's own file weighs what reading the
 # uppercase shape would cost. What the alphabet leaves out is everything else,
 # the letters past f and the two characters base64url adds among them, so a run

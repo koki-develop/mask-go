@@ -42,9 +42,8 @@ out:      curl -H "Authorization: Bearer «hcp-terraform-api-token»" https://ap
 
 # The alphabet, which is the letters of both cases with the digits. gitleaks and
 # betterleaks admit the hyphen, the underscore and the equals sign in the
-# secret; no token any source publishes carries one, and what those three
-# characters would let a match run over is the hyphenated slug and the
-# snake-cased identifier a log line is full of.
+# secret, and what those three characters would let a match run over is the
+# hyphenated slug and the snake-cased identifier a log line is full of.
 
 case:     portions written in uppercase
 in:       0123456789ABCD.atlasv1.0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF012

@@ -83,8 +83,8 @@ in:       dckr_Pat_0123456789abcdef0123456789a
 out:      dckr_Pat_0123456789abcdef0123456789a
 
 # The lengths either side of twenty-seven. Docker states no length, so the count
-# is read off the published tokens and the rulesets that agree on them, and it
-# is used as a count rather than a floor: twenty-six characters are not a token,
+# is read off the rules the published rulesets state, and it is used as a count
+# rather than a floor: twenty-six characters are not a token,
 # and twenty-eight are a token and one character that belongs to no credential.
 # The second of those is the price of having no boundary behind the match — a
 # boundary there would drop this token rather than trim it, and a real token

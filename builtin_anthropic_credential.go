@@ -288,10 +288,10 @@ const (
 	anthropicCredentialSeparator = '-'
 
 	// anthropicCredentialBodyChars is the count a body is held to, read as a floor
-	// rather than exactly. Ninety-five is what every published Anthropic
-	// credential carries and what both rulesets state; it is also what keeps a
-	// hyphenated identifier out, which is why it is not a number that can be
-	// lowered on its own. The rationale above weighs both.
+	// rather than exactly. Ninety-five is what both rules reading this format
+	// state; it is also what keeps a hyphenated identifier out, which is why it
+	// is not a number that can be lowered on its own. The rationale above
+	// weighs both.
 	anthropicCredentialBodyChars = 95
 )
 

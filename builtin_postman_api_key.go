@@ -36,14 +36,11 @@ func PostmanAPIKey() Pattern { return postmanAPIKey }
 // those same pages and then write an expression of their own. So the grammar
 // here is not the vendor's own statement of its format.
 //
-// What states it instead is the agreement between the rulesets that detect it
-// and the keys that have been published in their test data. On the shape they
-// do not divide at all: gitleaks, Google's osv-scalibr, kingfisher and
-// noseyparker each read PMAK-, twenty-four characters, a hyphen and
-// thirty-four more, and trufflehog reads the same span as fifty-nine
-// characters of a class that admits the hyphen. The keys written into their
-// corpora agree: every one is the prefix, twenty-four lowercase hexadecimal
-// digits, a hyphen and thirty-four more.
+// What states it instead is the agreement between the rules of the rulesets
+// that detect it. On the shape they do not divide at all: gitleaks, Google's
+// osv-scalibr, kingfisher and noseyparker each read PMAK-, twenty-four
+// characters, a hyphen and thirty-four more, and trufflehog reads the same span
+// as fifty-nine characters of a class that admits the hyphen.
 //
 // The alphabet is where they divide, and it is the one decision here that had
 // to be made rather than read. gitleaks and osv-scalibr read hexadecimal;
@@ -53,8 +50,7 @@ func PostmanAPIKey() Pattern { return postmanAPIKey }
 // builtin_scan.go, and the reason is that the vendor is silent: nothing
 // published rules out a key carrying a letter past f, and what the narrower
 // class would cost the first time one did is not the end of a credential but
-// the whole of it, left in the output with nothing found. The published keys
-// are evidence of what has been minted, not of what may be.
+// the whole of it, left in the output with nothing found.
 //
 // The Supabase access token beside this one is the worked precedent for the
 // opposite decision, and what separates the two is exactly what is missing
@@ -78,10 +74,10 @@ func PostmanAPIKey() Pattern { return postmanAPIKey }
 // and it runs out thirty-six characters in besides.
 // Test_PostmanAPIKey_aDigestBehindThePrefix pins both.
 //
-// The prefix is read in the one case every published key carries and every
-// ruleset but kingfisher writes. Reading it in either case would buy nothing:
-// PMAK- is not a word, not an environment variable and not a path segment, so
-// there is no lowercase spelling of it that anything writes.
+// The prefix is read in the one case every rule but kingfisher's writes.
+// Reading it in either case would buy nothing: PMAK- is not a word, not an
+// environment variable and not a path segment, so there is no lowercase
+// spelling of it that anything writes.
 //
 // The counts are read exactly rather than as floors. A run longer than
 // thirty-four behind the second hyphen is not one longer key but a key with

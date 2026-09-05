@@ -45,20 +45,17 @@ func OpenAIAPIKey() Pattern { return openAIAPIKey }
 // trufflehog reads the same marker with the runs either side left unbounded,
 // names sk-service- where gitleaks does not, and declines sk-admin- where
 // gitleaks reads it — so the two rulesets do not even agree on the set of
-// names. The nine keys gitleaks holds its own rule to are one hundred and
-// sixty-four characters for a project key, one hundred and sixty-seven for a
-// service account key and one hundred and thirty-three for an admin key, and in
-// every one of them the two runs are the same length.
+// names.
 //
 // The marker is the whole of the wager, and it is a good one. Eight characters
 // drawn from an alphabet of sixty-four stand in a run of random ones about once
 // in three hundred million million characters, so a run carrying them where a
 // key carries them is a key. It is also the one part of the format nobody has
-// to guess: the counts differ by kind and have already been shipped at three
-// sizes — twenty either side of an older key, fifty-eight either side of an
-// admin key, seventy-four either side of the rest — while the marker is the
-// same eight characters in every key gitleaks holds its rule to, old or new,
-// and in every ruleset that reads one.
+// to guess: the rules reading this format state more than one count, reading
+// seventy-four or fifty-eight either side for the newer kinds and twenty either
+// side for the older, while the marker is the
+// same eight characters in every rule that reads one, for the older names and
+// the newer alike.
 //
 // So the runs either side of the marker are read as runs and not as counts. A
 // count is read exactly where it is most of what tells a value from the text
@@ -74,14 +71,15 @@ func OpenAIAPIKey() Pattern { return openAIAPIKey }
 // routable payload, and for the same reason — a wrong shape costs the end of
 // an identifier, a wrong count costs the credential.
 //
-// The alphabet is the base64url one, isBase64URLByte in builtin_scan.go. It is
-// what the published keys carry: the runs of a project, service account or
-// admin key hold hyphens and underscores between their letters and digits. It
-// is wider than the alphanumerics an older key is written in, and that width is
-// admitted rather than told apart — a narrower reading of the older kind would
-// buy a boundary nobody needs, since the marker inside the run has already said
-// what the run is, and it would end a key at the first hyphen the day OpenAI
-// widens the older format as it widened the newer one.
+// The alphabet is the base64url one, isBase64URLByte in builtin_scan.go, which
+// is the class the rules reading the newer names are written to: a project,
+// service account or admin key holds hyphens and underscores between the
+// letters and digits of its runs. It is wider than the alphanumerics an older
+// key is written in, and that width is admitted rather than told apart — a
+// narrower reading of the older kind would buy a boundary nobody needs, since
+// the marker inside the run has already said what the run is, and it would end
+// a key at the first hyphen the day OpenAI widens the older format as it
+// widened the newer one.
 //
 // Nothing is asked of how many characters stand either side of the marker. A
 // floor would be a count again, which is the thing this scan is written not to
@@ -290,10 +288,10 @@ const (
 	openAIAPIKeyAnchor      = '-'
 	openAIAPIKeyAnchorIndex = 2
 
-	// openAIAPIKeyMarker is the eight characters every published key carries
-	// between its two runs of random ones: the base64 encoding of OpenAI. It
-	// is what tells a key from the text around it, in place of a count, for
-	// the reasons the rationale above gives. Its characters belong to the run
+	// openAIAPIKeyMarker is the base64 encoding of OpenAI, which every rule
+	// reading this format asks for between its two runs of random ones. It is
+	// what tells a key from the text around it, in place of a count, for the
+	// reasons the rationale above gives. Its characters belong to the run
 	// alphabet as well, which is what lets it stand inside a run rather than
 	// divide one.
 	openAIAPIKeyMarker = "T3BlbkFJ"

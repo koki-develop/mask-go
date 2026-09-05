@@ -47,8 +47,8 @@ in:       `r8_0123456789abcdef0123456789abcdef01234`
 out:      `«replicate-api-token»`
 
 # The alphabet the thirty-seven characters are written in: the letters of both
-# cases with the digits, which is what the tokens kingfisher publishes as its
-# examples are spelled in. Replicate states the length and not the alphabet, so
+# cases with the digits, which is the class two of the three rules reading this
+# format are written to. Replicate states the length and not the alphabet, so
 # the one reading that differs — trufflehog admits the hyphen and the underscore
 # besides — is what the pattern's own file weighs. What the alphabet leaves out
 # is everything else, those two among them, so a run carrying either is no

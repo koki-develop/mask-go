@@ -4,10 +4,10 @@ import "strings"
 
 // GroqAPIKey locates Groq API keys: the prefix gsk_ and the fifty or more
 // letters and digits behind it, redacted to the end of the run they stand in.
-// Every key any published ruleset carries is fifty-two characters behind the
-// prefix, fifty-six altogether. One string serves every model Groq serves and
-// every endpoint it is served at, so nothing in a key says what it may be spent
-// on.
+// Three of the four rules reading this format ask for fifty-two behind the
+// prefix, fifty-six altogether, and the fourth reads a range holding it. One
+// string serves every model Groq serves and every endpoint it is served at, so
+// nothing in a key says what it may be spent on.
 //
 // A key is located wherever it is written, with no word boundary either side.
 // So text of that shape is redacted whether or not Groq issued it. A space, a
@@ -40,8 +40,8 @@ func GroqAPIKey() Pattern { return groqAPIKey }
 // kingfisher reads the same and holds what that admits down with four digits at
 // least and an entropy floor; betterleaks reads the same count without regard
 // to case, which over the letters of one case and the digits is the same class
-// read twice over. noseyparker reads fifty to fifty-four. Every key any of the
-// four publishes is fifty-two.
+// read twice over. noseyparker reads fifty to fifty-four, which is the one
+// range among them and what the floor below is taken from.
 //
 // The count is therefore read as a floor and not as a count. A count is read
 // exactly where it is most of what tells a value from the text around it, or

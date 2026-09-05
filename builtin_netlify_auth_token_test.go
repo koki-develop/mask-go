@@ -420,8 +420,8 @@ func Test_NetlifyAuthToken_cutShortOfTheFloor(t *testing.T) {
 	// prefix and a body too short to be one, and the random characters written
 	// before the cut come through whole.
 	//
-	// It is the price of reading a count read off the tokens rather than one
-	// Netlify states.
+	// It is the price of reading a count the rules state rather than one Netlify
+	// states.
 	tests := []struct {
 		name string
 		src  string

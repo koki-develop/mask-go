@@ -23,7 +23,7 @@ import (
 // 0123456789ABCDEFGHIJKLMNOPQ; a migrated admin key is twenty-seven hexadecimal
 // characters, written as 0123456789abcdef with 0123456789a behind it, and read
 // in either case. With the five characters of a prefix that comes to the
-// thirty-two characters every published key of either kind is.
+// thirty-two characters the rules reading either kind are written to.
 
 const (
 	newRelicIssuedKey   = "NRAK-0123456789ABCDEFGHIJKLMNOPQ"
@@ -70,9 +70,9 @@ func Test_NewRelicUserKey(t *testing.T) {
 		},
 		{
 			// A migrated body is read in hexadecimal of either case, which is
-			// what the one rule reading that format reads. The published key of
-			// that kind is lowercase, so the case is where its record is
-			// thinnest and where reading only one of them would locate nothing.
+			// what the one rule reading that format reads: it asks for
+			// hexadecimal without regard to case, so both are the format and
+			// reading only one of them would locate nothing.
 			name: "a migrated body written in uppercase hexadecimal",
 			src:  "NRAA-0123456789ABCDEF0123456789A",
 			want: []Span{{0, 32}},
@@ -151,9 +151,9 @@ func Test_NewRelicUserKey_noMatch(t *testing.T) {
 			src:  "NRAA-0123456789abcdef0123456789",
 		},
 		{
-			// An issued body is read in uppercase alone, which is the case of
-			// every published key of that kind: a lowercase letter ends the run
-			// where it stands.
+			// An issued body is read in uppercase alone, which is the case the
+			// one rule dividing on it reads this kind in: a lowercase letter
+			// ends the run where it stands.
 			name: "an issued body in lowercase",
 			src:  "NRAK-0123456789abcdefghijklmnopq",
 		},
@@ -717,9 +717,8 @@ func Test_newRelicUserKeyKinds_areTheKindsTheScanReads(t *testing.T) {
 
 func Test_newRelicUserKeyChars(t *testing.T) {
 	// The parts a prefix is built from, and the count a body of either kind is
-	// held to. New Relic writes none of the second down; every key any published
-	// rule carries is this many characters behind the prefix, and the scan reads
-	// it as a floor.
+	// held to. New Relic writes none of the second down; this is the count every
+	// rule reading either kind is written to, and the scan reads it as a floor.
 	if got := newRelicUserKeyOpening; got != "NRA" {
 		t.Errorf("newRelicUserKeyOpening = %q, want %q", got, "NRA")
 	}

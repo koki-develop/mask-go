@@ -47,20 +47,20 @@ func ShopifyAccessToken() Pattern { return shopifyAccessToken }
 // prefix locates them without an opinion about what minted them.
 //
 // What neither source states is the alphabet a body is written in, and it is
-// read off the rulesets and the values instead — the only part of this grammar
-// that is. Four published rulesets read this format and all four ask for
-// thirty-two hexadecimal characters without regard to case: gitleaks and
+// read off the rules instead — the only part of this grammar that is. Four
+// published rulesets read this format and all four ask for thirty-two
+// hexadecimal characters without regard to case: gitleaks and
 // noseyparker spell the class [a-fA-F0-9], trufflehog spells it [0-9A-Fa-f] and
 // kingfisher spells it [[:xdigit:]]. Neither the count nor the class is in
 // dispute anywhere, and the count they agree on is the one the changelog's
 // arithmetic already gave.
 //
-// The body is therefore read in either case, and the evidence for that is worth
-// separating from the agreement above. The token trufflehog ships in its own
-// tests for this prefix carries both cases within the one body — uppercase and
-// lowercase hexadecimal letters alternating through it — so a scan reading
-// lowercase alone would leave that token and every token like it in the output
-// whole. A credential missed is the failure this library is for; the uppercase
+// The body is therefore read in either case, and what that rests on is the
+// four rules agreeing on the class rather than on anything shown. Each of them
+// spells hexadecimal without regard to case, so a scan reading lowercase alone
+// would decline a body any of the four would read, and would leave it in the
+// output whole. A credential missed is the failure this library is for; the
+// uppercase
 // digest a wider class draws in behind a prefix is the cost paid for not missing
 // one, and Test_ShopifyAccessToken_aDigestBehindThePrefix pins what that cost
 // is.

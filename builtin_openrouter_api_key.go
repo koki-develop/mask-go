@@ -54,8 +54,8 @@ func OpenRouterAPIKey() Pattern { return openRouterAPIKey }
 // written after it, and only the key is redacted.
 //
 // The alphabet is hexadecimal, isOpenRouterAPIKeyBodyByte below, read in either
-// case where every published key and two of the three rulesets are lowercase
-// alone. It is the Grafana checksum's argument and is bought for the same
+// case where two of the three rules reading this format spell the lowercase
+// class alone. It is the Grafana checksum's argument and is bought for the same
 // price: the nine characters of the prefix have already decided the match, so
 // no text is admitted by the wider class that the narrower one would have
 // turned away in practice. What the narrower one would cost is the day

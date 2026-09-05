@@ -5,11 +5,11 @@ import "strings"
 // NewRelicUserKey locates New Relic user keys: the prefix NRAK- and the
 // twenty-seven or more uppercase letters and digits behind it, or the prefix
 // NRAA- and the twenty-seven or more hexadecimal characters behind it, redacted
-// to the end of the run they stand in. Every key the rulesets carry is
-// twenty-seven characters behind the prefix, thirty-two altogether. A key
-// queries NerdGraph and the REST API as the user it was issued to, across every
-// account that user can see, so what one reaches is whatever its user was
-// granted rather than one account's data.
+// to the end of the run they stand in. Twenty-seven behind the prefix is
+// thirty-two altogether, which is the width the rules reading this format are
+// written to. A key queries NerdGraph and the REST API as the user it was
+// issued to, across every account that user can see, so what one reaches is
+// whatever its user was granted rather than one account's data.
 //
 // A key is located wherever it is written, with no word boundary either side. So
 // text of that shape is redacted whether or not New Relic issued it. A space, an
@@ -56,21 +56,22 @@ func NewRelicUserKey() Pattern { return newRelicUserKey }
 // issues, and reading it as the format would leave a scan firing on any name
 // opening with those five characters.
 //
-// Everything behind the prefix is therefore read off the published rulesets and
-// the keys they carry, and the two kinds are not equally well attested.
+// Everything behind the prefix is therefore read off the rules the published
+// rulesets state, and the two kinds are not equally well attested.
 //
-// Behind NRAK-, three rulesets agree on twenty-seven characters and none of
-// them reads a range: trufflehog reads twenty-seven uppercase letters and
-// digits, gitleaks and noseyparker read the same count without regard to case,
-// which over the letters of one case and the digits is the same class read
-// twice over. Every key any of them publishes is twenty-seven uppercase
-// letters and digits.
+// Behind NRAK-, three rules agree on twenty-seven characters and none of them
+// reads a range: trufflehog reads twenty-seven uppercase letters and digits,
+// gitleaks and noseyparker read the same count without regard to case, which
+// over the letters of one case and the digits is the same class read twice
+// over.
 //
-// Behind NRAA-, one ruleset reads a format at all. noseyparker reads
-// twenty-seven hexadecimal characters without regard to case, and the one key it
-// publishes is twenty-seven lowercase hexadecimal characters. That is a thinner
-// record than the other kind's, and where it is thinnest — the case those
-// characters are written in — is what the alphabets below are decided against.
+// Behind NRAA-, one rule reads a format at all: noseyparker reads twenty-seven
+// hexadecimal characters without regard to case. Three rules against one is a
+// thinner record, and it is thin in a particular place — one rule is the whole
+// of what says the alphabet is hexadecimal, where three say what the other
+// kind's is. On the case those characters are written in the rule is not thin
+// but explicit, and it admits both. That is what the alphabets below are
+// decided against.
 //
 // The counts are read as floors and not as counts. A count is read exactly
 // where it is most of what tells a value from the text around it, or where the
@@ -90,13 +91,14 @@ func NewRelicUserKey() Pattern { return newRelicUserKey }
 // in the output. Test_NewRelicUserKey_cutShortOfTheFloor pins that, so that it
 // stays a decision on the record.
 //
-// The two kinds are read in two alphabets. The single published migrated key
-// settles hexadecimal with room to spare: twenty-seven characters drawn from
-// the letters and digits land inside hexadecimal about three times in ten
-// thousand million, so a key that is twenty-seven hexadecimal characters is not
-// one that happened to look like it. What it does not settle is the case, and
-// there the two kinds part — an issued body is read in uppercase alone, a
-// migrated body in hexadecimal of either case.
+// The two kinds are read in two alphabets, and what the migrated kind's rests
+// on is the one rule that reads it and nothing besides. That rule asks for
+// hexadecimal, so hexadecimal is what is read; there is no second statement of
+// this kind's alphabet to weigh it against, and this is the place a reader
+// widening it would be widening on the least. What the same rule does not
+// divide on is the case, and it admits both — so the two kinds part there: an
+// issued body is read in uppercase alone, a migrated body in hexadecimal of
+// either case.
 //
 // That is one question weighed against two costs, and the cost is the base64url
 // payload. base64url is the one alphabet in ordinary use carrying the hyphen,
@@ -310,8 +312,8 @@ const (
 
 	// newRelicUserKeyBodyChars is the count a body of either kind is held to,
 	// read as a floor rather than exactly. New Relic states no length of its
-	// own; every key any ruleset publishes is this many characters behind the
-	// prefix, and the rationale above weighs reading that as a floor.
+	// own; this is the count every rule reading either kind is written to, and
+	// the rationale above weighs reading that as a floor.
 	newRelicUserKeyBodyChars = 27
 )
 
@@ -350,8 +352,10 @@ func newRelicUserKeyMigratedRunEnd(src string, i int) int {
 }
 
 // isNewRelicUserKeyIssuedByte reports whether c belongs to the alphabet an
-// issued key's body is written in: the uppercase letters and the digits, which
-// is every character any published key of that kind carries.
+// issued key's body is written in: the uppercase letters and the digits. One of
+// the three rules reading this kind states that class and the other two divide
+// on no case, and what settles it against them is the cost the rationale
+// weighs.
 func isNewRelicUserKeyIssuedByte(c byte) bool {
 	return '0' <= c && c <= '9' || 'A' <= c && c <= 'Z'
 }

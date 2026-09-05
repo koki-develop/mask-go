@@ -58,11 +58,11 @@ func Test_GroqAPIKey(t *testing.T) {
 			want: []Span{{0, 55}},
 		},
 		{
-			// The length every published key actually has: fifty-two
-			// characters behind the prefix, fifty-six altogether. This is the
-			// one length nobody wagers by, sitting strictly between the floor
-			// and the runs the cases above and below drive.
-			name: "a key at the length every published key has",
+			// The length three of the four rules ask for: fifty-two characters
+			// behind the prefix, fifty-six altogether. This is the one length
+			// nobody wagers by, sitting strictly between the floor and the runs
+			// the cases above and below drive.
+			name: "a key at the length three of the four rules ask for",
 			src:  "gsk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdef",
 			want: []Span{{0, 56}},
 		},

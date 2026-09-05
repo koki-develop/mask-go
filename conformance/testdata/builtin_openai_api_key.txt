@@ -51,11 +51,12 @@ case:     a key in a client side configuration object
 in:       {"apiKey":"sk-proj-0123456789abcdefT3BlbkFJ0123456789abcdef","project":"example"}
 out:      {"apiKey":"«openai-api-key»","project":"example"}
 
-# The alphabet the runs are written in. It is base64url, which is what the
-# published keys carry: a project, service account or admin key holds hyphens
-# and underscores among its letters and digits. The two characters standard
-# base64 writes in their place, the plus and the slash, are not admitted — and
-# because the run in front of the marker is what carries the prefix to it, a
+# The alphabet the runs are written in. It is base64url, which is the class the
+# rules reading the newer names are written to: a project, service account or
+# admin key holds hyphens and underscores among its letters and digits. The two
+# characters standard base64 writes in their place, the plus and the slash, are
+# not admitted — and because the run in front of the marker is what carries the
+# prefix to it, a
 # character outside the alphabet standing between the two leaves no key at all
 # rather than a shorter one.
 

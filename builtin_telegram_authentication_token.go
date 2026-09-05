@@ -42,8 +42,8 @@ func TelegramAuthenticationToken() Pattern { return telegramAuthenticationToken 
 // git SHA, an MD5 and any run cut out of a base64 blob all clear it, and a
 // pattern admitting those would redact values a reader has every reason to see.
 // What the count rests on instead is the rules the public secret-scanning
-// rulesets are written to, which state what someone else read of the format
-// rather than what Telegram undertakes to keep issuing. Those rules reach two
+// rulesets state, which say what someone else read of the format rather than
+// what Telegram undertakes to keep issuing. Those rules reach two
 // widths and no others: four of them are written to thirty-five characters, and
 // one admits thirty-four beside it — which is also the width of the secret
 // Telegram writes on its own BotFather page. Both are read here, because a
@@ -212,8 +212,7 @@ const (
 	// telegramAuthenticationTokenBodyMin and telegramAuthenticationTokenBodyMax
 	// are the widths a secret is written to, and a run of anything between them
 	// is read as one. What the two rest on is the rationale above: the rules
-	// the public rulesets are written to, rather than anything Telegram
-	// undertakes.
+	// the public rulesets state, rather than anything Telegram undertakes.
 	telegramAuthenticationTokenBodyMin = 34
 	telegramAuthenticationTokenBodyMax = 35
 

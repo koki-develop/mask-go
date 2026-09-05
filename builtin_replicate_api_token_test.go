@@ -52,8 +52,8 @@ func Test_ReplicateAPIToken(t *testing.T) {
 		},
 		{
 			// The alphabet is the letters of both cases with the digits, which
-			// is what the tokens kingfisher publishes as its examples are
-			// spelled in, so the bodies written out here carry both.
+			// is the class two of the rules reading this format are written
+			// to, so the bodies written out here carry both.
 			name: "an uppercase body",
 			src:  "r8_0123456789ABCDEF0123456789ABCDEF01234",
 			want: []Span{{0, 40}},

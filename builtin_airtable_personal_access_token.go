@@ -39,29 +39,23 @@ func AirtablePersonalAccessToken() Pattern { return airtablePersonalAccessToken 
 // seventeen characters. The three letters here are pat, and the fourteen below
 // are the rest of the identifier.
 //
-// What shows the width of the secret is a whole value of the other credential
-// this vendor issues. An OAuth access token is written in four parts, and the
-// third of them is base64url; trufflehog publishes two whole ones in its own
-// tests, and the third part of either decodes to a JSON object carrying a
-// userId and an oauthApplicationId — each of them one of the seventeen
-// character identifiers behind its own three letters — an expiresAt written as
-// a timestamp, and a secret of exactly sixty-four lowercase hexadecimal
-// characters, which is thirty-two bytes written in that alphabet. That is the
-// width below, and what makes it worth reading off another credential is that
-// it is the same vendor's secret drawn at the same width, rather than a number
-// counted off examples of this one.
+// The width of the secret is sixty-four lowercase hexadecimal characters,
+// which is thirty-two bytes written in that alphabet — a round number of bytes
+// rather than a length a run grew to, and what every rule reading this format
+// asks for.
 //
-// The rulesets agree on the whole shape and were written from tokens rather
-// than from either of those. gitleaks reads
+// The rules agree on the whole shape. gitleaks reads
 // \b(pat[[:alnum:]]{14}\.[a-f0-9]{64})\b and nothing else; trufflehog reads the
 // same expression behind an airtable keyword and verifies what it finds against
 // the API; kingfisher reads pat[A-Za-z0-9]{14}\.[a-f0-9]{64} under an entropy
 // floor and a demand for two digits, an uppercase letter and a lowercase one.
-// noseyparker reads none of it. Between trufflehog's tests and kingfisher's
-// example four whole tokens are published, and every one of them is eighty-two
-// characters divided the way the three expressions divide it — one of them
-// carrying no digit in its identifier at all, which is a token kingfisher's own
-// demand for two would decline.
+// noseyparker reads none of it. The entropy floor kingfisher holds an
+// identifier under, and the two digits, the uppercase letter and the lowercase
+// one it asks for besides, are narrowings no other rule makes and this scan
+// takes none of them. kingfisher's own example carries an identifier with no
+// digit in it at all, which its two-digit demand would decline — a rule its
+// author has already seen a value outside is a rule to read no tightening
+// off.
 //
 // Both counts are therefore read exactly, and the vendor's sentence about
 // length is what the decision has to be weighed against rather than what
@@ -71,23 +65,22 @@ func AirtablePersonalAccessToken() Pattern { return airtablePersonalAccessToken 
 // sixty-four with the rest left in the text, which is what an exact count
 // costs everywhere. An identifier of some other width is a token this scan
 // does not locate at all — the whole credential, left whole — and that is the
-// wager. It rests on the identifier being an Airtable ID rather than on the
-// examples: the fourteen is the shape Airtable writes every ID of every kind
-// in, so a token whose identifier stopped being one would be a change to more
-// than this credential. Reading the identifier to the dot instead would spend
-// the anchor to buy it, since pat and a dot seventeen characters later is most
-// of what tells this format from a word.
+// wager. It rests on the identifier being an Airtable ID: the fourteen is the
+// shape Airtable writes every ID of every kind in, so a token whose identifier
+// stopped being one would be a change to more than this credential. Reading
+// the identifier to the dot instead would spend the anchor to buy it, since
+// pat and a dot seventeen characters later is most of what tells this format
+// from a word.
 //
 // The identifier is read in the shared base62 alphabet of builtin_scan.go,
 // which is the letters of both cases and the digits, because that is what an
 // Airtable ID is written in and not because a run is walked to its end — every
 // count here is a count. The secret is read in lowercase hexadecimal, and the
-// widening on offer is the other case. It is declined on the values rather than
-// on the vendor: Airtable states no alphabet at all, every published token is
-// lowercase, the secret carried inside the OAuth access token is lowercase, and
-// lowercase is what a hexadecimal encoder settles once for all of its output
-// rather than a thing a generator varies between tokens. All three rulesets
-// read the lowercase class alone.
+// widening on offer is the other case. It is declined on the rules and on the
+// encoding: all three rules read the lowercase class alone, and lowercase is
+// what a hexadecimal encoder settles once for all of its output rather than a
+// thing a generator varies between tokens. Airtable states no alphabet at all,
+// which is why the reading rests on those two and not on the vendor.
 // Test_AirtablePersonalAccessToken_anUppercaseSecret pins the decision so that
 // widening it is a change somebody argues for.
 //
@@ -269,7 +262,7 @@ const (
 
 	// airtablePersonalAccessTokenSecretChars is the secret behind the
 	// separator: thirty-two bytes written in hexadecimal, which is the width
-	// the secret inside an Airtable OAuth access token is drawn at.
+	// every rule reading this format asks for.
 	airtablePersonalAccessTokenSecretChars = 64
 
 	// airtablePersonalAccessTokenBodyChars is everything behind the prefix: the

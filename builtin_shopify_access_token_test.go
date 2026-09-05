@@ -50,8 +50,7 @@ func Test_ShopifyAccessToken(t *testing.T) {
 			want: []Span{{0, 38}},
 		},
 		{
-			// The rulesets read this class without regard to case and the body
-			// trufflehog ships in its own tests carries both, which is what
+			// The rules read this class without regard to case, which is what
 			// builtin_shopify_access_token.go reads either case on.
 			name: "a body written in uppercase",
 			src:  "shpat_0123456789ABCDEF0123456789ABCDEF",
