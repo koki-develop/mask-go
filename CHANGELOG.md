@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.4.0](https://github.com/koki-develop/mask-go/compare/v0.3.0...v0.4.0) (2026-09-05)
+
+
+### Features
+
+* Locate a MailerSend API token ([#102](https://github.com/koki-develop/mask-go/issues/102)) ([#139](https://github.com/koki-develop/mask-go/issues/139)) ([ffc6455](https://github.com/koki-develop/mask-go/commit/ffc6455b36782b71808e8357c5cbbe981d5d4295))
+* Locate a Perplexity API key ([#64](https://github.com/koki-develop/mask-go/issues/64)) ([#137](https://github.com/koki-develop/mask-go/issues/137)) ([f5ce503](https://github.com/koki-develop/mask-go/commit/f5ce503c2e61db096d6fc1e30e880a27260d1c39))
+* Locate the API keys LangSmith issues ([#140](https://github.com/koki-develop/mask-go/issues/140)) ([47a4347](https://github.com/koki-develop/mask-go/commit/47a4347b549f0645880207a0eccab0a1803bfa97))
+* Locate the API keys Mailchimp issues for the Marketing API ([#149](https://github.com/koki-develop/mask-go/issues/149)) ([bab7a2a](https://github.com/koki-develop/mask-go/commit/bab7a2ac2985e88b3fd32bb48fa81625c656096d))
+* Locate the authentication tokens Telegram issues to bots ([#119](https://github.com/koki-develop/mask-go/issues/119)) ([#151](https://github.com/koki-develop/mask-go/issues/151)) ([998c363](https://github.com/koki-develop/mask-go/commit/998c363e6dd314b5c203adb03db975b686cf714a))
+* Locate the keys Tailscale writes with a key prefix ([#150](https://github.com/koki-develop/mask-go/issues/150)) ([e32910f](https://github.com/koki-develop/mask-go/commit/e32910fc8fefd30852aa0fb23a87a37b7eee81f3))
+
+
+### Bug Fixes
+
+* Allow the marker a rule reports with the value it stood in for ([#155](https://github.com/koki-develop/mask-go/issues/155)) ([a8025f3](https://github.com/koki-develop/mask-go/commit/a8025f3499151ce77f5b067e725824d6a582f7c7))
+
+
+### Performance Improvements
+
+* Fill the prefilter six pieces to a word read ([#141](https://github.com/koki-develop/mask-go/issues/141)) ([537e9da](https://github.com/koki-develop/mask-go/commit/537e9da356109437eef9fb1c6f4df86555686e48))
+* Pass a scan over on its literals without answering for it ([#159](https://github.com/koki-develop/mask-go/issues/159)) ([a212f77](https://github.com/koki-develop/mask-go/commit/a212f77aa372a0308050339a23fa46a28f2161b4))
+
 ## [0.3.0](https://github.com/koki-develop/mask-go/compare/v0.2.0...v0.3.0) (2026-09-01)
 
 
