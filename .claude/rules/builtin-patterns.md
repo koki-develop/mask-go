@@ -457,30 +457,46 @@ inputs that exist rather than over the ones a change makes possible.
 ### Declaring the openings, and when not to
 
 A `Masker` holds many patterns and hands each of them the same text, so it walks
-that text once and turns away the patterns whose openings it cannot hold —
-`grams` in `builtin_scan.go` says how. A pattern turned away is not run at all,
-and what stands in for its answer is what its `prefixTail` alone settles.
+that text once and turns away the patterns whose literals it cannot hold —
+`grams` in `builtin_scan.go` says how.
 
-Which side of that a pattern is on is a decision made where it is declared.
-`newBuiltin` states the openings, taking the `prefixTail` the scan already
-settles its tail by; `NewPattern` states none and is run over every text.
+Two claims are involved and they are not the same, which is why a pattern
+declares them separately.
 
-**Declare the openings only where the tail carries every opening a candidate is
-read back from.** The two must be the same set of literals. A scan that opens a
-candidate on something narrower than a whole prefix — the byte its prefixes
-begin with and an anchor behind it, or an opening it then reads a kind forward
-from — is pinned by candidates its tail knows nothing about, so it settles less
-than its tail does and must be declared with `NewPattern`. A scan doing that
-says so in its own file, beside the declaration, in the terms this section is
-written in.
+- **The literals.** Every value the scan locates carries one of them, so a text
+  carrying none is a text the scan finds nothing in and need not be run over.
+- **The tail.** What the `prefixTail` settles is what the scan settles, so a
+  `Masker` that passed the pattern over may report the one for the other.
 
-Getting it wrong is not a slower `Mask`. A pattern whose openings the filter
+The second is the stronger, and a scan that opens its candidates on something
+the literals do not spell — less of one, or text standing somewhere else against
+it — cannot make it. Such a scan is pinned by candidates its literals know
+nothing about, so it settles further back than they do. Which of those it is
+goes in its own file, beside the declaration, where it can be read against the
+scan it describes.
+
+Which claims a pattern makes is decided where it is declared. `newBuiltin` makes
+both, taking the `prefixTail` the scan already settles its tail by.
+`newBuiltinFilteredOn` makes the first alone, taking the literals every value
+carries. `NewPattern` makes neither, which is where a scan belongs that has no
+literal every value it locates carries.
+
+A claim made is not a claim a filter can act on: it reads three bytes at a time,
+so a literal shorter than that is one it can tell nothing about, and a pattern
+whose literals are all shorter is run over every text however it was declared.
+That is a property of the literals rather than a fourth way to declare a
+pattern, and `gramPairs` is where it is decided.
+
+A pattern making the first claim alone is passed over wherever nothing has to be
+settled, which is every call `Mask` makes, and is run by a stream.
+
+Getting either wrong is not a slower `Mask`. A pattern whose literals the filter
 turns away on text it can locate a value in is a credential left in the output;
 one whose tail settles further than the scan does releases text the scan meant
-to hold. `Test_builtins_prefilterAgreesWithFind` holds every pattern declaring
-openings to both halves of that, on the samples and anchors of the whole
-registry and on a piece of every declared prefix followed by a character no
-prefix carries there, and `FuzzBuiltins_retain` holds it on generated text.
+to hold. `Test_builtins_prefilterAgreesWithFind` holds every pattern to the
+claims it makes and to no others, on the samples and anchors of the whole
+registry and on a piece of every declared literal followed by a character no
+literal carries there, and `FuzzBuiltins_retain` holds it on generated text.
 
 ## Linearity
 

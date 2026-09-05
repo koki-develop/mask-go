@@ -90,22 +90,23 @@ func MailchimpAPIKey() Pattern { return mailchimpAPIKey }
 // trufflehog reads only where the word mandrill stands beside it. A key of that
 // kind is left in the output whole, which is stated rather than hidden.
 //
-// This pattern is declared with NewPattern and not with its openings, so a
-// Masker runs it over every text rather than passing over the texts a filter
-// turns away. What a candidate is read back from is the separator, and the
-// separator stands behind the body rather than in front of it: a key opens on a
-// run of hexadecimal, which is no literal a filter can be built from. Declaring
-// the separator as an opening would settle the tail of every input by it, and a
-// text ending inside a body carries no piece of the separator at all — so a
-// stream would release thirty-two characters of a key and redact the -us19 that
-// arrived after them. builtin_scan.go states the rule this is the far side of.
+// This pattern declares the separator to a Masker as a literal and no tail,
+// which grams (builtin_scan.go) says is the pattern that may be passed over but
+// never answered for. Every key carries the separator — the scan asks for it
+// before it reports anything — so a text carrying it nowhere carries no key.
 //
-// What that costs is a scan of every text a caller masks, where a pattern the
-// filter can read is passed over on almost all of them. It is the price of a
-// format whose value carries no opening of its own, and it is not this
-// pattern's to weigh alone: AWSSecretAccessKey pays the same for the same
-// reason, and its file argues why a value with nothing in front of it can be
-// carried here at all.
+// A tail it cannot declare, and the separator is exactly why. It stands behind
+// the body rather than in front of it: a key opens on a run of hexadecimal,
+// which is no literal at all. Reporting the separator as what settles the tail
+// would settle every input by it, and a text ending inside a body carries no
+// piece of the separator — so a stream would release thirty-two characters of a
+// key and redact the -us19 that arrived after them. That is why the two
+// declarations are separate: what makes a text safe to pass over says nothing
+// about what a scan has settled in a text it was passed over on.
+//
+// So a stream runs this scan rather than answering for it. Mask settles
+// nothing, so it passes the scan over on any text the separator is absent from,
+// which is almost every line a caller masks.
 //
 // The byte the scan searches the input for is the hyphen the separator opens
 // with, and it is chosen for what it leaves the tail rather than for being
@@ -176,7 +177,7 @@ func MailchimpAPIKey() Pattern { return mailchimpAPIKey }
 // the alphabet its body is written in, so a run of hexadecimal is a position an
 // engine stops at, and there is no literal in front of the grammar for it to
 // search the text for.
-var mailchimpAPIKey = NewPattern("mailchimp-api-key", func(src string) ([]Span, int) {
+var mailchimpAPIKey = newBuiltinFilteredOn("mailchimp-api-key", []string{mailchimpAPIKeySeparator}, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a body run standing at the end of

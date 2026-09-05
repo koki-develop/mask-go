@@ -1103,3 +1103,69 @@ func TestMasker_Mask_manyOverlappingSpans(t *testing.T) {
 		}
 	})
 }
+
+// TestNew_countsEachSideOfTheWalkByWhatThatSideTurnsAway holds New to asking
+// gramsWorthIt of each side separately: a pattern with literals and no tail is
+// one Mask passes over and a stream runs, so it pays for the filter on one side
+// and not on the other.
+//
+// Counted the same for both, a Masker holding enough of them would build a
+// filter a stream empties once a text and turns nothing away with, which is the
+// arrangement gramsWorthIt exists to keep out.
+//
+// What this reads is the decision rather than an answer, because the filter
+// changes no answer: Test_maskerPrefiltered holds the two arrangements to
+// masking and settling identically, so a filter built where it earns nothing is
+// invisible to every other test here and shows up only as time.
+func TestNew_countsEachSideOfTheWalkByWhatThatSideTurnsAway(t *testing.T) {
+	var tailed, literalsOnly []Pattern
+	for _, p := range AllBuiltinPatterns() {
+		switch {
+		case settlingTail(p) != nil:
+			tailed = append(tailed, p)
+		case len(filterOpens(p)) > 0:
+			literalsOnly = append(literalsOnly, p)
+		}
+	}
+	if len(tailed) < gramsWorthIt || len(literalsOnly) < 1 {
+		t.Fatalf("the registry declares %d patterns with a tail and %d with literals alone, too few to hold New to counting them apart", len(tailed), len(literalsOnly))
+	}
+
+	tests := []struct {
+		name            string
+		patterns        []Pattern
+		filtered        bool
+		settlingWorthIt bool
+	}{
+		{
+			name:            "enough on both sides builds a filter both read",
+			patterns:        tailed[:gramsWorthIt],
+			filtered:        true,
+			settlingWorthIt: true,
+		},
+		{
+			name:            "enough for masking alone builds a filter a stream leaves alone",
+			patterns:        append(append([]Pattern{}, tailed[:gramsWorthIt-1]...), literalsOnly[0]),
+			filtered:        true,
+			settlingWorthIt: false,
+		},
+		{
+			name:            "enough for neither builds none",
+			patterns:        append(append([]Pattern{}, tailed[:gramsWorthIt-2]...), literalsOnly[0]),
+			filtered:        false,
+			settlingWorthIt: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := New(WithPatterns(tt.patterns...))
+			if got := len(m.opens) > 0; got != tt.filtered {
+				t.Errorf("New(%d patterns) built a filter = %t, want %t", len(tt.patterns), got, tt.filtered)
+			}
+			if got := m.settlingWorthIt; got != tt.settlingWorthIt {
+				t.Errorf("New(%d patterns) reads the filter when settling = %t, want %t", len(tt.patterns), got, tt.settlingWorthIt)
+			}
+		})
+	}
+}

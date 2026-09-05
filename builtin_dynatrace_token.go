@@ -131,6 +131,14 @@ func DynatraceToken() Pattern { return dynatraceToken }
 // That is what the scans opening on a literal reach for prefixTail
 // (builtin_scan.go) to do; there is no table of literals here to hand it.
 //
+// So the scan declares dynatraceTokenOpening to a Masker as a literal and no
+// tail, which grams (builtin_scan.go) says is the pattern that may be passed
+// over but never answered for. Every prefix opens with those three characters,
+// so a text carrying them nowhere carries no token; what a Masker may not do is
+// report them as settling the tail, since the walk above settles further back.
+// A stream runs this scan rather than answering for it, and Mask, which settles
+// nothing, passes it over.
+//
 // The scan advances one byte past the start of a candidate whether that
 // candidate became a token or not, which is the default and needs no argument.
 // What it finds is nothing: no token begins inside another, because the two
@@ -176,7 +184,7 @@ func DynatraceToken() Pattern { return dynatraceToken }
 // searches the text for is three lowercase characters neither portion is
 // written with, so a run of the alphabet candidates would otherwise crowd in
 // holds no position for the engine to walk its machine at.
-var dynatraceToken = NewPattern("dynatrace-token", func(src string) ([]Span, int) {
+var dynatraceToken = newBuiltinFilteredOn("dynatrace-token", []string{dynatraceTokenOpening}, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of an opening standing at

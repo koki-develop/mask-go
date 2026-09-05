@@ -113,16 +113,20 @@ func AWSAccessKeyID() Pattern { return awsAccessKeyID }
 // than a floor, which is what keeps the expression cheap enough to fuzz with:
 // an engine reads a machine that wide once and stops.
 //
-// The scan declares no openings to a Masker, which grams (builtin_scan.go) says
-// a built-in does so as to be passed over on text that can hold none of them. A
-// candidate here opens on the byte both prefixes begin with and the anchor two
-// characters behind it rather than on a prefix, so text spelling neither of them
-// — XAI_API is one — opens a candidate all the same, and an input ending inside
-// that candidate is pinned at it. What the prefixes alone settle is further
-// along, so a Masker answering for this scan would release those bytes: no value
-// stands in them, but the bytes are the scan's own to hold and reading a
-// candidate here is cheap enough that they are not worth taking from it.
-var awsAccessKeyID = NewPattern("aws-access-key-id", func(src string) ([]Span, int) {
+// The scan declares its prefixes to a Masker as literals and no tail, which
+// grams (builtin_scan.go) says is the pattern that may be passed over but never
+// answered for. Every key carries one of the two prefixes, so a text carrying
+// neither carries no key and the scan has nothing to find in it.
+//
+// A tail it cannot declare. A candidate here opens on the byte both prefixes
+// begin with and the anchor two characters behind it rather than on a prefix,
+// so text spelling neither of them — XAI_API is one — opens a candidate all the
+// same, and an input ending inside that candidate is pinned at it. What the
+// prefixes alone settle is further along, so a Masker answering for this scan
+// would release those bytes: no value stands in them, but the bytes are the
+// scan's own to hold. So a stream runs this scan rather than answering for it,
+// and Mask, which settles nothing, passes it over.
+var awsAccessKeyID = newBuiltinFilteredOn("aws-access-key-id", awsAccessKeyIDPrefixes[:], func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops settling: a piece of a prefix standing at the end
