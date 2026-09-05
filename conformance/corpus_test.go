@@ -151,6 +151,24 @@ func parseCorpusFile(name string, data []byte) (*corpusFile, error) {
 			cur, fields = nil, nil
 			continue
 		}
+		// An out field is the one place in a corpus file a guillemet belongs,
+		// and what stands there was generated rather than written: Mask wrote
+		// it, and -update wrote what Mask returned. So either character
+		// standing anywhere else on a line was typed by hand, and this is what
+		// keeps it out — a case name or a comment carrying one reads as a
+		// redaction to anything scanning these files, the entry in
+		// .betterleaks.toml for the notation among them, which allows what
+		// shares a finding with a marker.
+		//
+		// This reads the line as it is written, where the check on the in field
+		// below reads that field decoded. Neither covers the other: a guillemet
+		// is two bytes of UTF-8 and \xNN writes one byte, so in: \xc2\xab
+		// carries none here and a marker once decoded.
+		if strings.ContainsAny(trimmed, string(markOpen)+string(markClose)) {
+			if key, _, ok := strings.Cut(trimmed, ":"); !ok || strings.TrimSpace(key) != fieldOut {
+				return nil, fmt.Errorf("%s: %c or %c stands outside an out field; the notation is built from them, so an out field -update generated is the one place in this file either may stand — a case name, a comment and a directive may not quote it", at, markOpen, markClose)
+			}
+		}
 		if strings.HasPrefix(trimmed, "#") {
 			continue
 		}
@@ -536,6 +554,10 @@ func Test_parseCorpusFile_malformed(t *testing.T) {
 		{name: "a bad escape in out", data: "case: a\nin: b\n" + `out: \q` + "\n"},
 		{name: "a spans field that says neither", data: "case: a\nin: b\nspans: maybe\n"},
 		{name: "an in field holding the notation", data: "case: a\nin: «p»\n"},
+		{name: "an in field holding the notation escaped", data: "case: a\n" + `in: \xc2\xabp\xc2\xbb` + "\n"},
+		{name: "a case name holding the notation", data: "case: «p»\nin: b\n"},
+		{name: "a comment holding the notation", data: "# «p»\ncase: a\nin: b\n"},
+		{name: "half the notation outside an out field", data: "case: a\nin: b\n# a stray »\n"},
 		{name: "a case with nothing in it", data: "case: a\n"},
 		{name: "no closing newline", data: "case: a\nin: b"},
 	}
