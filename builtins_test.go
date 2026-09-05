@@ -483,6 +483,20 @@ var builtinPatterns = []struct {
 		benchmarks: linearAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "mailchimp-api-key",
+		pattern: MailchimpAPIKey,
+		ref:     referenceMailchimpAPIKeyFind,
+		samples: []string{
+			"MAILCHIMP_API_KEY=0123456789abcdef0123456789abcdef-us19",
+			"0123456789abcdef0123456789abcdef-us6",
+			"0f9a0123456789abcdef0123456789f0-us19",
+			"g0123456789abcdef0123456789abcdef-us19",
+			"0123456789abcdef0123456789abcdef-us19 0123456789abcdef0123456789abcdef-us6",
+		},
+		anchors:    []string{"-us", "0123456789abcdef0123456789abcdef-us"},
+		benchmarks: mailchimpAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "mailersend-api-token",
 		pattern: MailerSendAPIToken,
 		ref:     referenceMailerSendAPITokenFind,

@@ -165,6 +165,12 @@ func LangSmithPatterns() []Pattern { return []Pattern{langSmithAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func LinearPatterns() []Pattern { return []Pattern{linearAPIKey} }
 
+// MailchimpPatterns returns every built-in pattern that locates a credential
+// Mailchimp issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func MailchimpPatterns() []Pattern { return []Pattern{mailchimpAPIKey} }
+
 // MailerSendPatterns returns every built-in pattern that locates a credential
 // MailerSend issues.
 //
