@@ -1,0 +1,302 @@
+# What Telegram authentication tokens the library redacts, and what it leaves
+# alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is. A token is an identifier, a colon and a secret, and the two
+# halves take the run differently. The identifier is the digits of the run with
+# the 0 taken away, since a token opens on no zero. The secret opens on the A a
+# secret is written with and then carries the run on through the alphabet, and
+# closes on a character the padding admits — thirty-four characters leave four
+# bits over and thirty-five leave two, so a secret of the first width closes on
+# one of four characters and one of the second on one of sixteen, and the run
+# reaches none of them at either width. So each secret here is the A, the run as
+# far as the width allows, and a last character written for the padding.
+#
+# The cases about the alphabet carry the characters its far ends stand at
+# written into the run, since the run alone spells neither the uppercase letters
+# nor the hyphen and the underscore. The case about a token opening inside
+# another closes its first secret on two digits rather than on the run, because
+# those digits are what opens the second token's identifier.
+
+patterns: telegram-authentication-token
+
+# A token as it is written. The whole of it is redacted, identifier included:
+# api.telegram.org authorizes on the whole string, so the identifier is half of
+# the credential rather than a label beside it.
+
+case:     a token in an environment assignment
+in:       TELEGRAM_TOKEN=123456789:A0123456789abcdefghijklmnopqrstuvw
+out:      TELEGRAM_TOKEN=«telegram-authentication-token»
+
+case:     a token in a bot api request path
+in:       https://api.telegram.org/bot123456789:A0123456789abcdefghijklmnopqrstuvw/sendMessage
+out:      https://api.telegram.org/bot«telegram-authentication-token»/sendMessage
+
+case:     a token in a curl invocation
+in:       curl https://api.telegram.org/bot123456789:A0123456789abcdefghijklmnopqrstuvwA/getMe
+out:      curl https://api.telegram.org/bot«telegram-authentication-token»/getMe
+
+case:     a token in a json value
+in:       {"token":"123456789:A0123456789abcdefghijklmnopqrstuvw","polling":true}
+out:      {"token":"«telegram-authentication-token»","polling":true}
+
+case:     a token in a yaml value
+in:       telegram:\n  token: 123456789:A0123456789abcdefghijklmnopqrstuvw
+out:      telegram:\n  token: «telegram-authentication-token»
+
+case:     a token in a bearer token header
+in:       Authorization: Bearer 123456789:A0123456789abcdefghijklmnopqrstuvw
+out:      Authorization: Bearer «telegram-authentication-token»
+
+case:     a token at the end of a sentence
+in:       the token is 123456789:A0123456789abcdefghijklmnopqrstuvw.
+out:      the token is «telegram-authentication-token».
+
+case:     a token added in a diff
+in:       +TELEGRAM_TOKEN=123456789:A0123456789abcdefghijklmnopqrstuvw
+out:      +TELEGRAM_TOKEN=«telegram-authentication-token»
+
+case:     a token in a markdown code span
+in:       Set `TELEGRAM_TOKEN=123456789:A0123456789abcdefghijklmnopqrstuvw` before starting.
+out:      Set `TELEGRAM_TOKEN=«telegram-authentication-token»` before starting.
+
+case:     a token in a ci job log line
+in:       [2026-08-17T00:00:00Z] INFO polling with 123456789:A0123456789abcdefghijklmnopqrstuvw
+out:      [2026-08-17T00:00:00Z] INFO polling with «telegram-authentication-token»
+
+# The two widths a secret is written to. Telegram's own server asks only that a
+# secret decode as base64url and run to twenty-four characters, which is a floor
+# a git object name clears — so the widths read here are the ones the public
+# secret-scanning rules are written to, four of them to thirty-five and one
+# admitting thirty-four beside it, which is also the width Telegram writes on
+# its own BotFather page. A run of any other width is left where it was written.
+
+case:     a secret of thirty-four characters
+in:       123456789:A0123456789abcdefghijklmnopqrstuvw
+out:      «telegram-authentication-token»
+
+case:     a secret of thirty-five characters
+in:       123456789:A0123456789abcdefghijklmnopqrstuvwA
+out:      «telegram-authentication-token»
+
+case:     a secret one character short of thirty-four
+in:       123456789:A0123456789abcdefghijklmnopqrstuv
+out:      123456789:A0123456789abcdefghijklmnopqrstuv
+
+case:     a secret one character past thirty-five
+in:       123456789:A0123456789abcdefghijklmnopqrstuvwAz
+out:      123456789:A0123456789abcdefghijklmnopqrstuvwAz
+
+case:     a secret run far longer than any token
+in:       123456789:A0123456789abcdefghijklmnopqrstuvwA0123456789abcdefghijklmnopqrstuvw
+out:      123456789:A0123456789abcdefghijklmnopqrstuvwA0123456789abcdefghijklmnopqrstuvw
+
+# The character a secret opens with, and the one it closes on. These two are
+# what stand between this pattern and the text a log writes anyway, and the
+# block further down is where that text is written out.
+#
+# The head is what two of the public rules spell into the rule itself, one a
+# literal A and the other AA; read back through base64url an A is a zero, so
+# what they say is that a secret's first byte is zero. The close is the padding:
+# the bits a width leaves over must be zero for the decode Telegram's own server
+# demands, and that is a mask on the last character alone.
+
+case:     a secret opening on a character that is not the head
+in:       123456789:B0123456789abcdefghijklmnopqrstuvw
+out:      123456789:B0123456789abcdefghijklmnopqrstuvw
+
+case:     a secret of the narrower width closing on a character the padding excludes
+in:       123456789:A0123456789abcdefghijklmnopqrstuvx
+out:      123456789:A0123456789abcdefghijklmnopqrstuvx
+
+case:     a secret of the wider width closing on a character the padding excludes
+in:       123456789:A0123456789abcdefghijklmnopqrstuvwx
+out:      123456789:A0123456789abcdefghijklmnopqrstuvwx
+
+case:     a secret closing on an underscore
+in:       123456789:A_0123456789abcdefghijklmnopqrst-_
+out:      123456789:A_0123456789abcdefghijklmnopqrst-_
+
+# The alphabet a secret is written in, which is base64url's: both cases, the
+# digits, the hyphen and the underscore. The hyphen and the underscore reach the
+# first character of a body and the middle of one but never the last, because
+# the padding admits neither at either width. What is outside the alphabet ends
+# the run wherever it stands — a dot, a plus sign or a space — and the
+# characters counted are the ones in front of it.
+
+case:     a secret opening on an underscore and carrying a hyphen
+in:       123456789:A_0123456789abcdefghijklmnopqrst-w
+out:      «telegram-authentication-token»
+
+case:     a secret reaching both ends of both letter ranges
+in:       123456789:AA0123456789abcdefghijklmnopqrZzgw
+out:      «telegram-authentication-token»
+
+case:     a secret spanning the alphabet
+in:       123456789:A0123456789abcdefGHIJKLMNOPQRSTU-w
+out:      «telegram-authentication-token»
+
+case:     a dot inside a secret
+in:       123456789:A0123456789abcdefg.ijklmnopqrstuvw
+out:      123456789:A0123456789abcdefg.ijklmnopqrstuvw
+
+case:     a plus sign inside a secret
+in:       123456789:A0123456789abcdefghijklmnopqrstu+vw
+out:      123456789:A0123456789abcdefghijklmnopqrstu+vw
+
+case:     a secret broken by a space
+in:       123456789:A0123456789 bcdefghijklmnopqrstuvw
+out:      123456789:A0123456789 bcdefghijklmnopqrstuvw
+
+# The identifier. It is the whole of a run of digits, no wider than the sixteen
+# the Bot API's own bound on a user identifier comes to, and it opens on no zero
+# — which is what Telegram's server refuses outright. A run of digits that is
+# none of those is not an identifier, and the token behind it is left where it
+# was written.
+
+case:     an identifier of one digit
+in:       1:A0123456789abcdefghijklmnopqrstuvw
+out:      «telegram-authentication-token»
+
+case:     an identifier of sixteen digits
+in:       1234567890123456:A0123456789abcdefghijklmnopqrstuvw
+out:      «telegram-authentication-token»
+
+case:     an identifier of seventeen digits
+in:       12345678901234567:A0123456789abcdefghijklmnopqrstuvw
+out:      12345678901234567:A0123456789abcdefghijklmnopqrstuvw
+
+case:     an identifier opening on a zero
+in:       023456789:A0123456789abcdefghijklmnopqrstuvw
+out:      023456789:A0123456789abcdefghijklmnopqrstuvw
+
+case:     a digit written in front of an identifier of sixteen
+in:       91234567890123456:A0123456789abcdefghijklmnopqrstuvw
+out:      91234567890123456:A0123456789abcdefghijklmnopqrstuvw
+
+case:     no identifier in front of the separator
+in:       :A0123456789abcdefghijklmnopqrstuvw
+out:      :A0123456789abcdefghijklmnopqrstuvw
+
+# Tokens written together, and the token opening inside another. The alphabet a
+# secret is drawn from holds the digits, so a secret may close on a run of them
+# — and the colon that would open a second token there is the one character that
+# closes the first secret's run, so both are values at once and their spans
+# overlap. That is why the scan resumes a byte past the start of a candidate
+# rather than past the candidate, and the second case is what a scan stepping
+# over what it took would lose. The secret in front is the wider of the two
+# widths, because the narrower one may close on none of the digits.
+
+case:     two tokens on one line
+in:       123456789:A0123456789abcdefghijklmnopqrstuvw 987654321:A0123456789abcdefghijklmnopqrstuvwA
+out:      «telegram-authentication-token» «telegram-authentication-token»
+
+case:     a token opening inside the secret of the one in front of it
+in:       123456789:A0123456789abcdefghijklmnopqrstuv40:A0123456789abcdefghijklmnopqrstuvw
+out:      «telegram-authentication-token»
+
+# What a token may be written against. A letter in front of an identifier is not
+# a boundary, because the Bot API writes a token into a path straight behind the
+# word bot; a digit is, because it carries the run of the identifier further.
+# Behind the secret the boundary is the alphabet's own: whatever the secret's run
+# does not admit ends it.
+
+case:     a token after a letter
+in:       bot123456789:A0123456789abcdefghijklmnopqrstuvw
+out:      bot«telegram-authentication-token»
+
+case:     a token after an underscore
+in:       TELEGRAM_123456789:A0123456789abcdefghijklmnopqrstuvw
+out:      TELEGRAM_«telegram-authentication-token»
+
+case:     a token between tabs
+in:       \t123456789:A0123456789abcdefghijklmnopqrstuvw\t
+out:      \t«telegram-authentication-token»\t
+
+case:     a token followed by a windows line ending
+in:       123456789:A0123456789abcdefghijklmnopqrstuvw\r\n
+out:      «telegram-authentication-token»\r\n
+
+case:     a token immediately against japanese text
+in:       日本語123456789:A0123456789abcdefghijklmnopqrstuvw日本語
+out:      日本語«telegram-authentication-token»日本語
+
+case:     a token immediately followed by an invalid byte
+in:       123456789:A0123456789abcdefghijklmnopqrstuvw\xff\xfe
+out:      «telegram-authentication-token»\xff\xfe
+
+case:     a token cut short by an ellipsis
+in:       the token is 123456789:A0123456789abcdef...
+out:      the token is 123456789:A0123456789abcdef...
+
+# The text a log writes that has this token's shape, which is what the head and
+# the padding are read for. A run of digits, a colon and thirty-four or
+# thirty-five characters of this alphabet is written by an AWS service prefix
+# ending in a digit with an IAM action behind it, by a Go module checksum behind
+# its h1, by an algorithm name behind its object identifier, and by a feature
+# flag behind its version. Each is text a reader has every reason to see.
+#
+# Two of these clear the padding on their own — an English identifier of
+# thirty-five characters ends in an s as often as not, and s is one of the
+# sixteen that width leaves — so the head is what turns them away.
+
+case:     an iam action behind a service prefix ending in a digit
+in:       denied: user is not authorized to perform ec2:DescribeNetworkInterfacePermissions
+out:      denied: user is not authorized to perform ec2:DescribeNetworkInterfacePermissions
+
+case:     an iam condition key behind a service prefix ending in a digit
+in:       {"ForAllValues:StringEquals":{"route53:ChangeResourceRecordSetsRecordTypes":["NS"]}}
+out:      {"ForAllValues:StringEquals":{"route53:ChangeResourceRecordSetsRecordTypes":["NS"]}}
+
+case:     a go module checksum
+in:       github.com/foo/bar v1.2.3 h1:iEmbIRk4brAP3wevhCr5MGAqxHUbbIDHvE+9YrsZAlU=
+out:      github.com/foo/bar v1.2.3 h1:iEmbIRk4brAP3wevhCr5MGAqxHUbbIDHvE+9YrsZAlU=
+
+case:     an algorithm name behind its object identifier
+in:       224:id-rsassa-pkcs1-v1_5-with-sha3-224
+out:      224:id-rsassa-pkcs1-v1_5-with-sha3-224
+
+case:     a feature flag behind its version
+in:       "@aws-cdk/aws-elbv2:albListnerRuleDefaultActionReplaced": true
+out:      "@aws-cdk/aws-elbv2:albListnerRuleDefaultActionReplaced": true
+
+# The separator, and what a colon behind a number is in text that holds no
+# token. A log line writes a timestamp, a duration and a port that way, and each
+# of them opens a candidate the scan reads and turns away — which is the whole
+# of what a line like this costs.
+
+case:     a space between the separator and the secret
+in:       123456789: A0123456789abcdefghijklmnopqrstuvw
+out:      123456789: A0123456789abcdefghijklmnopqrstuvw
+
+case:     a full stop where the separator stands
+in:       123456789.A0123456789abcdefghijklmnopqrstuvw
+out:      123456789.A0123456789abcdefghijklmnopqrstuvw
+
+case:     nothing where the separator stands
+in:       123456789A0123456789abcdefghijklmnopqrstuvw
+out:      123456789A0123456789abcdefghijklmnopqrstuvw
+
+case:     a clock time
+in:       the job ran from 12:00:01 to 12:34:56 without an error
+out:      the job ran from 12:00:01 to 12:34:56 without an error
+
+case:     a duration
+in:       the run took 1:23 and the retry took 0:07
+out:      the run took 1:23 and the retry took 0:07
+
+case:     a host and a port
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.telegram.org:443/bot
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.telegram.org:443/bot
+
+case:     a secret with no identifier or separator in front of it
+in:       A0123456789abcdefghijklmnopqrstuvw
+out:      A0123456789abcdefghijklmnopqrstuvw
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.telegram.org/getMe
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.telegram.org/getMe

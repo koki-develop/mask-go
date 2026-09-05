@@ -1029,6 +1029,22 @@ var builtinPatterns = []struct {
 		benchmarks: tailscaleKeyFindBenchmarks,
 	},
 	{
+		name:    "telegram-authentication-token",
+		pattern: TelegramAuthenticationToken,
+		ref:     referenceTelegramAuthenticationTokenFind,
+		samples: []string{
+			"TELEGRAM_TOKEN=123456789:A0123456789abcdefghijklmnopqrstuvw",
+			"https://api.telegram.org/bot123456789:A0123456789abcdefghijklmnopqrstuvwA/sendMessage",
+			"1234567890123456:A0123456789abcdefghijklmnopqrstuvwA",
+			"123456789:A0123456789abcdefghijklmnopqrstuvw 123456789:A0123456789abcdefghijklmnopqrstuvwA",
+			// A token opening inside the secret of the one in front of it, so
+			// the two spans overlap and are resolved into one redaction.
+			"123456789:A0123456789abcdefghijklmnopqrstuv40:A0123456789abcdefghijklmnopqrstuvw",
+		},
+		anchors:    []string{"123456789:A0123456789abcdef"},
+		benchmarks: telegramAuthenticationTokenFindBenchmarks,
+	},
+	{
 		name:    "xai-api-key",
 		pattern: XAIAPIKey,
 		ref:     referenceXAIAPIKeyFind,

@@ -87,6 +87,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"StripePatterns":       StripePatterns,
 	"SupabasePatterns":     SupabasePatterns,
 	"TailscalePatterns":    TailscalePatterns,
+	"TelegramPatterns":     TelegramPatterns,
 	"XAIPatterns":          XAIPatterns,
 }
 
