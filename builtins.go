@@ -95,5 +95,6 @@ var builtins = []Pattern{
 	supabaseAccessToken,
 	supabasePublishableKey,
 	supabaseSecretKey,
+	tailscaleKey,
 	xaiAPIKey,
 }

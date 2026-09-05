@@ -361,6 +361,12 @@ func SupabasePatterns() []Pattern {
 	return []Pattern{supabaseAccessToken, supabasePublishableKey, supabaseSecretKey}
 }
 
+// TailscalePatterns returns every built-in pattern that locates a credential
+// Tailscale issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func TailscalePatterns() []Pattern { return []Pattern{tailscaleKey} }
+
 // XAIPatterns returns every built-in pattern that locates a credential xAI
 // issues.
 //

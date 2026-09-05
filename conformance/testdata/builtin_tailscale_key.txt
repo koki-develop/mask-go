@@ -1,0 +1,281 @@
+# What Tailscale keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is, each half starting the run afresh: twelve characters for the
+# identifier and sixteen for the secret. Neither is a count the pattern reads —
+# it reads none for either half — so those two widths are for readability alone,
+# and the cases that turn on a length write their own.
+
+patterns: tailscale-key
+
+# The five kinds Tailscale writes a key prefix for, which its Key prefixes page
+# names: an API access token, an auth key, an OAuth client key, a SCIM key and a
+# webhook key. One pattern reads all five, because Tailscale calls each of them
+# a key, a caller enabling one wants the others and the value itself is spelled
+# tskey.
+
+case:     an auth key in an environment assignment
+in:       TS_AUTHKEY=tskey-auth-0123456789ab-0123456789abcdef
+out:      TS_AUTHKEY=«tailscale-key»
+
+case:     an api access token in an authorization header
+in:       Authorization: Bearer tskey-api-0123456789ab-0123456789abcdef
+out:      Authorization: Bearer «tailscale-key»
+
+case:     an oauth client key
+in:       TS_OAUTH_CLIENT_SECRET=tskey-client-0123456789ab-0123456789abcdef
+out:      TS_OAUTH_CLIENT_SECRET=«tailscale-key»
+
+case:     a scim key
+in:       tskey-scim-0123456789ab-0123456789abcdef
+out:      «tailscale-key»
+
+case:     a webhook key
+in:       tskey-webhook-0123456789ab-0123456789abcdef
+out:      «tailscale-key»
+
+case:     an auth key on the command line that joins a device to a tailnet
+in:       tailscale up --authkey tskey-auth-0123456789ab-0123456789abcdef
+out:      tailscale up --authkey «tailscale-key»
+
+case:     an auth key in a kubernetes secret
+in:       stringData:\n  TS_AUTHKEY: tskey-auth-0123456789ab-0123456789abcdef
+out:      stringData:\n  TS_AUTHKEY: «tailscale-key»
+
+# The alphabet the two halves are written in: the letters of either case and the
+# digits, which is what Tailscale's own client scrubs behind tskey- and stops
+# at. The hyphen it scrubs along with them is the separator this grammar already
+# reads. An underscore is outside both, and it ends the run it stands in — in
+# the identifier it leaves no separator where one is wanted and nothing is
+# located, in the secret it simply ends the key.
+
+case:     halves written in capitals
+in:       tskey-auth-0123456789AB-0123456789ABCDEF
+out:      «tailscale-key»
+
+case:     an underscore inside the identifier
+in:       tskey-auth-0123456789_ab-0123456789abcdef
+out:      tskey-auth-0123456789_ab-0123456789abcdef
+
+case:     an underscore inside the secret
+in:       tskey-auth-0123456789ab-0123456789_abcdef
+out:      «tailscale-key»_abcdef
+
+# The lengths. Tailscale states none for either half, and neither does the one
+# ruleset that reads this format, so the pattern holds each half to one
+# character or more and no ceiling. A key of the shortest shape is redacted, and
+# a half far longer than anything Tailscale writes is read to the end of its run
+# rather than cut to a length. What is asked for instead is that both halves be
+# there: a half of no characters at all is no key.
+
+case:     one character in each half
+in:       tskey-auth-0-1
+out:      «tailscale-key»
+
+case:     halves longer than the ones tailscale writes
+in:       tskey-auth-0123456789abcdefghij-0123456789abcdefghijklmnopqrstuvwxyz
+out:      «tailscale-key»
+
+case:     an identifier with no separator behind it
+in:       tskey-auth-0123456789ab
+out:      tskey-auth-0123456789ab
+
+case:     a separator with no secret behind it
+in:       tskey-auth-0123456789ab-
+out:      tskey-auth-0123456789ab-
+
+case:     an identifier of no characters
+in:       tskey-auth--0123456789abcdef
+out:      tskey-auth--0123456789abcdef
+
+case:     a secret of no characters
+in:       tskey-auth-0123456789ab--0123456789abcdef
+out:      tskey-auth-0123456789ab--0123456789abcdef
+
+# The shape an auth key takes once it is wrapped for a tailnet under tailnet
+# lock: the key, the literal --TL, a credential signature and the wrapping
+# private key, the last two written in standard base64 with a hyphen between
+# them. Tailscale writes it in one call and parses it in one call, and an
+# operator passes the whole of it to tailscale up --authkey, so it reaches a log
+# where a plain auth key does. The first two cases below are it, redacted whole:
+# redacting the key alone would leave a signing private key and the signature
+# authorizing it in the text, behind a redaction that reads as though the
+# credential had been dealt with.
+#
+# The two after them are the suffix read as its own grammar rather than as
+# whatever follows a key. A suffix with no hyphen dividing its halves is no
+# suffix, and what is left standing is written out rather than redacted; an
+# underscore is a base64url character and no standard base64 one, so it ends the
+# private key's run and the redaction stops where it stands.
+#
+# The signature and the private key here are built from the ordered run the same
+# way the halves above are, which standard base64 carries. The two characters
+# that alphabet adds over base64url, + and /, have no place in an ordered run,
+# and the case for them is in builtin_tailscale_key_test.go instead.
+
+case:     a wrapped auth key
+in:       tskey-auth-0123456789ab-0123456789abcdef--TL0123456789abcdef-0123456789abcdefghij
+out:      «tailscale-key»
+
+case:     a wrapped auth key on the command line that joins a device to a tailnet
+in:       tailscale up --authkey tskey-auth-0123456789ab-0123456789abcdef--TL0123456789abcdef-0123456789abcdefghij
+out:      tailscale up --authkey «tailscale-key»
+
+case:     a suffix with no separator between its halves
+in:       tskey-auth-0123456789ab-0123456789abcdef--TL0123456789abcdef
+out:      «tailscale-key»--TL0123456789abcdef
+
+case:     an underscore inside the wrapping private key
+in:       tskey-auth-0123456789ab-0123456789abcdef--TL0123456789abcdef-0123456789_abcdefghij
+out:      «tailscale-key»_abcdefghij
+
+# What a key may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a key keeps its span whatever
+# word character it abuts — and since the secret is read to the end of its run,
+# a letter or a digit written straight against a key is redacted with it. A
+# hyphen and an underscore end the run instead.
+
+case:     a key after an underscore
+in:       TS_AUTHKEY_tskey-auth-0123456789ab-0123456789abcdef
+out:      TS_AUTHKEY_«tailscale-key»
+
+case:     a key after a letter
+in:       xtskey-auth-0123456789ab-0123456789abcdef
+out:      x«tailscale-key»
+
+case:     a word written against a key
+in:       tskey-auth-0123456789ab-0123456789abcdefsuffix
+out:      «tailscale-key»
+
+case:     a hyphenated word written against a key
+in:       tskey-auth-0123456789ab-0123456789abcdef-suffix
+out:      «tailscale-key»-suffix
+
+case:     an underscored word written against a key
+in:       tskey-auth-0123456789ab-0123456789abcdef_suffix
+out:      «tailscale-key»_suffix
+
+case:     a key at the end of a sentence
+in:       the key is tskey-auth-0123456789ab-0123456789abcdef.
+out:      the key is «tailscale-key».
+
+# Two keys written together. The opening is spelled in the letters the halves
+# are written with and closes with the separator that divides them, so a key's
+# own halves can spell the opening of the next: below, the first key's
+# identifier is tskey and its secret auth, and a second key begins ten
+# characters into it. The two spans overlap and are redacted as one. Written
+# apart, the two are separate values and both go.
+
+case:     a key beginning inside the key before it
+in:       tskey-api-tskey-auth-0-1
+out:      «tailscale-key»
+
+case:     two keys separated by a space
+in:       tskey-auth-0123456789ab-0123456789abcdef tskey-api-0123456789AB-0123456789ABCDEF
+out:      «tailscale-key» «tailscale-key»
+
+# And what this pattern leaves alone. The first five are the opening and the
+# kind, read in the case Tailscale documents them and in the five kinds it
+# documents: a kind Tailscale does not write, a kind with a character written
+# after it, an uppercase opening, no kind at all, and one character of the
+# opening wrong. The two after them are the separators, which are hyphens and
+# not underscores: every one of them written as an underscore, and then the one
+# dividing the halves alone. Then the key shape Tailscale's auth keys page still
+# writes — the opening and one run, with no kind and no second half — which is
+# not read, because six characters and a run of letters and digits is the shape
+# of a hostname, a branch name and a cache key. The last three are text with no
+# opening in it at all.
+
+case:     a kind tailscale does not write
+in:       tskey-oauth-0123456789ab-0123456789abcdef
+out:      tskey-oauth-0123456789ab-0123456789abcdef
+
+case:     a kind with a character written after it
+in:       tskey-authx-0123456789ab-0123456789abcdef
+out:      tskey-authx-0123456789ab-0123456789abcdef
+
+case:     an uppercase opening
+in:       TSKEY-auth-0123456789ab-0123456789abcdef
+out:      TSKEY-auth-0123456789ab-0123456789abcdef
+
+case:     no kind at all
+in:       tskey-0123456789ab-0123456789abcdef
+out:      tskey-0123456789ab-0123456789abcdef
+
+case:     one character of the opening wrong
+in:       tskcy-auth-0123456789ab-0123456789abcdef
+out:      tskcy-auth-0123456789ab-0123456789abcdef
+
+case:     underscores where the separators stand
+in:       tskey_auth_0123456789ab_0123456789abcdef
+out:      tskey_auth_0123456789ab_0123456789abcdef
+
+case:     an underscore where the separator between the halves stands
+in:       tskey-auth-0123456789ab_0123456789abcdef
+out:      tskey-auth-0123456789ab_0123456789abcdef
+
+case:     the shape tailscale documented before it prefixed by kind
+in:       tskey-0123456789abcdef
+out:      tskey-0123456789abcdef
+
+case:     the url the client registers a device at
+in:       https://login.tailscale.com/machine/register
+out:      https://login.tailscale.com/machine/register
+
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# A key written against text outside ASCII and against bytes no valid string
+# holds. The alphabet ends the run before either is reached, so what stands on
+# either side of a key is left exactly as it was.
+
+case:     a key between japanese
+in:       日本語tskey-auth-0123456789ab-0123456789abcdef日本語
+out:      日本語«tailscale-key»日本語
+
+case:     a key before bytes that are not valid utf-8
+in:       tskey-auth-0123456789ab-0123456789abcdef\xff\xfe
+out:      «tailscale-key»\xff\xfe
+
+case:     a key between control bytes
+in:       \x00tskey-auth-0123456789ab-0123456789abcdef\x00
+out:      \x00«tailscale-key»\x00
+
+case:     a key between tabs
+in:       \ttskey-auth-0123456789ab-0123456789abcdef\t
+out:      \t«tailscale-key»\t
+
+case:     a key followed by a carriage return and a newline
+in:       authkey=tskey-auth-0123456789ab-0123456789abcdef\r\n
+out:      authkey=«tailscale-key»\r\n
+
+# Further shapes a key is ordinarily written in.
+
+case:     a key in json
+in:       {"authKey":"tskey-auth-0123456789ab-0123456789abcdef"}
+out:      {"authKey":"«tailscale-key»"}
+
+case:     a key in a diff line adding it to an environment file
+in:       +TS_AUTHKEY=tskey-auth-0123456789ab-0123456789abcdef
+out:      +TS_AUTHKEY=«tailscale-key»
+
+case:     a key in a url query string
+in:       https://example.com/join?authkey=tskey-auth-0123456789ab-0123456789abcdef
+out:      https://example.com/join?authkey=«tailscale-key»
+
+case:     a key in a markdown code span
+in:       run `tailscale up --authkey tskey-auth-0123456789ab-0123456789abcdef`
+out:      run `tailscale up --authkey «tailscale-key»`
+
+case:     a key in parentheses
+in:       (tskey-auth-0123456789ab-0123456789abcdef)
+out:      («tailscale-key»)
+
+case:     a key whose secret a column limit cut short
+in:       authkey=tskey-auth-0123456789ab-01234…
+out:      authkey=«tailscale-key»…
