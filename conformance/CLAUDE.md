@@ -105,17 +105,24 @@ any other way is read and its cases run — nothing about the suite would fail.
 
 - A property belongs in `conformance_test.go`, written once, where every case is
   then held to it. Never write one per case.
-- `properties_test.go` drives text derived from the corpus: every prefix and
-  suffix, a byte pushed into every interesting position, cases run together and
-  repeated. Nothing there compares against a second implementation —
-  `checkMasking` marks redactions with a separator the text does not hold and
+- `properties_test.go` drives text derived from the corpus: the prefixes and
+  suffixes of a case, a byte pushed into its interesting positions, cases run
+  together and repeated. Nothing there compares against a second implementation
+  — `checkMasking` marks redactions with a separator the text does not hold and
   puts the values back, which must give the input again. Use it for anything
   generated, where no expectation can be written down.
-- `stream_test.go` drives the corpus through `NewWriter` and `NewReader`, cut at
-  every offset and a byte at a time, and holds what comes out to what `Mask`
-  returns for the case uncut. `Mask` is what the corpus states and what the
-  properties beside it hold to everything masking must be, so holding a stream
-  to `Mask` holds it to almost all of that at once.
+- `stream_test.go` drives the corpus through `NewWriter` and `NewReader`, cut in
+  two and a byte at a time, and holds what comes out to what `Mask` returns for
+  the case uncut. `Mask` is what the corpus states and what the properties
+  beside it hold to everything masking must be, so holding a stream to `Mask`
+  holds it to almost all of that at once.
+- Which offsets of a case those two drive it at is `offsetsDriven`'s
+  (`properties_test.go`), and it is every one of them without the race detector
+  and a sample with it. That is where the run under the detector is kept inside
+  the ten minutes CI gives it, and the file says why sampling there loses
+  nothing the run without the detector does not still cover. A property added
+  here that walks a case offset by offset reads `offsetsDriven` rather than
+  `len(c.in) + 1`, or the next pattern added puts the budget back over.
 - What is left over is `WithMaxRetained`. Giving up is the one output a stream
   writes that `Mask` does not, so it is what a stream property has to state on
   its own, and the second half of `stream_test.go` states it, driving the corpus

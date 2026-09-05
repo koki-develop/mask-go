@@ -3,10 +3,13 @@
 // The corpus states exactly what each of its cases masks to. That is what makes
 // it reviewable, and it is also its limit: it says nothing about the text nobody
 // wrote down. The properties here take the corpus as a starting point and drive
-// the library through text derived from it — every prefix of every case, a byte
-// pushed into every interesting position, cases run together — holding each
-// result not to an expectation written by hand but to what must be true of any
-// masking whatsoever.
+// the library through text derived from it — the prefixes and suffixes of every
+// case, a byte pushed into the interesting positions of one, cases run together
+// — holding each result not to an expectation written by hand but to what must
+// be true of any masking whatsoever.
+//
+// Which offsets of a case those are is offsetsDriven's, and it is fewer under
+// the race detector than without it.
 
 package conformance
 
@@ -482,19 +485,117 @@ func readableCases(t testing.TB) []*corpusCase {
 	return cases
 }
 
+// boundsUnder returns where the values patterns locates in src stand.
+//
+// It masks rather than reading a case's out field, so it needs no -update to
+// have been run and can be asked about a set the case was never written for.
+func boundsUnder(t testing.TB, id, src string, patterns []mask.Pattern) [][2]int {
+	t.Helper()
+
+	out, values := maskMarked(patterns, src)
+	m, err := parseMarked(out)
+	if err != nil {
+		t.Fatalf("%s: %v", id, err)
+	}
+	b, err := m.bounds(values)
+	if err != nil {
+		t.Fatalf("%s: %v", id, err)
+	}
+	return b
+}
+
+// caseBounds returns, for each of cases, where a value stands in its in field:
+// under the patterns the case is masked with, and under every built-in.
+//
+// Both, because the properties reading these drive a case through every
+// built-in set and not only through its own. A case written for one pattern may
+// hold a value another locates — an AWS secret access key written into a case
+// for the access key ID, a JOSE header behind a 1Password prefix — and where
+// those values begin and end is exactly what such a property exists to reach.
+// Taking the case's own set alone would aim the offsets at the one set the
+// property is not about — and it is the faster of the two, so it is what
+// someone reading this for speed will reach for.
+// TestProperties_offsetsDrivenReachesWhatItIsFor is what fails then.
+//
+// Asking the whole registry costs one masking pass over the corpus; asking each
+// set would cost one per set.
+func caseBounds(t testing.TB, cases []*corpusCase) [][][2]int {
+	t.Helper()
+
+	builtins := mask.AllBuiltinPatterns()
+	bounds := make([][][2]int, len(cases))
+	for i, c := range cases {
+		own := boundsUnder(t, c.id(), c.in, c.patterns())
+		bounds[i] = append(own, boundsUnder(t, c.id(), c.in, builtins)...)
+	}
+	return bounds
+}
+
+func TestProperties_offsetsDrivenReachesWhatItIsFor(t *testing.T) {
+	// The two things offsetsDriven does that cost time, held to still being
+	// reached by the corpus. Both look like waste to someone reading this
+	// package for speed, and both are one line to undo: caseBounds could take
+	// the case's own patterns alone, and a case holding no value could be held
+	// to the stride like any other. Either would be faster and neither would
+	// fail anything else here. This is what fails.
+	//
+	// It counts rather than asserting a number, for the reason
+	// TestCorpus_attributionIsExercised counts: what is at stake is whether the
+	// corpus still reaches the rule, and a number written into a comment goes
+	// stale the next time the corpus grows while saying nothing when it does.
+	cases := readableCases(t)
+	builtins := mask.AllBuiltinPatterns()
+
+	var crossPattern, noValue []string
+	for _, c := range cases {
+		own := boundsUnder(t, c.id(), c.in, c.patterns())
+		all := boundsUnder(t, c.id(), c.in, builtins)
+
+		if len(own) == 0 && len(all) == 0 {
+			noValue = append(noValue, c.id())
+			continue
+		}
+
+		// Whether the registry's edges reach an offset the case's own do not,
+		// which is what taking the case's own patterns alone would lose.
+		kept := make(map[int]bool)
+		for _, i := range offsetsWorthDriving(c.in, own) {
+			kept[i] = true
+		}
+		for _, i := range offsetsWorthDriving(c.in, append(own, all...)) {
+			if !kept[i] {
+				crossPattern = append(crossPattern, c.id())
+				break
+			}
+		}
+	}
+
+	if len(crossPattern) == 0 {
+		t.Error("no corpus case holds a value a built-in outside its own set locates at an offset its own set does not reach, " +
+			"so caseBounds asking the whole registry buys nothing; write a case that does, or say in caseBounds that the corpus no longer holds one")
+	}
+	if len(noValue) == 0 {
+		t.Error("no corpus case masked with its own set locates nothing, so offsetsDriven's fall back to every offset is reached by no case; " +
+			"write a case that locates nothing, or say in offsetsDriven that the corpus no longer holds one")
+	}
+	t.Logf("%d case(s) reach an offset only the whole registry finds, %d case(s) locate nothing at all, out of %d",
+		len(crossPattern), len(noValue), len(cases))
+}
+
 func TestProperties_everyPrefix(t *testing.T) {
 	// A log line cut to a column limit, a read that stopped early, a value
-	// still being written: text arrives cut short, and every prefix of every
-	// case is masked here. A scan reading past the end of its input, or
-	// resuming past what it has not consumed, shows up as a redaction that no
-	// longer restores to the text it came from.
+	// still being written: text arrives cut short, and every case is masked
+	// here cut at the offsets offsetsDriven walks. A scan reading past the end
+	// of its input, or resuming past what it has not consumed, shows up as a
+	// redaction that no longer restores to the text it came from.
 	cases := readableCases(t)
+	bounds := caseBounds(t, cases)
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
 			t.Parallel()
 			ms := newMasking(set.patterns)
-			for _, c := range cases {
-				for i := range len(c.in) + 1 {
+			for j, c := range cases {
+				for _, i := range offsetsDriven(c.in, bounds[j]) {
 					ms.check(t, c.in[:i])
 				}
 			}
@@ -506,12 +607,13 @@ func TestProperties_everySuffix(t *testing.T) {
 	// The other end: text that begins in the middle of a value, as a reader
 	// resuming from an offset leaves it.
 	cases := readableCases(t)
+	bounds := caseBounds(t, cases)
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
 			t.Parallel()
 			ms := newMasking(set.patterns)
-			for _, c := range cases {
-				for i := range len(c.in) + 1 {
+			for j, c := range cases {
+				for _, i := range offsetsDriven(c.in, bounds[j]) {
 					ms.check(t, c.in[i:])
 				}
 			}
@@ -567,27 +669,49 @@ var injected = []byte{
 	0x00, 0xff,
 }
 
-// injectionPoints returns where a byte is pushed into src. Every position of a
-// short text, and of a longer one the edges of every redaction it holds, where a
-// scan that has just decided something is about to be caught deciding it
-// differently.
-func injectionPoints(src string, bounds [][2]int) []int {
-	if len(src) <= 48 {
-		points := make([]int, 0, len(src)+1)
-		for i := range len(src) + 1 {
-			points = append(points, i)
-		}
-		return points
-	}
+// denseText is the length up to which a byte is pushed into every position of a
+// text rather than into the positions offsetsWorthDriving picks out. It
+// separates a text short enough that driving every position of it costs little
+// from one where it does not.
+//
+// Most of the corpus is longer than it, so what it decides is the density of a
+// minority of cases; the offsets a long case is driven at are the rule below.
+const denseText = 48
 
+// offsetStride is how far apart the offsets offsetsWorthDriving keeps are where
+// nothing about a value singles one out.
+//
+// It is a sampling interval and no argument rests on it: what the rule below
+// exists to keep is the edges of every value and both ends of the text, and
+// those are kept whatever the stride is. Widening it trades time for the
+// chance that a scan goes wrong at an offset no value stands near.
+const offsetStride = 8
+
+// everyOffset returns every offset of src, which is every position a byte can
+// be pushed into and every place the text can be cut in two.
+func everyOffset(src string) []int {
+	offsets := make([]int, 0, len(src)+1)
+	for i := range len(src) + 1 {
+		offsets = append(offsets, i)
+	}
+	return offsets
+}
+
+// offsetsWorthDriving returns the offsets of src worth driving where every one
+// of them is too many: the edges of every redaction it holds, where a scan that
+// has just decided something is about to be caught deciding it differently,
+// with every offsetStride'th offset and both ends behind them.
+//
+// bounds may be nil, and what is left then is the stride and the ends.
+func offsetsWorthDriving(src string, bounds [][2]int) []int {
 	seen := map[int]bool{}
-	var points []int
+	var offsets []int
 	add := func(i int) {
 		if i < 0 || i > len(src) || seen[i] {
 			return
 		}
 		seen[i] = true
-		points = append(points, i)
+		offsets = append(offsets, i)
 	}
 	for _, b := range bounds {
 		start, end := b[0], b[1]
@@ -598,11 +722,73 @@ func injectionPoints(src string, bounds [][2]int) []int {
 		add(end)
 		add(end + 1)
 	}
-	for i := 0; i <= len(src); i += 8 {
+	for i := 0; i <= len(src); i += offsetStride {
 		add(i)
 	}
 	add(len(src))
-	return points
+	return offsets
+}
+
+// offsetsDriven returns the offsets of src the properties walk, which is every
+// one of them without the race detector and the ones above with it.
+//
+// These properties drive one input per offset of every case through every
+// built-in set, and builtinSets is derived from AllBuiltinPatterns: a pattern
+// added grows the sets by one and the corpus by a file, so the product of the
+// two grows with every pattern and the detector multiplies the whole of it.
+// That is why the growth is not something a faster machine settles.
+//
+// CI gives the run under the detector ten minutes, and a run of it varies by
+// more than a tenth between two runs of the same commit — one such pair timed
+// out and passed. So what the budget has to hold is a spread rather than a
+// number, and a suite that fits only on its good runs does not fit. That is
+// what this is aimed well under the limit for rather than just inside it.
+//
+// What moves under the detector is the scale and not the test, which is what
+// CLAUDE.md asks for. Every set and every case is still driven, and so are both
+// ends of every case and the edges of every value in it, under its own patterns
+// and under the whole registry alike — the offsets where a scan decides
+// something. What is dropped is the middle of a run, where the answer at one
+// offset is the answer at the one before it.
+//
+// A case holding no value at all is driven at every offset even here, and that
+// is the point rather than an exception. Those are the cases written to be near
+// misses — a body one character short, an alphabet broken one byte in — so an
+// offset in one is a place a scan decides something rather than the middle of a
+// run, and there are no edges to sample around, since nothing is located to
+// have edges. They are a large part of every offset walked here, which makes
+// holding them to the stride the obvious way to make this faster and the wrong
+// one. TestProperties_offsetsDrivenReachesWhatItIsFor counts them, so that the
+// number is not a sentence here to go stale.
+//
+// Nothing is skipped and no input leaves CI: the job without the detector runs
+// go test ./... over the whole corpus at every offset, so the dense half of
+// this is what that job is for.
+func offsetsDriven(src string, bounds [][2]int) []int {
+	if raceEnabled && len(bounds) > 0 {
+		return offsetsWorthDriving(src, bounds)
+	}
+	return everyOffset(src)
+}
+
+// injectionPoints returns where a byte is pushed into src: every position of a
+// short text, and of a longer one the offsets offsetsWorthDriving keeps.
+//
+// Under the race detector the length is not read at all, so a short text is no
+// denser than a long one there. offsetsDriven says why the detector is where
+// that half is dropped.
+//
+// This is the one place that keeps the sparse offsets where a text holds no
+// value at all, rather than falling back to every offset the way offsetsDriven
+// does. What is driven here is not a truncation but the whole text with a byte
+// pushed into it, so an offset in a clean case is not a place a scan decides
+// something the way the end of a prefix is; and whatever offsets are kept here
+// are driven once for every byte in injected.
+func injectionPoints(src string, bounds [][2]int) []int {
+	if raceEnabled || len(src) > denseText {
+		return offsetsWorthDriving(src, bounds)
+	}
+	return everyOffset(src)
 }
 
 func TestProperties_aByteInTheMiddle(t *testing.T) {
@@ -616,19 +802,10 @@ func TestProperties_aByteInTheMiddle(t *testing.T) {
 	// is worked out once here rather than inside the set loop below, where the
 	// corpus would be masked again for every set there is.
 	cases := readableCases(t)
+	bounds := caseBounds(t, cases)
 	points := make([][]int, len(cases))
 	for i, c := range cases {
-		c.requireOut(t)
-		m, err := parseMarked(c.out)
-		if err != nil {
-			t.Fatalf("%s: %v", c.id(), err)
-		}
-		_, values := maskMarked(c.patterns(), c.in)
-		bounds, err := m.bounds(values)
-		if err != nil {
-			t.Fatalf("%s: %v; run go test ./conformance -update", c.id(), err)
-		}
-		points[i] = injectionPoints(c.in, bounds)
+		points[i] = injectionPoints(c.in, bounds[i])
 	}
 
 	for _, set := range builtinSets {
