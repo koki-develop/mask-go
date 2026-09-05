@@ -330,12 +330,12 @@ func Test_AirtablePersonalAccessToken_nextToWordCharacters(t *testing.T) {
 }
 
 func Test_AirtablePersonalAccessToken_anUppercaseSecret(t *testing.T) {
-	// The secret is read in lowercase hexadecimal, which is what every ruleset
-	// reading this format reads, what every published token carries and what a
-	// hexadecimal encoder settles once for all of its output. Admitting the
-	// other case is the widening the rationale declines, and these are the cases
-	// that would move if it were taken. The identifier is a separate question
-	// and is read in both cases, which the last case here is of.
+	// The secret is read in lowercase hexadecimal, which is what all three rules
+	// reading this format read and what a hexadecimal encoder settles once for
+	// all of its output. Admitting the other case is the widening the rationale
+	// declines, and these are the cases that would move if it were taken. The
+	// identifier is a separate question and is read in both cases, which the
+	// last case here is of.
 	tests := []struct {
 		name string
 		src  string

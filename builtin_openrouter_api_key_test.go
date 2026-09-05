@@ -561,8 +561,9 @@ func Test_openRouterAPIKeyChars(t *testing.T) {
 
 func Test_isOpenRouterAPIKeyBodyByte(t *testing.T) {
 	// The hexadecimal digits and nothing else, stated over every byte rather
-	// than by example. Either case is admitted where every published key is
-	// lowercase alone, which builtin_openrouter_api_key.go weighs.
+	// than by example. Either case is admitted where two of the three rules
+	// spell the lowercase class alone, which builtin_openrouter_api_key.go
+	// weighs.
 	for c := range 256 {
 		b := byte(c)
 		want := '0' <= b && b <= '9' || 'a' <= b && b <= 'f' || 'A' <= b && b <= 'F'

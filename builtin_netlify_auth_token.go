@@ -29,11 +29,11 @@ func NetlifyAuthToken() Pattern { return netlifyAuthToken }
 // not. The announcement writes a prefix as three characters, nf and the kind,
 // which leaves thirty-seven behind it and no separator at all. What is read
 // here instead — an underscore closing the prefix and thirty-six characters
-// behind it — is read off the tokens rather than off the announcement: the
-// rulesets that carry this format write the underscore, those of them that
-// state a count state thirty-six, and the two together come to the forty
-// Netlify published. That is observation agreeing with a published length and
-// not a division Netlify has stated, and a token Netlify or a ruleset writes
+// behind it — is read off the rules rather than off the announcement: the
+// rules reading this format write the underscore, those of them that state a
+// count state thirty-six, and the two together come to the forty Netlify
+// published. That is a reading agreeing with a published length and not a
+// division Netlify has stated, and a token Netlify or a ruleset writes
 // without the underscore is what would send it back.
 //
 // The alphabet is base62, isBase62Byte in builtin_scan.go: the letters of both
@@ -64,10 +64,10 @@ func NetlifyAuthToken() Pattern { return netlifyAuthToken }
 //
 // The count is read as a floor and not as a count. Reading it exactly is worth
 // it where the count is most of what tells a value from the text around it;
-// here the prefix is doing that work, and the thirty-six is a number read off
-// the tokens rather than one Netlify has written down. Were Netlify to
-// lengthen the body, a scan asking for thirty-six exactly would locate the
-// first forty characters of a token and leave the rest of it in the output.
+// here the prefix is doing that work, and the thirty-six is a number the rules
+// state rather than one Netlify has written down. Were Netlify to lengthen the
+// body, a scan asking for thirty-six exactly would locate the first forty
+// characters of a token and leave the rest of it in the output.
 //
 // What the floor costs is the token shorter than it. A line cut to a column
 // limit partway through a token leaves a prefix and a body too short to be
@@ -254,9 +254,9 @@ const (
 	netlifyAuthTokenKinds = "pcoub"
 
 	// netlifyAuthTokenBodyChars is the count a body is held to, read as a floor
-	// rather than exactly. Thirty-six is what the rulesets carrying this format
-	// hold a body to, and with the four characters of a prefix it comes to the
-	// forty Netlify publishes — which is a length agreeing with an observation
+	// rather than exactly. Thirty-six is what the rules reading this format
+	// state, and with the four characters of a prefix it comes to the forty
+	// Netlify publishes — which is a reading agreeing with a published length
 	// and not a division Netlify has stated. The rationale above weighs reading
 	// it as a floor.
 	netlifyAuthTokenBodyChars = 36

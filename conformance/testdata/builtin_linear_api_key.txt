@@ -63,9 +63,9 @@ in:       lin_api__0123456789abcdefghijklmnopqrstuvwxyz0123
 out:      lin_api__0123456789abcdefghijklmnopqrstuvwxyz0123
 
 # The lengths either side of forty. Linear states no length for a key, and no
-# alphabet and no checksum either; forty is the count both rulesets stating a
-# shape read off the keys they were shown. Like the GitHub, Stripe, PyPI and npm
-# bodies and unlike the AWS access key ID, the GitLab token, the Google API key
+# alphabet and no checksum either; forty is the count both rules stating a
+# shape are written to. Like the GitHub, Stripe, PyPI and npm bodies and unlike
+# the AWS access key ID, the GitLab token, the Google API key
 # and the SendGrid key, it is read as a floor rather than a count: thirty-nine
 # characters are not a key, and forty-one are one key to the end of its run
 # rather than a key and a character left over. What the floor costs is the

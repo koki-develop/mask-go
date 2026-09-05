@@ -75,11 +75,43 @@ than inferring them from what a ruleset does and does not fire on: a rule may be
 written to an exact length rather than a floor, so a test value of one shape
 misses a rule that exists for another.
 
+A ruleset is read for its rule and for nothing else. The values beside one — the
+examples a rule carries, the corpus it is tested against, the keys published
+with it — settle no part of a grammar, and two things rule them out separately.
+
+The first is that they cannot ground a count or an alphabet. An example beside a
+rule was chosen to satisfy that rule, so on everything the rule constrains it is
+the rule read back: a count is the count because the example was picked to have
+it. On everything the rule leaves open it says only that one value happened to
+fall that way, which is a regularity of what was minted rather than of what may
+be. A value a ruleset generates from its own rule is the same value by a longer
+road, and needs no exception of its own.
+
+One example does say something, and it is the one that fails the rule beside it.
+A ruleset carrying a value its own expression would decline has written an
+expression narrower than what it has seen, and a rule too narrow is how a
+credential is left in a log whole. What that is evidence about is the rule
+rather than the format, so what it settles here is that a tightening read off
+that rule is not available — never a count or an alphabet of its own.
+
+The second is that a handwritten example may be a real leaked credential, and
+nothing beside it says which. Reading one launders a value out of somebody's
+published mistake and into this repository's reasoning, where the next person
+reads it as a source rather than as a leak. That is worth avoiding whatever the
+first reason is worth, and it is why this holds for values a ruleset merely
+carries as well as for ones it advertises.
+
+Where a rule states nothing about some part of a format, that part rests on the
+vendor or on nothing, and a tightening with nothing under it is one to decline.
+
 Narrow the alphabet or raise the floor on evidence, never on its absence — a
 value cut short is a credential with its tail left in the log. What the alphabet
 and the length rest on goes in the rationale, named: the next person to widen
-either needs to know whether they are reading the vendor's own format or an
-assembly of what a ruleset happened to carry.
+either needs to know whether they are reading the vendor's own format, or one
+rule stating a thing, or several agreeing on it. Those read differently — a
+vendor's format is what it undertakes to keep issuing, where rules agreeing say
+only that their authors read the same values — and a rationale that names which
+is which is one a reader can weigh.
 
 ## Weighing one before adding it
 

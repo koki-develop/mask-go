@@ -48,9 +48,9 @@ func LinearAPIKey() Pattern { return linearAPIKey }
 // The count is read as a floor and not as a count. A count is read exactly
 // where it is most of what tells a value from the text around it, or where the
 // vendor wrote the length down. Here the vendor wrote the prefix down and
-// stopped there: forty is a number two rulesets read off the keys they were
-// shown, and there is no page to hold Linear to it. Were Linear to lengthen
-// the random part, a scan asking for forty exactly would locate the first
+// stopped there: forty is a number both rules stating a shape are written to,
+// and there is no page to hold Linear to it. Were Linear to lengthen the random
+// part, a scan asking for forty exactly would locate the first
 // forty-eight characters of a key and leave the rest of it in the output. Read
 // as a floor, a key of any length at or above it is located to the end of its
 // run.

@@ -42,11 +42,11 @@ func OnePasswordServiceAccountToken() Pattern { return onePasswordServiceAccount
 // character is I, J, K or L as those two bits run 00 to 11. Every ASCII letter
 // carries 01, so every object whose first key opens with a letter encodes to
 // eyJ — which is why the anchor is ops_eyJ and does not depend on which key
-// 1Password writes first. That matters: the page's own token opens on email and
-// the tokens gitleaks carries as examples open on signInAddress, so a scan
-// reading further than eyJ would read one account's key order and miss the
-// other's. Test_onePasswordServiceAccountTokenHeader encodes the three bytes
-// for every value the third can take and holds the claim to them.
+// 1Password writes first. That matters because nothing states which key that
+// is: the page's own token opens on email, and a scan reading further than eyJ
+// would be pinned to the key order of whichever token it was written from.
+// Test_onePasswordServiceAccountTokenHeader encodes the three bytes for every
+// value the third can take and holds the claim to them.
 //
 // The alphabet is base64url, isBase64URLByte in builtin_scan.go: the letters of
 // both cases, the digits, the hyphen and the underscore. That is 1Password's

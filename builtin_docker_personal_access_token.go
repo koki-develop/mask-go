@@ -32,16 +32,14 @@ func DockerPersonalAccessToken() Pattern { return dockerPersonalAccessToken }
 // beside the secret field carries fifteen characters where a body is
 // twenty-seven.
 //
-// So the count and the alphabet are read off the tokens that have been
-// published and the rulesets written against them, which is a weaker footing
-// than a vendor's own validator. Five
-// rulesets read this format and none of them disputes either part: trufflehog,
+// So the count and the alphabet are read off the rules the published rulesets
+// state, which is a weaker footing than a vendor's own validator. Five rulesets
+// read this format and none of them disputes either part: trufflehog,
 // noseyparker, kingfisher, projectdiscovery's nuclei templates and Google's
 // osv-scalibr each ask for the prefix and twenty-seven characters of the
-// letters of both cases, the digits, the hyphen and the underscore. The tokens
-// noseyparker and kingfisher carry as their own examples are twenty-seven
-// characters behind the prefix apiece, and so is the one Docker's API reference
-// prints behind the organization prefix.
+// letters of both cases, the digits, the hyphen and the underscore. Behind the
+// organization prefix, the one Docker's API reference prints is twenty-seven
+// characters as well.
 //
 // Twenty-seven is a width that says something about itself, which is what makes
 // it readable as a count rather than as wherever a run happened to stop. A
@@ -229,7 +227,7 @@ const (
 	dockerPersonalAccessTokenAnchorIndex = 2
 
 	// The counts a token is written to. Docker states no length of its own, so
-	// these are read off the published tokens and the rulesets that agree on
+	// these are read off the rules the published rulesets state, which agree on
 	// them — twenty-seven base64url characters, which is the width twenty bytes
 	// encode to, and thirty-six with the prefix in front.
 	// Test_dockerPersonalAccessTokenChars holds the arithmetic to both.

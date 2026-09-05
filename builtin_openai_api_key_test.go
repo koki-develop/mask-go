@@ -72,9 +72,8 @@ func Test_OpenAIAPIKey(t *testing.T) {
 			want: []Span{{0, 48}},
 		},
 		{
-			// The hyphen and the underscore are base64url characters, and the
-			// keys published carry both between the letters and digits of a
-			// run.
+			// The hyphen and the underscore are base64url characters, which is
+			// the class the rules reading the newer names are written to.
 			name: "runs carrying a hyphen and an underscore",
 			src:  "sk-proj-0123456789abcdef-0123456789abcdef_T3BlbkFJ0123456789abcdef",
 			want: []Span{{0, 66}},

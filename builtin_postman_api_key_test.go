@@ -59,9 +59,9 @@ func Test_PostmanAPIKey(t *testing.T) {
 			want: []Span{{0, 64}, {64, 128}},
 		},
 		{
-			// Every key the rulesets carry in their corpora is written in
-			// lowercase hexadecimal, and nothing Postman publishes says a key
-			// must be.
+			// The alphabet read here is the letters of both cases with the
+			// digits, so a body is not divided on case at all, and nothing
+			// Postman publishes says a key is written in one.
 			name: "an uppercase body",
 			src:  "PMAK-0123456789ABCDEF01234567-0123456789ABCDEF0123456789ABCDEF01",
 			want: []Span{{0, 64}},
@@ -580,11 +580,11 @@ func Test_postmanAPIKeyChars(t *testing.T) {
 	}
 }
 
-// referencePostmanAPIKey is the grammar as a regular expression: the prefix
-// every published key opens with, the two counts every ruleset reading this
-// format asks for, the hyphen between them and the letters and digits the
-// counts are read in. Every part of it is spelled again rather than read from
-// the scan, so that the two can disagree and the target below report it.
+// referencePostmanAPIKey is the grammar as a regular expression: the prefix in
+// the one case every rule but kingfisher's writes, the two counts every rule
+// but trufflehog's asks for, the hyphen between them and the letters and digits
+// the counts are read in. Every part of it is spelled again rather than read
+// from the scan, so that the two can disagree and the target below report it.
 //
 // It is built on an expression rather than written out because both counts are
 // exact, so an engine reads its machine once and stops, and because the opening

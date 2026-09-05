@@ -56,11 +56,13 @@ func HCPTerraformAPIToken() Pattern { return hcpTerraformAPIToken }
 //
 // The alphabet is therefore the letters of both cases with the digits,
 // isBase62Byte in builtin_scan.go, and the reading that is wider is the one to
-// argue against. What admitting the hyphen, the underscore and the equals sign
-// would buy is a token carrying one of them, and no source publishes such a
-// token. What it would take is the hyphenated slug and the snake-cased
-// identifier a log line is full of, wherever one of those runs into a
-// separator.
+// argue against, and it is a reading two of the rules above take: gitleaks and
+// betterleaks admit the hyphen, the underscore and the equals sign where
+// trufflehog reads the letters and digits alone. What the wider class would buy
+// is a token carrying one of those three. What it would take is the hyphenated
+// slug and the snake-cased identifier a log line is full of, wherever one of
+// those runs into a separator — which is why the narrower reading is the one
+// taken here.
 //
 // The counts are read exactly rather than as floors, and what makes that safe
 // here is that there is no boundary either side. A token whose portions

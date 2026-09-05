@@ -44,9 +44,9 @@ in:       {"apiKey":"NRAK-0123456789ABCDEFGHIJKLMNOPQ"}
 out:      {"apiKey":"«newrelic-user-key»"}
 
 # The alphabets, which are the two kinds' own and do not meet. An issued body is
-# the uppercase letters and the digits, which is the case of every published key
-# of that kind; a migrated body is hexadecimal in either case, which is what the
-# one rule reading that format reads, though the key beside it is lowercase. The
+# the uppercase letters and the digits, which is the class the one rule dividing
+# on case reads that kind in; a migrated body is hexadecimal in either case,
+# which is what the one rule reading that format reads. The
 # two answers are weighed against the same cost — a base64url payload can hold a
 # prefix, and what the alphabet admits decides how often the characters behind
 # one are all admitted — and hexadecimal is narrow enough either way that reading
@@ -91,10 +91,10 @@ out:      NRAA-0123456789abcdef.0123456789a
 
 # The count either side of twenty-seven. New Relic states no length for a key,
 # and no alphabet and no checksum either; three rulesets read twenty-seven
-# characters behind NRAK- and one reads twenty-seven behind NRAA-, and every key
-# any of them publishes is that long. The count is read as a floor rather than
-# exactly, because the prefix is what tells this format from text and an exact
-# count would leave the tail of a longer key in the output. What the floor costs
+# characters behind NRAK- and one reads twenty-seven behind NRAA-. The count is
+# read as a floor rather than exactly, because the prefix is what tells this
+# format from text and an exact count would leave the tail of a longer key in
+# the output. What the floor costs
 # is the middle case below — a key cut short of twenty-seven keeps every random
 # character written in front of the cut, and none of them is redacted.
 
