@@ -591,7 +591,11 @@ func Test_telegramAuthenticationTokenIDTail(t *testing.T) {
 		{name: "digits one past the widest count", src: "x12345678901234567", want: 18},
 		{name: "digits at the widest count", src: "x1234567890123456", want: 1},
 		{name: "digits opening on a zero", src: "x0123456789", want: 11},
-		{name: "a separator at the end", src: "123456789:", want: 10},
+		{name: "a separator at the end", src: "123456789:", want: 0},
+		{name: "a separator with no identifier in front of it", src: "a line of prose:", want: 16},
+		{name: "a separator behind digits opening on a zero", src: "x0123456789:", want: 12},
+		{name: "a separator behind digits one past the widest count", src: "x12345678901234567:", want: 19},
+		{name: "nothing but a separator", src: ":", want: 1},
 	}
 
 	for _, tt := range tests {
@@ -885,6 +889,7 @@ func FuzzTelegramAuthenticationToken_matchesReference(f *testing.F) {
 	// trying every subset of its bytes, so a seed written longer than it needs
 	// to be is paid for in every minimization of everything descended from it.
 	f.Add(strings.Repeat("1:", 24))
+	f.Add(strings.Repeat("1:A", 16))
 	f.Add(strings.Repeat("1", 24))
 	f.Add("1:" + strings.Repeat("a", 48))
 
@@ -899,10 +904,9 @@ func FuzzTelegramAuthenticationToken_matchesReference(f *testing.F) {
 // be.
 func telegramAuthenticationTokenFindBenchmarks() []benchmarkCase {
 	// The line carries the colons a log line has anyway — the timestamp, the
-	// scheme, the port — because those are the positions the search stops at
-	// and reads a candidate back from. Some have a digit in front and so reach
-	// the walk back over an identifier; the rest are turned away by that one
-	// byte.
+	// scheme, the port — and no capital at all, which is what the search stops
+	// at. It is what a line holding nothing costs this scan: one walk of the
+	// input that stops nowhere.
 	line := `time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.example.com:8443/config `
 	id := telegramAuthenticationTokenTestID
 	body := telegramAuthenticationTokenTestBody
@@ -934,11 +938,11 @@ func telegramAuthenticationTokenFindBenchmarks() []benchmarkCase {
 			spans: 0,
 		},
 		{
-			// A separator at every other byte, each with a digit in front of
-			// it, which is a candidate at every one of them. Each is turned
+			// The opening written out end to end, which is a candidate at every
+			// third byte and as close as two of them can stand. Each is turned
 			// away inside the run behind it.
 			name:  "candidates crowded in one run",
-			src:   strings.Repeat("1:", 128),
+			src:   strings.Repeat("1:A", 86),
 			spans: 0,
 		},
 		{

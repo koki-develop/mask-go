@@ -116,16 +116,35 @@ func TelegramAuthenticationToken() Pattern { return telegramAuthenticationToken 
 // No arrangement of this grammar avoids it — what the filter reads is literals,
 // and a value opening on a run of digits has none to give it.
 //
-// The byte the scan searches for is the colon, which builtin_scan.go says why a
-// scan searches for one byte rather than for the whole of what it opens with.
-// It is the only byte of the opening that is not a digit, and it is the rarer
-// of the two by far: a log line writes a timestamp, a count and a status code
-// before it writes any word at all, where the colons on it are the few that
-// separate a field from its value. What turns each of those away is the byte
-// behind it rather than the byte in front: a secret opens on one character
-// only, and the colon of a timestamp, a duration or a port is followed by a
-// digit, so one comparison ends the candidate before the identifier in front
-// of it is walked back over at all.
+// The byte the scan searches for is the character a secret opens with, which
+// builtin_scan.go says why a scan searches for one byte rather than for the
+// whole of what it opens with. An opening offers three: a digit, the colon and
+// that character. The first two are what a log line is made of — a digit in
+// every timestamp and every status code, and the colon written by the format
+// rather than by the message, in every timestamp, every port and every field
+// written as a name against a value. The character behind the colon is the
+// message's, and an ordinary line of a log writes no capital at all.
+//
+// So the search stops where a secret could open and nowhere else, and one
+// comparison against the colon that must stand in front of it turns away each
+// of the ones a word wrote. Over the line the benchmarks below are written on
+// the colon stands three times a record and the capital not at all, and the
+// scan comes to a thirteenth of what searching for the colon leaves it costing.
+//
+// One shape of input is dearer for that choice, and it is the shape two
+// searches cost most in: almost no colon, and a long run of the secret's
+// alphabet spelling the capital every few dozen bytes and answering for none of
+// them. The colon alone reads such a text in one pass where this reads it in one
+// pass of each — the same bytes, one more call to make them in.
+// a_separator_in_front_of_a_run_no_secret_can_be below is written on that shape
+// and is the one case the colon would leave cheaper, by about a fifth; every
+// other case there, and every case BenchmarkMasker_Mask drives, costs more under
+// it, the ones a log line is made of by between a quarter and a third. The case
+// is kept as the one that says what the choice costs.
+//
+// The end of the input is the one place the character cannot answer for the
+// colon: a text ending on an identifier and its colon opens a candidate whose
+// head has not arrived. telegramAuthenticationTokenIDTail is what reads it.
 //
 // What bounds a candidate is a count and not a cursor. The walk back over the
 // identifier reads at most telegramAuthenticationTokenIDMax digits and one byte
@@ -150,34 +169,44 @@ var telegramAuthenticationToken = NewPattern("telegram-authentication-token", fu
 	// end of it, or a candidate the end of it cut short, whichever comes first.
 	retain := telegramAuthenticationTokenIDTail(src)
 
-	// One cursor over the separators, only ever searching the text past its own
-	// last hit, so the whole loop is one pass over the input rather than one per
+	// One cursor over the heads, only ever searching the text past its own last
+	// hit, so the whole loop is one pass over the input rather than one per
 	// candidate.
 	for at := 0; at < len(src); {
-		j := strings.IndexByte(src[at:], telegramAuthenticationTokenSeparator)
+		j := strings.IndexByte(src[at:], telegramAuthenticationTokenBodyHead)
 		if j < 0 {
 			break
 		}
-		sep := at + j
+		head := at + j
 
 		// The next candidate begins one byte past this one, and the search
-		// resumes one byte past the separator to reach it: a candidate opening
-		// inside this one carries its own separator further along again, so it
-		// is found at that separator and not stepped over. builtin_scan.go sets
-		// out why that is the step a scan takes at a candidate.
-		at = sep + 1
+		// resumes one byte past the head to reach it: a candidate opening inside
+		// this one carries its own head further along again, so it is found at
+		// that head and not stepped over. builtin_scan.go sets out why that is
+		// the step a scan takes at a candidate.
+		at = head + 1
 
-		// What a secret opens with is tested before the identifier is walked
-		// back over. Every colon in the text reaches this line, and a log line
-		// writes them in its timestamps, its durations and its ports, where
-		// the byte behind the colon is a digit; one comparison turns each of
-		// those away, against a loop over as many as seventeen bytes for the
-		// walk back. The end of the input is let through rather than tested,
-		// because a secret whose first character has not arrived is one the
-		// walk below has to report as cut.
-		if sep+1 < len(src) && src[sep+1] != telegramAuthenticationTokenBodyHead {
+		// The separator is tested before the identifier is walked back over:
+		// one comparison against a loop over as many as seventeen bytes.
+		//
+		// What the search resumes at when one is turned away is not the next
+		// byte but the byte behind the next separator. A head with no separator
+		// against it says where the next one can stand — the earliest is the
+		// byte behind the first separator at or past it, since every capital in
+		// between carries something else in front of it — and that is what keeps
+		// a run of the secret's alphabet, which spells this character every few
+		// dozen bytes and holds no separator at all, from being read a candidate
+		// at a time. The two searches are still one pass over the input apiece,
+		// since each only ever looks past its own last hit.
+		if head == 0 || src[head-1] != telegramAuthenticationTokenSeparator {
+			j := strings.IndexByte(src[head:], telegramAuthenticationTokenSeparator)
+			if j < 0 {
+				break
+			}
+			at = max(at, head+j+1)
 			continue
 		}
+		sep := head - 1
 
 		start, ok := telegramAuthenticationTokenIDStart(src, sep)
 		if !ok {
@@ -378,11 +407,11 @@ func telegramAuthenticationTokenBodyValue(c byte) int {
 	return -1
 }
 
-// telegramAuthenticationTokenIDTail returns where the piece of an identifier
+// telegramAuthenticationTokenIDTail returns where the piece of an opening
 // standing at the end of src begins, and len(src) where none stands there.
 //
 // It is what prefixTail (builtin_scan.go) is for the scans whose openings are
-// literals: an identifier the end of the input cut in half opens no candidate
+// literals: an opening the end of the input cut in half opens no candidate
 // at all and the scan walks past it having found nothing, so a stream carrying
 // 123456789 in one write and the colon and the secret in the next would release
 // the first with the token behind it redacted nowhere. prefixTail cannot serve here — it
@@ -391,16 +420,25 @@ func telegramAuthenticationTokenBodyValue(c byte) int {
 // what keeps this from becoming a second grammar free to disagree with the
 // first.
 //
+// Two pieces and not one: an input ending on an identifier and its colon is one
+// the search finds no head in, so this is the only place that candidate is read
+// at all. The colon is stepped over and the digits in front of it are the piece,
+// which is the walk either way.
+//
 // What turns an input away before any of that is the byte it closes on. A piece
-// of an identifier closes on a digit, so an input closing on anything else is
-// answered by a single test — which is what keeps this off the cost of a line
-// holding nothing, since every input a Masker is handed pays for it and a line
-// of prose closes on a full stop, a quote or a line break.
+// of an opening closes on a digit or on the colon, so an input closing on
+// anything else is answered by two tests — which is what keeps this off the cost
+// of a line holding nothing, since every input a Masker is handed pays for it
+// and a line of prose closes on a full stop, a quote or a line break.
 func telegramAuthenticationTokenIDTail(src string) int {
-	if len(src) == 0 || !isTelegramAuthenticationTokenDigit(src[len(src)-1]) {
+	end := len(src)
+	if end > 0 && src[end-1] == telegramAuthenticationTokenSeparator {
+		end--
+	}
+	if end == 0 || !isTelegramAuthenticationTokenDigit(src[end-1]) {
 		return len(src)
 	}
-	if start, ok := telegramAuthenticationTokenIDStart(src, len(src)); ok {
+	if start, ok := telegramAuthenticationTokenIDStart(src, end); ok {
 		return start
 	}
 	return len(src)
