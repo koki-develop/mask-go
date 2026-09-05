@@ -318,24 +318,42 @@ func (g *givingUp) check(t testing.TB, src, dropped, fill string, pieces []strin
 		t.Fatalf("check was handed %q, which carries a mark rune of its own; pass generated text through textWithoutMarks first", src)
 	}
 
-	// A Writer and a Reader are two ways to one masking, limit or no limit. The
-	// giving up is written once and both of them reach it, so the two parting
-	// here is a stream that reaches it from one of them and not the other.
+	// A Writer and a Reader are two ways to one masking with no limit in play,
+	// which is what checkStream above holds them to, and under one they are not.
+	// WithMaxRetained says the redaction
+	// covers "everything held at that moment", and the moment is decided by how
+	// much the caller handed over: a Reader takes readSize at a time where a
+	// Writer takes whatever it was written, so the two hold different amounts of
+	// the same text at every point. From that one difference the rest follow —
+	// under a limit the two agree on neither whether they gave up, nor where the
+	// giving up began, nor which pattern was holding when it did, nor how many
+	// redactions it was written across. The third of those is why nothing here
+	// compares the marks the two wrote: a Writer holding one piece and a Reader
+	// holding readSize of it can give up at the same offset with different
+	// patterns still reading, and each attribution is right for the text its own
+	// side could see.
+	//
+	// What they do agree on is that neither releases what Mask redacts, and that
+	// is what is asked of them below. A stream that let go of what it was
+	// holding, or that went back to passing text through once it had given up,
+	// writes out the rest of the very value it gave up on, and no prefix of what
+	// Mask gives holds that. Giving up more readily than the other side costs a
+	// caller redaction it did not need; releasing what the other side held is
+	// the credential.
 	droppedW, droppedR := throughStream(t, g.dropped, pieces, mask.WithMaxRetained(limit))
-	if droppedW != droppedR {
-		t.Errorf("under a limit of %d, writing %q in %d piece(s) gave %q and reading it gave %q",
-			limit, src, len(pieces), droppedW, droppedR)
-		return false
-	}
 	fillW, fillR := throughStream(t, g.fill, pieces, mask.WithMaxRetained(limit))
-	if fillW != fillR {
-		t.Errorf("under a limit of %d, writing %q in %d piece(s) gave %q and reading it gave %q",
-			limit, src, len(pieces), fillW, fillR)
-		return false
-	}
 
-	gaveUp := fillW != fill
-	if gaveUp && len(g.known) > 1 {
+	// Which of them was seen to give up. Only a giving up writes something Mask
+	// does not, so a side that parted from Mask under Fill gave up — and that is
+	// the whole of what this says. A side that agrees with Mask may have given up
+	// too: a stream giving up on the last value of a text redacts what Mask
+	// redacts anyway, and Fill writes a rune for a rune over either. So these
+	// carry a giving up seen rather than a giving up absent, and nothing below
+	// may ask them for the second. What holds of every side, seen or not, is
+	// asked of every side.
+	gaveUpW, gaveUpR := fillW != fill, fillR != fill
+
+	if (gaveUpW || gaveUpR) && len(g.known) > 1 {
 		// WithMaxRetained: "The redaction covers everything held at that
 		// moment and is attributed to the pattern that was holding it, so a
 		// redactor reading Match.Pattern sees which grammar ran long." With a
@@ -343,18 +361,37 @@ func (g *givingUp) check(t testing.TB, src, dropped, fill string, pieces []strin
 		// holder is the only one there is — so this is asked only where more
 		// than one pattern could have been holding.
 		markedW, markedR := throughStream(t, g.marked, pieces, mask.WithMaxRetained(limit))
-		if markedW != markedR {
-			t.Errorf("under a limit of %d, writing %q in %d piece(s) gave %q and reading it gave %q",
-				limit, src, len(pieces), markedW, markedR)
-			return false
-		}
 		m, err := parseMarked(markedW)
 		if err != nil {
 			t.Fatalf("under a limit of %d, writing %q gave %q, which is not marked text: %v", limit, src, markedW, err)
 		}
-		if len(m.names) == 0 {
-			t.Errorf("under a limit of %d, writing %q parted from Mask but the marking redactor made no mark at all", limit, src)
-		} else if last := m.names[len(m.names)-1]; !g.known[last] {
+		r, err := parseMarked(markedR)
+		if err != nil {
+			t.Fatalf("under a limit of %d, reading %q gave %q, which is not marked text: %v", limit, src, markedR, err)
+		}
+		// Whichever of them was seen to give up attributed it to a pattern it
+		// was given. Each is asked of its own marks rather than of the other's,
+		// for the reason the premise above gives: the two need not have been
+		// holding for the same pattern, so what is asked is that each
+		// attributed its own giving up to something it was handed. A side not
+		// seen to give up is passed over, since its last mark is a match like
+		// any other and says nothing about a giving up.
+		for _, side := range []struct {
+			how    string
+			gaveUp bool
+			m      marked
+		}{{"writing", gaveUpW, m}, {"reading", gaveUpR, r}} {
+			if !side.gaveUp {
+				continue
+			}
+			if len(side.m.names) == 0 {
+				t.Errorf("under a limit of %d, %s %q parted from Mask but the marking redactor made no mark at all", limit, side.how, src)
+				continue
+			}
+			last := side.m.names[len(side.m.names)-1]
+			if g.known[last] {
+				continue
+			}
 			// Nothing reaches this while two things hold, and a test holds
 			// each. The text carries no mark rune, which the precondition
 			// above refuses rather than assumes, so every mark parsed here was
@@ -369,37 +406,44 @@ func (g *givingUp) check(t testing.TB, src, dropped, fill string, pieces []strin
 			// attribution rather than of the notation: a give-up went to a
 			// pattern the stream was given. The two tests above are what make
 			// it quiet, and neither is what it is about.
-			t.Errorf("under a limit of %d, writing %q attributed the give-up to %q, which is not one of the patterns given", limit, src, last)
+			t.Errorf("under a limit of %d, %s %q attributed the give-up to %q, which is not one of the patterns given", limit, side.how, src, last)
 		}
 	}
 
-	// Whatever the stream released it released masked as Mask masks it, and
-	// from the giving up onwards it released nothing at all. Under Fixed("")
-	// the redactions are gone from both sides, so what a stream that gave up
-	// wrote is what Mask wrote as far as the stream got and stops there. A
-	// stream that let go of what it was holding, or that went back to passing
-	// text through once it had given up, writes the rest of the very value it
-	// gave up on — and no prefix of what Mask gives holds that.
-	if !strings.HasPrefix(dropped, droppedW) {
-		t.Errorf("under a limit of %d, writing %q in %d piece(s) released %q, which Mask's %q does not open with",
-			limit, src, len(pieces), droppedW, dropped)
+	// Whatever a stream released it released masked as Mask masks it, and from
+	// the giving up onwards it released nothing at all. Under Fixed("") the
+	// redactions are gone from both sides, so what a stream that gave up wrote
+	// is what Mask wrote as far as the stream got and stops there. This is what
+	// the premise above leaves the two agreeing on, so it is asked of each of
+	// them rather than of the one: they reach the limit at different points, and
+	// a side released without being asked is a side whose giving up is stated
+	// nowhere.
+	for _, side := range []struct{ how, out string }{{"writing", droppedW}, {"reading", droppedR}} {
+		if !strings.HasPrefix(dropped, side.out) {
+			t.Errorf("under a limit of %d, %s %q in %d piece(s) released %q, which Mask's %q does not open with",
+				limit, side.how, src, len(pieces), side.out, dropped)
+		}
 	}
 
 	// A rune out for every rune in. Giving up redacts what is held rather than
 	// dropping it, so nothing goes missing, and the rune a cut falls inside is
 	// held back until the rest of it arrives rather than redacted a piece at a
 	// time — a redactor is handed the text it replaces, and Fill counts the
-	// runes of it.
-	if got, want := utf8.RuneCountInString(fillW), utf8.RuneCountInString(src); got != want {
-		t.Errorf("under a limit of %d, writing %q in %d piece(s) gave %d rune(s), the text has %d",
-			limit, src, len(pieces), got, want)
+	// runes of it. Asked of each of them for the reason the release above is:
+	// the two give up at different points, and a count taken from one says
+	// nothing about the other.
+	for _, side := range []struct{ how, out string }{{"writing", fillW}, {"reading", fillR}} {
+		if got, want := utf8.RuneCountInString(side.out), utf8.RuneCountInString(src); got != want {
+			t.Errorf("under a limit of %d, %s %q in %d piece(s) gave %d rune(s), the text has %d",
+				limit, side.how, src, len(pieces), got, want)
+		}
 	}
 
-	// Whether it gave up at all. Only the giving up parts a stream from Mask,
-	// so a stream that wrote something else wrote it from there; the converse
-	// is not claimed, since a stream giving up on the last value of a text
-	// redacts what Mask redacts anyway.
-	return fillW != fill
+	// Whether either of them gave up at all. Only the giving up parts a stream
+	// from Mask, so a stream that wrote something else wrote it from there; the
+	// converse is not claimed, since a stream giving up on the last value of a
+	// text redacts what Mask redacts anyway.
+	return gaveUpW || gaveUpR
 }
 
 // heldByWriter returns the most a Writer under limit was left holding after a
