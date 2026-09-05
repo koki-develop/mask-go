@@ -121,7 +121,19 @@ func HCPTerraformAPIToken() Pattern { return hcpTerraformAPIToken }
 // alphabet its own portions are written in: an expression has no literal to
 // search the text for there, and the one measured beside the reference collapsed
 // on the inputs the mutator reaches.
-var hcpTerraformAPIToken = NewPattern("hcp-terraform-api-token", func(src string) ([]Span, int) {
+//
+// The scan declares the separator to a Masker as a literal and no tail, which
+// grams (builtin_scan.go) says is the pattern that may be passed over but never
+// answered for. Every token carries the separator — the scan asks for it before
+// it reports anything — so a text carrying it nowhere carries no token.
+//
+// A tail it cannot declare, for the reason hcpTerraformAPITokenTailStart is
+// written at all: what a candidate opens with is fourteen letters and digits and
+// the separator behind them, which is no literal, so what the input settles is a
+// walk rather than a table and it settles further back than the separator alone
+// would. A stream runs this scan rather than answering for it, and Mask, which
+// settles nothing, passes it over.
+var hcpTerraformAPIToken = newBuiltinFilteredOn("hcp-terraform-api-token", []string{hcpTerraformAPITokenSeparator}, func(src string) ([]Span, int) {
 	var spans []Span
 
 	// Where the input stops being settled: a piece of what a candidate opens

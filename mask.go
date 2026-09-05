@@ -31,29 +31,36 @@ type Masker struct {
 	patterns []Pattern
 	redactor Redactor
 
-	// tails are the openings of the patterns above, one entry apiece and nil
-	// where a pattern states none or states none this can read. What locate
-	// asks them is where a pattern it has already passed over leaves the text
-	// settled; which patterns those are is opens below, and grams
-	// (builtin_scan.go) says why that is most of them on most text.
+	// tails are what a pattern's openings settle, one entry apiece and nil
+	// where a pattern declares none this may answer with — a pattern with no
+	// literals at all, and a pattern whose scan settles further back than its
+	// literals do. What locate asks them is where a pattern it has already
+	// passed over leaves the text settled.
+	//
+	// This is a shorter list than opens below, and the difference is the whole
+	// of what the two fields are for. A pattern with literals and no tail is
+	// passed over where nothing has to be settled and run where something
+	// does, so locate reads opens to decide whether it may skip the scan and
+	// tails to decide whether it may answer for it.
 	//
 	// They are gathered here rather than asked of each pattern in the loop
 	// because asking is a type assertion, and a Masker holding the whole
 	// registry would pay one per pattern per call to answer a question that
 	// was settled when it was made.
 	//
-	// It is empty where the Masker holds too few patterns stating openings for
-	// a filter to be worth building, and that emptiness is what locate reads to
-	// build none: a tail must never be read without the filter that answers it,
-	// since an empty filter turns every opening away and would have the pattern
-	// passed over on text it locates values in.
+	// It is empty where the Masker holds too few patterns declaring literals
+	// for a filter to be worth building for either side of the walk, and that
+	// emptiness is one of the two things gather reads to build none —
+	// settlingWorthIt below is the other. A tail must never be read without the
+	// filter that answers it, since an empty filter turns every literal away
+	// and would have the pattern passed over on text it locates values in.
 	tails []*prefixTail
 
-	// opens are where those openings stand in a filter, one entry apiece and
-	// empty where a pattern has no tail this can read. It is the same question
-	// tails answers and is asked far more often — once a pattern a call, where
-	// the tail behind it is walked only for the ones turned away — so it is
-	// gathered out of the tails rather than reached through them.
+	// opens are where a pattern's literals stand in a filter, one entry apiece
+	// and empty where a pattern declares none this can read. It is asked far
+	// more often than tails — once a pattern a call, where a tail is walked
+	// only for the ones turned away — so it is gathered here rather than
+	// reached through the patterns.
 	//
 	// Every entry points into one array, so the walk over the registry reads
 	// the openings of the patterns in the order it asks about them. Reached
@@ -65,10 +72,23 @@ type Masker struct {
 	// this at the index of the pattern it is asking about without a bound of
 	// its own.
 	opens [][]gramPair
+
+	// settlingWorthIt is whether the filter earns itself back when settling as
+	// well as when masking, which is not the same question asked twice. Mask
+	// may pass over every pattern declaring literals; a stream may pass over
+	// only those with a tail to answer for them, and that is the shorter list.
+	// A Masker whose count reaches gramsWorthIt on the first and not on the
+	// second is one the filter pays for as a Masker and not as a stream, so it
+	// builds the tables, reads them for Mask, and hands every pattern the text
+	// when a stream asks.
+	//
+	// It is settled here rather than counted in gather because the counting is
+	// a walk of the registry and the question is asked once a call.
+	settlingWorthIt bool
 }
 
-// gramsWorthIt is the least number of patterns stating openings a Masker must
-// hold for it to build a grams filter at all.
+// gramsWorthIt is the least number of patterns a Masker must be able to turn
+// away for it to build a grams filter at all.
 //
 // The filter is one walk of the input, and what it saves is the walks of the
 // patterns it turns away. Those are not the same walk: a scan looks for one
@@ -82,23 +102,38 @@ type Masker struct {
 // the text, so the crossing climbs as the text shrinks:
 // BenchmarkPrefilter_Patterns (benchmark_test.go) reads it off at several
 // lengths, and it stands at eight over a record of eighty-seven bytes and over
-// logs of several records, near twelve over a fragment of a couple of dozen
-// bytes, and past sixteen over one of eight.
+// logs of several records, at twelve over a fragment of fifty, at sixteen over
+// one of a couple of dozen, and at twenty-four over one of a few bytes.
 //
-// This is the first of those, and it is the one to take because it is where the
-// difference is worth anything. A Masker of eight to sixteen patterns handed a
-// fragment pays the emptying of a filter that did not earn itself back, which
-// is a few tens of nanoseconds and no more; the same Masker handed a log of
-// seven hundred bytes is more than twice as fast for having built one. A caller
-// reaching for one vendor's accessor is on the near side of the number and pays
-// nothing either way.
+// The first is the one to take, because it is where the difference is worth
+// anything. A Masker of eight to sixteen patterns handed a fragment pays the
+// emptying of a filter that did not earn itself back, which is a few tens of
+// nanoseconds and no more; the same Masker handed a log of seven hundred bytes
+// is faster for having built one, by an eighth of the work at the bottom of
+// that range and by two thirds of it at the top. A caller reaching for one
+// vendor's accessor is on the near side of the number and pays nothing either
+// way.
 //
-// What that benchmark times is a Masker settling its input, which is what a
-// stream asks and not what Mask does: a pattern the filter turns away still owes
-// a stream where its openings leave the text settled, and that walk is the
-// filter's to pay. Timed on Mask the filter looks worth building several
-// patterns sooner than it is. The number governs both, so it is read off the one
-// the filter is worth least in.
+// The number is asked of each side of the walk separately, because the two do
+// not turn away the same patterns: a pattern with literals and no tail is one
+// Mask passes over and a stream runs, so it pays for the filter when masking
+// and not when settling. New counts both and gather reads the count of the side
+// asking.
+//
+// One number serves both because settling is the side the filter is worth least
+// in: its crossing stands at or above the masking side's at every length
+// measured. That is so twice over: a pattern the filter turns away still owes a
+// stream where its openings leave the text settled, and that walk is the
+// filter's to pay, while a pattern declaring literals and no tail is not turned
+// away when settling at all. So a number read off settling is one the masking
+// side has already earned, and all a Masker gives up for holding one number
+// rather than two is a seventh pattern over a record of eighty-seven bytes,
+// which is the only reading either side puts below this number.
+//
+// Which side is the lesser is measured rather than assumed, and the benchmark
+// times both for that reason: the two turn away different patterns, so the gap
+// between them moves whenever a pattern declaring literals and no tail is
+// added.
 //
 // It moves whenever the walk that fills the filter does, which is what the
 // benchmark is for: a filter made cheaper and a number left where it was is a
@@ -119,18 +154,27 @@ func New(opts ...Option) *Masker {
 		o.redactor = Fill('*')
 	}
 	m := &Masker{patterns: o.patterns, redactor: o.redactor}
-	// filterableTail (builtin_scan.go) is what leaves a pattern out of both the
-	// count and the table: openings a filter cannot read are openings it says
+	// filterOpens (builtin_scan.go) is what leaves a pattern out of both the
+	// count and the table: literals a filter cannot read are literals it says
 	// yes to whatever the text is, and asking about those is a lookup at every
 	// call for an answer settled here.
-	filterable := 0
+	//
+	// Counted twice, because the two sides of the walk do not turn away the
+	// same patterns and gramsWorthIt is the number each has to reach on its
+	// own. Counted once, a Masker of patterns Mask alone can pass over would
+	// build a filter a stream pays for and saves nothing by.
+	masking, settling := 0, 0
 	for _, p := range o.patterns {
-		if filterableTail(p) != nil {
-			filterable++
+		if len(filterOpens(p)) > 0 {
+			masking++
+			if settlingTail(p) != nil {
+				settling++
+			}
 		}
 	}
-	if filterable >= gramsWorthIt {
+	if masking >= gramsWorthIt {
 		m.filterOn(o.patterns)
+		m.settlingWorthIt = settling >= gramsWorthIt
 	}
 	return m
 }
@@ -144,9 +188,9 @@ func New(opts ...Option) *Masker {
 func (m *Masker) filterOn(patterns []Pattern) {
 	m.tails = make([]*prefixTail, len(patterns))
 	for i, p := range patterns {
-		m.tails[i] = filterableTail(p)
+		m.tails[i] = settlingTail(p)
 	}
-	m.opens = gatherOpens(m.tails)
+	m.opens = gatherOpens(patterns)
 }
 
 // Mask returns src with every located value redacted.
@@ -262,33 +306,42 @@ func (m *Masker) gather(src string, from int, settle bool) locations {
 	var all []located
 	found := locations{retain: len(src)}
 
-	// What the patterns share about src, worked out once. A pattern whose
-	// openings this turns away locates nothing in src, so what is left to ask
-	// of it is where its openings leave the tail settled, which is what its
-	// scan would have answered having found nothing.
+	// What the patterns share about src, worked out once: a pattern whose
+	// literals this turns away locates nothing in src and need not be run.
+	//
+	// It is built for the side asking, and only where that side has patterns
+	// enough to pay for it — settlingWorthIt is where that stands.
 	//
 	// The filter stands here rather than in the Masker because a Masker is
 	// shared between goroutines and a filter is one text's. It is nil where
-	// none was built, which is what the walk below reads to hand every pattern
-	// the text: a Masker building none holds no openings either, and an empty
-	// filter would turn every opening away.
+	// none is to be built, which is what the walk below reads to hand every
+	// pattern the text: an empty filter would turn every opening away.
 	var g *grams
-	if len(m.tails) > 0 {
+	if len(m.tails) > 0 && (!settle || m.settlingWorthIt) {
 		var f grams
 		f.fill(src)
 		g = &f
 	}
 
 	for i, p := range m.patterns {
-		if g != nil {
-			if gramsTurnAway(g, m.opens[i]) {
-				if settle {
-					if r := m.tails[i].start(src); r < found.retain {
-						found.retain, found.holder = r, p
-					}
+		// Two questions, and the second is asked only where the first says
+		// yes. Do this pattern's literals stand in the text — which is the
+		// whole of it where nothing has to be settled? And where something
+		// does, is there a tail that settles no further than the scan would
+		// have? builtin (builtin_scan.go) is what keeps the two apart.
+		//
+		// Asked in that order, and measured rather than reasoned about: the
+		// tail is a nil test where the literals are a lookup, but asking the
+		// cheaper one first costs Mask something over a twentieth of a short
+		// text and saves a stream nothing, since the lookup it skips is one of
+		// the few patterns declaring literals and no tail.
+		if g != nil && gramsTurnAway(g, m.opens[i]) && (!settle || m.tails[i] != nil) {
+			if settle {
+				if r := m.tails[i].start(src); r < found.retain {
+					found.retain, found.holder = r, p
 				}
-				continue
 			}
+			continue
 		}
 		spans, r := p.Find(src)
 		if r = min(max(r, 0), len(src)); r < found.retain {

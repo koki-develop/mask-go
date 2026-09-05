@@ -220,9 +220,9 @@ type prefixTail struct {
 	// the prefix has to carry both.
 	//
 	// It is empty where a prefix shorter than three bytes is among them, and
-	// possible then says yes to everything: two bytes of an opening are a pair
-	// of letters, which an ordinary line is full of, and a filter that turns
-	// nothing away is worse than none at all.
+	// gramsTurnAway then turns the pattern away nowhere: two bytes of an
+	// opening are a pair of letters, which an ordinary line is full of, and a
+	// filter that turns nothing away is worse than none at all.
 	opens []gramPair
 }
 
@@ -242,29 +242,35 @@ func newPrefixTail(prefixes ...string) prefixTail {
 			t.bytes[p[i]>>6] |= 1 << (p[i] & 63)
 		}
 	}
-	t.opens = make([]gramPair, 0, len(prefixes))
-	for _, p := range prefixes {
+	t.opens = gramPairs(prefixes)
+	return t
+}
+
+// gramPairs returns where the first and the last three bytes of each of
+// literals stand in a filter, one entry apiece and nil where any of them is
+// shorter than three bytes.
+//
+// Nil rather than a shorter table, for the reason the opens field gives above.
+// A caller reads the emptiness as "this pattern cannot be turned away".
+//
+// It is one function rather than written where each caller needs it, because
+// two ways of hashing the same literal is two answers a filter could be built
+// from and only one the walk over the text asks.
+func gramPairs(literals []string) []gramPair {
+	pairs := make([]gramPair, 0, len(literals))
+	for _, p := range literals {
 		if len(p) < 3 {
-			t.opens = nil
-			break
+			return nil
 		}
 		o := gramPair{
 			last:  gramHash(p[len(p)-3], p[len(p)-2], p[len(p)-1]),
 			first: gramHash(p[0], p[1], p[2]),
 		}
-		if !slices.Contains(t.opens, o) {
-			t.opens = append(t.opens, o)
+		if !slices.Contains(pairs, o) {
+			pairs = append(pairs, o)
 		}
 	}
-	return t
-}
-
-// possible reports whether a text whose three-byte pieces are g may hold any of
-// the prefixes, which is what decides whether the scan reading them is run over
-// that text at all. It says yes where it cannot tell, for the reason grams
-// gives: a pattern passed over is a value left in the output.
-func (t *prefixTail) possible(g *grams) bool {
-	return !gramsTurnAway(g, t.opens)
+	return pairs
 }
 
 // gramsTurnAway reports whether a text whose three-byte pieces are g holds none
@@ -274,16 +280,18 @@ func (t *prefixTail) possible(g *grams) bool {
 // An empty table is a pattern this cannot tell anything about, and it is turned
 // away nowhere: a filter that says no to a pattern it knows nothing about is a
 // value left in the output. That guard stands here rather than beside the walk
-// over the registry so that a Masker skipping a pattern and possible above are
-// the one decision, which is the one the tests are written against.
+// over the registry so that every reader of a filter asks it the one way, which
+// is the way the tests are written against — Masker.gather deciding whether to
+// skip a scan, and checkPrefilter (builtins_test.go) deciding what to hold the
+// scan to.
 func gramsTurnAway(g *grams, opens []gramPair) bool {
 	return len(opens) > 0 && !gramsHold(g, opens)
 }
 
 // gramsHold reports whether a text whose three-byte pieces are g may hold a
-// prefix any of opens was built from. It is what a Masker asks of the openings
-// it gathered and what possible asks of the ones a tail keeps, so that the two
-// cannot come to read a filter differently.
+// literal any of opens was built from. It is what gramsTurnAway asks of the
+// literals a Masker gathered and what checkPrefilter (builtins_test.go) asks of
+// a pattern's own, so that the two cannot come to read a filter differently.
 func gramsHold(g *grams, opens []gramPair) bool {
 	for _, o := range opens {
 		// The closing piece is asked about first: it is the one carrying the
@@ -296,24 +304,23 @@ func gramsHold(g *grams, opens []gramPair) bool {
 	return false
 }
 
-// gatherOpens returns the openings of tails, one entry per tail and empty where
-// a tail is nil, with every entry pointing into one array. What that is for is
-// said in the field of Masker it fills.
-func gatherOpens(tails []*prefixTail) [][]gramPair {
+// gatherOpens returns the literals of patterns, one entry apiece and empty
+// where a pattern declares none a filter can read, with every entry pointing
+// into one array. What that is for is said in the field of Masker it fills.
+func gatherOpens(patterns []Pattern) [][]gramPair {
 	n := 0
-	for _, t := range tails {
-		if t != nil {
-			n += len(t.opens)
-		}
+	for _, p := range patterns {
+		n += len(filterOpens(p))
 	}
 	flat := make([]gramPair, 0, n)
-	opens := make([][]gramPair, len(tails))
-	for i, t := range tails {
-		if t == nil {
+	opens := make([][]gramPair, len(patterns))
+	for i, p := range patterns {
+		o := filterOpens(p)
+		if len(o) == 0 {
 			continue
 		}
 		at := len(flat)
-		flat = append(flat, t.opens...)
+		flat = append(flat, o...)
 		opens[i] = flat[at:len(flat):len(flat)]
 	}
 	return opens
@@ -354,29 +361,54 @@ func (t *prefixTail) walk(src string, last byte) int {
 	return start
 }
 
-// builtin is a built-in pattern: the scan, the name it reports and the openings
-// it reads its candidates back from.
+// builtin is a built-in pattern: the scan, the name it reports, the literals a
+// Masker may pass it over on, and the tail a Masker may answer for it with.
 //
-// The openings are here rather than kept to the scan because they are what a
-// Masker needs before it runs the scan: it holds the whole registry, hands
-// every one of them the same text, and grams says how the openings let it hand
-// that text to almost none of them. A pattern says which openings are its own
-// where it is declared, in the prefixTail it already settles the tail of its
-// input by, so the two cannot come apart.
+// Those last two are one thing for most built-ins and two things in general,
+// and keeping them apart is what lets a scan be filtered without being answered
+// for. Both are here rather than kept to the scan because a Masker needs them
+// before it runs the scan: it holds the whole registry, hands every one of them
+// the same text, and grams says how the literals let it hand that text to
+// almost none of them.
 //
-// A scan whose openings are no literal, or whose tail is settled by a walk
-// rather than by that table, declares itself with NewPattern instead and is run
-// over every text. Test_builtins_prefilterAgreesWithFind (builtins_test.go)
-// holds the ones declared here to what being passed over claims about them.
+//   - opens is where the literals stand in a filter. What it claims is that
+//     every value the scan locates carries one of them, so a text carrying
+//     none is a text the scan finds nothing in and need not be run over.
+//   - tail is what a Masker reports as settled for a scan it passed over. What
+//     it claims is stronger: that the tail settles no further than the scan
+//     would have. A scan pinned by candidates its literals know nothing about
+//     cannot make that claim, and leaves this nil.
+//
+// A scan with no tail is still passed over where nothing has to be settled,
+// which is every call Mask makes. A stream settles, so it runs such a scan
+// rather than answering for it. Test_builtins_prefilterAgreesWithFind
+// (builtins_test.go) holds each half to what it claims.
+//
+// Rearrange these fields by measuring rather than by reasoning. Two changes to
+// them have moved a benchmark by between a twentieth and a fifth with nothing
+// on the hot path to account for it — a text is walked reading find and nothing
+// else here — and no reading of either was found. One of the two is held below;
+// the other passed every test in this package. BenchmarkMasker_Mask and
+// BenchmarkBuiltins either side is what there is.
 type builtin struct {
+	// find stands first because Pattern.Find is reached as a method value,
+	// which loads it at every call, and a scan driven alone is that load and
+	// then the scan. Test_builtin_findStandsFirst (builtins_test.go) keeps it
+	// there and says what moving it cost.
+	find func(src string) (spans []Span, retain int)
 	name string
 	tail *prefixTail
-	find func(src string) (spans []Span, retain int)
+	// literals are what opens was built from, kept as written so that a test
+	// can drive the pieces of each of them. Nothing at run time reads these:
+	// what a Masker asks is opens, which is these hashed.
+	literals []string
+	opens    []gramPair
 }
 
-// filterableTail returns the openings a Masker may pass p over on, and nil
-// where there are none it can read: a pattern that is no built-in, or one whose
-// openings are too short for a filter to tell anything about.
+// filterOpens returns where the literals a Masker may pass p over on stand in a
+// filter, and nothing where there are none it can read: a pattern that is no
+// built-in, or one whose literals are too short for a filter to tell anything
+// about.
 //
 // It is one function rather than the test written out at each of the places
 // that asks it — a Masker settling whether to build a filter at all, a Masker
@@ -384,9 +416,23 @@ type builtin struct {
 // benchmark is the one that makes it matter: it is what gramsWorthIt is set
 // from, so a condition added here and not there would tune the constant against
 // a Masker New never builds.
-func filterableTail(p Pattern) *prefixTail {
+func filterOpens(p Pattern) []gramPair {
 	b, ok := p.(*builtin)
-	if !ok || len(b.tail.opens) == 0 {
+	if !ok {
+		return nil
+	}
+	return b.opens
+}
+
+// settlingTail returns the tail a Masker may report as settled for p having
+// passed it over, and nil where there is none it may answer with: a pattern
+// that is no built-in, or one whose scan settles further than its literals do.
+//
+// It is asked beside filterOpens rather than read off it, because the two are
+// different claims and a pattern may make the first without the second.
+func settlingTail(p Pattern) *prefixTail {
+	b, ok := p.(*builtin)
+	if !ok || b.tail == nil || len(b.tail.opens) == 0 {
 		return nil
 	}
 	return b.tail
@@ -394,8 +440,30 @@ func filterableTail(p Pattern) *prefixTail {
 
 // newBuiltin returns a built-in pattern reporting name, scanning with find and
 // reading its candidates back from the openings of tail.
+//
+// The openings serve both of the roles builtin names: a Masker passes the
+// pattern over on them, and answers for what it settles with them. A scan that
+// cannot support the second is declared with newBuiltinFilteredOn instead.
 func newBuiltin(name string, tail *prefixTail, find func(src string) (spans []Span, retain int)) Pattern {
-	return &builtin{name: name, tail: tail, find: find}
+	return &builtin{name: name, tail: tail, literals: tail.prefixes, opens: tail.opens, find: find}
+}
+
+// newBuiltinFilteredOn returns a built-in pattern reporting name and scanning
+// with find, which a Masker may pass over on a text carrying none of literals
+// but may never answer for.
+//
+// literals are what every value the scan locates carries, which is the first of
+// the two claims builtin makes and the whole of what this constructor states. A
+// scan declared here opens its candidates on something the literals do not
+// spell, so it stands pinned where they stand nowhere at all and cannot make
+// the second. What that something is belongs beside the declaration in the
+// pattern's own file, which is the only place it can be read against the scan
+// it describes.
+//
+// The first claim survives that untouched: a text carrying none of the literals
+// carries no value, whatever the scan would have settled had it run.
+func newBuiltinFilteredOn(name string, literals []string, find func(src string) (spans []Span, retain int)) Pattern {
+	return &builtin{name: name, literals: literals, opens: gramPairs(literals), find: find}
 }
 
 // Name reports the name the pattern was declared with.

@@ -99,11 +99,13 @@ func TelegramAuthenticationToken() Pattern { return telegramAuthenticationToken 
 // floor above one digit is taken: Telegram undertakes no minimum, and the body
 // behind the colon is what carries the pattern in any case.
 //
-// The pattern is declared with NewPattern rather than newBuiltin because its
-// openings are no literals: a candidate opens on a run of digits, which is not
-// a set of strings a grams filter can be built from. It is therefore run over
-// every text a Masker is handed, where a pattern the filter can read is turned
-// away on a line holding nothing before its scan is entered at all.
+// The pattern is declared with NewPattern rather than newBuiltin or
+// newBuiltinFilteredOn because it has no literal either could be built from: a
+// candidate opens on a run of digits, and the one literal a token carries is
+// the colon, which is a single byte where a grams filter reads three. It is
+// therefore run over every text a Masker is handed, where a pattern the filter
+// can read is turned away on a line holding nothing before its scan is entered
+// at all.
 //
 // The scan being cheap does not make that free. On its own it is in line with
 // the others, but the others are mostly not run, so what this one adds lands on

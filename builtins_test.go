@@ -1,6 +1,7 @@
 package mask
 
 import (
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -1588,18 +1589,33 @@ func Test_builtins_retainSettles(t *testing.T) {
 // checkRetain is shared between a test and a target.
 func checkPrefilter(t *testing.T, p Pattern, src string, g *grams) bool {
 	b, ok := p.(*builtin)
-	if !ok {
+	if !ok || len(b.opens) == 0 {
 		return false
 	}
-	if b.tail.possible(g) {
+	if gramsHold(g, b.opens) {
 		return false
 	}
 	spans, retain := b.Find(src)
+
+	// The claim every pattern declaring literals makes, and the whole of what
+	// makes passing one over safe: a text carrying none of them carries no
+	// value of this scan's. It is weaker than the one below — it asks only that
+	// a value carry a literal, not that the literals be what a candidate is
+	// read back from — and weaker is why a scan can make it without being able
+	// to make the other.
 	if len(spans) != 0 {
-		t.Errorf("%s: Find(%q) located %v, where its openings are turned away", b.Name(), src, spans)
+		t.Errorf("%s: Find(%q) located %v, where its literals are turned away", b.Name(), src, spans)
 	}
-	if want := b.tail.start(src); retain != want {
-		t.Errorf("%s: Find(%q) settled %d, where its openings alone settle %d", b.Name(), src, retain, want)
+
+	// And the claim only a pattern declaring a tail makes: what the tail
+	// settles is what the scan settles, so a Masker may report the one for the
+	// other. A scan pinned by candidates its literals know nothing about
+	// settles further back than this and declares no tail, and there is nothing
+	// here to hold it to — a Masker never answers for such a scan.
+	if b.tail != nil {
+		if want := b.tail.start(src); retain != want {
+			t.Errorf("%s: Find(%q) settled %d, where its openings alone settle %d", b.Name(), src, retain, want)
+		}
 	}
 	return true
 }
@@ -1626,28 +1642,30 @@ func Test_builtins_prefilterAgreesWithFind(t *testing.T) {
 	}
 
 	// The other half of the corpus, and the half a sample cannot be: a piece of
-	// an opening standing at the end of the input with a character behind it
-	// that no prefix of that pattern carries there. It is the one input that
-	// separates what the openings settle from what the scan settles — a scan
+	// a literal standing at the end of the input with a character behind it
+	// that no literal of that pattern carries there. It is the one input that
+	// separates what the literals settle from what the scan settles — a scan
 	// reading its opening forward opens a candidate on the piece and is pinned
-	// at it, while the whole prefixes stand nowhere in the text and settle it
+	// at it, while the whole literals stand nowhere in the text and settle it
 	// further along. Every sample and every anchor is text something was meant
 	// to be located in, so none of them is written that way.
 	//
-	// The pieces are read out of the tails rather than written out here, so
-	// that a prefix added anywhere in the registry is a prefix this asks about.
-	// The characters behind them are a handful that no vendor writes a kind or
-	// a body with, and one of them, the space, closes a word.
+	// The pieces are read out of the declarations rather than written out here,
+	// so that a literal added anywhere in the registry is one this asks about —
+	// a prefix a candidate is read back from, and equally a separator or an
+	// opening a pattern declares only to be passed over on. The characters
+	// behind them are a handful that no vendor writes a kind or a body with,
+	// and one of them, the space, closes a word.
 	const lead = "a line of prose, and nothing else at all: "
 	for _, b := range builtinPatterns {
 		s, ok := b.pattern().(*builtin)
 		if !ok {
 			continue
 		}
-		for _, prefix := range s.tail.prefixes {
-			for k := 1; k <= len(prefix); k++ {
+		for _, literal := range s.literals {
+			for k := 1; k <= len(literal); k++ {
 				for _, c := range []string{"0", "z", "Z", "_", "-", ".", " "} {
-					corpus = append(corpus, prefix[:k]+c, lead+prefix[:k]+c)
+					corpus = append(corpus, literal[:k]+c, lead+literal[:k]+c)
 				}
 			}
 		}
@@ -1680,11 +1698,10 @@ func Test_builtins_prefilterAgreesWithFind(t *testing.T) {
 	}
 
 	for i, p := range patterns {
-		// A pattern whose openings are no literal declares none, and one whose
-		// openings are too short to be read declares openings a filter cannot
-		// tell anything about. Neither is ever passed over, so there is
-		// nothing here to hold either to.
-		if filterableTail(p) == nil {
+		// A pattern whose literals are none, or are too short for a filter to
+		// tell anything about, is never passed over, so there is nothing here
+		// to hold it to.
+		if len(filterOpens(p)) == 0 {
 			continue
 		}
 		if turnedAway[i] == 0 {
@@ -1794,5 +1811,30 @@ func Test_builtins_holdNoFurtherBackThanTheCutCandidate(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Test_builtin_findStandsFirst holds the scan to the front of the struct it is
+// declared in.
+//
+// A built-in is reached through a method value — BenchmarkBuiltins takes
+// p.pattern().Find and calls that — so this field is loaded once a call, in
+// front of the scan itself. Moved off the front by two fields declared ahead of
+// it, one scan came in a fifth slower over four of its cases and did so on a run
+// of its own, where the same file grown by the same amount of code computing
+// nothing moved it under a hundredth.
+//
+// What that establishes is the rule and not a reading of it: the offset is what
+// was changed and what changed back, and why a load further into the struct
+// costs what it does has not been measured. The rule is free to keep either
+// way, and nothing else keeps it — a field declared ahead of this one builds,
+// lints, and passes every other test here, and shows up only as time.
+func Test_builtin_findStandsFirst(t *testing.T) {
+	f, ok := reflect.TypeFor[builtin]().FieldByName("find")
+	if !ok {
+		t.Fatal("builtin declares no find field for a Masker to reach a scan through")
+	}
+	if f.Offset != 0 {
+		t.Errorf("builtin.find stands at offset %d, want 0: a field declared ahead of the scan is one every call loads past", f.Offset)
 	}
 }

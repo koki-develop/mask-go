@@ -329,9 +329,14 @@ func timeMask(b *testing.B, m *Masker, bm benchmarkCase) {
 // what it should be settles nothing by asking New.
 func maskerPrefiltered(m *Masker, on bool) *Masker {
 	c := *m
-	c.tails, c.opens = nil, nil
+	c.tails, c.opens, c.settlingWorthIt = nil, nil, false
 	if on {
 		c.filterOn(m.patterns)
+		// On for both sides of the walk, which is not what New would settle
+		// for every Masker here: the arms are what a filter costs and saves,
+		// and gramsWorthIt is read off them, so a Masker New would build none
+		// for is exactly the one that has to be timed with one.
+		c.settlingWorthIt = true
 	}
 	return &c
 }
@@ -363,22 +368,46 @@ func BenchmarkPrefilter_Writer(b *testing.B) {
 }
 
 // BenchmarkPrefilter_Patterns times a Masker of each size over a line holding
-// no value, with the openings read and with them held back. It is what
+// no value, with the literals read and with them held back. It is what
 // gramsWorthIt (mask.go) is set from: the filter is one walk of the input
 // whatever the Masker holds, so the size at which the arms cross is the size
 // below which New must not build one.
 //
-// The size counted is the number of patterns stating openings, which is what
-// New counts and what the filter is paid for by. Counting the registry instead
-// would put the crossover at whatever proportion of it happens to state
-// openings, and would move under the constant every time a pattern was added
-// that states none.
+// The size counted is the number of patterns the filter turns away, which is
+// what New counts and what the filter is paid for by. Counting the registry
+// instead would put the crossover at whatever proportion of it happens to
+// declare literals, and would move under the constant every time a pattern was
+// added that declares none.
+//
+// Both sides of the walk are timed, settling and masking, because gramsWorthIt
+// governs both and is read off whichever the filter is worth least in. Which
+// one that is has to be measured rather than assumed: a pattern declaring
+// literals and no tail is turned away when masking and never when settling, so
+// the two sides do not turn away the same patterns and the gap between them
+// moves whenever such a pattern is added. Timed on one side alone, the reason
+// the constant is read off the other could not be checked at all.
 func BenchmarkPrefilter_Patterns(b *testing.B) {
+	// Patterns the filter turns away on both sides, so that the count means
+	// the same thing in each. One with literals and no tail is turned away
+	// when masking and never when settling, so under the settling arm it would
+	// stand in the count without standing in anything the arm saves — and the
+	// crossing read off that arm would be the crossing for however many of
+	// them the registry order happened to put under n. They are what New
+	// counts for masking, and BenchmarkPrefilter_Mask times them there.
 	var filterable []Pattern
 	for _, p := range AllBuiltinPatterns() {
-		if filterableTail(p) != nil {
+		if len(filterOpens(p)) > 0 && settlingTail(p) != nil {
 			filterable = append(filterable, p)
 		}
+	}
+	// locate is what a stream asks and Mask is what a caller asks, and they are
+	// the two the constant governs. Nothing else differs between them here.
+	sides := []struct {
+		name string
+		time func(*testing.B, *Masker, benchmarkCase)
+	}{
+		{"settling", timeLocate},
+		{"masking", timeMask},
 	}
 	for _, chars := range prefilterLineLengths {
 		// The length carries its unit into the name so that it cannot be read,
@@ -388,8 +417,12 @@ func BenchmarkPrefilter_Patterns(b *testing.B) {
 			for _, n := range []int{1, 2, 4, 6, 7, 8, 9, 10, 12, 16, 24, 32, len(filterable)} {
 				m := New(WithPatterns(filterable[:n]...))
 				b.Run(strconv.Itoa(n), func(b *testing.B) {
-					for _, arm := range prefilterArms(m) {
-						b.Run(arm.name, func(b *testing.B) { timeLocate(b, arm.masker, bm) })
+					for _, side := range sides {
+						b.Run(side.name, func(b *testing.B) {
+							for _, arm := range prefilterArms(m) {
+								b.Run(arm.name, func(b *testing.B) { side.time(b, arm.masker, bm) })
+							}
+						})
 					}
 				})
 			}
