@@ -228,6 +228,35 @@ func reversed(patterns []mask.Pattern) []mask.Pattern {
 	return out
 }
 
+func Test_patternSets_nameNoMarkRune(t *testing.T) {
+	// A pattern's name is written into marked text by markRedactor, and
+	// parseMarked reads it back by looking for the next closing rune. A name
+	// carrying one closes its own mark early, so the name read back is a prefix
+	// of the name written — and a check comparing that against the patterns it
+	// was given is comparing something the notation mangled.
+	//
+	// givingUp.check is where that matters: it reads the last name back to say
+	// which pattern a give-up was attributed to. Its other footing is that the
+	// text carries no mark rune, which it now refuses rather than assumes; this
+	// is the other half, and without it the same failure returns by way of a
+	// pattern instead of by way of the text.
+	//
+	// Test_builtins_name (root package) holds a built-in to lowercase letters,
+	// digits and hyphens, which rules the mark runes out along with much else.
+	// The patterns this file builds are under no such convention and need not
+	// be: a test pattern named oddly is a fair thing to want. What they are
+	// held to is only what the notation cannot survive.
+	for _, name := range slices.Sorted(maps.Keys(patternSets)) {
+		t.Run(name, func(t *testing.T) {
+			for _, p := range patternSets[name] {
+				if strings.ContainsAny(p.Name(), string(markOpen)+string(markClose)) {
+					t.Errorf("the pattern named %q carries a mark rune, which parseMarked cannot read a name through", p.Name())
+				}
+			}
+		})
+	}
+}
+
 func Test_patternSets_areUsable(t *testing.T) {
 	// A set is what every property of a case is driven through, so an empty
 	// entry, or one holding a pattern twice, would weaken every case naming it
