@@ -69,6 +69,18 @@ func maskerMaskBenchmarks() []benchmarkCase {
 			src:   "token=ghs_123456_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef",
 			spans: 1,
 		},
+		{
+			// A record dense in colons written against digits, which the line
+			// above has two of and an address table has one every few bytes.
+			// Every pattern reading a separator rather than a literal prefix
+			// stops at each of them, and no prefilter turns such a pattern
+			// away, so this is where a scan that answered them expensively
+			// would show — and the line above, which is what the other cases
+			// are built from, cannot show it.
+			name:  "a record dense in separators",
+			src:   "fe80::1%en0 00:1b:44:11:3a:b7 2026-08-17T00:00:00Z 12:34:56.789 10.0.0.1:8443 ",
+			spans: 0,
+		},
 	}
 }
 

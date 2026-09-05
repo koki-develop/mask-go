@@ -35,7 +35,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 ## Built-in patterns
 
-The 69 built-in patterns cover 58 vendors and locate 170 kinds of credential:
+The 70 built-in patterns cover 59 vendors and locate 171 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -98,6 +98,7 @@ The 69 built-in patterns cover 58 vendors and locate 170 kinds of credential:
 | `StripePatterns() []Pattern` | Stripe publishable API keys, restricted API keys, secret API keys, organization API keys, webhook signing secrets |
 | `SupabasePatterns() []Pattern` | Supabase personal access tokens, Supabase OAuth access tokens, Supabase publishable API keys, Supabase secret API keys |
 | `TailscalePatterns() []Pattern` | Tailscale API access tokens, auth keys, OAuth client keys, SCIM keys, webhook keys |
+| `TelegramPatterns() []Pattern` | Telegram authentication tokens |
 | `XAIPatterns() []Pattern` | xAI API keys, xAI management API keys |
 
 ## Custom patterns

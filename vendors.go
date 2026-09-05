@@ -367,6 +367,12 @@ func SupabasePatterns() []Pattern {
 // The returned slice is freshly allocated and may be modified by the caller.
 func TailscalePatterns() []Pattern { return []Pattern{tailscaleKey} }
 
+// TelegramPatterns returns every built-in pattern that locates a credential
+// Telegram issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func TelegramPatterns() []Pattern { return []Pattern{telegramAuthenticationToken} }
+
 // XAIPatterns returns every built-in pattern that locates a credential xAI
 // issues.
 //
