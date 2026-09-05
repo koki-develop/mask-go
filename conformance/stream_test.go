@@ -120,15 +120,19 @@ func checkStream(t testing.TB, m *mask.Masker, src, want string, pieces []string
 	}
 }
 
-// cutsOf returns the ways src is handed to a stream: whole, cut at every single
-// offset, and one byte at a time.
+// cutsOf returns the ways src is handed to a stream: whole, cut in two at each
+// of offsets, and one byte at a time.
+//
+// Which offsets those are is the caller's, because it differs between the
+// properties: offsetsDriven for the ones the race budget is spent on and
+// everyOffset for the rest.
 //
 // A byte at a time and not a rune at a time: a stream cut inside a rune is what
 // a reader filling a fixed buffer leaves, and it is exactly what a cut anywhere
 // has to survive.
-func cutsOf(src string) [][]string {
+func cutsOf(src string, offsets []int) [][]string {
 	cuts := [][]string{{src}}
-	for i := range len(src) + 1 {
+	for _, i := range offsets {
 		cuts = append(cuts, []string{src[:i], src[i:]})
 	}
 	byteAtATime := make([]string, 0, len(src))
@@ -139,15 +143,18 @@ func cutsOf(src string) [][]string {
 }
 
 func TestProperties_everyCut(t *testing.T) {
-	// The whole of what a stream owes. Every case, cut at every offset, under
-	// every redactor a caller reaches for: a stream that released the front of
-	// a value before the rest of it arrived, or that redacted twice what Mask
-	// redacts once, differs from Mask here and nowhere else.
-	for _, c := range readableCases(t) {
+	// The whole of what a stream owes. Every case, cut at the offsets
+	// offsetsDriven walks, under every redactor a caller reaches for: a stream
+	// that released the front of a value before the rest of it arrived, or that
+	// redacted twice what Mask redacts once, differs from Mask here and nowhere
+	// else.
+	cases := readableCases(t)
+	bounds := caseBounds(t, cases)
+	for i, c := range cases {
 		for _, r := range streamRedactors {
 			m := maskerWith(c.patterns(), r.redactor)
 			want := m.Mask(c.in)
-			for _, pieces := range cutsOf(c.in) {
+			for _, pieces := range cutsOf(c.in, offsetsDriven(c.in, bounds[i])) {
 				checkStream(t, m, c.in, want, pieces)
 			}
 		}
@@ -159,14 +166,15 @@ func TestProperties_everyCutThroughEveryBuiltinSet(t *testing.T) {
 	// pattern says nothing about another, and a stream is where one pattern
 	// holding text back changes what another one is shown.
 	cases := readableCases(t)
+	bounds := caseBounds(t, cases)
 	for _, set := range builtinSets {
 		t.Run(set.name, func(t *testing.T) {
 			t.Parallel()
 			m := maskerWith(set.patterns, mask.Fixed("[REDACTED]"))
-			for _, c := range cases {
+			for j, c := range cases {
 				t.Run(c.subtest(), func(t *testing.T) {
 					want := m.Mask(c.in)
-					for i := range len(c.in) + 1 {
+					for _, i := range offsetsDriven(c.in, bounds[j]) {
 						checkStream(t, m, c.in, want, []string{c.in[:i], c.in[i:]})
 					}
 				})
@@ -193,7 +201,7 @@ func TestProperties_aStreamOverAPatternReportingSpans(t *testing.T) {
 		t.Run(c.subtest(), func(t *testing.T) {
 			for _, r := range streamRedactors {
 				m := maskerWith(c.patterns(), r.redactor)
-				for _, pieces := range cutsOf(c.in) {
+				for _, pieces := range cutsOf(c.in, everyOffset(c.in)) {
 					written, read := throughStream(t, m, pieces)
 					if written != read {
 						t.Errorf("%s: writing %q in %d piece(s) gave %q, reading it gave %q",
@@ -418,15 +426,18 @@ func heldByWriter(t testing.TB, m *mask.Masker, src string, limit int) int {
 }
 
 func TestProperties_everyCutUnderALimit(t *testing.T) {
-	// Every case, cut at every offset, under every limit the corpus reaches.
+	// Every case, cut at the offsets offsetsDriven walks, under every limit the
+	// corpus reaches.
 	// The properties are in givingUp.check; what is here is the driving of
 	// them and the count that keeps it from driving nothing.
 	gaveUp := 0
-	for _, c := range readableCases(t) {
+	cases := readableCases(t)
+	bounds := caseBounds(t, cases)
+	for i, c := range cases {
 		g := newGivingUp(c.patterns())
 		dropped, fill := g.dropped.Mask(c.in), g.fill.Mask(c.in)
 		for _, limit := range streamLimits {
-			for _, pieces := range cutsOf(c.in) {
+			for _, pieces := range cutsOf(c.in, offsetsDriven(c.in, bounds[i])) {
 				if g.check(t, c.in, dropped, fill, pieces, limit) {
 					gaveUp++
 				}
@@ -533,15 +544,17 @@ func TestProperties_zeroAndNegativeLimitsNeverGiveUp(t *testing.T) {
 	// as that same zero rather than as a limit no text can come under." Every
 	// limit in streamLimits above is positive, so this is what drives zero and
 	// a negative n over the corpus instead: neither may ever part a stream
-	// from Mask, at any cut.
+	// from Mask, at any of the cuts offsetsDriven walks.
+	cases := readableCases(t)
+	bounds := caseBounds(t, cases)
 	for _, n := range []int{0, -1, -(1 << 20)} {
 		t.Run(fmt.Sprintf("%d", n), func(t *testing.T) {
 			t.Parallel()
-			for _, c := range readableCases(t) {
+			for i, c := range cases {
 				for _, r := range streamRedactors {
 					m := maskerWith(c.patterns(), r.redactor)
 					want := m.Mask(c.in)
-					for _, pieces := range cutsOf(c.in) {
+					for _, pieces := range cutsOf(c.in, offsetsDriven(c.in, bounds[i])) {
 						written, read := throughStream(t, m, pieces, mask.WithMaxRetained(n))
 						if written != want {
 							t.Errorf("%s: WithMaxRetained(%d): writing %q in %d piece(s) gave %q, Mask gives %q",
