@@ -292,8 +292,23 @@ func newGivingUp(patterns []mask.Pattern) *givingUp {
 // Nothing here holds the stream to Mask outright, which is what the properties
 // above hold an unlimited one to: giving up is where the two part by design. So
 // what is stated is what survives the parting.
+//
+// src must carry neither mark rune, because the attribution below is read back
+// out of marked text and a mark rune already in the text is one parseMarked
+// cannot tell from a redactor's. A case of the corpus carries none by rule; a
+// caller handing over generated text passes it through textWithoutMarks
+// (notation_test.go) first.
 func (g *givingUp) check(t testing.TB, src, dropped, fill string, pieces []string, limit int) bool {
 	t.Helper()
+
+	// Asked rather than assumed, because the way this goes wrong is silent. A
+	// mark the text carries that is well formed and names a real pattern parses,
+	// and the attribution below then reads the text's own mark: both assertions
+	// pass for a stream that made no mark at all. A caller that forgot
+	// textWithoutMarks fails here instead, at the call that forgot it.
+	if strings.ContainsAny(src, string(markOpen)+string(markClose)) {
+		t.Fatalf("check was handed %q, which carries a mark rune of its own; pass generated text through textWithoutMarks first", src)
+	}
 
 	// A Writer and a Reader are two ways to one masking, limit or no limit. The
 	// giving up is written once and both of them reach it, so the two parting
@@ -332,6 +347,21 @@ func (g *givingUp) check(t testing.TB, src, dropped, fill string, pieces []strin
 		if len(m.names) == 0 {
 			t.Errorf("under a limit of %d, writing %q parted from Mask but the marking redactor made no mark at all", limit, src)
 		} else if last := m.names[len(m.names)-1]; !g.known[last] {
+			// Nothing reaches this while two things hold, and both do. src
+			// carries no mark rune, which the precondition above now refuses
+			// rather than assumes, so every mark parsed here was written by
+			// markRedactor; and markRedactor writes a pattern's own Name,
+			// which g.known was built from, so a name it wrote is a name
+			// g.known holds.
+			//
+			// It stands because the second of those is the weaker. A name
+			// carrying a mark rune would close its own mark early and leave
+			// the parse reading a prefix that g.known does not hold —
+			// reachable again, from a pattern rather than from the text.
+			// Test_builtins_name (builtins_test.go) rules that out for a
+			// built-in by holding a name to lowercase letters, digits and
+			// hyphens; the patterns patternSets builds carry no such test and
+			// are written out by hand.
 			t.Errorf("under a limit of %d, writing %q attributed the give-up to %q, which is not one of the patterns given", limit, src, last)
 		}
 	}
@@ -745,8 +775,26 @@ func FuzzStreamGivesUp(f *testing.F) {
 		f.Add(c.in, len(c.in)/2, 8)
 	}
 
+	// The inputs a fuzzer arrived at here before textWithoutMarks took the mark
+	// runes out, kept so that a plain go test drives them rather than waiting on
+	// a fuzzer to reach them again. What they have in common is a mark rune the
+	// text itself carries; notation_test.go says what that costs, and
+	// Test_textWithoutMarks is where the shapes are enumerated.
+	f.Add("0«0000000000", 22, 8)
+	f.Add("«0000000000", 22, 8)
+	f.Add("»0000000000", 22, 8)
+	// And the shape no fuzzer had to find, because it fails nothing: a mark the
+	// text carries that is well formed and names a real pattern, which a check
+	// reading the name back cannot tell from a redactor's.
+	f.Add("«stripe-secret-key»0000000000", 22, 8)
+
 	g := newGivingUp(mask.AllBuiltinPatterns())
 	f.Fuzz(func(t *testing.T, src string, cut, limit int) {
+		// givingUp.check reads marks back out of what it masked, so it owes
+		// text carrying none of its own. notation_test.go says why a fuzz
+		// target is where that is stated and a corpus-driven test is not.
+		src = textWithoutMarks(src)
+
 		// A cut is a place in src and a limit is a length src can reach, and a
 		// fuzzer arriving here with any int at all would otherwise spend its
 		// run on the panic rather than on the grammars. Zero is not among the

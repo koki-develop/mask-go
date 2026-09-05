@@ -171,6 +171,63 @@ var markRedactor = mask.NewRedactor(func(m mask.Match) string {
 	return string(markOpen) + m.Pattern.Name() + string(markClose)
 })
 
+// markReplacer is what textWithoutMarks rewrites the mark runes with. The runes
+// taken out are read off markOpen and markClose so that the two cannot come
+// apart: a notation written with different runes tomorrow is a helper that takes
+// those runes out instead.
+//
+// Two bytes go in where two bytes come out, and that is a requirement rather
+// than a nicety. Both mark runes are two bytes, and what reads this is a fuzz
+// target driving WithMaxRetained, whose limit is a count of bytes —
+// stream.go holds a stream to len(src)-s.out > s.maxRetained. A replacement one
+// byte shorter would leave an input the fuzzer built to run past a limit
+// stopping short of it, and a stream that never gives up exercises nothing that
+// target is for. So the replacements are counted, and
+// Test_textWithoutMarks_preservesLength holds them to it.
+//
+// Brackets rather than anything less legible: text carrying a mark keeps its
+// shape and reads as what it was in a failure message.
+var markReplacer = strings.NewReplacer(string(markOpen), "<<", string(markClose), ">>")
+
+// textWithoutMarks returns src with the mark runes rewritten, so that marked
+// text made out of it holds the marks a redactor wrote and no others.
+//
+// parseMarked reads the marks back out of masked text, which it can only do
+// while every mark rune in that text is one a redactor put there. A mark rune
+// standing in the text itself is indistinguishable from one, and there are two
+// ways that goes wrong.
+//
+// The loud way is a mark the parse cannot read — one that never closes, one
+// that closes without opening, one opening another, one naming nothing — and
+// what is then reported is the parse rather than anything about masking. That
+// is what a fuzzer found.
+//
+// The quiet way is worse and is the reason this helper exists. Text carrying a
+// well-formed mark that names a real pattern parses, so a check reading the
+// name back is handed the text's own mark and cannot tell it from a redactor's.
+// givingUp.check asks whether any mark was made and whether the last names a
+// pattern it was given; text holding «stripe-secret-key» answers both for a
+// stream that made no mark at all, and a give-up attributed to nothing would
+// pass. A parse error fails the run and gets fixed; this reports nothing ever.
+//
+// A test driven from the corpus needs none of this. A case's in field may not
+// hold either rune, which corpus_test.go holds it to, so masked text built
+// from one carries only what a redactor wrote. A fuzz target has no such
+// footing: the corpus seeds it, but a fuzzer mutates bytes, and « is 0xC2 0xAB
+// — two bytes a mutation can arrive at from anything. So the invariant the
+// corpus states for its own cases is stated here for generated text, and a
+// fuzz target whose check reads marks back calls this on what it was handed.
+//
+// Rewriting rather than turning the input away, because the mark runes belong
+// to this package's notation and not to anything the library does. To a scan
+// they are two bytes of ordinary text, which the corpus and the seeds already
+// carry in quantity; what the input was generated to reach is the masking, and
+// a target that returned early here would leave the fuzzer spending its budget
+// on inputs that check nothing at all.
+func textWithoutMarks(src string) string {
+	return markReplacer.Replace(src)
+}
+
 // maskMarked masks src, returning the marked text and the values that were
 // redacted, in order.
 func maskMarked(patterns []mask.Pattern, src string) (string, []string) {
@@ -365,6 +422,114 @@ func Test_parseMarked_malformed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if _, err := parseMarked(tt.src); err == nil {
 				t.Errorf("parseMarked(%q) succeeded, want an error", tt.src)
+			}
+		})
+	}
+}
+
+func Test_textWithoutMarks(t *testing.T) {
+	// What the helper owes: text a redactor can mark without parseMarked
+	// reading any of it as a mark. The inputs are the shapes
+	// Test_parseMarked_malformed writes out, plus the three a fuzzer arrived at,
+	// so that a helper which stopped taking a rune out fails here rather than
+	// in a fuzz run days later.
+	tests := []struct {
+		name string
+		src  string
+		want string
+	}{
+		{name: "text with no mark at all", src: "abc", want: "abc"},
+		{name: "empty text", src: "", want: ""},
+		{name: "a mark that never closes", src: "«p", want: "<<p"},
+		{name: "a mark that closes without opening", src: "abc»", want: "abc>>"},
+		{name: "a mark opening another", src: "«p«q»»", want: "<<p<<q>>>>"},
+		{name: "a mark naming no pattern", src: "«»", want: "<<>>"},
+		{name: "an opening mark inside the text", src: "0«0000000000", want: "0<<0000000000"},
+		{name: "an opening mark at the start", src: "«0000000000", want: "<<0000000000"},
+		{name: "a closing mark at the start", src: "»0000000000", want: ">>0000000000"},
+		{
+			// The shape parseMarked reads without complaint, and so the one a
+			// check reading a name back cannot tell from a redactor's mark.
+			// textWithoutMarks's own doc says why that is the worse of the two.
+			name: "a well-formed mark naming a real pattern",
+			src:  "«stripe-secret-key»",
+			want: "<<stripe-secret-key>>",
+		},
+		{name: "text that is not valid utf-8", src: "\xff\xfe", want: "\xff\xfe"},
+		{
+			// The bytes « is written from, standing apart. Neither is a mark,
+			// and neither may be rewritten as one.
+			name: "the bytes of a mark rune written separately",
+			src:  "\xc2z\xabz",
+			want: "\xc2z\xabz",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := textWithoutMarks(tt.src)
+			if got != tt.want {
+				t.Errorf("textWithoutMarks(%q) = %q, want %q", tt.src, got, tt.want)
+			}
+			if strings.ContainsRune(got, markOpen) || strings.ContainsRune(got, markClose) {
+				t.Errorf("textWithoutMarks(%q) = %q, which still holds a mark rune", tt.src, got)
+			}
+		})
+	}
+}
+
+func Test_textWithoutMarks_preservesLength(t *testing.T) {
+	// What markReplacer says it is for. The target reading it drives
+	// WithMaxRetained, whose limit counts bytes, so a rewrite that shortened
+	// the text would take an input the fuzzer built to run past a limit and
+	// leave it short of one — and a stream that never gives up says nothing
+	// about giving up.
+	//
+	// Both mark runes are asked about, and so is the length of what stands in
+	// for each: a replacement of any other width fails here rather than in a
+	// fuzz run that quietly stops reaching the give-up.
+	for _, r := range []rune{markOpen, markClose} {
+		t.Run(string(r), func(t *testing.T) {
+			if got, want := len(textWithoutMarks(string(r))), utf8.RuneLen(r); got != want {
+				t.Errorf("textWithoutMarks(%q) is %d byte(s), want %d", string(r), got, want)
+			}
+		})
+	}
+
+	for _, src := range []string{"", "abc", "«p", "abc»", "«p«q»»", "«»", "0«0000000000", "»0000000000", "\xff\xfe", "日本語«x»"} {
+		t.Run(src, func(t *testing.T) {
+			if got, want := len(textWithoutMarks(src)), len(src); got != want {
+				t.Errorf("textWithoutMarks(%q) is %d byte(s), want %d", src, got, want)
+			}
+		})
+	}
+}
+
+func Test_textWithoutMarks_leavesMarkedTextParsable(t *testing.T) {
+	// The property the helper exists for, stated end to end: whatever it returns
+	// can carry a mark and be read back, with the one mark read being the one
+	// written.
+	//
+	// A mark is put on either side of the text rather than on one, because the
+	// two adjacencies are different bytes. Masked text carries a mark against
+	// what stood before it as well as against what stands after, and text
+	// ending in 0xC2 against an opening mark is the byte pair a rewrite could
+	// have made a mark out of had it left a lead byte behind.
+	mark := string(markOpen) + "a-pattern" + string(markClose)
+	sources := []string{
+		"«p", "abc»", "«p«q»»", "«»", "0«0000000000", "»0000000000",
+		"«stripe-secret-key»", "\xff\xfe", "\xc2", "\xc2\xc2", "日本語«x»",
+	}
+	for _, src := range sources {
+		t.Run(src, func(t *testing.T) {
+			for _, text := range []string{mark + textWithoutMarks(src), textWithoutMarks(src) + mark} {
+				m, err := parseMarked(text)
+				if err != nil {
+					t.Fatalf("parseMarked(%q) failed: %v", text, err)
+				}
+				if len(m.names) != 1 || m.names[0] != "a-pattern" {
+					t.Errorf("parseMarked(%q) read names %v, want one mark naming a-pattern", text, m.names)
+				}
 			}
 		})
 	}
