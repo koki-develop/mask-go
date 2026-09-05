@@ -1532,7 +1532,7 @@ func TestStream_isLinear(t *testing.T) {
 			w := NewWriter(io.Discard, m, WithMaxRetained(maxRetained))
 
 			start := time.Now()
-			for i := range src {
+			for i := range len(src) {
 				if _, err := w.Write([]byte(src[i : i+1])); err != nil {
 					t.Fatalf("Write() = %v", err)
 				}

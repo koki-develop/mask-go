@@ -816,7 +816,7 @@ func TestProperties_aByteInTheMiddle(t *testing.T) {
 				t.Run(c.subtest(), func(t *testing.T) {
 					for _, b := range injected {
 						for _, at := range points[i] {
-							ms.check(t, c.in[:at]+string(b)+c.in[at:])
+							ms.check(t, c.in[:at]+string([]byte{b})+c.in[at:])
 						}
 					}
 				})
@@ -969,10 +969,10 @@ func TestProperties_morePatternsRedactNoLess(t *testing.T) {
 	// (root package) do not reach: a pattern's own openings turning it away
 	// on text another pattern's grammar would have opened a candidate in —
 	// which is what customSets' scans are for, but not what the corpus's own
-	// ~2600 builtin_<name>.txt inputs are ever driven through — or two
-	// built-ins disagreeing about where a value ends and the shorter of the
-	// two winning attribution while stopping short of what the longer would
-	// have redacted.
+	// builtin_<name>.txt inputs are ever driven through — or two built-ins
+	// disagreeing about where a value ends and the shorter of the two winning
+	// attribution while stopping short of what the longer would have
+	// redacted.
 	all := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...), mask.WithRedactor(mask.Fill('*')))
 	builtin := map[mask.Pattern]bool{}
 	for _, p := range mask.AllBuiltinPatterns() {
@@ -1050,12 +1050,12 @@ func builtinValues(t testing.TB) map[string]string {
 
 func TestProperties_everyPairOfBuiltins(t *testing.T) {
 	// TestProperties_casesRunTogether pairs a case with six neighbours chosen
-	// by where the corpus's files happen to sort, so which of the ~4400
-	// ordered pairs of built-ins is exercised drifts as cases are added or
-	// files renamed, and most pairs are never driven beside each other at
-	// all. This drives every ordered pair instead, directly: one value per
-	// built-in, written beside another with nothing, a newline, a space or a
-	// dot between them, under the whole registry.
+	// by where the corpus's files happen to sort, so which ordered pairs of
+	// built-ins are exercised drifts as cases are added or files renamed, and
+	// most pairs are never driven beside each other at all. This drives every
+	// ordered pair instead, directly: one value per built-in, written beside
+	// another with nothing, a newline, a space or a dot between them, under
+	// the whole registry.
 	values := builtinValues(t)
 	names := slices.Sorted(maps.Keys(values))
 
@@ -1068,8 +1068,9 @@ func TestProperties_everyPairOfBuiltins(t *testing.T) {
 	// that quietly stops contributing — a corpus edit that puts a keyword
 	// prefix on what was its only single-value case, say — moves this count
 	// without moving nonContributingBuiltins, and only counting catches that;
-	// the fewer names drive fewer of the ~4400 ordered pairs this test
-	// exists to state something about.
+	// the pairs driven are the square of the names contributing one, so the
+	// fewer names drive fewer of the ordered pairs this test exists to state
+	// something about.
 	const nonContributingBuiltins = 1
 	if want := len(mask.AllBuiltinPatterns()) - nonContributingBuiltins; len(names) != want {
 		contributed := make(map[string]bool, len(names))

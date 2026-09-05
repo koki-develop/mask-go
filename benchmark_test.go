@@ -400,6 +400,20 @@ func BenchmarkPrefilter_Patterns(b *testing.B) {
 			filterable = append(filterable, p)
 		}
 	}
+	// Rungs close together where the arms are expected to cross, further apart
+	// above that, and the whole of filterable last. A rung is kept only while
+	// it stands below that whole: one above it would slice past the end of
+	// filterable, and one standing on it would time the same Masker twice
+	// under two names.
+	rungs := []int{1, 2, 4, 6, 7, 8, 9, 10, 12, 16, 24, 32}
+	counts := make([]int, 0, len(rungs)+1)
+	for _, n := range rungs {
+		if n < len(filterable) {
+			counts = append(counts, n)
+		}
+	}
+	counts = append(counts, len(filterable))
+
 	// locate is what a stream asks and Mask is what a caller asks, and they are
 	// the two the constant governs. Nothing else differs between them here.
 	sides := []struct {
@@ -414,7 +428,7 @@ func BenchmarkPrefilter_Patterns(b *testing.B) {
 		// or matched by -bench, as one of the pattern counts nested under it.
 		bm := benchmarkCase{name: strconv.Itoa(chars) + "B", src: prefilterText(chars)}
 		b.Run(bm.name, func(b *testing.B) {
-			for _, n := range []int{1, 2, 4, 6, 7, 8, 9, 10, 12, 16, 24, 32, len(filterable)} {
+			for _, n := range counts {
 				m := New(WithPatterns(filterable[:n]...))
 				b.Run(strconv.Itoa(n), func(b *testing.B) {
 					for _, side := range sides {

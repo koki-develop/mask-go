@@ -457,7 +457,7 @@ func heldByWriter(t testing.TB, m *mask.Masker, src string, limit int) int {
 	var out strings.Builder
 	w := mask.NewWriter(&out, m, mask.WithMaxRetained(limit))
 	most := 0
-	for i := range src {
+	for i := range len(src) {
 		if _, err := w.Write([]byte(src[i : i+1])); err != nil {
 			t.Fatalf("Write() = %v", err)
 		}

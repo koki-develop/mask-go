@@ -5,8 +5,11 @@
 # stateless installation token carries a JWT, and an access key ID can be
 # written inside either without ending it — so what matters here is that the
 # patterns do not take pieces out of each other's values, and that a line
-# holding several kinds of credential loses all of them. The block that closes
-# this file is where the second of those stops holding, and says why.
+# holding several kinds of credential loses all of them. The second of those
+# stops holding where a prefix declines to open behind a letter or a digit. The
+# cases named "a stripe prefix written against the end of an access key id" and
+# "a slack prefix written against the end of an access key id" are the shortest
+# statement of that, and the blocks above them say why.
 
 patterns: default
 
@@ -492,8 +495,10 @@ out:      NPM_TOKEN=«npm-access-token»\nAWS_ACCESS_KEY_ID=«aws-access-key-id�
 # without ending it and is located there as well, and a PyPI run does not stop
 # where an npm access token begins behind it. Whichever way the two are written,
 # the spans overlap and are redacted as one, attributed to whichever starts
-# earliest — nothing of either is left in the text, which is what separates this
-# pairing from the Stripe one the end of this file states.
+# earliest — nothing of either is left in the text, which is what separates
+# this pairing from the case named "a stripe prefix written against the end of
+# a grafana token", where a prefix standing behind too short a run opens
+# nothing and the key beside it comes through whole.
 
 case:     an npm access token inside a pypi api token body
 in:       pypi-AgEIcHlwaS5vcmcnpm_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdef
@@ -711,14 +716,15 @@ in:       LINEAR_API_KEY=lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123\nAWS_A
 out:      LINEAR_API_KEY=«linear-api-key»\nAWS_ACCESS_KEY_ID=«aws-access-key-id»\nGITHUB_TOKEN=«github-token»
 
 # A Stripe key written against the end of a Linear key, which is the shape the
-# block closing this file states of an npm access token and ends the same way. A
-# Linear body is read to the end of its run and the sk opening the Stripe prefix
-# is two characters of that run, so the key's span reaches into the prefix and
-# stops at the underscore behind them. The Linear key is redacted and takes the
-# sk away with it, and the whole random part of a live secret key stays in the
-# text. Written the other way round the Stripe body reaches three characters
-# into the Linear prefix and stops at its underscore, so the two spans overlap
-# and both values go.
+# case named "a stripe key written against the end of an npm access token" has
+# and ends the same way, for the reason given there. A Linear body is read to
+# the end of its run, so the sk opening the Stripe prefix is two characters of
+# that run and the key's span stops at the underscore behind them. The two
+# spans overlap by the sk and are redacted as one, attributed to the Linear
+# key's, which starts earliest. Written the other way round the Stripe body
+# reaches three characters into the Linear prefix and stops at its underscore,
+# so the two spans overlap there and are redacted as one, attributed to the
+# Stripe key's.
 
 case:     a stripe key written against the end of a linear key
 in:       lin_api_0123456789abcdefghijklmnopqrstuvwxyz0123sk_live_0123456789abcdef01234567
@@ -740,8 +746,9 @@ out:      «stripe-secret-key»
 # the token's own prefix and stops at the underscore behind them, so the two
 # spans overlap there and are redacted as one.
 #
-# The block closing this file is the other direction, and is where a value
-# beside a Stripe key costs one of them.
+# The case named "a stripe prefix written against the end of a grafana token"
+# is the other direction, and is where a value beside a Stripe key costs one of
+# them.
 
 case:     a stripe key beside a github token and a jwt
 in:       stripe=sk_live_0123456789abcdef01234567 github=ghp_0123456789abcdefghijklmnopqrstuvwxyz jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.0123456789abcdef
@@ -776,42 +783,45 @@ out:      STRIPE_SECRET_KEY=«stripe-secret-key»\nAWS_ACCESS_KEY_ID=«aws-acces
 # it comes through whole and would authenticate a request as it stands. That is
 # what the case below shows, and it is here to be looked up rather than arrived
 # at: neither pattern's own file states what the two of them come to when both
-# are enabled. The Notion case further down is this shape with a long enough run
-# in front of the prefix, and does not end this way.
+# are enabled. The case named "a stripe key written against the end of an npm
+# access token" is this shape with a long enough run in front of the prefix,
+# and does not end this way.
 #
-# It is the same shape the Slack case above it has, and it ends the same way,
-# which no out field can state. Redacting the access key ID puts characters that
-# are neither a letter nor a digit where its last one stood, so the prefix a
-# letter had closed is open to a second pass and the key is redacted then.
-# Masking is not idempotent, and the doc comment on Mask says so.
+# It is the same shape the case named "a slack prefix written against the end
+# of an access key id" has, and it ends the same way, which no out field can
+# state. Redacting the access key ID puts characters that are neither a letter
+# nor a digit where its last one stood, so the prefix a letter had closed is
+# open to a second pass and the key is redacted then. Masking is not
+# idempotent, and the doc comment on Mask says so.
 
 case:     a stripe prefix written against the end of an access key id
 in:       AKIA0123456789ABCDEFsk_live_0123456789abcdef01234567
 out:      «aws-access-key-id»sk_live_0123456789abcdef01234567
 
-# The same shape with an npm access token in front of the Stripe key, which ends
-# differently and worse. An npm body is read to the end of its run and the sk
-# opening the Stripe prefix is two characters of that run, so the token's span
-# reaches into the prefix and stops at the underscore behind them. The npm
-# access token is redacted and takes the sk away with it; what is left is no
-# Stripe prefix at all, and the whole random part of a live secret key stays in
-# the text.
+# The same shape with an npm access token in front of the Stripe key, which
+# ends the other way. An npm body is read to the end of its run, so the sk
+# opening the Stripe prefix is two characters of that run and the token's span
+# stops at the underscore behind them. The Stripe scan reaches its own key all
+# the same: the letter in front of the prefix would turn the candidate away,
+# but the run of letters and digits behind that letter is long enough to have
+# been a key's own body, and a key written against a key is a key — the rule
+# the case named "a stripe prefix written against the end of a notion token"
+# turns on as well. So the two spans overlap by the sk and are redacted as one,
+# attributed to the npm token's, which starts earliest.
 #
-# What the block above closes with does not hold here. There the redaction put a
-# character that is neither a letter nor a digit where the prefix had been
-# closed off by one, so a second pass reached the key. Here the prefix itself is
-# gone, and no pass will find it again: masking the first case below a second
-# time gives back exactly what masking it once gave. That is not something an
-# out field can state, which is why it is written here.
+# What parts this case from the one above it is the run in front of the prefix
+# rather than the kind of value that left it: an npm body leaves a run long
+# enough to open the prefix where an access key ID leaves one too short.
+# Neither pattern's own file states what the two come to together, which is why
+# the case is here — it takes the npm reading of a run and the byte the Stripe
+# scan demands in front of a prefix to arrive at.
 #
 # The two cases after it are the other direction and the same line written with
 # a space in it. Written the other way round the Stripe body reaches three
 # characters into the npm prefix and stops at its underscore, so the two spans
-# overlap and both values go; with a space between them there is nothing to
-# reach into and both go as well. It is the abutment in the first case alone
-# that costs a credential, and neither pattern's own file states it — it takes
-# the npm reading of a run and the byte the Stripe scan demands in front of a
-# prefix together to arrive at.
+# overlap there and are redacted as one, attributed to the Stripe key's; with a
+# space between them there is nothing to reach into and each value keeps a
+# redaction of its own.
 #
 # The middle case concatenates a Stripe body and the three letters an npm prefix
 # opens with into twenty-seven characters behind sk_live_, which is the format
@@ -1096,11 +1106,11 @@ in:       sbp_0123456789abcdef0123456789abcdef01234567 sk_live_0123456789abcdef0
 out:      «supabase-access-token» «stripe-secret-key»
 
 # A RubyGems API key beside the others, and the credentials written where a
-# body would stand. This is where the block for every other pattern shows a
-# value nested inside one, and the two cases below are the far side of that: a
-# body is written in the sixteen characters a lowercase digest is, so an access
-# key ID and a Google API key are each located where they stand and the prefix
-# in front of them stays in the text.
+# body would stand. A body is written in the sixteen characters a lowercase
+# digest is, so an access key ID and a Google API key are not held inside one
+# the way a wider alphabet holds them: the two cases below are the far side of
+# that, each value located where it stands and the prefix in front of it left
+# in the text.
 #
 # What a key does nest with is the patterns whose own alphabet reaches it. A
 # classic GitHub token's body and an npm access token's are base62, so either
@@ -1256,19 +1266,17 @@ out:      «openrouter-api-key» «stripe-secret-key»
 # held to no letter and no digit standing in front of them, and whsec_ cannot
 # and is held to nothing at all.
 #
-# Where a secret is written straight onto the end of a key the two spans overlap
-# and are redacted as one, attributed to what starts earliest. Where a key is
-# written straight onto the end of a secret the key opens nothing, because a
-# letter stands in front of its prefix, and what the secret's own run does not
-# reach over is left in the clear. That is the far side of the two rules meeting
-# and it is here to be looked up rather than arrived at — neither pattern's own
-# file states what the two of them come to when both are enabled.
-#
-# A redaction opening a prefix a value had closed is what leaves a second pass
-# something to find, as the block above this one turns on. Here it goes the
-# other way: the last case's out line carries no sk, because the secret's run
-# reached over the key type, so there is no prefix left for a second pass to
-# open and the body stays in the clear for good.
+# Where a secret is written straight onto the end of a key, whsec_ opens behind
+# the last character of the key's body, nothing in front of it being asked for.
+# Where a key is written straight onto the end of a secret, sk_live_ opens
+# behind a letter all the same, the secret's body being a run long enough to
+# have been a key's own body — the reading the case named "a stripe key written
+# against the end of an npm access token" turns on. Either way the first
+# value's run reaches into the second's prefix and stops at the underscore
+# behind it, so the two spans overlap and are redacted as one, attributed to
+# what starts earliest. That is the far side of the two rules meeting and it is
+# here to be looked up rather than arrived at — neither pattern's own file
+# states what the two of them come to when both are enabled.
 
 case:     a stripe environment file holding one of each
 in:       STRIPE_SECRET_KEY=sk_live_0123456789abcdef01234567\nSTRIPE_PUBLISHABLE_KEY=pk_live_0123456789abcdef01234567\nSTRIPE_WEBHOOK_SECRET=whsec_0123456789abcdef0123456789abcdef

@@ -449,15 +449,15 @@ func TestCorpus_caseNamesAgreeWithTheirOut(t *testing.T) {
 		}
 	}
 	// checkedFraction is the floor checked is held to, as a fraction of the
-	// corpus. Measured against the corpus as it stands — 3583 cases, of which
-	// this vocabulary checks 49 — one in two hundred (17) is comfortably
-	// under half of that, roughly a third, so rewording a few of the
+	// corpus: one case in two hundred. The vocabulary as it stands matches
+	// well over that, which the t.Logf at the end of this test reports, and
+	// that room is what the floor is chosen for — rewording a few of the
 	// phrases' current holders does not flake this, while a vocabulary that
-	// stopped matching nearly everything — the two lists above going stale
-	// as the corpus is renamed around them — still falls under it well
-	// before reaching zero. checked == 0 alone would let that slide all the
-	// way to nothing unnoticed; holding to a fraction of the corpus instead
-	// means a shrink is visible long before it gets there.
+	// stopped matching nearly everything — the two lists above going stale as
+	// the corpus is renamed around them — still falls under it well before
+	// reaching zero. checked == 0 alone would let that slide all the way to
+	// nothing unnoticed; holding to a fraction of the corpus instead means a
+	// shrink is visible long before it gets there.
 	const checkedFraction = 200
 	if least := len(cases) / checkedFraction; checked < least {
 		t.Fatalf("checked %d case name(s) against their out field, want at least %d (%d corpus case(s) / %d) — the vocabulary above may no longer match how the corpus names cases",
