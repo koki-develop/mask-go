@@ -30,6 +30,10 @@ case:     a key in an environment assignment
 in:       MAILCHIMP_API_KEY=0123456789abcdef0123456789abcdef-us19
 out:      MAILCHIMP_API_KEY=«mailchimp-api-key»
 
+case:     a key as the password of the basic authorization every call to the API carries
+in:       curl --user "anystring:0123456789abcdef0123456789abcdef-us19" https://us19.api.mailchimp.com/3.0/ping
+out:      curl --user "anystring:«mailchimp-api-key»" https://us19.api.mailchimp.com/3.0/ping
+
 case:     a key in the configuration of the client library Mailchimp publishes
 in:       mailchimp.setConfig({apiKey: "0123456789abcdef0123456789abcdef-us19", server: "us19"})
 out:      mailchimp.setConfig({apiKey: "«mailchimp-api-key»", server: "us19"})
@@ -74,8 +78,8 @@ in:       MAILCHIMP_API_KEY=a0123456789abcdef0123456789abcdef-us19
 out:      MAILCHIMP_API_KEY=a0123456789abcdef0123456789abcdef-us19
 
 # The separator and the number are read as they are written. The body's alphabet
-# is lowercase hexadecimal alone, which is what every source stating a shape for
-# this format reads it in.
+# is lowercase hexadecimal alone, which is what the one rule reading a key that
+# stands on its own reads it in.
 
 case:     the separator with no number behind it
 in:       MAILCHIMP_API_KEY=0123456789abcdef0123456789abcdef-us

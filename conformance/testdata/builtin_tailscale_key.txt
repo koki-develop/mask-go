@@ -42,6 +42,10 @@ case:     an auth key in a kubernetes secret
 in:       stringData:\n  TS_AUTHKEY: tskey-auth-0123456789ab-0123456789abcdef
 out:      stringData:\n  TS_AUTHKEY: «tailscale-key»
 
+case:     an api access token as the user half of basic authentication
+in:       curl -u "tskey-api-0123456789ab-0123456789abcdef:" https://api.tailscale.com/api/v2/tailnet/-/devices
+out:      curl -u "«tailscale-key»:" https://api.tailscale.com/api/v2/tailnet/-/devices
+
 # The alphabet the two halves are written in: the letters of either case and the
 # digits, which is what Tailscale's own client scrubs behind tskey- and stops
 # at. The hyphen it scrubs along with them is the separator this grammar already

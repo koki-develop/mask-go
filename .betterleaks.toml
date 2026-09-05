@@ -79,12 +79,26 @@ regexes = [
 # password goes. What is reported is the library's own output — what says the
 # value was found and taken out — rather than anything anyone wrote.
 #
-# That the marker is output is the notation's doing and not a habit. An `in`
-# field may not carry « or », which conformance/CLAUDE.md states and the corpus
-# reader holds, so the only place either character reaches a file is an `out`
-# line, and the only thing that writes one there is Mask. So this rests on the
-# shape of the value as the entries above do, and the path says which files are
-# written in that notation.
+# What a rule captures around the marker is that rule's own business, and it is
+# not always the marker alone. curl -u takes a user and a password divided by a
+# colon, so the rule reading one captures whichever half the marker did not
+# fill: «tailscale-key»: where a key is written as the user, and
+# anystring:«mailchimp-api-key» where it is written as the password. So this
+# asks that the reported value carry a marker rather than that it be one.
+# Asking the second would leave the entry narrower than the reasoning it rests
+# on: pairing two values is what an authorization header, a connection string and
+# a command line all do, so a corpus case written in any of them reports a marker
+# with the other half attached.
+#
+# That the marker is output is the notation's doing and not a habit. A guillemet
+# reaches a corpus file in an `out` field and nowhere else: the corpus reader
+# rejects the file over either character standing on any other line, and over
+# one an `in` field carries decoded, so what is left is the field -update
+# generates from what Mask returned. A capture holding a marker is therefore a
+# capture spanning a redaction, and whatever the rule took itself to have found,
+# the value that stood in that slot is the one thing it cannot still be reading.
+# So this rests on the shape of the value as the entries above do, and the path
+# says which files are written in that notation.
 #
 # It is written to no rule, and that is the point of it. A marker is no value
 # under the rule for a password, none under the rule for a connection URI, and
@@ -95,18 +109,59 @@ regexes = [
 # which is the convention Pattern.Name asks for and Test_builtins_name holds the
 # built-ins to. A corpus pattern of the harness's own is under nothing but that
 # example, so a name written outside those characters is reported here — which
-# is the side to fail on.
+# is the side to fail on. Every guillemet the reported value carries has to
+# belong to such a name, so one left unclosed, or written around a name the
+# convention leaves out, is reported rather than allowed. What may stand beside a
+# marker carries no line break for the same reason: a finding reaching across
+# lines is one whose rule read past the case it began in, and a marker on one of
+# those lines says nothing about what the others hold.
 #
-# What it gives up is a credential written as a guillemet, a name of those
-# characters and a guillemet, in a corpus file. Every pattern added inherits
-# this, which is what it is for: a built-in arrives with corpus cases whose out
-# lines carry its marker, and none of them is allowed by hand.
+# What may stand beside a marker is bounded at twelve characters a stretch, and
+# that bound is what keeps a credential from riding along with one. An out line
+# pairs a marker with whatever else the case wrote, and some of them write a
+# value this library does not locate: sk-or-v1-, sk_live_ and sb_secret_ each
+# stand directly against a marker somewhere in this corpus. A rule capturing both
+# halves of such a line is allowed by an entry asking only that a marker be in
+# there somewhere, and curl-auth-user captures exactly that shape. It is bounded
+# a stretch at a time rather than over the whole: a credential is one unbroken
+# run, so what two stretches come to between them says nothing about whether
+# either could hold one.
+#
+# Twelve is the first width above what the corpus asks for, which is what keeps
+# the bound from being a taste. Of everything this entry allows today, two
+# captures carry anything beside the marker at all: "anystring:«…»" and "«…»:",
+# the two halves of curl's basic authentication with the quotes the rule takes
+# in. The widest stretch in either is "anystring: at eleven characters, and every
+# other capture the entry allows is a marker and nothing else.
+#
+# Raising it is a decision about what this entry allows, not a fit to whatever a
+# corpus case grew to. A capture reaching the bound is reported rather than
+# allowed, which is the direction to fail in — the scan says so and somebody
+# reads the line. What raising it buys is that capture passing; what it sells is
+# every credential of the new width that can stand beside a marker — and a
+# credential that short is a shape this corpus already writes, tskey-auth-0-1
+# being fourteen characters and located whole.
+#
+# What it gives up is a value of twelve characters or fewer sharing a capture
+# with a marker. A rule whose capture holds a redaction and something short
+# written beside it has both allowed at once: a connection string whose password
+# this library located and whose user name it did not, or a command line pairing
+# a key it reads with a second one it does not.
+#
+# What that rests on is the corpus being written rather than collected. Every
+# value in these files is built by hand from an ordered run, which
+# conformance/CLAUDE.md asks for and each file's own header writes out, so what
+# stands beside a marker is a value somebody composed out of ordered characters
+# — and the case that would cost something here is a real credential typed into
+# a corpus file beside a redaction. Every pattern added inherits this, which is
+# what it is for: a built-in arrives with corpus cases whose out lines carry its
+# marker, and none of them is allowed by hand.
 [[allowlists]]
 description = "the marker a redaction is written as, which is the library's output rather than a value"
 condition = "AND"
 paths = ['''conformance/testdata/[^/]+\.txt$''']
 regexTarget = "secret"
-regexes = ['''^«[a-z0-9-]+»$''']
+regexes = ['''^[^«»\r\n]{0,12}(?:«[a-z0-9-]+»[^«»\r\n]{0,12})+$''']
 
 # An age secret key cannot carry the run either, and the reason is the alphabet
 # it is written in rather than anything about where it is written. Bech32 leaves
