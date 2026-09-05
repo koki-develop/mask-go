@@ -347,21 +347,20 @@ func (g *givingUp) check(t testing.TB, src, dropped, fill string, pieces []strin
 		if len(m.names) == 0 {
 			t.Errorf("under a limit of %d, writing %q parted from Mask but the marking redactor made no mark at all", limit, src)
 		} else if last := m.names[len(m.names)-1]; !g.known[last] {
-			// Nothing reaches this while two things hold, and both do. src
-			// carries no mark rune, which the precondition above now refuses
-			// rather than assumes, so every mark parsed here was written by
-			// markRedactor; and markRedactor writes a pattern's own Name,
-			// which g.known was built from, so a name it wrote is a name
-			// g.known holds.
+			// Nothing reaches this while two things hold, and a test holds
+			// each. The text carries no mark rune, which the precondition
+			// above refuses rather than assumes, so every mark parsed here was
+			// written by markRedactor. And no pattern's name carries one,
+			// which Test_builtins_name (root package) holds for a built-in and
+			// Test_patternSets_nameNoMarkRune for the rest — without it a name
+			// would close its own mark early and leave the parse reading a
+			// prefix g.known does not hold, which is this same failure
+			// reaching by way of a pattern rather than by way of the text.
 			//
-			// It stands because the second of those is the weaker. A name
-			// carrying a mark rune would close its own mark early and leave
-			// the parse reading a prefix that g.known does not hold —
-			// reachable again, from a pattern rather than from the text.
-			// Test_builtins_name (builtins_test.go) rules that out for a
-			// built-in by holding a name to lowercase letters, digits and
-			// hyphens; the patterns patternSets builds carry no such test and
-			// are written out by hand.
+			// It stands anyway, because what it states is a property of
+			// attribution rather than of the notation: a give-up went to a
+			// pattern the stream was given. The two tests above are what make
+			// it quiet, and neither is what it is about.
 			t.Errorf("under a limit of %d, writing %q attributed the give-up to %q, which is not one of the patterns given", limit, src, last)
 		}
 	}
