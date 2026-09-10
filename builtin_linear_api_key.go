@@ -150,8 +150,10 @@ func LinearAPIKey() Pattern { return linearAPIKey }
 // that the entry is the only thing naming it. lin_oauth_ is stated as a prefix
 // and nothing states what stands behind one: neither ruleset above carries a
 // rule for it, Linear writes no such token down, and Linear's own OAuth page
-// still prints its example access token as sixty-four hexadecimal characters
-// with no prefix at all — which is the format the changelog says was replaced.
+// still prints prefixless access tokens in its example responses — one to each
+// of the three flows it documents, sixty-four characters apiece, in lowercase
+// letters and digits, one of the three hexadecimal — which is the format the
+// changelog says was replaced.
 // So the one thing a scan needs that an anchor does not give it, what a body
 // looks like, has never been written down for this one. A floor invented for it
 // would be a guess at exactly the part of the grammar that is load bearing
