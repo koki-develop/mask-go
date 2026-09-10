@@ -282,6 +282,20 @@ var builtinPatterns = []struct {
 		benchmarks: dopplerAuthTokenFindBenchmarks,
 	},
 	{
+		name:    "dub-api-key",
+		pattern: DubAPIKey,
+		ref:     referenceDubAPIKeyFind,
+		samples: []string{
+			"DUB_API_KEY=dub_0123456789abcdefghijklmn",
+			"dub_0123456789ABCDEFGHIJKLMN",
+			"dub_0123456789abcdefghijkdub_0123456789abcdefghijklmn",
+			"dub_dub_0123456789abcdefghijklmn",
+			"dub_0123456789abcdefghijklmndub_0123456789ABCDEFGHIJKLMN",
+		},
+		anchors:    []string{"dub_0123456789abcdef"},
+		benchmarks: dubAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "dynatrace-token",
 		pattern: DynatraceToken,
 		ref:     referenceDynatraceTokenFind,
