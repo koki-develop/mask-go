@@ -35,7 +35,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 ## Built-in patterns
 
-The 72 built-in patterns cover 61 vendors and locate 173 kinds of credential:
+The 72 built-in patterns cover 61 vendors and locate 174 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -49,7 +49,7 @@ The 72 built-in patterns cover 61 vendors and locate 173 kinds of credential:
 | `CratesIOPatterns() []Pattern` | crates.io API tokens, Trusted Publishing access tokens |
 | `DatabricksPatterns() []Pattern` | Databricks personal access tokens, Databricks OAuth client secrets |
 | `DigitalOceanPatterns() []Pattern` | DigitalOcean personal access tokens, OAuth access tokens, OAuth refresh tokens |
-| `DockerPatterns() []Pattern` | Docker personal access tokens |
+| `DockerPatterns() []Pattern` | Docker personal access tokens, organization access tokens |
 | `DopplerPatterns() []Pattern` | Doppler CLI tokens, personal tokens, service tokens, service account tokens, service account identity tokens, SCIM tokens, audit tokens |
 | `DubPatterns() []Pattern` | Dub API keys |
 | `DynatracePatterns() []Pattern` | Dynatrace access tokens classic, Dynatrace personal access tokens, Dynatrace OAuth2 refresh tokens, Dynatrace platform tokens |
