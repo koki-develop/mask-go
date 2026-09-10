@@ -261,6 +261,12 @@ func PineconePatterns() []Pattern { return []Pattern{pineconeAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func PlanetScalePatterns() []Pattern { return []Pattern{planetScaleToken} }
 
+// PolarPatterns returns every built-in pattern that locates a credential Polar
+// issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func PolarPatterns() []Pattern { return []Pattern{polarOrganizationAccessToken} }
+
 // PostHogPatterns returns every built-in pattern that locates a credential
 // PostHog issues.
 //

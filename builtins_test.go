@@ -702,6 +702,20 @@ var builtinPatterns = []struct {
 		benchmarks: planetScaleTokenFindBenchmarks,
 	},
 	{
+		name:    "polar-organization-access-token",
+		pattern: PolarOrganizationAccessToken,
+		ref:     referencePolarOrganizationAccessTokenFind,
+		samples: []string{
+			"POLAR_ACCESS_TOKEN=polar_oat_0123456789abcdefghijklmnopqrstuvwxyz0123456",
+			"polar_oat_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456",
+			"polar_oat_polar_oat_0123456789abcdefghijklmnopqrstuvwxyz0123456",
+			"polar_oat_0123456789abcdefghijklmnopqrstuvwxyz01polar_oat_0123456789abcdefghijklmnopqrstuvwxyz0123456",
+			"polar_oat_0123456789abcdefghijklmnopqrstuvwxyz0123456polar_oat_0123456789abcdefghijklmnopqrstuvwxyz0123456",
+		},
+		anchors:    []string{"polar_oat_0123456789abcdef"},
+		benchmarks: polarOrganizationAccessTokenFindBenchmarks,
+	},
+	{
 		name:    "posthog-personal-api-key",
 		pattern: PostHogPersonalAPIKey,
 		ref:     referencePostHogPersonalAPIKeyFind,

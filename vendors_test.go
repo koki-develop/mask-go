@@ -70,6 +70,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"PerplexityPatterns":   PerplexityPatterns,
 	"PineconePatterns":     PineconePatterns,
 	"PlanetScalePatterns":  PlanetScalePatterns,
+	"PolarPatterns":        PolarPatterns,
 	"PostHogPatterns":      PostHogPatterns,
 	"PostmanPatterns":      PostmanPatterns,
 	"PulumiPatterns":       PulumiPatterns,
