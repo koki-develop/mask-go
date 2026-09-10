@@ -85,7 +85,7 @@ func DigitalOceanPatterns() []Pattern { return []Pattern{digitalOceanToken} }
 // Docker issues.
 //
 // The returned slice is freshly allocated and may be modified by the caller.
-func DockerPatterns() []Pattern { return []Pattern{dockerPersonalAccessToken} }
+func DockerPatterns() []Pattern { return []Pattern{dockerAccessToken} }
 
 // DopplerPatterns returns every built-in pattern that locates a credential
 // Doppler issues.
