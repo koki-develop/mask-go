@@ -114,7 +114,13 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   into `strings.Builder` or `slices.Contains` inside a scan is a change to a
   hot path, so it wants benchmarks either side of it rather than to be applied
   and staged behind your back.
-- `betterleaks git` — secret scan.
+- `betterleaks git` — secret scan, over the diffs git log gives it rather than
+  the working tree, so a file that is not committed yet is one it reports
+  nothing about. It is what the pre-push hook and CI run; the pre-commit hook
+  runs `betterleaks git --pre-commit --staged`, which reads the staged changes
+  and so reaches a new file from the moment it is staged. What reads the tree is
+  `betterleaks dir .`, and that is what scans a value written into a file still
+  untracked.
 
 ## Tests
 

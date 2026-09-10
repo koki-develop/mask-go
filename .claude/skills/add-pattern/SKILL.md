@@ -97,7 +97,8 @@ narrow, not a number to raise.
   generated input in CI.
 - `go test -bench . -benchmem` against `main` if `builtin_scan.go` or another
   scan's shared declarations moved.
-- `golangci-lint run` and `betterleaks git`.
+- `golangci-lint run` and `betterleaks dir .`, which is the scan that reads a
+  file before it is committed.
 - Have the test-gap-auditor agent review this pattern. It starts without having
   read the scan; you cannot ask yourself what the tests miss having just written
   one.
