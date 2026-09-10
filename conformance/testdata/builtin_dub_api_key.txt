@@ -1,0 +1,283 @@
+# What Dub API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is. That run is sixteen characters and a body is twenty-four, so a
+# body carries on through the alphabet to n. Where a case is about the ends of
+# the alphabet rather than about the count, the run is shortened by however many
+# characters the case writes at one end or the other, so that the body still
+# comes to twenty-four.
+
+patterns: dub-api-key
+
+# The one prefix Dub issues an API key with. There is a single kind of string
+# here rather than a table of them: a key carries whatever scopes it was created
+# with and may be tied to a machine user rather than to a person, so nothing in
+# the value says what it reaches, and the cases below are that one shape in the
+# places a key is written.
+
+case:     a key in an environment assignment
+in:       DUB_API_KEY=dub_0123456789abcdefghijklmn
+out:      DUB_API_KEY=«dub-api-key»
+
+case:     a key in the bearer authorization header the Dub API is called with
+in:       Authorization: Bearer dub_0123456789abcdefghijklmn
+out:      Authorization: Bearer «dub-api-key»
+
+case:     a key in json
+in:       {"token":"dub_0123456789abcdefghijklmn"}
+out:      {"token":"«dub-api-key»"}
+
+case:     a key on a command line
+in:       curl -H "Authorization: Bearer dub_0123456789abcdefghijklmn" https://api.dub.co/links
+out:      curl -H "Authorization: Bearer «dub-api-key»" https://api.dub.co/links
+
+case:     a key in a configuration environment block
+in:       "env": {"DUB_API_KEY": "dub_0123456789abcdefghijklmn"}
+out:      "env": {"DUB_API_KEY": "«dub-api-key»"}
+
+case:     a key in yaml
+in:       dub_api_key: dub_0123456789abcdefghijklmn
+out:      dub_api_key: «dub-api-key»
+
+case:     a key in a diff line
+in:       +DUB_API_KEY=dub_0123456789abcdefghijklmn
+out:      +DUB_API_KEY=«dub-api-key»
+
+case:     a key in a markdown code span
+in:       `dub_0123456789abcdefghijklmn`
+out:      `«dub-api-key»`
+
+# The alphabet the twenty-four characters are written in. It is base62 — the
+# letters of both cases and the digits. The two characters base64url adds, the
+# hyphen and the underscore, are not admitted, and either of them where a body
+# stands is a body of fewer than twenty-four characters.
+
+case:     a body written in capitals
+in:       dub_0123456789ABCDEFGHIJKLMN
+out:      «dub-api-key»
+
+case:     a body opening on the last letter of the alphabet
+in:       dub_z0123456789abcdefghijklm
+out:      «dub-api-key»
+
+case:     a body closing on the last letter of the alphabet
+in:       dub_0123456789abcdefghijklmz
+out:      «dub-api-key»
+
+case:     a body carrying a hyphen
+in:       dub_0123456789-bcdefghijklmn
+out:      dub_0123456789-bcdefghijklmn
+
+case:     a body carrying an underscore
+in:       dub_0123456789_bcdefghijklmn
+out:      dub_0123456789_bcdefghijklmn
+
+case:     a hyphen straight behind the prefix
+in:       dub_-123456789abcdefghijklmn
+out:      dub_-123456789abcdefghijklmn
+
+case:     an underscore straight behind the prefix
+in:       dub__123456789abcdefghijklmn
+out:      dub__123456789abcdefghijklmn
+
+case:     a space straight behind the prefix
+in:       dub_ 123456789abcdefghijklmn
+out:      dub_ 123456789abcdefghijklmn
+
+# The lengths either side of twenty-four. The count is read exactly rather than
+# as a floor, since it is the length Dub's own generator is called with, so
+# twenty-three characters are not a key and twenty-five are a key and the
+# character written after it.
+
+case:     a body of twenty-four characters is a key
+in:       dub_0123456789abcdefghijklmn
+out:      «dub-api-key»
+
+case:     a body of twenty-three characters is not
+in:       dub_0123456789abcdefghijklm
+out:      dub_0123456789abcdefghijklm
+
+case:     an alphabet run longer than the count is a key and what follows it
+in:       dub_0123456789abcdefghijklmno
+out:      «dub-api-key»o
+
+# The names ordinary code writes with these three letters. None of them reaches
+# a body: a name is snake_case, and the underscore after its next word ends the
+# run long before the twenty-fourth character. The shouted spelling is turned
+# away by the case of the prefix instead.
+#
+# The second name is the first carried past the count, so that the characters
+# the body test reads are all there and the underscore inside them is what
+# rejects it. Both leave the text alone, and no out line can say which decided
+# it; Test_DubAPIKey_holdsAKeyTheInputCutShort states that as the two offsets
+# the scan settles at.
+
+case:     a name whose segment closes on the prefix
+in:       overdub_gain_factor = 2
+out:      overdub_gain_factor = 2
+
+case:     a name reaching past the count with an underscore inside it
+in:       overdub_gain_factor_in_the_mixdown_settings = 2
+out:      overdub_gain_factor_in_the_mixdown_settings = 2
+
+case:     the prefix written in capitals
+in:       DUB_0123456789abcdefghijklmn
+out:      DUB_0123456789abcdefghijklmn
+
+# What a key may be written against. There is no boundary on either side of the
+# prefix, so a key keeps its span whatever word character it abuts — and the
+# count ends it at its twenty-eighth character, so whatever is written after one
+# stays in the text whether the alphabet admits it or not.
+
+case:     a key after an underscore
+in:       DUB_API_KEY_dub_0123456789abcdefghijklmn
+out:      DUB_API_KEY_«dub-api-key»
+
+case:     a key after a letter
+in:       xdub_0123456789abcdefghijklmn
+out:      x«dub-api-key»
+
+case:     a word written against a key
+in:       dub_0123456789abcdefghijklmnsuffix
+out:      «dub-api-key»suffix
+
+case:     a hyphenated word written against a key
+in:       dub_0123456789abcdefghijklmn-suffix
+out:      «dub-api-key»-suffix
+
+case:     an underscored word written against a key
+in:       dub_0123456789abcdefghijklmn_suffix
+out:      «dub-api-key»_suffix
+
+case:     a key at the end of a sentence
+in:       the key is dub_0123456789abcdefghijklmn.
+out:      the key is «dub-api-key».
+
+case:     a key immediately against japanese on both sides
+in:       鍵はdub_0123456789abcdefghijklmnです
+out:      鍵は«dub-api-key»です
+
+case:     a key against an invalid byte
+in:       \xffdub_0123456789abcdefghijklmn\xff
+out:      \xff«dub-api-key»\xff
+
+# Two keys written together. The three letters the prefix opens with belong to
+# the alphabet a body is written in, so a body may close with dub and the
+# underscore of the next key stand directly behind it; the second key begins
+# three characters before the first one ends, the two spans overlap and are
+# redacted as one. Written with nothing at all between them the two keys are
+# separate values, since the count ends the first one where the second opens.
+#
+# The prefix written twice is the same nesting with the outer candidate turned
+# away: its body carries the underscore of the second prefix and so is no body,
+# and the key stands four characters into the twenty-eight that candidate
+# reached over. A scan stepping past a candidate it rejected would lose it.
+
+case:     a key inside a candidate the body turned away
+in:       dub_dub_0123456789abcdefghijklmn
+out:      dub_«dub-api-key»
+
+case:     a key beginning inside the key before it
+in:       dub_0123456789abcdefghijkdub_0123456789abcdefghijklmn
+out:      «dub-api-key»
+
+case:     two keys with nothing between them
+in:       dub_0123456789abcdefghijklmndub_0123456789ABCDEFGHIJKLMN
+out:      «dub-api-key»«dub-api-key»
+
+case:     two keys separated by a space
+in:       dub_0123456789abcdefghijklmn dub_0123456789ABCDEFGHIJKLMN
+out:      «dub-api-key» «dub-api-key»
+
+# What this pattern redacts that nobody issued. The prefix closes with an
+# underscore, which hexadecimal and standard base64 write nowhere, so only a
+# base64url encoding can spell it — and where twenty-four letters and digits
+# follow, those twenty-eight characters are redacted whether or not Dub issued
+# them. Such a run is a key's format exactly and nothing in the text tells the
+# two apart, so sparing it would spare a real key written the same way.
+#
+# The digest is the same over-match taking a value a reader had a use for.
+# Hexadecimal digits are base62 and a digest carries nothing that ends a run, so
+# every digest written behind the prefix is at least twenty-four characters: an
+# MD5 is thirty-two, a SHA-1 forty and a SHA-256 sixty-four, and the first
+# twenty-four of one go with the prefix while the rest of the digest stays. What
+# holds either side of it is the count and the prefix — a run of sixteen is
+# eight characters short of a body, and a hyphen is no character the prefix
+# carries.
+#
+# The last case is the encoding that carries none of this. Standard base64
+# writes + and / where base64url writes the hyphen and the underscore, so a
+# certificate body holds no prefix to be found at however long it runs.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzzdub_0123456789abcdefghijklmnzzzz
+out:      payload=zzzz«dub-api-key»zzzz
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzdub_0123456789abcdefghijklmnzzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«dub-api-key»zzzz
+
+case:     an md5 behind the prefix
+in:       dub_0123456789abcdef0123456789abcdef
+out:      «dub-api-key»89abcdef
+
+case:     a sha1 behind the prefix in a cache key
+in:       key: dub_0123456789abcdef0123456789abcdef01234567
+out:      key: «dub-api-key»89abcdef01234567
+
+case:     a sha256 behind the prefix
+in:       dub_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «dub-api-key»89abcdef0123456789abcdef0123456789abcdef
+
+case:     a run of sixteen behind the prefix, eight characters short of a body
+in:       dub_0123456789abcdef
+out:      dub_0123456789abcdef
+
+case:     an md5 behind a hyphen rather than the prefix
+in:       dub-0123456789abcdef0123456789abcdef
+out:      dub-0123456789abcdef0123456789abcdef
+
+case:     a certificate body in standard base64
+in:       MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0123456789abcdef+/0123456789abcdef
+out:      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0123456789abcdef+/0123456789abcdef
+
+# The kinds Dub writes behind the same four characters that this pattern does
+# not read. Each of them names its kind and closes that name with an underscore,
+# so the twenty-four characters read behind dub_ run into a character no body
+# admits — a rule that turns away a kind added tomorrow without its being
+# written here, where these are the kinds Dub writes today.
+#
+# The embed token is the one whose body carries no run of its own: it is a ULID
+# in Crockford's base32, which holds neither I nor L nor O nor U, so the run it
+# is built from is the uppercase one with those four taken out.
+
+case:     a publishable key
+in:       dub_pk_0123456789abcdefghijklmn
+out:      dub_pk_0123456789abcdefghijklmn
+
+case:     a public embed token
+in:       dub_embed_0123456789ABCDEFGHJKMNPQRS
+out:      dub_embed_0123456789ABCDEFGHJKMNPQRS
+
+case:     an oauth client id
+in:       dub_app_0123456789abcdef0123456789abcdef0123456789abcdef
+out:      dub_app_0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     an oauth client secret
+in:       dub_app_secret_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      dub_app_secret_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+
+case:     an oauth access token
+in:       dub_access_token_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      dub_access_token_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# The prefix without the underscore it closes with, and a body of the right
+# length with no prefix at all.
+
+case:     the prefix without its closing underscore
+in:       dub0123456789abcdefghijklmno
+out:      dub0123456789abcdefghijklmno
+
+case:     a run of the right length opening with no prefix
+in:       xxx_0123456789abcdefghijklmn
+out:      xxx_0123456789abcdefghijklmn

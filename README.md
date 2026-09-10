@@ -35,7 +35,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 ## Built-in patterns
 
-The 70 built-in patterns cover 59 vendors and locate 171 kinds of credential:
+The 71 built-in patterns cover 60 vendors and locate 172 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -51,6 +51,7 @@ The 70 built-in patterns cover 59 vendors and locate 171 kinds of credential:
 | `DigitalOceanPatterns() []Pattern` | DigitalOcean personal access tokens, OAuth access tokens, OAuth refresh tokens |
 | `DockerPatterns() []Pattern` | Docker personal access tokens |
 | `DopplerPatterns() []Pattern` | Doppler CLI tokens, personal tokens, service tokens, service account tokens, service account identity tokens, SCIM tokens, audit tokens |
+| `DubPatterns() []Pattern` | Dub API keys |
 | `DynatracePatterns() []Pattern` | Dynatrace access tokens classic, Dynatrace personal access tokens, Dynatrace OAuth2 refresh tokens, Dynatrace platform tokens |
 | `FlyIOPatterns() []Pattern` | Fly.io access tokens, Fly.io v1 permission tokens, Fly.io v1 discharge tokens |
 | `GitHubPatterns() []Pattern` | GitHub personal access tokens (classic), GitHub fine-grained personal access tokens, GitHub OAuth app access tokens, GitHub App user access tokens, GitHub App installation access tokens, GitHub App refresh tokens |

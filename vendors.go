@@ -93,6 +93,12 @@ func DockerPatterns() []Pattern { return []Pattern{dockerPersonalAccessToken} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func DopplerPatterns() []Pattern { return []Pattern{dopplerAuthToken} }
 
+// DubPatterns returns every built-in pattern that locates a credential Dub
+// issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func DubPatterns() []Pattern { return []Pattern{dubAPIKey} }
+
 // DynatracePatterns returns every built-in pattern that locates a credential
 // Dynatrace issues.
 //

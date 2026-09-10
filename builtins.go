@@ -43,6 +43,7 @@ var builtins = []Pattern{
 	digitalOceanToken,
 	dockerPersonalAccessToken,
 	dopplerAuthToken,
+	dubAPIKey,
 	dynatraceToken,
 	flyIOAccessToken,
 	githubToken,
