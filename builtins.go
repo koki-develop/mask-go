@@ -73,6 +73,7 @@ var builtins = []Pattern{
 	perplexityAPIKey,
 	pineconeAPIKey,
 	planetScaleToken,
+	polarOrganizationAccessToken,
 	postHogPersonalAPIKey,
 	postmanAPIKey,
 	privateKey,
