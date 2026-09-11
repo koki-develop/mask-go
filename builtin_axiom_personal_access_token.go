@@ -72,12 +72,13 @@ func AxiomPersonalAccessToken() Pattern { return axiomPersonalAccessToken }
 // through a log is the same credential, and a reading too narrow costs the whole
 // of it where one too wide costs nothing but a shape nobody issues.
 //
-// The version and the variant a UUID carries are not read. Both whole tokens
-// Axiom prints are version 4, and the nibbles that say so stand at fixed places
-// where they could be demanded — but nothing of Axiom's states a version, so
-// demanding it would be a tightening read off values somebody was shown rather
-// than off the format. Being wrong about it locates nothing at all, where being
-// wrong about the alphabet locates a token with a character too many.
+// The version and the variant a UUID carries are not read. The one whole token
+// Axiom prints — the API token above — is version 4, and the nibbles that say so
+// stand at fixed places where they could be demanded, but nothing of Axiom's
+// states a version, so demanding it would be a tightening read off a value
+// somebody was shown rather than off the format. Being wrong about it locates
+// nothing at all, where being wrong about the alphabet locates a token with a
+// character too many.
 // Test_AxiomPersonalAccessToken_anyVersionAndVariant pins the decision.
 //
 // The byte the scan searches the input for is the x the prefix opens with, and

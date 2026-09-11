@@ -491,10 +491,11 @@ func Test_AxiomPersonalAccessToken_leavesWhatFollowsAlone(t *testing.T) {
 func Test_AxiomPersonalAccessToken_anyVersionAndVariant(t *testing.T) {
 	// The tightening this scan declines. A UUID carries a version at the first
 	// character of its third group and a variant at the first of its fourth, and
-	// both tokens Axiom prints are version 4 with the variant that goes with it.
-	// Neither nibble is read: nothing of Axiom's states a version, so demanding
-	// one would be read off values somebody was shown rather than off the format,
-	// and being wrong about it locates nothing at all.
+	// the one whole token Axiom prints — an API token, which carries the same
+	// layout — is version 4 with the variant that goes with it. Neither nibble is
+	// read: nothing of Axiom's states a version, so demanding one would be read
+	// off values somebody was shown rather than off the format, and being wrong
+	// about it locates nothing at all.
 	//
 	// These carry no ordered run at the two positions, since the run cannot state
 	// a nibble.

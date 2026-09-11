@@ -39,12 +39,12 @@ func PrefectAPIKey() Pattern { return prefectAPIKey }
 //
 // The thirty-six and the alphabet are read off the rules, and off the rules for
 // pnu_ alone. gitleaks and trufflehog each read pnu_ and thirty-six letters and
-// digits; betterleaks reads gitleaks' expression with a closing boundary added,
-// and kingfisher reads this format through it rather than through one of its
-// own; noseyparker carries no Prefect rule at all. Prefect's own page
-// corroborates the count from its side without stating it: the key masked there
-// is written as pnu_ and thirty-six x's, which is a mask of that width rather
-// than a length Prefect has written down.
+// digits; betterleaks reads gitleaks' expression with its closing boundary
+// widened to admit an escaped quote, and kingfisher reads this format through it
+// rather than through one of its own; noseyparker carries no Prefect rule at
+// all. Prefect's own page corroborates the count from its side without stating
+// it: the key masked there is written as pnu_ and thirty-six x's, which is a
+// mask of that width rather than a length Prefect has written down.
 //
 // A fixture in Prefect's own prefect-cloud tests disagrees with that width and
 // settles nothing. It is written pnu_ and thirty-two hexadecimal characters,
