@@ -113,8 +113,10 @@ narrow, not a number to raise.
   to fit that shape is how the table comes to name a credential nobody issues.
 - The sentence above that table counts the built-in patterns, those kinds and
   the vendors: correct all three here. The vendor count moves only where the
-  vendor is new. `Test_README_countsWhatItClaims` (`readme_test.go`) holds the
-  first two against what the package declares, so a pattern or a vendor left
-  uncounted fails under a plain `go test`. The count of kinds is held against
-  the table's own rows and nothing else, since no declaration carries them, so a
-  row widened without the sentence corrected is a reviewer's to catch.
+  vendor is new. `Test_README_countsWhatItClaims` (`readme_test.go`) holds all
+  three under a plain `go test`, though not against the same thing: the patterns
+  and the vendors are held against what the package declares, the kinds against
+  the table's own rows, since no declaration carries them. So a sentence left
+  uncorrected fails whichever of the three moved, and what no test reaches is the
+  naming — whether a row calls a kind what its vendor calls it, which is a
+  reviewer's to catch.
