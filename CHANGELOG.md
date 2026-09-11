@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0](https://github.com/koki-develop/mask-go/compare/v0.4.0...v0.5.0) (2026-09-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* Locate the organization access tokens Docker issues ([#57](https://github.com/koki-develop/mask-go/issues/57)) (#164)
+
+### Features
+
+* Locate the access tokens Duffel issues ([#105](https://github.com/koki-develop/mask-go/issues/105)) ([#172](https://github.com/koki-develop/mask-go/issues/172)) ([2a90580](https://github.com/koki-develop/mask-go/commit/2a90580eb26d572c8d6d037436aadf36ee61e986))
+* Locate the API keys Dub issues for a workspace ([#145](https://github.com/koki-develop/mask-go/issues/145)) ([#162](https://github.com/koki-develop/mask-go/issues/162)) ([c6aea58](https://github.com/koki-develop/mask-go/commit/c6aea58bd3004980f0efe16022f907c51a75c0a8))
+* Locate the API keys Prefect Cloud issues ([#51](https://github.com/koki-develop/mask-go/issues/51)) ([#171](https://github.com/koki-develop/mask-go/issues/171)) ([8cd9cbd](https://github.com/koki-develop/mask-go/commit/8cd9cbd6a8c678f81dbcd49794590c0eaf7de107))
+* Locate the organization access tokens Docker issues ([#57](https://github.com/koki-develop/mask-go/issues/57)) ([#164](https://github.com/koki-develop/mask-go/issues/164)) ([ab0fd08](https://github.com/koki-develop/mask-go/commit/ab0fd08deb7426989dd1abff1b2db1b2c4891a0b))
+* Locate the organization access tokens Polar issues ([#144](https://github.com/koki-develop/mask-go/issues/144)) ([#163](https://github.com/koki-develop/mask-go/issues/163)) ([4166f97](https://github.com/koki-develop/mask-go/commit/4166f97dbbfec82185f3293a56ed5e56f22dd9fb))
+* Locate the personal access tokens Axiom issues ([#143](https://github.com/koki-develop/mask-go/issues/143)) ([#170](https://github.com/koki-develop/mask-go/issues/170)) ([119879a](https://github.com/koki-develop/mask-go/commit/119879a658a7aab7802dd5d53e9c0289955e499c))
+* Release v0.5.0 ([9d38234](https://github.com/koki-develop/mask-go/commit/9d382348c153ca711a447fefaacbd730951c59ae))
+
+
+### Performance Improvements
+
+* Stop the Telegram search where a secret could open, not at every colon ([533d009](https://github.com/koki-develop/mask-go/commit/533d009c2fe515aacfdb91640b670133404d8d14))
+
 ## [0.4.0](https://github.com/koki-develop/mask-go/compare/v0.3.0...v0.4.0) (2026-09-05)
 
 
