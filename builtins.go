@@ -77,6 +77,7 @@ var builtins = []Pattern{
 	polarOrganizationAccessToken,
 	postHogPersonalAPIKey,
 	postmanAPIKey,
+	prefectAPIKey,
 	privateKey,
 	pulumiAccessToken,
 	pypiAPIToken,

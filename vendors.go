@@ -285,6 +285,12 @@ func PostHogPatterns() []Pattern { return []Pattern{postHogPersonalAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func PostmanPatterns() []Pattern { return []Pattern{postmanAPIKey} }
 
+// PrefectPatterns returns every built-in pattern that locates a credential
+// Prefect issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func PrefectPatterns() []Pattern { return []Pattern{prefectAPIKey} }
+
 // PulumiPatterns returns every built-in pattern that locates a credential
 // Pulumi issues.
 //
