@@ -1,0 +1,201 @@
+# What Axiom personal access tokens the library redacts, and what it leaves
+# alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is. That run is sixteen characters and a body is a UUID of
+# thirty-two, so the run is carried round again and laid into the groups of a
+# UUID as 01234567-89ab-cdef-0123-456789abcdef. Where a case is about the ends
+# of the alphabet or about a character the body excludes, the character at that
+# position is the only one that moves.
+
+patterns: axiom-personal-access-token
+
+# The one prefix Axiom issues a personal access token with, in the places a
+# token is written. There is a single kind of string here rather than a table of
+# them: such a token performs every action the person who created it can
+# perform, so nothing in the value says what it reaches.
+
+case:     a token in an environment assignment
+in:       AXIOM_TOKEN=xapt-01234567-89ab-cdef-0123-456789abcdef
+out:      AXIOM_TOKEN=«axiom-personal-access-token»
+
+case:     a token in the bearer authorization header the Axiom API is called with
+in:       Authorization: Bearer xapt-01234567-89ab-cdef-0123-456789abcdef
+out:      Authorization: Bearer «axiom-personal-access-token»
+
+case:     a token in json
+in:       {"token":"xapt-01234567-89ab-cdef-0123-456789abcdef"}
+out:      {"token":"«axiom-personal-access-token»"}
+
+case:     a token on the command line the CLI reference logs in with
+in:       echo "xapt-01234567-89ab-cdef-0123-456789abcdef" | axiom auth login --alias axiom -f
+out:      echo "«axiom-personal-access-token»" | axiom auth login --alias axiom -f
+
+case:     a token in yaml
+in:       axiom_token: xapt-01234567-89ab-cdef-0123-456789abcdef
+out:      axiom_token: «axiom-personal-access-token»
+
+case:     a token in a diff line
+in:       +AXIOM_TOKEN=xapt-01234567-89ab-cdef-0123-456789abcdef
+out:      +AXIOM_TOKEN=«axiom-personal-access-token»
+
+case:     a token in a markdown code span
+in:       `xapt-01234567-89ab-cdef-0123-456789abcdef`
+out:      `«axiom-personal-access-token»`
+
+# The alphabet the groups are written in, which is hexadecimal in either case,
+# and the characters just outside it at the ends of a body.
+
+case:     a body written in capitals
+in:       xapt-01234567-89AB-CDEF-0123-456789ABCDEF
+out:      «axiom-personal-access-token»
+
+case:     a body opening on the last lowercase letter hexadecimal admits
+in:       xapt-f1234567-89ab-cdef-0123-456789abcdef
+out:      «axiom-personal-access-token»
+
+case:     a body closing on the last digit
+in:       xapt-01234567-89ab-cdef-0123-456789abcde9
+out:      «axiom-personal-access-token»
+
+case:     the letter above hexadecimal where a body opens
+in:       xapt-g1234567-89ab-cdef-0123-456789abcdef
+out:      xapt-g1234567-89ab-cdef-0123-456789abcdef
+
+case:     the letter above hexadecimal where a body closes
+in:       xapt-01234567-89ab-cdef-0123-456789abcdeg
+out:      xapt-01234567-89ab-cdef-0123-456789abcdeg
+
+case:     an underscore in the body
+in:       xapt-01234567-89ab_cdef-0123-456789abcdef
+out:      xapt-01234567-89ab_cdef-0123-456789abcdef
+
+# The layout rather than a count. The four separators stand at fixed places and
+# are the whole of what tells a UUID from thirty-six other characters written
+# behind the prefix, so a body of the right length whose separators fall
+# elsewhere is not a token.
+
+case:     a body of thirty-six characters laid out as a uuid is a token
+in:       xapt-01234567-89ab-cdef-0123-456789abcdef
+out:      «axiom-personal-access-token»
+
+case:     a body one character short of the layout
+in:       xapt-01234567-89ab-cdef-0123-456789abcde
+out:      xapt-01234567-89ab-cdef-0123-456789abcde
+
+case:     a separator missing from the body
+in:       xapt-0123456789ab-cdef-0123-456789abcdef0
+out:      xapt-0123456789ab-cdef-0123-456789abcdef0
+
+case:     a separator where the body carries a hexadecimal digit
+in:       xapt--1234567-89ab-cdef-0123-456789abcdef
+out:      xapt--1234567-89ab-cdef-0123-456789abcdef
+
+case:     a hexadecimal run longer than the layout is a token and what follows it
+in:       xapt-01234567-89ab-cdef-0123-456789abcdef0
+out:      «axiom-personal-access-token»0
+
+# The prefix itself: the case Axiom writes it in, and the hyphen it closes with.
+
+case:     the prefix written in capitals
+in:       XAPT-01234567-89ab-cdef-0123-456789abcdef
+out:      XAPT-01234567-89ab-cdef-0123-456789abcdef
+
+case:     an underscore where the prefix carries its hyphen
+in:       xapt_01234567-89ab-cdef-0123-456789abcdef
+out:      xapt_01234567-89ab-cdef-0123-456789abcdef
+
+case:     a run of the right shape opening with no prefix
+in:       xxxx-01234567-89ab-cdef-0123-456789abcdef
+out:      xxxx-01234567-89ab-cdef-0123-456789abcdef
+
+# What a token may be written against. There is no boundary on either side of
+# it, so a token keeps its span whatever word character it abuts — and the
+# layout ends it at its forty-first character, so whatever is written after one
+# stays in the text whether the body's alphabet admits it or not.
+
+case:     a token after an underscore
+in:       AXIOM_TOKEN_xapt-01234567-89ab-cdef-0123-456789abcdef
+out:      AXIOM_TOKEN_«axiom-personal-access-token»
+
+case:     a token after a letter
+in:       zxapt-01234567-89ab-cdef-0123-456789abcdef
+out:      z«axiom-personal-access-token»
+
+case:     a word written against a token
+in:       xapt-01234567-89ab-cdef-0123-456789abcdefsuffix
+out:      «axiom-personal-access-token»suffix
+
+case:     a hyphenated word written against a token
+in:       xapt-01234567-89ab-cdef-0123-456789abcdef-suffix
+out:      «axiom-personal-access-token»-suffix
+
+case:     a token at the end of a sentence
+in:       the token is xapt-01234567-89ab-cdef-0123-456789abcdef.
+out:      the token is «axiom-personal-access-token».
+
+case:     a token immediately against japanese on both sides
+in:       トークンはxapt-01234567-89ab-cdef-0123-456789abcdefです
+out:      トークンは«axiom-personal-access-token»です
+
+case:     a token against an invalid byte
+in:       \xffxapt-01234567-89ab-cdef-0123-456789abcdef\xff
+out:      \xff«axiom-personal-access-token»\xff
+
+# Two tokens written together. No token can begin inside another — a body is
+# hexadecimal and the separator alone, where the prefix carries three characters
+# of neither — so the spans this pattern reports never overlap. The prefix
+# written twice is the nesting that remains: the outer candidate's body opens on
+# the x of the second prefix and so is no body, and the token stands five
+# characters into the forty-one that candidate reached over. A scan stepping
+# past a candidate it rejected would lose it.
+
+case:     a token inside a candidate the body turned away
+in:       xapt-xapt-01234567-89ab-cdef-0123-456789abcdef
+out:      xapt-«axiom-personal-access-token»
+
+case:     two tokens with nothing between them
+in:       xapt-01234567-89ab-cdef-0123-456789abcdefxapt-01234567-89AB-CDEF-0123-456789ABCDEF
+out:      «axiom-personal-access-token»«axiom-personal-access-token»
+
+case:     two tokens separated by a space
+in:       xapt-01234567-89ab-cdef-0123-456789abcdef xapt-01234567-89AB-CDEF-0123-456789ABCDEF
+out:      «axiom-personal-access-token» «axiom-personal-access-token»
+
+# The other kind of token Axiom issues, which this pattern does not read: an API
+# token, written xaat- and the same UUID behind it, which stays in the output
+# whole. It carries only the privileges it was created with where a personal
+# access token performs every action its holder can, so a caller redacting one
+# has reason not to redact the other, and the two belong under separate switches
+# rather than under this one widened to cover both.
+
+case:     an api token
+in:       AXIOM_TOKEN=xaat-01234567-89ab-cdef-0123-456789abcdef
+out:      AXIOM_TOKEN=xaat-01234567-89ab-cdef-0123-456789abcdef
+
+case:     an api token in the bearer authorization header
+in:       Authorization: Bearer xaat-01234567-89ab-cdef-0123-456789abcdef
+out:      Authorization: Bearer xaat-01234567-89ab-cdef-0123-456789abcdef
+
+# A UUID with nothing in front of it, which is the shape an identifier is
+# written in and one a pattern here may not be anchored on. The prefix is the
+# whole of what tells a token from a request id or a row key, so what is left
+# without it stays in the text — as do the separators of a timestamp, which fall
+# at their own places rather than at a UUID's, and a digest, which carries no
+# separator at all.
+
+case:     a uuid on its own
+in:       01234567-89ab-cdef-0123-456789abcdef
+out:      01234567-89ab-cdef-0123-456789abcdef
+
+case:     a uuid as a request id
+in:       request_id=01234567-89ab-cdef-0123-456789abcdef
+out:      request_id=01234567-89ab-cdef-0123-456789abcdef
+
+case:     an iso timestamp in a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="ingested events"
+out:      time=2026-08-17T00:00:00Z level=info msg="ingested events"
+
+case:     a git sha
+in:       0123456789abcdef0123456789abcdef01234567
+out:      0123456789abcdef0123456789abcdef01234567

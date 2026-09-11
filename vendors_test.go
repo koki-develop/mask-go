@@ -34,6 +34,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"AirtablePatterns":     AirtablePatterns,
 	"AnthropicPatterns":    AnthropicPatterns,
 	"AWSPatterns":          AWSPatterns,
+	"AxiomPatterns":        AxiomPatterns,
 	"BuildkitePatterns":    BuildkitePatterns,
 	"CircleCIPatterns":     CircleCIPatterns,
 	"CloudflarePatterns":   CloudflarePatterns,
