@@ -74,6 +74,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"PolarPatterns":        PolarPatterns,
 	"PostHogPatterns":      PostHogPatterns,
 	"PostmanPatterns":      PostmanPatterns,
+	"PrefectPatterns":      PrefectPatterns,
 	"PulumiPatterns":       PulumiPatterns,
 	"PyPIPatterns":         PyPIPatterns,
 	"RenderPatterns":       RenderPatterns,

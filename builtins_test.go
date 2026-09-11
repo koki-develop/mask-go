@@ -759,6 +759,19 @@ var builtinPatterns = []struct {
 		benchmarks: postmanAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "prefect-api-key",
+		pattern: PrefectAPIKey,
+		ref:     referencePrefectAPIKeyFind,
+		samples: []string{
+			"PREFECT_API_KEY=pnu_0123456789abcdefghijklmnopqrstuvwxyz",
+			"pnb_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+			"pnu_0123456789abcdefghijklmnopqrstuvwxyz0",
+			"pnu_0123456789abcdefghijklmnopqrstuvwpnu_0123456789abcdefghijklmnopqrstuvwxyz",
+		},
+		anchors:    []string{"pnu_0123", "pnb_0123"},
+		benchmarks: prefectAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "private-key",
 		pattern: PrivateKey,
 		ref:     referencePrivateKeyFind,

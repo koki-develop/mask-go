@@ -35,7 +35,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 ## Built-in patterns
 
-The 73 built-in patterns cover 62 vendors and locate 175 kinds of credential:
+The 74 built-in patterns cover 63 vendors and locate 177 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -84,6 +84,7 @@ The 73 built-in patterns cover 62 vendors and locate 175 kinds of credential:
 | `PolarPatterns() []Pattern` | Polar organization access tokens |
 | `PostHogPatterns() []Pattern` | PostHog personal API keys |
 | `PostmanPatterns() []Pattern` | Postman API keys |
+| `PrefectPatterns() []Pattern` | Prefect Cloud user API keys, service account API keys |
 | `PrivateKey() Pattern` | PKCS#8 private keys, encrypted PKCS#8 private keys, PKCS#1 RSA private keys, EC private keys, DSA private keys, OpenSSH private keys, PGP private key blocks |
 | `PulumiPatterns() []Pattern` | Pulumi personal access tokens, organization access tokens, team access tokens |
 | `PyPIPatterns() []Pattern` | PyPI API tokens, TestPyPI API tokens, Trusted Publishing short-lived API tokens |

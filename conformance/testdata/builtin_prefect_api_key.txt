@@ -1,0 +1,267 @@
+# What Prefect API keys the library redacts, and what it leaves alone.
+#
+# The keys here are built from the ordered run
+# 0123456789abcdefghijklmnopqrstuvwxyz, which no real credential is. That run is
+# thirty-six characters and so is a whole key body — the shortest one the pattern
+# reads, since the count is a floor. It is spelled in lowercase where the case
+# does not matter and in uppercase where the case is what a case is about: base62
+# holds the letters of both, so either spelling is a body.
+#
+# Four cases carry a key whose body is not that run, because what each of them
+# turns on is a body the run cannot state. The two digest cases that reach a key
+# are written in the sixteen hexadecimal characters repeated, which is what makes
+# them digests; the two base64url cases close their key on a stretch of one
+# repeated character, which is what puts the key inside a longer encoding. The
+# digests that reach no key carry no body of a key to be built either way.
+
+patterns: prefect-api-key
+
+# The two kinds Prefect Cloud issues. Each is pn, one character naming the kind
+# and an underscore, and behind that the same body, so what the character says is
+# whether the key was issued to a person or to a service account and not what the
+# key may reach.
+
+case:     a user key
+in:       pnu_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «prefect-api-key»
+
+case:     a service account key
+in:       pnb_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «prefect-api-key»
+
+# The places a key is written.
+
+case:     a key in an environment assignment
+in:       PREFECT_API_KEY=pnu_0123456789abcdefghijklmnopqrstuvwxyz
+out:      PREFECT_API_KEY=«prefect-api-key»
+
+case:     a key in the line prefect config view prints
+in:       PREFECT_API_KEY='pnu_0123456789abcdefghijklmnopqrstuvwxyz' (from profile)
+out:      PREFECT_API_KEY='«prefect-api-key»' (from profile)
+
+case:     a key in the authorization header a request to the api carries
+in:       Authorization: Bearer pnu_0123456789abcdefghijklmnopqrstuvwxyz
+out:      Authorization: Bearer «prefect-api-key»
+
+case:     a key on the command line that logs the cli in
+in:       prefect cloud login --key pnu_0123456789abcdefghijklmnopqrstuvwxyz
+out:      prefect cloud login --key «prefect-api-key»
+
+case:     a service account key in the environment a worker is given
+in:       docker run -e PREFECT_API_KEY=pnb_0123456789abcdefghijklmnopqrstuvwxyz prefecthq/prefect
+out:      docker run -e PREFECT_API_KEY=«prefect-api-key» prefecthq/prefect
+
+case:     a key in a profiles.toml entry
+in:       [profiles.default]\nPREFECT_API_KEY = "pnb_0123456789abcdefghijklmnopqrstuvwxyz"
+out:      [profiles.default]\nPREFECT_API_KEY = "«prefect-api-key»"
+
+# The alphabet the thirty-six characters are written in. Prefect names none, and
+# base62 — the letters of both cases and the digits — is what the rules reading
+# this format state and what the format's own shape asks for: the alphabet that
+# adds the underscore to base62 is base64url, which adds the hyphen with it, and
+# a body admitting the underscore would carry the character the prefix is read
+# off by. Either of the two ends a body here, wherever in one it stands.
+
+case:     a body written in capitals
+in:       pnu_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      «prefect-api-key»
+
+case:     a body carrying a hyphen
+in:       pnu_0123456789abcdef-ghijklmnopqrstuvwxyz
+out:      pnu_0123456789abcdef-ghijklmnopqrstuvwxyz
+
+case:     a body carrying an underscore
+in:       pnu_0123456789abcdef_ghijklmnopqrstuvwxyz
+out:      pnu_0123456789abcdef_ghijklmnopqrstuvwxyz
+
+# The lengths either side of thirty-six, and what that number rests on — which
+# differs between the two kinds. For a user key it is what the rules reading this
+# format state, and Prefect's own troubleshooting page masks a key exactly that
+# wide without writing a length down. For a service account key nothing states a
+# body at all, and the same number is read there. Both are read as a floor rather
+# than as a count: thirty-five characters are not a key, and thirty-seven are one
+# key to the end of its run rather than a key and a character left over. What the
+# floor costs is the middle case below, and it costs it for a service account key
+# at any length under thirty-six.
+
+case:     a body of thirty-six characters is a key
+in:       pnb_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «prefect-api-key»
+
+case:     a body of thirty-five characters is not
+in:       pnb_0123456789abcdefghijklmnopqrstuvwxy
+out:      pnb_0123456789abcdefghijklmnopqrstuvwxy
+
+case:     an alphabet run longer than the floor is a key to the end of it
+in:       pnu_0123456789abcdefghijklmnopqrstuvwxyz0
+out:      «prefect-api-key»
+
+case:     a service account key longer than the floor is a key to the end of it
+in:       pnb_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      «prefect-api-key»
+
+# What a key may be written against. The prefix is the whole of the anchor and
+# there is no boundary on either side of it, so a key keeps its span whatever
+# word character it abuts — and where the run of its alphabet carries on past the
+# floor, what carries it on is redacted with the key. A hyphen and an underscore
+# end the run instead.
+
+case:     a key after an underscore
+in:       PREFECT_API_KEY_pnu_0123456789abcdefghijklmnopqrstuvwxyz
+out:      PREFECT_API_KEY_«prefect-api-key»
+
+case:     a key after a letter
+in:       xpnu_0123456789abcdefghijklmnopqrstuvwxyz
+out:      x«prefect-api-key»
+
+case:     a word written against a key
+in:       pnu_0123456789abcdefghijklmnopqrstuvwxyzsuffix
+out:      «prefect-api-key»
+
+case:     a hyphenated word written against a key
+in:       pnu_0123456789abcdefghijklmnopqrstuvwxyz-suffix
+out:      «prefect-api-key»-suffix
+
+case:     an underscored word written against a key
+in:       pnu_0123456789abcdefghijklmnopqrstuvwxyz_suffix
+out:      «prefect-api-key»_suffix
+
+case:     a key at the end of a sentence
+in:       the key is pnu_0123456789abcdefghijklmnopqrstuvwxyz.
+out:      the key is «prefect-api-key».
+
+# Two keys written together, which merge for two different reasons. The three
+# characters in front of the underscore belong to the alphabet a body is written
+# in, so a body may close with pn and a kind character and the underscore of the
+# next key stand directly behind it; the second key then begins three characters
+# before the first one ends, and the two spans overlap. Two keys written straight
+# against each other merge as well, and the reason there is that a span reaches
+# the end of its run: the first key's run carries on through the pn and the kind
+# character of the second prefix and stops at that prefix's underscore, so the
+# first span already covers where the second one begins. Parted by anything a run
+# does not admit, they are two values and both go.
+
+case:     a key beginning inside the key before it
+in:       pnu_0123456789abcdefghijklmnopqrstuvwpnu_0123456789abcdefghijklmnopqrstuvwxyz
+out:      «prefect-api-key»
+
+case:     two keys with nothing between them
+in:       pnu_0123456789abcdefghijklmnopqrstuvwxyzpnb_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      «prefect-api-key»
+
+case:     two keys of different kinds separated by a space
+in:       pnu_0123456789abcdefghijklmnopqrstuvwxyz pnb_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ
+out:      «prefect-api-key» «prefect-api-key»
+
+# What this pattern redacts that nobody issued. The prefix carries an underscore,
+# which standard base64 writes nowhere, so only a base64url encoding can hold
+# one. Where thirty-six base62 characters follow, the run from the prefix to the
+# end of them is redacted whether or not Prefect issued it. That is the answer
+# rather than a fault in it, because such a run is a key's format exactly and
+# nothing in the text tells the two apart: sparing these would spare a real key
+# written the same way. What is taken is a stretch of a value that was already
+# opaque to a reader.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzzpnu_0123456789abcdefghijklmnopqrstuvwxyzzzzz
+out:      payload=zzzz«prefect-api-key»
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzpnu_0123456789abcdefghijklmnopqrstuvwxyzzzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«prefect-api-key»
+
+# A digest written behind the prefix. Hexadecimal digits are base62 and a digest
+# carries nothing that ends a run, so a prefix and the forty characters of a
+# SHA-1 are a key's format exactly, as a prefix and the sixty-four of a SHA-256
+# are. Both are redacted. Declining them would mean declining every key Prefect
+# happened to write in the digits alone, which is a whole credential against a
+# cache key. What holds either side of it is the floor and the prefix: an MD5 is
+# thirty-two characters, four short of a body, and a hyphen is no character a
+# prefix carries.
+
+case:     a sha1 behind the prefix
+in:       pnu_0123456789abcdef0123456789abcdef01234567
+out:      «prefect-api-key»
+
+case:     a sha256 in a cache key
+in:       key: pnu_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      key: «prefect-api-key»
+
+case:     an md5 behind the prefix, four characters short of a body
+in:       pnu_0123456789abcdef0123456789abcdef
+out:      pnu_0123456789abcdef0123456789abcdef
+
+case:     a sha1 behind a hyphen rather than the prefix
+in:       pnu-0123456789abcdef0123456789abcdef01234567
+out:      pnu-0123456789abcdef0123456789abcdef01234567
+
+# And what this pattern leaves alone. The prefix is held to the case Prefect
+# writes it in, to all four of its characters, and to naming one of the two
+# kinds. A digest and a sentence hold no underscore where a prefix wants one, so
+# they hold no position to be found at however long they run.
+
+case:     an uppercase prefix
+in:       PNU_0123456789abcdefghijklmnopqrstuvwxyz
+out:      PNU_0123456789abcdefghijklmnopqrstuvwxyz
+
+case:     a hyphen where the prefix carries an underscore
+in:       pnu-0123456789abcdefghijklmnopqrstuvwxyz
+out:      pnu-0123456789abcdefghijklmnopqrstuvwxyz
+
+case:     a character naming no kind
+in:       pna_0123456789abcdefghijklmnopqrstuvwxyz
+out:      pna_0123456789abcdefghijklmnopqrstuvwxyz
+
+case:     the opening and the underscore with no kind between them
+in:       pn_0123456789abcdefghijklmnopqrstuvwxyz
+out:      pn_0123456789abcdefghijklmnopqrstuvwxyz
+
+case:     a body broken by a space
+in:       pnu_0123456789abcdef ghijklmnopqrstuvwxyz
+out:      pnu_0123456789abcdef ghijklmnopqrstuvwxyz
+
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdefghijklmnopqrstuvwxyz
+out:      0123456789abcdefghijklmnopqrstuvwxyz
+
+case:     a hexadecimal digest
+in:       sha1=0123456789abcdef0123456789abcdef01234567
+out:      sha1=0123456789abcdef0123456789abcdef01234567
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+# And a Prefect credential this pattern has nothing to say about. The key its
+# first cloud issued is named by Prefect's CLI only to tell a caller which
+# service the key was minted against, and what it names is three letters with no
+# separator behind them. Three letters on their own open a candidate inside
+# prose, and Prefect states no alphabet, no length and no character to close a
+# prefix with, so there is nothing here to read a key by.
+
+case:     a key of the format prefect cloud one issued
+in:       PREFECT__CLOUD__API_KEY=pcu0123456789abcdefghijklmnopqrstuvwxyz
+out:      PREFECT__CLOUD__API_KEY=pcu0123456789abcdefghijklmnopqrstuvwxyz
+
+# Further text shapes a key is written in, and further adjacency the prefix and
+# the run carry no boundary against.
+
+case:     a key in a url query string
+in:       https://api.prefect.cloud/api/accounts/0123/workspaces?api_key=pnu_0123456789abcdefghijklmnopqrstuvwxyz&page=2
+out:      https://api.prefect.cloud/api/accounts/0123/workspaces?api_key=«prefect-api-key»&page=2
+
+case:     two keys in parentheses
+in:       (pnu_0123456789abcdefghijklmnopqrstuvwxyz, pnb_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ)
+out:      («prefect-api-key», «prefect-api-key»)
+
+case:     a key followed by a carriage return and a newline
+in:       PREFECT_API_KEY=pnb_0123456789abcdefghijklmnopqrstuvwxyz\r\n
+out:      PREFECT_API_KEY=«prefect-api-key»\r\n
+
+case:     a key between tabs
+in:       \tpnu_0123456789abcdefghijklmnopqrstuvwxyz\t
+out:      \t«prefect-api-key»\t
+
+case:     a key between japanese
+in:       日本語pnu_0123456789abcdefghijklmnopqrstuvwxyz日本語
+out:      日本語«prefect-api-key»日本語
