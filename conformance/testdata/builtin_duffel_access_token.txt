@@ -1,0 +1,277 @@
+# What Duffel access tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is. That run is sixteen characters and a body is forty-three, so a
+# body carries on through the alphabet to z and then back to 0. Where a case is
+# about one position of the body rather than about the count, that position is
+# rewritten and the rest of the run is left standing, so the body still comes to
+# forty-three.
+
+patterns: duffel-access-token
+
+# The two prefixes Duffel issues an access token with, one to a mode. There is
+# no third kind of string here: a token is created read-only or read-write and
+# Duffel writes the permission nowhere in it, so nothing in the value says what
+# it reaches, and the cases below are the one shape in the places a token is
+# written.
+
+case:     a live token in an environment assignment
+in:       DUFFEL_ACCESS_TOKEN=duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      DUFFEL_ACCESS_TOKEN=«duffel-access-token»
+
+case:     a test token in an environment assignment
+in:       DUFFEL_ACCESS_TOKEN=duffel_test_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      DUFFEL_ACCESS_TOKEN=«duffel-access-token»
+
+case:     a token in the bearer authorization header the duffel api is called with
+in:       Authorization: Bearer duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      Authorization: Bearer «duffel-access-token»
+
+case:     a token in json
+in:       {"access_token":"duffel_test_0123456789abcdefghijklmnopqrstuvwxyz0123456"}
+out:      {"access_token":"«duffel-access-token»"}
+
+case:     a token on a command line
+in:       curl -H "Authorization: Bearer duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456" https://api.duffel.com/air/orders
+out:      curl -H "Authorization: Bearer «duffel-access-token»" https://api.duffel.com/air/orders
+
+case:     a token in a configuration environment block
+in:       "env": {"DUFFEL_ACCESS_TOKEN": "duffel_test_0123456789abcdefghijklmnopqrstuvwxyz0123456"}
+out:      "env": {"DUFFEL_ACCESS_TOKEN": "«duffel-access-token»"}
+
+case:     a token in yaml
+in:       duffel_access_token: duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      duffel_access_token: «duffel-access-token»
+
+case:     a token in a diff line
+in:       +DUFFEL_ACCESS_TOKEN=duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      +DUFFEL_ACCESS_TOKEN=«duffel-access-token»
+
+case:     a token in a markdown code span
+in:       `duffel_test_0123456789abcdefghijklmnopqrstuvwxyz0123456`
+out:      `«duffel-access-token»`
+
+# The alphabet the forty-three characters are written in. It is base64url — the
+# letters of both cases, the digits, the hyphen and the underscore. The two
+# characters standard base64 writes in place of the last of those, the plus sign
+# and the slash, are not admitted, and neither is the equals sign a padded
+# encoding closes on.
+
+case:     a body written in capitals
+in:       duffel_live_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456
+out:      «duffel-access-token»
+
+case:     a body opening on a hyphen
+in:       duffel_live_-123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      «duffel-access-token»
+
+case:     a body closing on a hyphen
+in:       duffel_live_0123456789abcdefghijklmnopqrstuvwxyz012345-
+out:      «duffel-access-token»
+
+case:     a body opening on an underscore
+in:       duffel_live__123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      «duffel-access-token»
+
+case:     a body closing on an underscore
+in:       duffel_live_0123456789abcdefghijklmnopqrstuvwxyz012345_
+out:      «duffel-access-token»
+
+case:     a body opening on the last letter of the alphabet
+in:       duffel_live_z123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      «duffel-access-token»
+
+case:     a body closing on the last letter of the alphabet
+in:       duffel_live_0123456789abcdefghijklmnopqrstuvwxyz012345z
+out:      «duffel-access-token»
+
+case:     a body carrying a plus sign
+in:       duffel_live_0123456789abcdefghijklmnop+rstuvwxyz0123456
+out:      duffel_live_0123456789abcdefghijklmnop+rstuvwxyz0123456
+
+case:     a body carrying a slash
+in:       duffel_live_0123456789abcdefghijklmnop/rstuvwxyz0123456
+out:      duffel_live_0123456789abcdefghijklmnop/rstuvwxyz0123456
+
+case:     a body carrying an equals sign
+in:       duffel_live_0123456789abcdefghijklmnop=rstuvwxyz0123456
+out:      duffel_live_0123456789abcdefghijklmnop=rstuvwxyz0123456
+
+case:     a dot straight behind the prefix
+in:       duffel_live_.123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      duffel_live_.123456789abcdefghijklmnopqrstuvwxyz0123456
+
+case:     a space straight behind the prefix
+in:       duffel_live_ 123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      duffel_live_ 123456789abcdefghijklmnopqrstuvwxyz0123456
+
+# The lengths either side of forty-three. The count is read exactly rather than
+# as a floor: forty-three base64url characters are the width thirty-two bytes
+# encode to, and no other whole number of bytes comes to it. So forty-two
+# characters are not a token, and forty-four are a token and the character
+# written after it.
+
+case:     a body of forty-three characters is a token
+in:       duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      «duffel-access-token»
+
+case:     a body of forty-two characters is not
+in:       duffel_live_0123456789abcdefghijklmnopqrstuvwxyz012345
+out:      duffel_live_0123456789abcdefghijklmnopqrstuvwxyz012345
+
+case:     an alphabet run longer than the count is a token and what follows it
+in:       duffel_live_0123456789abcdefghijklmnopqrstuvwxyz01234567
+out:      «duffel-access-token»7
+
+# The modes. The scan reads the two Duffel names rather than any word standing
+# where a mode stands, and the strings below are what that decides: Duffel
+# writes its own name in front of a word in its stays response, in its identity
+# response and in the user agent its own client libraries send. The second case
+# is what a scan reading any word there would locate whole.
+
+case:     a mode no duffel page writes
+in:       duffel_prod_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      duffel_prod_0123456789abcdefghijklmnopqrstuvwxyz0123456
+
+case:     a stays rate source with a body behind it
+in:       duffel_hotel_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      duffel_hotel_0123456789abcdefghijklmnopqrstuvwxyz0123456
+
+case:     the rate source as the stays response writes it
+in:       {"source":"duffel_hotel_group_rewards"}
+out:      {"source":"duffel_hotel_group_rewards"}
+
+case:     the user agent duffel's own client library sends
+in:       User-Agent: Duffel/v2 duffel_api_javascript/4.9.0
+out:      User-Agent: Duffel/v2 duffel_api_javascript/4.9.0
+
+case:     a field of the identity response
+in:       {"is_duffel_links_enabled":true}
+out:      {"is_duffel_links_enabled":true}
+
+case:     the prefix written in capitals
+in:       DUFFEL_LIVE_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      DUFFEL_LIVE_0123456789abcdefghijklmnopqrstuvwxyz0123456
+
+case:     hyphens where the prefix carries underscores
+in:       duffel-live-0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      duffel-live-0123456789abcdefghijklmnopqrstuvwxyz0123456
+
+# What a token may be written against. There is no boundary on either side of
+# the prefix, so a token keeps its span whatever word character it abuts — and
+# the count ends it at its fifty-fifth character, so whatever is written after
+# one stays in the text whether the alphabet admits it or not.
+
+case:     a token after an underscore
+in:       DUFFEL_ACCESS_TOKEN_duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      DUFFEL_ACCESS_TOKEN_«duffel-access-token»
+
+case:     a token after a letter
+in:       xduffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      x«duffel-access-token»
+
+case:     a word written against a token
+in:       duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456suffix
+out:      «duffel-access-token»suffix
+
+case:     a hyphenated word written against a token
+in:       duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456-suffix
+out:      «duffel-access-token»-suffix
+
+case:     an underscored word written against a token
+in:       duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456_suffix
+out:      «duffel-access-token»_suffix
+
+case:     a token at the end of a sentence
+in:       the token is duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456.
+out:      the token is «duffel-access-token».
+
+case:     a token immediately against japanese on both sides
+in:       トークンはduffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456です
+out:      トークンは«duffel-access-token»です
+
+case:     a token against an invalid byte
+in:       \xffduffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456\xff
+out:      \xff«duffel-access-token»\xff
+
+# Two tokens written together. Every character of a prefix belongs to the
+# alphabet a body is written in, so a prefix can stand inside the body of the
+# token before it; the second token begins twelve characters into the first, the
+# two spans overlap and are redacted as one. Written with nothing at all between
+# them the two are separate values, since the count ends the first where the
+# second opens.
+
+case:     a token beginning inside the token before it
+in:       duffel_test_duffel_test_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      «duffel-access-token»
+
+case:     two tokens with nothing between them
+in:       duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456duffel_test_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456
+out:      «duffel-access-token»«duffel-access-token»
+
+case:     two tokens separated by a space
+in:       duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456 duffel_test_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456
+out:      «duffel-access-token» «duffel-access-token»
+
+# What this pattern redacts that nobody issued. A prefix holds two underscores,
+# which hexadecimal, base62, standard base64 and base32 write nowhere, so only a
+# base64url encoding can spell one — and where forty-three characters of the
+# alphabet follow, those fifty-five characters are redacted whether or not
+# Duffel issued them. Such a run is a token's format exactly and nothing in the
+# text tells the two apart, so sparing it would spare a real token written the
+# same way.
+#
+# The digest is the same over-match taking a value a reader had a use for. The
+# hexadecimal digits are base64url and a digest carries nothing that ends a run,
+# so a SHA-256 written behind a prefix is longer than a body and the first
+# forty-three characters of it go with the prefix while the rest stays. What
+# holds either side of it is the count and the prefix — a SHA-1 at forty and a
+# UUID at thirty-six are short of a body, and a UUID's hyphens are in the
+# alphabet, so it is the count that turns one away and not the separators.
+#
+# The last case is the encoding that carries none of this. Standard base64
+# writes + and / where base64url writes the hyphen and the underscore, so a
+# certificate body holds no prefix to be found at however long it runs.
+
+case:     the prefix inside a longer run of base64url
+in:       payload=zzzzduffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456zzzz
+out:      payload=zzzz«duffel-access-token»zzzz
+
+case:     the prefix where a signature stands
+in:       eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzzduffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456zzzz
+out:      eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhYmMifQ.zzzz«duffel-access-token»zzzz
+
+case:     a sha256 behind the prefix
+in:       duffel_live_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «duffel-access-token»bcdef0123456789abcdef
+
+case:     a sha1 behind the prefix, three characters short of a body
+in:       duffel_live_0123456789abcdef0123456789abcdef01234567
+out:      duffel_live_0123456789abcdef0123456789abcdef01234567
+
+case:     a uuid behind the prefix
+in:       duffel_live_01234567-89ab-cdef-0123-456789abcdef
+out:      duffel_live_01234567-89ab-cdef-0123-456789abcdef
+
+case:     a sha256 behind a hyphen rather than the prefix
+in:       duffel-live-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      duffel-live-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a certificate body in standard base64
+in:       MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0123456789abcdef+/0123456789abcdef
+out:      MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0123456789abcdef+/0123456789abcdef
+
+# The prefix with each of its two underscores dropped in turn, and a body of the
+# right length with no prefix at all.
+
+case:     the opening without its underscore
+in:       duffellive_0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      duffellive_0123456789abcdefghijklmnopqrstuvwxyz0123456
+
+case:     the mode without the underscore that closes it
+in:       duffel_live0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      duffel_live0123456789abcdefghijklmnopqrstuvwxyz0123456
+
+case:     a run of the right length opening with no prefix
+in:       0123456789abcdefghijklmnopqrstuvwxyz0123456
+out:      0123456789abcdefghijklmnopqrstuvwxyz0123456

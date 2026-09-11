@@ -105,6 +105,12 @@ func DopplerPatterns() []Pattern { return []Pattern{dopplerAuthToken} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func DubPatterns() []Pattern { return []Pattern{dubAPIKey} }
 
+// DuffelPatterns returns every built-in pattern that locates a credential
+// Duffel issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func DuffelPatterns() []Pattern { return []Pattern{duffelAccessToken} }
+
 // DynatracePatterns returns every built-in pattern that locates a credential
 // Dynatrace issues.
 //

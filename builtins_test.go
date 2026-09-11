@@ -312,6 +312,20 @@ var builtinPatterns = []struct {
 		benchmarks: dubAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "duffel-access-token",
+		pattern: DuffelAccessToken,
+		ref:     referenceDuffelAccessTokenFind,
+		samples: []string{
+			"DUFFEL_ACCESS_TOKEN=duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456",
+			"duffel_test_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456",
+			"duffel_test_duffel_test_0123456789abcdefghijklmnopqrstuvwxyz0123456",
+			"duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456duffel_test_0123456789abcdefghijklmnopqrstuvwxyz0123456",
+			"duffel_live_0123456789abcdefghijklmnopqrstuvwxyz0123456 duffel_test_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456",
+		},
+		anchors:    []string{"duffel_live_0123456789abcdef", "duffel_test_0123456789abcdef"},
+		benchmarks: duffelAccessTokenFindBenchmarks,
+	},
+	{
 		name:    "dynatrace-token",
 		pattern: DynatraceToken,
 		ref:     referenceDynatraceTokenFind,
