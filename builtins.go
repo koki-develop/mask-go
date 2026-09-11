@@ -33,6 +33,7 @@ var builtins = []Pattern{
 	anthropicCredential,
 	awsAccessKeyID,
 	awsSecretAccessKey,
+	axiomPersonalAccessToken,
 	buildkiteToken,
 	circleCIAPIToken,
 	cloudflareAPIKey,

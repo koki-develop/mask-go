@@ -43,6 +43,12 @@ func AnthropicPatterns() []Pattern { return []Pattern{anthropicCredential} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func AWSPatterns() []Pattern { return []Pattern{awsAccessKeyID, awsSecretAccessKey} }
 
+// AxiomPatterns returns every built-in pattern that locates a credential Axiom
+// issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func AxiomPatterns() []Pattern { return []Pattern{axiomPersonalAccessToken} }
+
 // BuildkitePatterns returns every built-in pattern that locates a credential
 // Buildkite issues.
 //
