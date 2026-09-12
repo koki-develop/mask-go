@@ -39,6 +39,7 @@ var builtins = []Pattern{
 	circleCIAPIToken,
 	cloudflareAPIKey,
 	cloudflareAPIToken,
+	cloudflareOriginCAKey,
 	cratesIOToken,
 	databricksOAuthClientSecret,
 	databricksPersonalAccessToken,

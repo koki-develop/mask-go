@@ -65,7 +65,9 @@ func CircleCIPatterns() []Pattern { return []Pattern{circleCIAPIToken} }
 // Cloudflare issues.
 //
 // The returned slice is freshly allocated and may be modified by the caller.
-func CloudflarePatterns() []Pattern { return []Pattern{cloudflareAPIKey, cloudflareAPIToken} }
+func CloudflarePatterns() []Pattern {
+	return []Pattern{cloudflareAPIKey, cloudflareAPIToken, cloudflareOriginCAKey}
+}
 
 // CratesIOPatterns returns every built-in pattern that locates a credential
 // crates.io issues.

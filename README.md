@@ -35,7 +35,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 ## Built-in patterns
 
-The 77 built-in patterns cover 65 vendors and locate 180 kinds of credential:
+The 78 built-in patterns cover 65 vendors and locate 181 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -46,7 +46,7 @@ The 77 built-in patterns cover 65 vendors and locate 180 kinds of credential:
 | `AxiomPatterns() []Pattern` | Axiom API tokens, Axiom personal access tokens |
 | `BuildkitePatterns() []Pattern` | Buildkite API access tokens, agent session tokens, agent job tokens, unclustered agent tokens, agent tokens, registry tokens, Package Registries temporary tokens, portal tokens, portal secrets, job acquisition tokens, token exchange tokens |
 | `CircleCIPatterns() []Pattern` | CircleCI personal API tokens, project API tokens |
-| `CloudflarePatterns() []Pattern` | Cloudflare API tokens, Cloudflare API keys |
+| `CloudflarePatterns() []Pattern` | Cloudflare API tokens, Cloudflare API keys, Cloudflare Origin CA keys |
 | `CratesIOPatterns() []Pattern` | crates.io API tokens, Trusted Publishing access tokens |
 | `DatabricksPatterns() []Pattern` | Databricks personal access tokens, Databricks OAuth client secrets |
 | `DigitalOceanPatterns() []Pattern` | DigitalOcean personal access tokens, OAuth access tokens, OAuth refresh tokens |

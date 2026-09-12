@@ -1,0 +1,174 @@
+# What Cloudflare Origin CA keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef, which no real
+# credential is. The run written once and eight characters of it again is the
+# twenty-four of the first run; written nine times and two characters more it is
+# the hundred and forty-six of the second; and with the prefix and the separator
+# between them that comes to the hundred and seventy-six characters Cloudflare's
+# own format is written to. The counts are not an abbreviation — a run shortened
+# for readability would leave a case holding no key at all. The body is
+# hexadecimal and lowercase, so the run repeats those sixteen characters rather
+# than carrying on through the alphabet, and the case that turns on case is
+# written with the same run in uppercase.
+
+patterns: cloudflare-origin-ca-key
+
+# A key as it is written. Cloudflare issues one under this name, sends it as a
+# header of its own rather than in a bearer header, and reads it from the Origin
+# CA certificates API and from the Keyless SSL key server. So what is below
+# differs in where a key stands rather than in what it is.
+
+case:     a key in an environment assignment
+in:       CLOUDFLARE_ORIGIN_CA_KEY=v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      CLOUDFLARE_ORIGIN_CA_KEY=«cloudflare-origin-ca-key»
+
+case:     a key in the service key header
+in:       X-Auth-User-Service-Key: v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      X-Auth-User-Service-Key: «cloudflare-origin-ca-key»
+
+case:     a key on a command line
+in:       curl -H "X-Auth-User-Service-Key: v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01" https://api.cloudflare.com/client/v4/certificates
+out:      curl -H "X-Auth-User-Service-Key: «cloudflare-origin-ca-key»" https://api.cloudflare.com/client/v4/certificates
+
+case:     a key in a json body
+in:       {"service_key":"v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01"}
+out:      {"service_key":"«cloudflare-origin-ca-key»"}
+
+case:     a key at the end of a sentence
+in:       the key is v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01.
+out:      the key is «cloudflare-origin-ca-key».
+
+case:     a key flush against a multi-byte rune on both sides
+in:       日本語v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01日本語
+out:      日本語«cloudflare-origin-ca-key»日本語
+
+case:     a key in a tab separated field
+in:       origin_ca_key\tv1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      origin_ca_key\t«cloudflare-origin-ca-key»
+
+case:     a key followed by a crlf
+in:       CLOUDFLARE_ORIGIN_CA_KEY=v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01\r\n
+out:      CLOUDFLARE_ORIGIN_CA_KEY=«cloudflare-origin-ca-key»\r\n
+
+case:     a key in a markdown code span
+in:       `v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01`
+out:      `«cloudflare-origin-ca-key»`
+
+# The alphabet, which is one class over both runs: lowercase hexadecimal. It is
+# read in lowercase alone, which the pattern's own file weighs — the whole of
+# the body being one class, admitting the other case would draw in every
+# uppercase hexadecimal run written behind a version string and buy no key a
+# narrower reading loses. The first case below writes the last letter of the
+# class at the first and the last character of either run, which the ordered run
+# reaches at neither end.
+
+case:     both runs opening and closing on the last letter of the alphabet
+in:       v1.0-f123456789abcdef0123456f-f123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0f
+out:      «cloudflare-origin-ca-key»
+
+case:     an uppercase body
+in:       v1.0-0123456789ABCDEF01234567-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF01
+out:      v1.0-0123456789ABCDEF01234567-0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF01
+
+# The lengths. Cloudflare states neither of them: what states them is the whole
+# value its API reference writes behind the header, corroborated by the two
+# published rulesets that spell the same split and by a third that spells the
+# width of the two runs and the separator together. Both are read as counts and
+# not as floors, which cuts both ways: a run one character short is located
+# nowhere, and a run one character longer is a key with a character written
+# after it.
+
+case:     a first run one character short
+in:       v1.0-0123456789abcdef0123456-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      v1.0-0123456789abcdef0123456-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+
+case:     a second run one character longer is a key and the character after it
+in:       v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef010
+out:      «cloudflare-origin-ca-key»0
+
+# The separator, which stands at the twenty-fifth character behind the prefix
+# and at no other, and is the one character of a body that is no hexadecimal
+# digit. The two runs written against each other put nothing where it belongs,
+# and the reading ends at that character.
+
+case:     the two runs written with no separator between them
+in:       v1.0-0123456789abcdef012345670123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      v1.0-0123456789abcdef012345670123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+
+# What a key may be written against. There is no boundary on either side of the
+# prefix, so a key keeps its span whatever word character it abuts, and what
+# stands past the hundred and seventy-sixth character stays where it was
+# written. The first two cases are what a boundary in front would cost; the
+# third is what it would buy, which is a word closing on the character a key
+# opens with.
+
+case:     a key after an underscore
+in:       CLOUDFLARE_ORIGIN_CA_KEY_v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      CLOUDFLARE_ORIGIN_CA_KEY_«cloudflare-origin-ca-key»
+
+case:     a key after a letter
+in:       xv1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      x«cloudflare-origin-ca-key»
+
+case:     a word closing on the character a key opens with
+in:       rev1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      re«cloudflare-origin-ca-key»
+
+case:     a word written against a key
+in:       v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01suffix
+out:      «cloudflare-origin-ca-key»suffix
+
+case:     a hyphenated word written against a key
+in:       v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01-suffix
+out:      «cloudflare-origin-ca-key»-suffix
+
+# Two keys written together, and a key written inside a candidate. The character
+# a key opens with is written in neither run and nowhere else in the prefix, so
+# it stands once in a key and a second key can begin at no character of the
+# first — the two redactions below meet rather than overlap. The scan advances
+# rather than consuming its match all the same, and what that finds is the key
+# standing inside a candidate that is no key.
+
+case:     two keys with nothing between them
+in:       v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef23
+out:      «cloudflare-origin-ca-key»«cloudflare-origin-ca-key»
+
+case:     a candidate whose body opens with a prefix
+in:       v1.0-v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      v1.0-«cloudflare-origin-ca-key»
+
+# The prefix as ordinary text writes it: v1.0- is how a pre-release version is
+# written. What turns those away is the body rather than the prefix, and on a
+# line of their own it is the count that does it: none of the three carries
+# anywhere near the hundred and seventy-one characters a key has behind its
+# prefix.
+
+case:     a pre-release version
+in:       v1.0-beta
+out:      v1.0-beta
+
+case:     a release candidate
+in:       v1.0-rc1
+out:      v1.0-rc1
+
+case:     the output of git describe
+in:       v1.0-12-g0123abc
+out:      v1.0-12-g0123abc
+
+# And what this pattern leaves alone otherwise. A body of the right shape with
+# no prefix in front of it, a digest written where the second run stands — no
+# digest is written to either count, an MD5 being thirty-two characters, a SHA-1
+# forty, a SHA-256 sixty-four and a SHA-512 a hundred and twenty-eight — and the
+# log line no pattern here has anything to find in.
+
+case:     a body of the right shape opening with no prefix
+in:       x1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+out:      x1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01
+
+case:     a sha256 where the second run stands
+in:       v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/certificates
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://api.cloudflare.com/client/v4/certificates
