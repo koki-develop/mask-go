@@ -134,6 +134,18 @@ var builtinPatterns = []struct {
 		benchmarks: awsSecretAccessKeyFindBenchmarks,
 	},
 	{
+		name:    "axiom-api-token",
+		pattern: AxiomAPIToken,
+		ref:     referenceAxiomAPITokenFind,
+		samples: []string{
+			"AXIOM_TOKEN=xaat-01234567-89ab-cdef-0123-456789abcdef",
+			"xaat-xaat-01234567-89ab-cdef-0123-456789abcdef",
+			"xaat-01234567-89ab-cdef-0123-456789abcdefxaat-01234567-89AB-CDEF-0123-456789ABCDEF",
+		},
+		anchors:    []string{"xaat-01234567-89ab-cdef"},
+		benchmarks: axiomAPITokenFindBenchmarks,
+	},
+	{
 		name:    "axiom-personal-access-token",
 		pattern: AxiomPersonalAccessToken,
 		ref:     referenceAxiomPersonalAccessTokenFind,

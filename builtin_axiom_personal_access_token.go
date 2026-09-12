@@ -26,17 +26,18 @@ func AxiomPersonalAccessToken() Pattern { return axiomPersonalAccessToken }
 // lets you do everything you can do in the Axiom Console, and the Console mints
 // one under Settings, Profile, Personal tokens.
 //
-// The API token Axiom writes xaat- is not read here, and where one is written it
-// stays in the output whole. That is stated rather than hidden, and what puts the
-// boundary there is the difference Axiom itself draws: a personal access token
-// performs every action its holder can perform, across every organization they
-// belong to, where an API token carries only the privileges it was created with
-// and reaches only the datasets it was given. A caller has reason to redact one
-// and not the other, and a redactor keying on Match.Pattern.Name can say which of
-// the two a log carried — so the two belong under separate switches rather than
-// under this one widened to cover both.
+// The API token Axiom writes xaat- is not read here. AxiomAPIToken
+// (builtin_axiom_api_token.go) is the other half of this vendor's format and
+// reads it, and what puts the boundary between them is the difference Axiom
+// itself draws: a personal access token performs every action its holder can
+// perform, across every organization they belong to, where an API token carries
+// only the privileges it was created with and reaches only the datasets it was
+// given. A caller has reason to redact one and not the other, and a redactor
+// keying on Match.Pattern.Name can say which of the two a log carried — so the
+// two belong under separate switches rather than under one widened to cover
+// both.
 // Test_AxiomPersonalAccessToken_theAPIToken pins that this scan declines the
-// other prefix, so that reading it is a change somebody argues for.
+// other prefix, so that reading it here is a change somebody argues for.
 //
 // The prefix is Axiom's own, stated as a rule rather than shown in an example.
 // The CLI reference writes it twice in prose, and Axiom's own Go SDK is where it
@@ -57,15 +58,29 @@ func AxiomPersonalAccessToken() Pattern { return axiomPersonalAccessToken }
 // So the layout is read off the vendor on both of the kinds it issues rather
 // than off one masked example.
 //
-// No published ruleset reads this format. gitleaks, trufflehog, noseyparker and
-// kingfisher carry no Axiom rule at all, so there is nothing to weigh the layout
-// against and nothing that disagrees with it.
+// No ruleset states a shape for this format, so there is nothing to weigh the
+// layout against and nothing that disagrees with it. gitleaks, trufflehog,
+// noseyparker and the secrets-patterns-db carry no Axiom rule at all.
+// kingfisher announces one from v1.96.0 for a token of each kind, and it is a
+// rule nobody can read: kingfisher generates its catalog at build time from
+// upstream Betterleaks and Veles sources and checks none of it in, and neither
+// the Betterleaks catalog it pins nor the Veles detectors it selects carries an
+// Axiom rule. A provider named in a changelog is not an expression, and a
+// tightening read off one would rest on nothing.
 //
 // The body is read as a UUID rather than as thirty-six more characters behind
 // the prefix. A UUID's four separators stand at fixed places, and that is the
 // whole of what tells the shape from any other run of that length: reading the
 // thirty-six loosely would admit a great deal more for no token gained, since
 // every token Axiom writes carries the separators where the layout puts them.
+//
+// The declarations of that body below are named for the vendor and read by both
+// halves rather than copied into each, because the paragraph above reads the
+// layout off the two kinds together: the fixtures write both as the same masked
+// UUID and the one whole token Axiom prints is of the other kind, so a count or
+// a separator moved here on evidence about one kind was moved on evidence about
+// both. What each half decides on its own is its prefix, the byte it searches
+// for, and whether a caller wants it.
 //
 // The hexadecimal is read in either case. Axiom prints these lowercase and an
 // encoder writing a UUID writes lowercase, but a UUID upper-cased on its way
@@ -107,9 +122,12 @@ func AxiomPersonalAccessToken() Pattern { return axiomPersonalAccessToken }
 // candidate is rejected and the token stands five characters along inside the
 // bytes it reached over.
 // Test_AxiomPersonalAccessToken_aTokenInsideARejectedCandidate drives it. A
-// token cannot open inside the body of another, since three characters of the
-// prefix are written outside hexadecimal and the body admits nothing else, so
-// the spans this pattern reports never overlap.
+// token cannot open inside another at all, so the spans this pattern reports
+// never overlap, and the two places it could open want separate reasons. Inside
+// the body: a body is hexadecimal and the separator alone and three characters
+// of the prefix are neither. Inside the prefix: the rest of that prefix would
+// have to open a prefix of its own, and no proper suffix of this one does.
+// Test_axiomPersonalAccessTokenPrefix holds both.
 //
 // The scan keeps no cursor and needs none: a candidate reads at most forty-one
 // bytes — the prefix compared and the body walked — and stops, which bounds what
@@ -140,9 +158,9 @@ func AxiomPersonalAccessToken() Pattern { return axiomPersonalAccessToken }
 // class again so that the two are changed together, and the fuzz target beside
 // it holds this scan to that expression. An expression is affordable here for
 // both of the reasons it usually is: every repetition is exact, so the machine
-// an engine builds is read once and stops, and the prefix is written outside the
-// alphabet its own body is written in, so a run of that alphabet is no position
-// an engine stops at. The five-character literal in front is what it searches
+// an engine builds is read once and stops, and the prefix opens on a character
+// no body is written with, so a run of the body's alphabet is no position an
+// engine stops at. The five-character literal in front is what it searches
 // the text for.
 var axiomPersonalAccessToken = newBuiltin("axiom-personal-access-token", &axiomPersonalAccessTokenTail, func(src string) ([]Span, int) {
 	var spans []Span
@@ -183,7 +201,7 @@ var axiomPersonalAccessToken = newBuiltin("axiom-personal-access-token", &axiomP
 			retain = min(retain, start)
 			continue
 		}
-		if isAxiomPersonalAccessTokenBody(src[body:end]) {
+		if isAxiomTokenBody(src[body:end]) {
 			spans = append(spans, Span{Start: start, End: end})
 		}
 	}
@@ -210,34 +228,41 @@ const (
 	axiomPersonalAccessTokenAnchor      = 'x'
 	axiomPersonalAccessTokenAnchorIndex = 0
 
-	// axiomPersonalAccessTokenBodyChars is how many characters stand behind the
-	// prefix: the thirty-six of a UUID, written out here as the groups and the
-	// separators between them so that the count and the walk below cannot come
-	// apart.
-	axiomPersonalAccessTokenBodyChars = 8 + 1 + 4 + 1 + 4 + 1 + 4 + 1 + 12
+	// axiomTokenBodyChars is how many characters stand behind the prefix of a
+	// token of either kind: the thirty-six of a UUID, written out here as the
+	// groups and the separators between them so that the count and the walk
+	// below cannot come apart.
+	axiomTokenBodyChars = 8 + 1 + 4 + 1 + 4 + 1 + 4 + 1 + 12
 
 	// axiomPersonalAccessTokenChars is the whole of a token.
 	// Test_axiomPersonalAccessTokenChars holds it to the forty-one the prefix
 	// and a UUID come to.
-	axiomPersonalAccessTokenChars = len(axiomPersonalAccessTokenPrefix) + axiomPersonalAccessTokenBodyChars
+	axiomPersonalAccessTokenChars = len(axiomPersonalAccessTokenPrefix) + axiomTokenBodyChars
 
-	// axiomPersonalAccessTokenSeparator is what divides the groups of a UUID.
-	// The separators standing at fixed places are the whole of what tells the
-	// shape from thirty-six other characters written behind the prefix, which is
-	// why the body is read as a layout rather than as a count.
-	axiomPersonalAccessTokenSeparator = '-'
+	// axiomTokenSeparator is what divides the groups of a UUID. The separators
+	// standing at fixed places are the whole of what tells the shape from
+	// thirty-six other characters written behind the prefix, which is why the
+	// body is read as a layout rather than as a count.
+	axiomTokenSeparator = '-'
 )
 
-// axiomPersonalAccessTokenGroups are the five groups of hexadecimal a UUID is
-// written in, eight characters then three of four then twelve, with a separator
-// between each pair. Test_axiomPersonalAccessTokenChars holds them to coming to
-// axiomPersonalAccessTokenBodyChars, which is what keeps the walk below and the
-// count the scan cuts by from disagreeing.
-var axiomPersonalAccessTokenGroups = [...]int{8, 4, 4, 4, 12}
+// axiomTokenGroups are the five groups of hexadecimal a UUID is written in,
+// eight characters then three of four then twelve, with a separator between
+// each pair. Test_axiomPersonalAccessTokenChars holds them to coming to
+// axiomTokenBodyChars, which is what keeps the walk below and the count the
+// scan cuts by from disagreeing.
+var axiomTokenGroups = [...]int{8, 4, 4, 4, 12}
 
-// isAxiomPersonalAccessTokenBody reports whether s is everything behind the
-// prefix of a token: a UUID, which is axiomPersonalAccessTokenGroups written in
-// hexadecimal with a separator between each pair of groups.
+// isAxiomTokenBody reports whether s is everything behind the prefix of a
+// token: a UUID, which is axiomTokenGroups written in hexadecimal with a
+// separator between each pair of groups.
+//
+// This and the three declarations above are named for the vendor rather than
+// for either kind of token, and both scans call them. The rationale above says
+// why: the layout is read off the two kinds together, so neither half can move
+// a count of it alone. They are here rather than in builtin_scan.go because
+// what they state is one vendor's format rather than something a third pattern
+// could come to need.
 //
 // The groups are walked rather than the positions of the separators listed,
 // because a list of positions is a second statement of the layout that can come
@@ -246,20 +271,20 @@ var axiomPersonalAccessTokenGroups = [...]int{8, 4, 4, 4, 12}
 // It is handed the count as well as the characters so that the two are checked
 // in one place rather than the count being left to the caller to have cut
 // correctly.
-func isAxiomPersonalAccessTokenBody(s string) bool {
-	if len(s) != axiomPersonalAccessTokenBodyChars {
+func isAxiomTokenBody(s string) bool {
+	if len(s) != axiomTokenBodyChars {
 		return false
 	}
 	i := 0
-	for g, width := range axiomPersonalAccessTokenGroups {
+	for g, width := range axiomTokenGroups {
 		if g > 0 {
-			if s[i] != axiomPersonalAccessTokenSeparator {
+			if s[i] != axiomTokenSeparator {
 				return false
 			}
 			i++
 		}
 		for range width {
-			if !isAxiomPersonalAccessTokenHexByte(s[i]) {
+			if !isAxiomTokenHexByte(s[i]) {
 				return false
 			}
 			i++
@@ -268,20 +293,21 @@ func isAxiomPersonalAccessTokenBody(s string) bool {
 	return true
 }
 
-// isAxiomPersonalAccessTokenHexByte reports whether c is a hexadecimal digit,
-// which is what the groups of a UUID are written in.
+// isAxiomTokenHexByte reports whether c is a hexadecimal digit, which is what
+// the groups of a UUID are written in.
 //
 // Either case is admitted where Axiom prints these lowercase, for the reason the
 // rationale above gives: a UUID upper-cased on its way through a log is the same
 // credential, and what the wider reading admits besides is a shape nobody issues.
 //
-// It stays in this file rather than joining the byte tests in builtin_scan.go,
-// which hold what more than one scan reads. Every hexadecimal run this package
-// reads keeps its own test for the reason its own file gives — one admits either
-// case where another admits lowercase alone — and a shared test named for the
-// class rather than for what reads it would silently be the wrong answer for one
-// of them.
-func isAxiomPersonalAccessTokenHexByte(c byte) bool {
+// Both scans read it, and it stays here all the same, for the reason given on
+// isAxiomTokenBody above: what it states is one vendor's format rather than
+// something a third pattern could come to need. Every hexadecimal run this
+// package reads keeps its own test for the reason its own file gives — one
+// admits either case where another admits lowercase alone — and a test in
+// builtin_scan.go named for the class rather than for what reads it would
+// silently be the wrong answer for one of them.
+func isAxiomTokenHexByte(c byte) bool {
 	return '0' <= c && c <= '9' ||
 		'A' <= c && c <= 'F' ||
 		'a' <= c && c <= 'f'

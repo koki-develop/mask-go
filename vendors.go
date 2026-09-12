@@ -47,7 +47,7 @@ func AWSPatterns() []Pattern { return []Pattern{awsAccessKeyID, awsSecretAccessK
 // issues.
 //
 // The returned slice is freshly allocated and may be modified by the caller.
-func AxiomPatterns() []Pattern { return []Pattern{axiomPersonalAccessToken} }
+func AxiomPatterns() []Pattern { return []Pattern{axiomAPIToken, axiomPersonalAccessToken} }
 
 // BuildkitePatterns returns every built-in pattern that locates a credential
 // Buildkite issues.
