@@ -221,6 +221,28 @@ var builtinPatterns = []struct {
 		benchmarks: cloudflareAPITokenFindBenchmarks,
 	},
 	{
+		name:    "cloudflare-origin-ca-key",
+		pattern: CloudflareOriginCAKey,
+		ref:     referenceCloudflareOriginCAKeyFind,
+		// One sample, and the length of a key is why: a hundred and seventy-six
+		// characters, where what the sweeps drive over a sample grows faster
+		// than the sample does — builtinInputs writes out every prefix of one,
+		// streamInputs doubles it, and splits cuts each derived input at every
+		// offset. The race run has a budget (CLAUDE.md) and this package sits
+		// near it, so what is written here is a key and nothing else. A key
+		// against a word character, a key in prose, a key cut short and two
+		// keys in one text are what those helpers build from this one; a
+		// candidate that is no key is what the anchors entry below carries; and
+		// a key standing inside such a candidate is written out in
+		// Test_CloudflareOriginCAKey_noKeyBeginsInsideAnother and in the
+		// corpus, neither of which pays for it here.
+		samples: []string{
+			"v1.0-0123456789abcdef01234567-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01",
+		},
+		anchors:    []string{"v1.0-0123456789abcdef01234567-0123456789abcdef"},
+		benchmarks: cloudflareOriginCAKeyFindBenchmarks,
+	},
+	{
 		name:    "crates-io-token",
 		pattern: CratesIOToken,
 		ref:     referenceCratesIOTokenFind,
