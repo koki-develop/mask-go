@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-// The Axiom personal access token pattern: what it locates and what it leaves
-// alone, written out case by case, and the reference its scan is held to.
+// The Axiom API token pattern: what it locates and what it leaves alone, written
+// out case by case, and the reference its scan is held to.
 //
 // What every built-in shares — the convention its name follows, one value per
 // accessor, usable spans, no false positive on prose, agreement with the
@@ -23,11 +23,11 @@ import (
 // 01234567-89ab-cdef-0123-456789abcdef. Where a case is about the ends of the
 // alphabet or about a character the body excludes, the character at that
 // position is the only one that moves. The cases of
-// Test_AxiomPersonalAccessToken_anyVersionAndVariant part from the run at the
-// two positions a UUID writes its version and its variant, which a run of
-// ordered characters cannot state.
+// Test_AxiomAPIToken_anyVersionAndVariant part from the run at the two positions
+// a UUID writes its version and its variant, which a run of ordered characters
+// cannot state.
 
-func Test_AxiomPersonalAccessToken(t *testing.T) {
+func Test_AxiomAPIToken(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -38,43 +38,43 @@ func Test_AxiomPersonalAccessToken(t *testing.T) {
 			// letter of the alphabet, so this case carries both ends of hexadecimal
 			// at the ends of a body already.
 			name: "a token on its own",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcdef",
 			want: []Span{{0, 41}},
 		},
 		{
 			name: "a token in an environment assignment",
-			src:  "AXIOM_TOKEN=xapt-01234567-89ab-cdef-0123-456789abcdef",
+			src:  "AXIOM_TOKEN=xaat-01234567-89ab-cdef-0123-456789abcdef",
 			want: []Span{{12, 53}},
 		},
 		{
 			// Hexadecimal is read in either case, and every other case in this file
 			// writes its body in lowercase alone.
 			name: "a body written in capitals",
-			src:  "xapt-01234567-89AB-CDEF-0123-456789ABCDEF",
+			src:  "xaat-01234567-89AB-CDEF-0123-456789ABCDEF",
 			want: []Span{{0, 41}},
 		},
 		{
 			name: "a body written in both cases at once",
-			src:  "xapt-01234567-89Ab-cDeF-0123-456789abcdef",
+			src:  "xaat-01234567-89Ab-cDeF-0123-456789abcdef",
 			want: []Span{{0, 41}},
 		},
 		{
 			// The alphabet at the top of its lowercase range, at the first
 			// character of a body.
 			name: "a body opening on the last lowercase letter of the alphabet",
-			src:  "xapt-f1234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat-f1234567-89ab-cdef-0123-456789abcdef",
 			want: []Span{{0, 41}},
 		},
 		{
 			// The capitals at both ends at once: A is the first of them and F the
 			// last hexadecimal admits.
 			name: "a body opening on the first capital and closing on the last",
-			src:  "xapt-A1234567-89ab-cdef-0123-456789abcdeF",
+			src:  "xaat-A1234567-89ab-cdef-0123-456789abcdeF",
 			want: []Span{{0, 41}},
 		},
 		{
 			name: "a body opening on the last capital hexadecimal admits",
-			src:  "xapt-F1234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat-F1234567-89ab-cdef-0123-456789abcdef",
 			want: []Span{{0, 41}},
 		},
 		{
@@ -82,24 +82,24 @@ func Test_AxiomPersonalAccessToken(t *testing.T) {
 			// capitals at the other, which are the two ends no other case here
 			// writes.
 			name: "a body opening on the first lowercase letter and closing on the first capital",
-			src:  "xapt-a1234567-89ab-cdef-0123-456789abcdeA",
+			src:  "xaat-a1234567-89ab-cdef-0123-456789abcdeA",
 			want: []Span{{0, 41}},
 		},
 		{
 			// The digits are the bottom of the alphabet: 0 is the first of them and
 			// 9 the last.
 			name: "a body opening on the last digit and closing on the first lowercase letter",
-			src:  "xapt-91234567-89ab-cdef-0123-456789abcdea",
+			src:  "xaat-91234567-89ab-cdef-0123-456789abcdea",
 			want: []Span{{0, 41}},
 		},
 		{
 			name: "a body closing on the first digit",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcde0",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcde0",
 			want: []Span{{0, 41}},
 		},
 		{
 			name: "a body closing on the last digit",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcde9",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcde9",
 			want: []Span{{0, 41}},
 		},
 		{
@@ -107,55 +107,69 @@ func Test_AxiomPersonalAccessToken(t *testing.T) {
 			// follows the forty-first character is not part of the token and stays
 			// in the text.
 			name: "a hexadecimal run longer than a body is a token and what follows it",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcdef0",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcdef0",
 			want: []Span{{0, 41}},
 		},
 		{
 			// The prefix written twice opens a candidate at the first, whose body
 			// carries the x of the second and so is no body; the token stands five
 			// characters along, inside the forty-one bytes that candidate reached
-			// over. Test_AxiomPersonalAccessToken_aTokenInsideARejectedCandidate
-			// states what a scan consuming its candidate would lose here.
+			// over. Test_AxiomAPIToken_aTokenInsideARejectedCandidate states what a
+			// scan consuming its candidate would lose here.
 			name: "a token inside a candidate the body turned away",
-			src:  "xapt-xapt-01234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat-xaat-01234567-89ab-cdef-0123-456789abcdef",
 			want: []Span{{5, 46}},
 		},
 		{
 			name: "two tokens with nothing between them",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcdefxapt-01234567-89AB-CDEF-0123-456789ABCDEF",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcdefxaat-01234567-89AB-CDEF-0123-456789ABCDEF",
 			want: []Span{{0, 41}, {41, 82}},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := AxiomPersonalAccessToken().Find(tt.src); !slices.Equal(got, tt.want) {
+			if got, _ := AxiomAPIToken().Find(tt.src); !slices.Equal(got, tt.want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, tt.want)
 			}
 		})
 	}
 }
 
-func Test_AxiomPersonalAccessToken_noMatch(t *testing.T) {
+func Test_AxiomAPIToken_noMatch(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
 	}{
 		{
 			name: "prefix alone",
-			src:  "xapt-",
+			src:  "xaat-",
 		},
 		{
-			// Thirty-five characters where the layout asks for thirty-six.
-			name: "body one character too short",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcde",
+			// Thirty-five characters where the layout asks for thirty-six. The
+			// input ends there, so what declines this is the scan cutting by a
+			// count it cannot reach rather than anything the body walk read: the
+			// case below is the same body with the walk let run.
+			name: "body one character too short at the end of the input",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcde",
+		},
+		{
+			// The same body with text behind it, which puts the shortfall on the
+			// other side of the scan's length guard. The case above ends inside
+			// the candidate, so it is declined without a byte of the body being
+			// read; here the forty-one characters are all there to read, and
+			// what turns the candidate away is the layout finding a space where
+			// a group belongs. The guard and the walk are two rejections, and a
+			// body one character short meets whichever the text hands it.
+			name: "body one character too short with text behind it",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcde tail",
 		},
 		{
 			// The layout rather than the count: thirty-six characters of
 			// hexadecimal and separators, with a separator missing from the front
 			// of the body and a digit made up at the back.
 			name: "a separator missing from the body",
-			src:  "xapt-0123456789ab-cdef-0123-456789abcdef0",
+			src:  "xaat-0123456789ab-cdef-0123-456789abcdef0",
 		},
 		{
 			// A hexadecimal digit standing where each of the separators belongs,
@@ -163,31 +177,31 @@ func Test_AxiomPersonalAccessToken_noMatch(t *testing.T) {
 			// alphabet. The layout alone declines these, so a walk that stopped
 			// reading it at any one separator would locate a token here.
 			name: "a hexadecimal digit where the first separator stands",
-			src:  "xapt-01234567089ab-cdef-0123-456789abcdef",
+			src:  "xaat-01234567089ab-cdef-0123-456789abcdef",
 		},
 		{
 			name: "a hexadecimal digit where the second separator stands",
-			src:  "xapt-01234567-89ab0cdef-0123-456789abcdef",
+			src:  "xaat-01234567-89ab0cdef-0123-456789abcdef",
 		},
 		{
 			name: "a hexadecimal digit where the third separator stands",
-			src:  "xapt-01234567-89ab-cdef00123-456789abcdef",
+			src:  "xaat-01234567-89ab-cdef00123-456789abcdef",
 		},
 		{
 			name: "a hexadecimal digit where the fourth separator stands",
-			src:  "xapt-01234567-89ab-cdef-01230456789abcdef",
+			src:  "xaat-01234567-89ab-cdef-01230456789abcdef",
 		},
 		{
 			name: "a separator where the body carries a hexadecimal digit",
-			src:  "xapt--1234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat--1234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
 			name: "a separator at the last character of the body",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcde-",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcde-",
 		},
 		{
 			name: "a separator too many in the body",
-			src:  "xapt-0123456--89ab-cdef-0123-456789abcdef",
+			src:  "xaat-0123456--89ab-cdef-0123-456789abcdef",
 		},
 		{
 			// The six characters standing immediately outside the three ranges
@@ -195,98 +209,109 @@ func Test_AxiomPersonalAccessToken_noMatch(t *testing.T) {
 			// fence the digits, @ and G the capitals, ` and g the lowercase
 			// letters.
 			name: "the character below the digits where the body opens",
-			src:  "xapt-/1234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat-/1234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
 			name: "the character above the digits where the body opens",
-			src:  "xapt-:1234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat-:1234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
 			name: "the character below the capitals where the body opens",
-			src:  "xapt-@1234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat-@1234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
 			name: "the character above the capitals where the body opens",
-			src:  "xapt-G1234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat-G1234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
 			name: "the character below the lowercase letters where the body opens",
-			src:  "xapt-`1234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat-`1234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
 			name: "the character above the lowercase letters where the body opens",
-			src:  "xapt-g1234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat-g1234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
 			// The same six at the other end of a body.
 			name: "the character below the digits where the body closes",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcde/",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcde/",
 		},
 		{
 			name: "the character above the digits where the body closes",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcde:",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcde:",
 		},
 		{
 			name: "the character below the capitals where the body closes",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcde@",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcde@",
 		},
 		{
 			name: "the character above the capitals where the body closes",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcdeG",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcdeG",
 		},
 		{
 			name: "the character below the lowercase letters where the body closes",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcde`",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcde`",
 		},
 		{
 			name: "the character above the lowercase letters where the body closes",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcdeg",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcdeg",
 		},
 		{
 			// And inside each of the groups the twelve cases above do not reach,
 			// where the same rejection has to hold. The groups are walked rather
 			// than their widths added up, so a group left unread would decline
-			// nothing written in it.
+			// nothing written in it — and a group read at one end alone would
+			// decline nothing written in the middle of it, which is what the
+			// first and the last of these are for: those two are the wide groups,
+			// and the cases above reach each of them at one end only.
+			name: "a character outside the alphabet inside the first group",
+			src:  "xaat-0123z567-89ab-cdef-0123-456789abcdef",
+		},
+		{
 			name: "a character outside the alphabet in the second group",
-			src:  "xapt-01234567-89zb-cdef-0123-456789abcdef",
+			src:  "xaat-01234567-89zb-cdef-0123-456789abcdef",
 		},
 		{
 			name: "a character outside the alphabet in the third group",
-			src:  "xapt-01234567-89ab-cdgf-0123-456789abcdef",
+			src:  "xaat-01234567-89ab-cdgf-0123-456789abcdef",
 		},
 		{
 			name: "a character outside the alphabet in the fourth group",
-			src:  "xapt-01234567-89ab-cdef-01z3-456789abcdef",
+			src:  "xaat-01234567-89ab-cdef-01z3-456789abcdef",
+		},
+		{
+			name: "a character outside the alphabet inside the fifth group",
+			src:  "xaat-01234567-89ab-cdef-0123-4567z9abcdef",
 		},
 		{
 			name: "an underscore in the body",
-			src:  "xapt-01234567-89ab_cdef-0123-456789abcdef",
+			src:  "xaat-01234567-89ab_cdef-0123-456789abcdef",
 		},
 		{
 			name: "a body broken by a space",
-			src:  "xapt-01234567-89ab-cdef-0123 456789abcdef",
+			src:  "xaat-01234567-89ab-cdef-0123 456789abcdef",
 		},
 		{
 			name: "a body broken by a line break",
-			src:  "xapt-01234567-89ab-cdef-0123\n456789abcdef",
+			src:  "xaat-01234567-89ab-cdef-0123\n456789abcdef",
 		},
 		{
 			name: "an uppercase prefix",
-			src:  "XAPT-01234567-89ab-cdef-0123-456789abcdef",
+			src:  "XAAT-01234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
 			// One letter of the prefix in the other case, rather than the whole of
 			// it.
 			name: "the prefix with its first letter capitalized",
-			src:  "Xapt-01234567-89ab-cdef-0123-456789abcdef",
+			src:  "Xaat-01234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
 			name: "an underscore where the prefix carries its hyphen",
-			src:  "xapt_01234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat_01234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
 			name: "the prefix without the hyphen that closes it",
-			src:  "xapt01234567-89ab-cdef-0123-456789abcdef",
+			src:  "xaat01234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
 			// A run of the right shape that opens with something else. The prefix
@@ -314,14 +339,14 @@ func Test_AxiomPersonalAccessToken_noMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := AxiomPersonalAccessToken().Find(tt.src); len(got) != 0 {
+			if got, _ := AxiomAPIToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
 	}
 }
 
-func Test_AxiomPersonalAccessToken_inContext(t *testing.T) {
+func Test_AxiomAPIToken_inContext(t *testing.T) {
 	tests := []struct {
 		name string
 		src  string
@@ -329,39 +354,41 @@ func Test_AxiomPersonalAccessToken_inContext(t *testing.T) {
 	}{
 		{
 			name: "assignment",
-			src:  "AXIOM_TOKEN=xapt-01234567-89ab-cdef-0123-456789abcdef",
+			src:  "AXIOM_TOKEN=xaat-01234567-89ab-cdef-0123-456789abcdef",
 			want: "AXIOM_TOKEN=*****************************************",
 		},
 		{
 			name: "quoted",
-			src:  `"xapt-01234567-89ab-cdef-0123-456789abcdef"`,
+			src:  `"xaat-01234567-89ab-cdef-0123-456789abcdef"`,
 			want: `"*****************************************"`,
 		},
 		{
+			// The field the response that provisions an organization writes a
+			// token of this kind into.
 			name: "json",
-			src:  `{"token":"xapt-01234567-89ab-cdef-0123-456789abcdef"}`,
+			src:  `{"token":"xaat-01234567-89ab-cdef-0123-456789abcdef"}`,
 			want: `{"token":"*****************************************"}`,
 		},
 		{
 			// The header Axiom's own API reference calls its endpoints with.
 			name: "the bearer authorization header",
-			src:  "Authorization: Bearer xapt-01234567-89ab-cdef-0123-456789abcdef",
+			src:  "Authorization: Bearer xaat-01234567-89ab-cdef-0123-456789abcdef",
 			want: "Authorization: Bearer *****************************************",
 		},
 		{
-			// What the CLI reference pipes into axiom auth login.
-			name: "a command line",
-			src:  `echo "xapt-01234567-89ab-cdef-0123-456789abcdef" | axiom auth login -f`,
-			want: `echo "*****************************************" | axiom auth login -f`,
+			// What the SDK guides pass a token of this kind to.
+			name: "a client initialization",
+			src:  `axiom.SetToken("xaat-01234567-89ab-cdef-0123-456789abcdef")`,
+			want: `axiom.SetToken("*****************************************")`,
 		},
 		{
 			name: "twice",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcdef xapt-01234567-89AB-CDEF-0123-456789ABCDEF",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcdef xaat-01234567-89AB-CDEF-0123-456789ABCDEF",
 			want: "***************************************** *****************************************",
 		},
 	}
 
-	m := New(WithPatterns(AxiomPersonalAccessToken()))
+	m := New(WithPatterns(AxiomAPIToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -371,7 +398,7 @@ func Test_AxiomPersonalAccessToken_inContext(t *testing.T) {
 	}
 }
 
-func Test_AxiomPersonalAccessToken_aTokenInsideARejectedCandidate(t *testing.T) {
+func Test_AxiomAPIToken_aTokenInsideARejectedCandidate(t *testing.T) {
 	// The half of "advance, never consume" this format can reach. The prefix
 	// written twice opens a candidate at the first, whose body carries the x of
 	// the second and so is no body at all; the token stands five characters
@@ -380,24 +407,23 @@ func Test_AxiomPersonalAccessToken_aTokenInsideARejectedCandidate(t *testing.T) 
 	//
 	// The other half — one token opening inside another — cannot happen here.
 	// Inside a body: a body is hexadecimal and the separator alone while the
-	// prefix carries three characters of neither. Inside a prefix: no proper
-	// suffix of the prefix opens a prefix of its own.
-	// Test_axiomPersonalAccessTokenPrefix measures both, so the sentence is a
-	// measurement rather than a hope.
-	src := "xapt-xapt-01234567-89ab-cdef-0123-456789abcdef"
+	// prefix carries two characters of neither. Inside a prefix: no proper suffix
+	// of the prefix opens a prefix of its own. Test_axiomAPITokenPrefix measures
+	// both, so the sentence is a measurement rather than a hope.
+	src := "xaat-xaat-01234567-89ab-cdef-0123-456789abcdef"
 
 	want := []Span{{5, 46}}
-	if got, _ := AxiomPersonalAccessToken().Find(src); !slices.Equal(got, want) {
+	if got, _ := AxiomAPIToken().Find(src); !slices.Equal(got, want) {
 		t.Errorf("Find(%q) = %v, want %v", src, got, want)
 	}
 
-	m := New(WithPatterns(AxiomPersonalAccessToken()))
-	if got, want := m.Mask(src), "xapt-"+strings.Repeat("*", 41); got != want {
+	m := New(WithPatterns(AxiomAPIToken()))
+	if got, want := m.Mask(src), "xaat-"+strings.Repeat("*", 41); got != want {
 		t.Errorf("Mask(%q) = %q, want %q", src, got, want)
 	}
 }
 
-func Test_AxiomPersonalAccessToken_nextToWordCharacters(t *testing.T) {
+func Test_AxiomAPIToken_nextToWordCharacters(t *testing.T) {
 	// A word boundary either side of the pattern would not trim these matches but
 	// drop them, letting the token through whole.
 	tests := []struct {
@@ -407,12 +433,12 @@ func Test_AxiomPersonalAccessToken_nextToWordCharacters(t *testing.T) {
 	}{
 		{
 			name: "word character before",
-			src:  "zxapt-01234567-89ab-cdef-0123-456789abcdef",
+			src:  "zxaat-01234567-89ab-cdef-0123-456789abcdef",
 			want: "z*****************************************",
 		},
 		{
 			name: "underscore before",
-			src:  "AXIOM_TOKEN_xapt-01234567-89ab-cdef-0123-456789abcdef",
+			src:  "AXIOM_TOKEN_xaat-01234567-89ab-cdef-0123-456789abcdef",
 			want: "AXIOM_TOKEN_*****************************************",
 		},
 		{
@@ -422,7 +448,7 @@ func Test_AxiomPersonalAccessToken_nextToWordCharacters(t *testing.T) {
 			// the one written after them, which is part of no credential, stays in
 			// the text.
 			name: "a hexadecimal character after",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcdef0",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcdef0",
 			want: "*****************************************0",
 		},
 		{
@@ -431,12 +457,12 @@ func Test_AxiomPersonalAccessToken_nextToWordCharacters(t *testing.T) {
 			// so the token keeps its span exactly as it does against a single-byte
 			// character.
 			name: "a multi-byte rune before and after",
-			src:  "鍵はxapt-01234567-89ab-cdef-0123-456789abcdefです",
+			src:  "鍵はxaat-01234567-89ab-cdef-0123-456789abcdefです",
 			want: "鍵は*****************************************です",
 		},
 	}
 
-	m := New(WithPatterns(AxiomPersonalAccessToken()))
+	m := New(WithPatterns(AxiomAPIToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -446,7 +472,7 @@ func Test_AxiomPersonalAccessToken_nextToWordCharacters(t *testing.T) {
 	}
 }
 
-func Test_AxiomPersonalAccessToken_leavesWhatFollowsAlone(t *testing.T) {
+func Test_AxiomAPIToken_leavesWhatFollowsAlone(t *testing.T) {
 	// The layout ends a token at its forty-first character, so whatever is
 	// written after one stays in the text whether the body's alphabet admits it
 	// or not.
@@ -457,29 +483,29 @@ func Test_AxiomPersonalAccessToken_leavesWhatFollowsAlone(t *testing.T) {
 	}{
 		{
 			name: "host",
-			src:  "host=xapt-01234567-89ab-cdef-0123-456789abcdef.example.com",
+			src:  "host=xaat-01234567-89ab-cdef-0123-456789abcdef.example.com",
 			want: "host=*****************************************.example.com",
 		},
 		{
 			name: "sentence",
-			src:  "the token is xapt-01234567-89ab-cdef-0123-456789abcdef.",
+			src:  "the token is xaat-01234567-89ab-cdef-0123-456789abcdef.",
 			want: "the token is *****************************************.",
 		},
 		{
 			name: "underscored word",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcdef_suffix",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcdef_suffix",
 			want: "*****************************************_suffix",
 		},
 		{
 			// A hyphen is a character a body is written with, and it still stays in
 			// the text: the layout has been answered by the time it is read.
 			name: "dashed word",
-			src:  "xapt-01234567-89ab-cdef-0123-456789abcdef-suffix",
+			src:  "xaat-01234567-89ab-cdef-0123-456789abcdef-suffix",
 			want: "*****************************************-suffix",
 		},
 	}
 
-	m := New(WithPatterns(AxiomPersonalAccessToken()))
+	m := New(WithPatterns(AxiomAPIToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.want {
@@ -489,14 +515,14 @@ func Test_AxiomPersonalAccessToken_leavesWhatFollowsAlone(t *testing.T) {
 	}
 }
 
-func Test_AxiomPersonalAccessToken_anyVersionAndVariant(t *testing.T) {
+func Test_AxiomAPIToken_anyVersionAndVariant(t *testing.T) {
 	// The tightening this scan declines. A UUID carries a version at the first
 	// character of its third group and a variant at the first of its fourth, and
-	// the one whole token Axiom prints — an API token, which carries the same
-	// layout — is version 4 with the variant that goes with it. Neither nibble is
-	// read: nothing of Axiom's states a version, so demanding one would be read
-	// off values somebody was shown rather than off the format, and being wrong
-	// about it locates nothing at all.
+	// the one whole token Axiom prints is of this kind and is version 4 with the
+	// variant that goes with it. Neither nibble is read: nothing of Axiom's
+	// states a version, so demanding one would be read off a value somebody was
+	// shown rather than off the format, and being wrong about it locates nothing
+	// at all.
 	//
 	// These carry no ordered run at the two positions, since the run cannot state
 	// a nibble.
@@ -506,33 +532,33 @@ func Test_AxiomPersonalAccessToken_anyVersionAndVariant(t *testing.T) {
 	}{
 		{
 			name: "the version and variant of a random uuid",
-			src:  "xapt-01234567-89ab-4def-8123-456789abcdef",
+			src:  "xaat-01234567-89ab-4def-8123-456789abcdef",
 		},
 		{
 			name: "a version and variant of zero",
-			src:  "xapt-01234567-89ab-0def-0123-456789abcdef",
+			src:  "xaat-01234567-89ab-0def-0123-456789abcdef",
 		},
 		{
 			name: "a version and variant no uuid specification defines",
-			src:  "xapt-01234567-89ab-fdef-f123-456789abcdef",
+			src:  "xaat-01234567-89ab-fdef-f123-456789abcdef",
 		},
 	}
 
 	want := []Span{{0, 41}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := AxiomPersonalAccessToken().Find(tt.src); !slices.Equal(got, want) {
+			if got, _ := AxiomAPIToken().Find(tt.src); !slices.Equal(got, want) {
 				t.Errorf("Find(%q) = %v, want %v", tt.src, got, want)
 			}
 		})
 	}
 }
 
-func Test_AxiomPersonalAccessToken_theAPIToken(t *testing.T) {
-	// The other kind Axiom issues, which this scan does not read: an API token,
-	// written xaat- and the same UUID behind it. The rationale beside the scan
-	// says what separates the two — a personal access token performs every action
-	// its holder can perform where an API token carries only the privileges it
+func Test_AxiomAPIToken_thePersonalAccessToken(t *testing.T) {
+	// The other kind Axiom issues, which this scan does not read: a personal
+	// access token, written xapt- and the same UUID behind it. The rationale
+	// beside the scan says what separates the two — such a token performs every
+	// action its holder can perform where this one carries only the privileges it
 	// was created with — which puts the two under separate switches rather than
 	// under this one widened to cover both.
 	//
@@ -543,29 +569,29 @@ func Test_AxiomPersonalAccessToken_theAPIToken(t *testing.T) {
 		src  string
 	}{
 		{
-			name: "an api token",
-			src:  "xaat-01234567-89ab-cdef-0123-456789abcdef",
+			name: "a personal access token",
+			src:  "xapt-01234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
-			name: "an api token in an environment assignment",
-			src:  "AXIOM_TOKEN=xaat-01234567-89ab-cdef-0123-456789abcdef",
+			name: "a personal access token in an environment assignment",
+			src:  "AXIOM_TOKEN=xapt-01234567-89ab-cdef-0123-456789abcdef",
 		},
 		{
-			name: "an api token in the bearer authorization header",
-			src:  "Authorization: Bearer xaat-01234567-89ab-cdef-0123-456789abcdef",
+			name: "a personal access token in the bearer authorization header",
+			src:  "Authorization: Bearer xapt-01234567-89ab-cdef-0123-456789abcdef",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := AxiomPersonalAccessToken().Find(tt.src); len(got) != 0 {
+			if got, _ := AxiomAPIToken().Find(tt.src); len(got) != 0 {
 				t.Errorf("Find(%q) = %v, want no span", tt.src, got)
 			}
 		})
 	}
 }
 
-func Test_AxiomPersonalAccessToken_aBareUUID(t *testing.T) {
+func Test_AxiomAPIToken_aBareUUID(t *testing.T) {
 	// A UUID with nothing in front of it is not read and cannot be. It is the
 	// shape an identifier is written in — a request id, an organization's claim
 	// link, a row key — and a pattern in this package may not be anchored on one:
@@ -591,7 +617,7 @@ func Test_AxiomPersonalAccessToken_aBareUUID(t *testing.T) {
 		},
 	}
 
-	m := New(WithPatterns(AxiomPersonalAccessToken()))
+	m := New(WithPatterns(AxiomAPIToken()))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := m.Mask(tt.src); got != tt.src {
@@ -601,11 +627,11 @@ func Test_AxiomPersonalAccessToken_aBareUUID(t *testing.T) {
 	}
 }
 
-// Test_AxiomPersonalAccessToken_holdsATokenTheInputCutShort states, with a
-// literal number, what the second return of Find settles: a piece of the prefix
-// standing at the end of the input, a candidate the end of the input cut short,
-// and a whole match with nothing left unsettled behind it.
-func Test_AxiomPersonalAccessToken_holdsATokenTheInputCutShort(t *testing.T) {
+// Test_AxiomAPIToken_holdsATokenTheInputCutShort states, with a literal number,
+// what the second return of Find settles: a piece of the prefix standing at the
+// end of the input, a candidate the end of the input cut short, and a whole
+// match with nothing left unsettled behind it.
+func Test_AxiomAPIToken_holdsATokenTheInputCutShort(t *testing.T) {
 	tests := []struct {
 		name   string
 		src    string
@@ -616,12 +642,12 @@ func Test_AxiomPersonalAccessToken_holdsATokenTheInputCutShort(t *testing.T) {
 			// A piece of the prefix stands at the very end of the input, so
 			// nothing behind where it opens is settled.
 			name:   "a piece of the prefix at the end of the input",
-			src:    "xapt",
+			src:    "xaat",
 			retain: 0,
 		},
 		{
 			name:   "a piece of the prefix behind prose",
-			src:    "the token starts with xapt",
+			src:    "the token starts with xaat",
 			retain: len("the token starts with "),
 		},
 		{
@@ -629,12 +655,26 @@ func Test_AxiomPersonalAccessToken_holdsATokenTheInputCutShort(t *testing.T) {
 			// still become a token were the input longer, so what is unsettled
 			// reaches back to where the candidate opened.
 			name:   "a body the input cuts short",
-			src:    "xapt-01234567-89ab",
+			src:    "xaat-01234567-89ab",
 			retain: 0,
 		},
 		{
 			name:   "a body one character short of the layout",
-			src:    "xapt-01234567-89ab-cdef-0123-456789abcde",
+			src:    "xaat-01234567-89ab-cdef-0123-456789abcde",
+			retain: 0,
+		},
+		{
+			// A candidate the input cut short whose bytes already break the
+			// layout: a hexadecimal digit stands where the first separator
+			// belongs, so no text carrying on from here could make this a token.
+			// It is held from its own start all the same, which is the rule
+			// against reading what is written of a truncated candidate — a scan
+			// that worked out this one was hopeless would be keeping a second
+			// grammar, of the halves, beside the first and free to disagree with
+			// it. The cases above end inside a candidate that is still well
+			// formed, so none of them can tell the two apart.
+			name:   "a candidate the input cut short that the layout already broke",
+			src:    "xaat-01234567089ab",
 			retain: 0,
 		},
 		{
@@ -644,23 +684,23 @@ func Test_AxiomPersonalAccessToken_holdsATokenTheInputCutShort(t *testing.T) {
 			// before the layout is read and the scan gives up on it rather than
 			// reading what is written of it.
 			name:   "a candidate the body turned away, read to the end",
-			src:    "xapt-01234567-89ab-cdef-0123-456789abcde. tail",
-			retain: len("xapt-01234567-89ab-cdef-0123-456789abcde. tail"),
+			src:    "xaat-01234567-89ab-cdef-0123-456789abcde. tail",
+			retain: len("xaat-01234567-89ab-cdef-0123-456789abcde. tail"),
 		},
 		{
 			// A whole token with more text after it, ending in a byte that opens no
 			// piece of the prefix, so nothing at the end of the input is left
 			// unsettled.
 			name:   "a whole token followed by settled text",
-			src:    "xapt-01234567-89ab-cdef-0123-456789abcdef tail",
+			src:    "xaat-01234567-89ab-cdef-0123-456789abcdef tail",
 			want:   []Span{{0, 41}},
-			retain: len("xapt-01234567-89ab-cdef-0123-456789abcdef tail"),
+			retain: len("xaat-01234567-89ab-cdef-0123-456789abcdef tail"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, retain := AxiomPersonalAccessToken().Find(tt.src)
+			got, retain := AxiomAPIToken().Find(tt.src)
 			if retain != tt.retain {
 				t.Errorf("Find(%q) settled %d, want %d", tt.src, retain, tt.retain)
 			}
@@ -671,24 +711,26 @@ func Test_AxiomPersonalAccessToken_holdsATokenTheInputCutShort(t *testing.T) {
 	}
 }
 
-// Test_axiomPersonalAccessTokenPrefix counts the characters of the prefix that
-// no body may be written with, which is the claim the scan's account of itself
-// rests on and which nothing else here reaches. A body is hexadecimal and the
-// separator and nothing besides, so a prefix holding a character of neither
-// cannot stand inside one — which is what keeps a token from opening inside
-// another and what keeps the spans this pattern reports from ever overlapping.
+// Test_axiomAPITokenPrefix counts the characters of the prefix that no body may
+// be written with, which is the claim the scan's account of itself rests on and
+// which nothing else here reaches. A body is hexadecimal and the separator and
+// nothing besides, so a prefix holding a character of neither cannot stand
+// inside one — which is what keeps a token from opening inside another and what
+// keeps the spans this pattern reports from ever overlapping.
 //
-// The count is asserted rather than its being merely more than none, because
-// three is the number the rationale beside the scan writes down, and a prefix
-// changed without that sentence being changed with it is what this catches.
-func Test_axiomPersonalAccessTokenPrefix(t *testing.T) {
-	if axiomPersonalAccessTokenPrefix == "" {
+// The count is asserted rather than its being merely more than none, because two
+// is the number the rationale beside the scan writes down, and a prefix changed
+// without that sentence being changed with it is what this catches. It is one
+// fewer than the other half of this format has, the a this prefix writes twice
+// being a character a body admits.
+func Test_axiomAPITokenPrefix(t *testing.T) {
+	if axiomAPITokenPrefix == "" {
 		t.Fatal("the pattern carries no prefix, so it locates nothing")
 	}
 
 	outside := 0
-	for i := range len(axiomPersonalAccessTokenPrefix) {
-		c := axiomPersonalAccessTokenPrefix[i]
+	for i := range len(axiomAPITokenPrefix) {
+		c := axiomAPITokenPrefix[i]
 		if !isAxiomTokenHexByte(c) && c != axiomTokenSeparator {
 			outside++
 		}
@@ -696,8 +738,8 @@ func Test_axiomPersonalAccessTokenPrefix(t *testing.T) {
 	if outside == 0 {
 		t.Fatal("every character of the prefix is one a body may be written with, so a token can open inside another")
 	}
-	if outside != 3 {
-		t.Errorf("%d characters of the prefix are ones no body admits, the rationale says three", outside)
+	if outside != 2 {
+		t.Errorf("%d characters of the prefix are ones no body admits, the rationale says two", outside)
 	}
 
 	// The other half, and the one the rationale declines to rest on: the prefix
@@ -705,7 +747,7 @@ func Test_axiomPersonalAccessTokenPrefix(t *testing.T) {
 	// argued from a prefix closing outside the body's alphabet — a search does
 	// stop inside a body at this character, and what keeps it from mattering is
 	// that the scan searches for a different one.
-	if c := axiomPersonalAccessTokenPrefix[len(axiomPersonalAccessTokenPrefix)-1]; c != axiomTokenSeparator {
+	if c := axiomAPITokenPrefix[len(axiomAPITokenPrefix)-1]; c != axiomTokenSeparator {
 		t.Errorf("the prefix closes on %q, where the rationale reads it as closing on the separator a body carries", c)
 	}
 
@@ -720,15 +762,15 @@ func Test_axiomPersonalAccessTokenPrefix(t *testing.T) {
 	// case in this file passing and the sentence beside the scan false, since
 	// what such a prefix costs is two spans overlapping, which the cases here
 	// have no shape to report.
-	for k := 1; k < len(axiomPersonalAccessTokenPrefix); k++ {
-		if strings.HasPrefix(axiomPersonalAccessTokenPrefix, axiomPersonalAccessTokenPrefix[k:]) {
-			t.Errorf("%q is both a suffix and a prefix of %q, so a token can open %d characters into another", axiomPersonalAccessTokenPrefix[k:], axiomPersonalAccessTokenPrefix, k)
+	for k := 1; k < len(axiomAPITokenPrefix); k++ {
+		if strings.HasPrefix(axiomAPITokenPrefix, axiomAPITokenPrefix[k:]) {
+			t.Errorf("%q is both a suffix and a prefix of %q, so a token can open %d characters into another", axiomAPITokenPrefix[k:], axiomAPITokenPrefix, k)
 		}
 	}
 }
 
-// Test_axiomPersonalAccessTokenAnchor holds the prefix to carrying the byte the
-// scan searches the input for at the index it reads a candidate back from.
+// Test_axiomAPITokenAnchor holds the prefix to carrying the byte the scan
+// searches the input for at the index it reads a candidate back from.
 // builtin_scan.go says why that is held here rather than left to the targets.
 //
 // The second assertion is what the rationale's account of the choice rests on,
@@ -737,27 +779,27 @@ func Test_axiomPersonalAccessTokenPrefix(t *testing.T) {
 // into a body would then stop about once in sixteen characters of it, or at
 // every separator of every UUID, rather than running to the end without
 // stopping.
-func Test_axiomPersonalAccessTokenAnchor(t *testing.T) {
-	if axiomPersonalAccessTokenAnchorIndex >= len(axiomPersonalAccessTokenPrefix) {
-		t.Fatalf("the anchor stands at %d, the prefix is %d characters", axiomPersonalAccessTokenAnchorIndex, len(axiomPersonalAccessTokenPrefix))
+func Test_axiomAPITokenAnchor(t *testing.T) {
+	if axiomAPITokenAnchorIndex >= len(axiomAPITokenPrefix) {
+		t.Fatalf("the anchor stands at %d, the prefix is %d characters", axiomAPITokenAnchorIndex, len(axiomAPITokenPrefix))
 	}
-	if c := axiomPersonalAccessTokenPrefix[axiomPersonalAccessTokenAnchorIndex]; c != axiomPersonalAccessTokenAnchor {
-		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(axiomPersonalAccessTokenAnchor))
+	if c := axiomAPITokenPrefix[axiomAPITokenAnchorIndex]; c != axiomAPITokenAnchor {
+		t.Errorf("the prefix carries %q where the scan searches for %q, so no candidate is ever found at it", c, byte(axiomAPITokenAnchor))
 	}
-	if isAxiomTokenHexByte(axiomPersonalAccessTokenAnchor) || axiomPersonalAccessTokenAnchor == axiomTokenSeparator {
-		t.Errorf("the scan searches for %q, which a body may be written with, so a search resumes inside one", byte(axiomPersonalAccessTokenAnchor))
+	if isAxiomTokenHexByte(axiomAPITokenAnchor) || axiomAPITokenAnchor == axiomTokenSeparator {
+		t.Errorf("the scan searches for %q, which a body may be written with, so a search resumes inside one", byte(axiomAPITokenAnchor))
 	}
 }
 
-// Test_axiomPersonalAccessTokenFindBenchmarks_lineTheAnchorWasChosenAgainst
-// holds the line the benchmarks are written on to the counts the rationale reads
-// the anchor choice off. The counts are the whole of the evidence for searching
-// on the x rather than on one of the other four, and nothing else reports them:
-// a word added to that line with an x in it falsifies the sentence in silence,
-// since every benchmark goes on timing whatever the line became.
-func Test_axiomPersonalAccessTokenFindBenchmarks_lineTheAnchorWasChosenAgainst(t *testing.T) {
+// Test_axiomAPITokenFindBenchmarks_lineTheAnchorWasChosenAgainst holds the line
+// the benchmarks are written on to the counts the rationale reads the anchor
+// choice off. The counts are the whole of the evidence for searching on the x
+// rather than on one of the other three, and nothing else reports them: a word
+// added to that line with an x in it falsifies the sentence in silence, since
+// every benchmark goes on timing whatever the line became.
+func Test_axiomAPITokenFindBenchmarks_lineTheAnchorWasChosenAgainst(t *testing.T) {
 	var line string
-	for _, c := range axiomPersonalAccessTokenFindBenchmarks() {
+	for _, c := range axiomAPITokenFindBenchmarks() {
 		if c.name == "no value" {
 			line = c.src
 		}
@@ -770,11 +812,10 @@ func Test_axiomPersonalAccessTokenFindBenchmarks_lineTheAnchorWasChosenAgainst(t
 		c    byte
 		want int
 	}{
-		{axiomPersonalAccessTokenAnchor, 1},
-		{'a', 6},
-		{'p', 4},
-		{'t', 14},
-		{'-', 4},
+		{axiomAPITokenAnchor, 1},
+		{'a', 9},
+		{'t', 11},
+		{'-', 3},
 	} {
 		if got := strings.Count(line, string([]byte{tt.c})); got != tt.want {
 			t.Errorf("the line carries %q %d times, the rationale reads the anchor off %d", tt.c, got, tt.want)
@@ -782,113 +823,36 @@ func Test_axiomPersonalAccessTokenFindBenchmarks_lineTheAnchorWasChosenAgainst(t
 	}
 }
 
-// Test_axiomPersonalAccessTokenChars holds the counts to the numbers the
-// rationale reads them as: the groups of a UUID come to the thirty-six a body
-// is, and a token is that with the prefix in front.
+// Test_axiomAPITokenChars holds this half's count to the number the rationale
+// reads it as: a token is the prefix and the body both halves share, which comes
+// to forty-one. What the body itself is held to is the other half's, where it is
+// declared.
 //
-// The first of those is worth asserting because the groups and the count are
-// two declarations that can disagree — the walk reads one and the scan cuts by
-// the other. The second is not: the constant for a whole token is defined as
-// the prefix plus the body, so recomputing that sum would compare an expression
-// with itself. Forty-one is what is asserted in its place, and it is the one
-// thing about that count a change to either part could falsify.
-func Test_axiomPersonalAccessTokenChars(t *testing.T) {
-	groups, separators := 0, 0
-	for g, width := range axiomTokenGroups {
-		if g > 0 {
-			separators++
-		}
-		groups += width
-	}
-	if want := groups + separators; axiomTokenBodyChars != want {
-		t.Errorf("a body is read as %d characters, the groups and the separators come to %d", axiomTokenBodyChars, want)
-	}
-	if axiomTokenBodyChars != 36 {
-		t.Errorf("a body is read as %d characters, the rationale says a UUID is thirty-six", axiomTokenBodyChars)
-	}
-	if axiomPersonalAccessTokenChars != 41 {
-		t.Errorf("a token is read as %d characters, the rationale says forty-one", axiomPersonalAccessTokenChars)
+// The sum is not asserted here, because the constant is that sum: recomputing it
+// would compare an expression with itself and report nothing. Forty-one is the
+// number the rationale writes down, and it is the one thing about this count
+// that a change to either part could falsify.
+func Test_axiomAPITokenChars(t *testing.T) {
+	if axiomAPITokenChars != 41 {
+		t.Errorf("a token is read as %d characters, the rationale says forty-one", axiomAPITokenChars)
 	}
 }
 
-func Test_isAxiomTokenBody(t *testing.T) {
-	// The layout and the count together, stated over every byte rather than by
-	// example: a body is exactly axiomTokenBodyChars characters, hexadecimal
-	// where the layout writes a group and the separator where it writes one.
-	//
-	// It is here rather than beside the other half because this is where the
-	// declarations it reads are. Both scans call it, so a change to it reaches
-	// tokens of either kind.
-	body := "01234567-89ab-cdef-0123-456789abcdef"
-	if len(body) != axiomTokenBodyChars {
-		t.Fatalf("the body written here is %d characters, the scan reads %d", len(body), axiomTokenBodyChars)
-	}
-
-	if !isAxiomTokenBody(body) {
-		t.Errorf("isAxiomTokenBody(%q) = false, want a UUID to be one", body)
-	}
-	for _, s := range []string{body[:len(body)-1], body + "0"} {
-		if isAxiomTokenBody(s) {
-			t.Errorf("isAxiomTokenBody(%q) = true, want only %d characters to be a body", s, axiomTokenBodyChars)
-		}
-	}
-
-	// Every byte at every position of the body, against what the layout writes
-	// there: hexadecimal inside a group, the separator between two.
-	//
-	// Every position is swept rather than the ends of the body and the separators
-	// alone. A walk reading a group at one end and not through it would pass a
-	// sweep of the ends, and so would one that stopped reading the layout at the
-	// first separator, since a body carrying a hexadecimal digit where a later
-	// separator belongs answers the count and the alphabet both. The widest group
-	// is twelve characters, so what a sweep of the ends leaves unstated is most of
-	// the body.
-	i := 0
-	for g, width := range axiomTokenGroups {
-		if g > 0 {
-			if body[i] != axiomTokenSeparator {
-				t.Fatalf("the body written here carries %q at %d, the layout writes a separator there", body[i], i)
-			}
-			for c := range 256 {
-				b := byte(c)
-				src := body[:i] + string([]byte{b}) + body[i+1:]
-				if got, want := isAxiomTokenBody(src), b == axiomTokenSeparator; got != want {
-					t.Errorf("isAxiomTokenBody(%q) = %v with %q where the separator at %d stands, want %v", src, got, b, i, want)
-				}
-			}
-			i++
-		}
-		for range width {
-			for c := range 256 {
-				b := byte(c)
-				src := body[:i] + string([]byte{b}) + body[i+1:]
-				if got, want := isAxiomTokenBody(src), isAxiomTokenHexByte(b); got != want {
-					t.Errorf("isAxiomTokenBody(%q) = %v with %q at %d, where the layout writes a group, want %v", src, got, b, i, want)
-				}
-			}
-			i++
-		}
-	}
-	if i != axiomTokenBodyChars {
-		t.Errorf("the sweep walked %d positions, a body is %d characters", i, axiomTokenBodyChars)
-	}
-}
-
-// referenceAxiomPersonalAccessToken is the expression the scan in
-// builtin_axiom_personal_access_token.go reads by hand: the statement of what an
-// Axiom personal access token is, kept here so that the scan can be held to it.
+// referenceAxiomAPIToken is the expression the scan in builtin_axiom_api_token.go
+// reads by hand: the statement of what an Axiom API token is, kept here so that
+// the scan can be held to it.
 //
 // The prefix, the groups, the separators and the character class are spelled
-// again rather than built from axiomPersonalAccessTokenPrefix, axiomTokenGroups,
+// again rather than built from axiomAPITokenPrefix, axiomTokenGroups,
 // axiomTokenSeparator and isAxiomTokenHexByte. A reference sharing those
 // declarations could not disagree with the scan about them, and it is exactly
 // that disagreement the fuzz target below is for: the two have to be changed
 // together or reported apart.
-var referenceAxiomPersonalAccessToken = regexp.MustCompile(`xapt-[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}`)
+var referenceAxiomAPIToken = regexp.MustCompile(`xaat-[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}`)
 
-// referenceAxiomPersonalAccessTokenFind locates tokens the plain way: the
-// leftmost match of the expression above, then the leftmost one beginning after
-// that match's first byte, over and over, with nothing remembered between them.
+// referenceAxiomAPITokenFind locates tokens the plain way: the leftmost match of
+// the expression above, then the leftmost one beginning after that match's first
+// byte, over and over, with nothing remembered between them.
 //
 // It asks at every byte rather than resuming past a match. A token cannot begin
 // inside another here, so FindAllStringIndex would report the same spans — and
@@ -898,10 +862,10 @@ var referenceAxiomPersonalAccessToken = regexp.MustCompile(`xapt-[0-9A-Fa-f]{8}-
 // Resuming a byte along costs this one nothing beyond a constant: every
 // candidate reads at most forty-one characters, here as in the scan, so neither
 // has a run to walk and there is no cursor for either to be wrong about.
-func referenceAxiomPersonalAccessTokenFind(src string) []Span {
+func referenceAxiomAPITokenFind(src string) []Span {
 	var spans []Span
 	for i := 0; i < len(src); {
-		loc := referenceAxiomPersonalAccessToken.FindStringIndex(src[i:])
+		loc := referenceAxiomAPIToken.FindStringIndex(src[i:])
 		if loc == nil {
 			break
 		}
@@ -912,65 +876,64 @@ func referenceAxiomPersonalAccessTokenFind(src string) []Span {
 	return spans
 }
 
-// FuzzAxiomPersonalAccessToken_matchesReference guards the hand-written scan:
-// the prefix it searches for, the layout it reads behind that prefix, the
-// alphabet it reads the groups in and the byte it resumes at may none of them
-// change which tokens are located.
-func FuzzAxiomPersonalAccessToken_matchesReference(f *testing.F) {
+// FuzzAxiomAPIToken_matchesReference guards the hand-written scan: the prefix it
+// searches for, the layout it reads behind that prefix, the alphabet it reads
+// the groups in and the byte it resumes at may none of them change which tokens
+// are located.
+func FuzzAxiomAPIToken_matchesReference(f *testing.F) {
 	f.Add("nothing to see here")
-	f.Add("AXIOM_TOKEN=xapt-01234567-89ab-cdef-0123-456789abcdef")
-	f.Add("Authorization: Bearer xapt-01234567-89ab-cdef-0123-456789abcdef")
-	f.Add("xapt-01234567-89AB-CDEF-0123-456789ABCDEF")  // a body written in capitals
-	f.Add("xapt-01234567-89ab-cdef-0123-456789abcde")   // one short of a token
-	f.Add("xapt-01234567-89ab-cdef-0123-456789abcdef0") // and a run longer than one
-	f.Add("XAPT-01234567-89ab-cdef-0123-456789abcdef")  // an uppercase prefix
-	f.Add("xapt_01234567-89ab-cdef-0123-456789abcdef")  // an underscore where it carries its hyphen
-	f.Add("xapt01234567-89ab-cdef-0123-456789abcdef")   // the hyphen that closes it left out
-	f.Add("xapt-0123456789ab-cdef-0123-456789abcdef0")  // a separator missing from the body
-	f.Add("xapt--1234567-89ab-cdef-0123-456789abcdef")  // a separator where a group opens
-	f.Add("xapt-0123456--89ab-cdef-0123-456789abcdef")  // a separator too many
+	f.Add("AXIOM_TOKEN=xaat-01234567-89ab-cdef-0123-456789abcdef")
+	f.Add("Authorization: Bearer xaat-01234567-89ab-cdef-0123-456789abcdef")
+	f.Add("xaat-01234567-89AB-CDEF-0123-456789ABCDEF")  // a body written in capitals
+	f.Add("xaat-01234567-89ab-cdef-0123-456789abcde")   // one short of a token
+	f.Add("xaat-01234567-89ab-cdef-0123-456789abcdef0") // and a run longer than one
+	f.Add("XAAT-01234567-89ab-cdef-0123-456789abcdef")  // an uppercase prefix
+	f.Add("xaat_01234567-89ab-cdef-0123-456789abcdef")  // an underscore where it carries its hyphen
+	f.Add("xaat01234567-89ab-cdef-0123-456789abcdef")   // the hyphen that closes it left out
+	f.Add("xaat-0123456789ab-cdef-0123-456789abcdef0")  // a separator missing from the body
+	f.Add("xaat--1234567-89ab-cdef-0123-456789abcdef")  // a separator where a group opens
+	f.Add("xaat-0123456--89ab-cdef-0123-456789abcdef")  // a separator too many
 	// A hexadecimal digit standing where each of the separators belongs, which is
 	// the layout alone declining a body the count and the alphabet both answer.
-	f.Add("xapt-01234567089ab-cdef-0123-456789abcdef")
-	f.Add("xapt-01234567-89ab0cdef-0123-456789abcdef")
-	f.Add("xapt-01234567-89ab-cdef00123-456789abcdef")
-	f.Add("xapt-01234567-89ab-cdef-01230456789abcdef")
-	f.Add("xapt-g1234567-89ab-cdef-0123-456789abcdef")   // outside the alphabet where a body opens
-	f.Add("xapt-01234567-89ab-cdef-0123-456789abcdeg")   // and where it closes
-	f.Add("xapt-01234567-89ab-cdef-0123 456789abcdef")   // a space breaks the body
-	f.Add("xapt-01234567-89ab-cdef-0123\n456789abcdef")  // and a line break
-	f.Add("xaat-01234567-89ab-cdef-0123-456789abcdef")   // the other kind Axiom issues
+	f.Add("xaat-01234567089ab-cdef-0123-456789abcdef")
+	f.Add("xaat-01234567-89ab0cdef-0123-456789abcdef")
+	f.Add("xaat-01234567-89ab-cdef00123-456789abcdef")
+	f.Add("xaat-01234567-89ab-cdef-01230456789abcdef")
+	f.Add("xaat-g1234567-89ab-cdef-0123-456789abcdef")   // outside the alphabet where a body opens
+	f.Add("xaat-01234567-89ab-cdef-0123-456789abcdeg")   // and where it closes
+	f.Add("xaat-01234567-89ab-cdef-0123 456789abcdef")   // a space breaks the body
+	f.Add("xaat-01234567-89ab-cdef-0123\n456789abcdef")  // and a line break
+	f.Add("xapt-01234567-89ab-cdef-0123-456789abcdef")   // the other kind Axiom issues
 	f.Add("01234567-89ab-cdef-0123-456789abcdef")        // a UUID with nothing in front of it
-	f.Add("xapt-01234567-89ab-4def-8123-456789abcdef")   // the version and variant of a random UUID
-	f.Add("xapt-01234567-89ab-cdef-0123-456789abcdef.")  // a token against a full stop
+	f.Add("xaat-01234567-89ab-4def-8123-456789abcdef")   // the version and variant of a random UUID
+	f.Add("xaat-01234567-89ab-cdef-0123-456789abcdef.")  // a token against a full stop
 	f.Add("2026-08-17T00:00:00Z 0123456789abcdef012345") // separators and hexadecimal carrying no prefix
 	// A token inside a candidate the body turned away, which a scan consuming its
 	// own reach would step over, and two tokens with nothing between them.
-	f.Add("xapt-xapt-01234567-89ab-cdef-0123-456789abcdef")
-	f.Add("xapt-01234567-89ab-cdef-0123-456789abcdefxapt-01234567-89AB-CDEF-0123-456789ABCDEF")
-	f.Add(strings.Repeat("xapt-", 8))
+	f.Add("xaat-xaat-01234567-89ab-cdef-0123-456789abcdef")
+	f.Add("xaat-01234567-89ab-cdef-0123-456789abcdefxaat-01234567-89AB-CDEF-0123-456789ABCDEF")
+	f.Add(strings.Repeat("xaat-", 8))
 	// Candidate positions crowded as close as they can be: every fifth byte in
 	// the first, and a run that reaches the layout at none of them.
-	f.Add(strings.Repeat("xapt-", 32))
-	f.Add(strings.Repeat("xapt-", 32) + "!")
-	f.Add(strings.Repeat("xapt-01234567-89ab-cdef-0123-456789abcde.", 8))
+	f.Add(strings.Repeat("xaat-", 32))
+	f.Add(strings.Repeat("xaat-", 32) + "!")
+	f.Add(strings.Repeat("xaat-01234567-89ab-cdef-0123-456789abcde.", 8))
 
-	fuzzAgainstReference(f, AxiomPersonalAccessToken().Find, referenceAxiomPersonalAccessTokenFind)
+	fuzzAgainstReference(f, AxiomAPIToken().Find, referenceAxiomAPITokenFind)
 }
 
-// axiomPersonalAccessTokenFindBenchmarks is what this scan is timed on. The
-// builtinPatterns entry for the pattern names it, and BenchmarkBuiltins times
-// every case it holds under the pattern's own name, so that a built-in cannot
-// arrive without a benchmark. Every case is held to the count it states under a
-// plain go test as well, which is what a benchmark nobody has run yet cannot be.
-func axiomPersonalAccessTokenFindBenchmarks() []benchmarkCase {
+// axiomAPITokenFindBenchmarks is what this scan is timed on. The builtinPatterns
+// entry for the pattern names it, and BenchmarkBuiltins times every case it
+// holds under the pattern's own name, so that a built-in cannot arrive without a
+// benchmark. Every case is held to the count it states under a plain go test as
+// well, which is what a benchmark nobody has run yet cannot be.
+func axiomAPITokenFindBenchmarks() []benchmarkCase {
 	// The vendor's own host carries the only x on this line, so it is what the
-	// anchor was chosen against: the t stands fourteen times on it, the a six,
-	// and the p and the hyphen four apiece, where the x stands once and the line
-	// costs the search one pass and one candidate, turned away by the second
-	// character of the prefix.
-	line := `time=2026-08-17T00:00:00Z level=info msg="ingested events" dataset=http-logs url=https://api.axiom.co/v1/datasets/http-logs/ingest `
-	token := "xapt-01234567-89ab-cdef-0123-456789abcdef"
+	// anchor was chosen against: the t stands eleven times on it, the a nine and
+	// the hyphen three, where the x stands once and the line costs the search one
+	// pass and one candidate, turned away by the second character of the prefix.
+	line := `time=2026-08-17T00:00:00Z level=info msg="query completed" dataset=http-logs url=https://api.axiom.co/v1/datasets/_apl?format=legacy `
+	token := "xaat-01234567-89ab-cdef-0123-456789abcdef"
 
 	return []benchmarkCase{
 		{
@@ -984,7 +947,7 @@ func axiomPersonalAccessTokenFindBenchmarks() []benchmarkCase {
 			// candidate can cost this scan without becoming a token, and there is
 			// no value at the end of any of it.
 			name:  "candidates that are not values",
-			src:   strings.Repeat("xapt-01234567-89ab-cdef-0123-456789abcde.", 16),
+			src:   strings.Repeat("xaat-01234567-89ab-cdef-0123-456789abcde.", 16),
 			spans: 0,
 		},
 		{

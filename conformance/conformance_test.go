@@ -706,7 +706,7 @@ func TestCorpus_cleanCasesLocateNothingNewAcrossTheRegistry(t *testing.T) {
 	// value it used to locate with it. Either direction is reviewed the same
 	// way — read what the failure lists, decide whether the registry moved on
 	// purpose, and set knownCollisions to the count the failure reports.
-	const knownCollisions = 41
+	const knownCollisions = 45
 
 	m := mask.New(mask.WithPatterns(mask.AllBuiltinPatterns()...))
 	driven := 0

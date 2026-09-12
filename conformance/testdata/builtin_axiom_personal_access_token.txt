@@ -163,8 +163,8 @@ in:       xapt-01234567-89ab-cdef-0123-456789abcdef xapt-01234567-89AB-CDEF-0123
 out:      «axiom-personal-access-token» «axiom-personal-access-token»
 
 # The other kind of token Axiom issues, which this pattern does not read: an API
-# token, written xaat- and the same UUID behind it, which stays in the output
-# whole. It carries only the privileges it was created with where a personal
+# token, written xaat- and the same UUID behind it. AxiomAPIToken is what reads
+# that one. It carries only the privileges it was created with where a personal
 # access token performs every action its holder can, so a caller redacting one
 # has reason not to redact the other, and the two belong under separate switches
 # rather than under this one widened to cover both.
