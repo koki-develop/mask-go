@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.0](https://github.com/koki-develop/mask-go/compare/v0.5.0...v0.6.0) (2026-09-12)
+
+
+### Features
+
+* Locate the API tokens Axiom issues ([#142](https://github.com/koki-develop/mask-go/issues/142)) ([#175](https://github.com/koki-develop/mask-go/issues/175)) ([fb4f3b4](https://github.com/koki-develop/mask-go/commit/fb4f3b43416f144828a750645fab673dea41417d))
+* Locate the Origin CA keys Cloudflare issues ([#116](https://github.com/koki-develop/mask-go/issues/116)) ([#177](https://github.com/koki-develop/mask-go/issues/177)) ([9b0ac3b](https://github.com/koki-develop/mask-go/commit/9b0ac3b7a5bfa4daebacf75ec75ffe5fcad7f7b3))
+* Locate the private API keys Klaviyo issues ([#146](https://github.com/koki-develop/mask-go/issues/146)) ([#176](https://github.com/koki-develop/mask-go/issues/176)) ([5dce8f2](https://github.com/koki-develop/mask-go/commit/5dce8f28dbbd37b369a5fe05044797e7a45c9d9f))
+
 ## [0.5.0](https://github.com/koki-develop/mask-go/compare/v0.4.0...v0.5.0) (2026-09-11)
 
 
