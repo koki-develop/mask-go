@@ -55,6 +55,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"HashiCorpPatterns":    HashiCorpPatterns,
 	"HerokuPatterns":       HerokuPatterns,
 	"HuggingFacePatterns":  HuggingFacePatterns,
+	"KlaviyoPatterns":      KlaviyoPatterns,
 	"LangSmithPatterns":    LangSmithPatterns,
 	"LinearPatterns":       LinearPatterns,
 	"MailchimpPatterns":    MailchimpPatterns,

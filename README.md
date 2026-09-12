@@ -35,7 +35,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 ## Built-in patterns
 
-The 76 built-in patterns cover 64 vendors and locate 179 kinds of credential:
+The 77 built-in patterns cover 65 vendors and locate 180 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -65,6 +65,7 @@ The 76 built-in patterns cover 64 vendors and locate 179 kinds of credential:
 | `HerokuPatterns() []Pattern` | Heroku API tokens |
 | `HuggingFacePatterns() []Pattern` | Hugging Face user access tokens |
 | `JWT() Pattern` | signed JSON Web Tokens, encrypted JSON Web Tokens |
+| `KlaviyoPatterns() []Pattern` | Klaviyo private API keys |
 | `LangSmithPatterns() []Pattern` | LangSmith personal access tokens, service keys |
 | `LinearPatterns() []Pattern` | Linear personal API keys |
 | `MailchimpPatterns() []Pattern` | Mailchimp API keys |

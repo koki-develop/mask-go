@@ -513,6 +513,19 @@ var builtinPatterns = []struct {
 		benchmarks: jwtFindBenchmarks,
 	},
 	{
+		name:    "klaviyo-private-api-key",
+		pattern: KlaviyoPrivateAPIKey,
+		ref:     referenceKlaviyoPrivateAPIKeyFind,
+		samples: []string{
+			"KLAVIYO_API_KEY=pk_0123456789abcdefghijklmnopqrstuvwx",
+			"pk_012345_0123456789abcdefghijklmnopqrstuvwx",
+			"pk_0123456789abcdefghijklmnopqrstuvwxyz",
+			"pk_0123456789abcdefghijklmnopqrstuvwxpk_0123456789abcdefghijklmnopqrstuvwx",
+		},
+		anchors:    []string{"pk_0123", "pk_012345_0123"},
+		benchmarks: klaviyoPrivateAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "langsmith-api-key",
 		pattern: LangSmithAPIKey,
 		ref:     referenceLangSmithAPIKeyFind,

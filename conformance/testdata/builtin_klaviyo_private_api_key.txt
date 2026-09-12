@@ -1,0 +1,180 @@
+# What Klaviyo private API keys the library redacts, and what it leaves alone.
+#
+# The keys here are built from the ordered run
+# 0123456789abcdefghijklmnopqrstuvwx, which no real credential is. That run is
+# thirty-four characters and so is a whole key body — the shortest one the
+# pattern reads, since the count is a floor. It is spelled in lowercase where
+# the case does not matter and in uppercase where the case is what a case is
+# about: base62 holds the letters of both, so either spelling is a body.
+#
+# The six characters a key may carry between its prefix and its body are written
+# 012345, and otherwise wherever the width or the character closing them is what
+# a case turns on.
+#
+# Three cases carry a body that is not that run, because what each of them turns
+# on is a body the run cannot state. The two digest cases are written in the
+# sixteen hexadecimal characters repeated, which is what makes them digests; the
+# base64url case closes its key on a stretch of one repeated character, which is
+# what puts the key inside a longer encoding.
+
+patterns: klaviyo-private-api-key
+
+# The two shapes a key is written in. The second carries six characters and an
+# underscore between the prefix and the body, and both are the one credential:
+# what Klaviyo issues under either shape is a key that reads and writes the
+# account, so nothing in the string says what it may reach.
+
+case:     a key
+in:       pk_0123456789abcdefghijklmnopqrstuvwx
+out:      «klaviyo-private-api-key»
+
+case:     a key carrying the six characters between its prefix and its body
+in:       pk_012345_0123456789abcdefghijklmnopqrstuvwx
+out:      «klaviyo-private-api-key»
+
+# The alphabet is base62, which Klaviyo states as alphanumeric and the wider of
+# the two rules reading this format admits, so the case a key is written in says
+# nothing about whether it is one.
+
+case:     a body written in capitals
+in:       pk_0123456789ABCDEFGHIJKLMNOPQRSTUVWX
+out:      «klaviyo-private-api-key»
+
+case:     a capital inside an otherwise lowercase body
+in:       pk_0123A56789abcdefghijklmnopqrstuvwxyz
+out:      «klaviyo-private-api-key»
+
+case:     a key whose six characters are written in capitals
+in:       pk_ABCDEF_0123456789abcdefghijklmnopqrstuvwx
+out:      «klaviyo-private-api-key»
+
+# The places a key is written.
+
+case:     a key in an environment assignment
+in:       KLAVIYO_API_KEY=pk_0123456789abcdefghijklmnopqrstuvwx
+out:      KLAVIYO_API_KEY=«klaviyo-private-api-key»
+
+case:     a key in the header Klaviyo takes it in
+in:       Authorization: Klaviyo-API-Key pk_0123456789abcdefghijklmnopqrstuvwx
+out:      Authorization: Klaviyo-API-Key «klaviyo-private-api-key»
+
+case:     a key on a command line
+in:       curl -H "Authorization: Klaviyo-API-Key pk_0123456789abcdefghijklmnopqrstuvwx" https://a.klaviyo.com/api/profiles
+out:      curl -H "Authorization: Klaviyo-API-Key «klaviyo-private-api-key»" https://a.klaviyo.com/api/profiles
+
+case:     a key in json
+in:       {"private_key":"pk_0123456789abcdefghijklmnopqrstuvwx"}
+out:      {"private_key":"«klaviyo-private-api-key»"}
+
+# The count is a floor and a key is redacted to the end of the run it stands in,
+# so a body longer than the shortest is redacted whole and a character of the
+# body's own alphabet written against a key is redacted with it.
+
+case:     a body longer than the shortest one
+in:       pk_0123456789abcdefghijklmnopqrstuvwxy
+out:      «klaviyo-private-api-key»
+
+case:     a word written straight against a key
+in:       pk_0123456789abcdefghijklmnopqrstuvwxsuffix
+out:      «klaviyo-private-api-key»
+
+# Where the run ends is where the alphabet stops. The hyphen and the underscore
+# are the two characters base64url adds to base62, so each of them closes a key
+# rather than being redacted with it.
+
+case:     a hyphenated word against a key
+in:       pk_0123456789abcdefghijklmnopqrstuvwx-suffix
+out:      «klaviyo-private-api-key»-suffix
+
+case:     an underscored word against a key
+in:       pk_0123456789abcdefghijklmnopqrstuvwx_suffix
+out:      «klaviyo-private-api-key»_suffix
+
+# A key written inside another. Both characters of the prefix in front of its
+# underscore are ones a body is written with, so a body may close with them and
+# the next key's underscore stand directly behind it. The second key begins two
+# characters before the first one ends and the spans overlap, which is why the
+# two are redacted as one. The six characters are the run behind the prefix, so
+# the same holds of a segment closing with those two characters — and there the
+# underscore that separates a scoped key from its body is the next key's own.
+
+case:     a key beginning inside the body of the key in front of it
+in:       pk_0123456789abcdefghijklmnopqrstuvwxpk_0123456789abcdefghijklmnopqrstuvwx
+out:      «klaviyo-private-api-key»
+
+case:     a key beginning inside the six characters of the key in front of it
+in:       pk_0123pk_0123456789abcdefghijklmnopqrstuvwx
+out:      «klaviyo-private-api-key»
+
+# What is left alone. A body one character short of the floor is the shape a
+# line cut to a column limit leaves, and the characters written before the cut
+# stay in the text.
+
+case:     a body one character short of the floor
+in:       KLAVIYO_API_KEY=pk_0123456789abcdefghijklmnopqrstuvw
+out:      KLAVIYO_API_KEY=pk_0123456789abcdefghijklmnopqrstuvw
+
+case:     a key cut off at its prefix
+in:       KLAVIYO_API_KEY=pk_
+out:      KLAVIYO_API_KEY=pk_
+
+# The six characters are read at that width exactly and the underscore behind
+# them is read too. A run of any other width, or one the text closed with
+# something else, leaves the plain shape to read the candidate, and its body
+# then ends far short of the floor.
+
+case:     six characters where the run in front of the underscore is one narrower
+in:       pk_01234_0123456789abcdefghijklmnopqrstuvwx
+out:      pk_01234_0123456789abcdefghijklmnopqrstuvwx
+
+case:     six characters where the run in front of the underscore is one wider
+in:       pk_0123456_0123456789abcdefghijklmnopqrstuvwx
+out:      pk_0123456_0123456789abcdefghijklmnopqrstuvwx
+
+case:     six characters closed by a hyphen rather than an underscore
+in:       pk_012345-0123456789abcdefghijklmnopqrstuvwx
+out:      pk_012345-0123456789abcdefghijklmnopqrstuvwx
+
+# The prefix is read as Klaviyo writes it, and a body may not carry the
+# characters that separate base64url from base62.
+
+case:     an uppercase prefix
+in:       PK_0123456789abcdefghijklmnopqrstuvwx
+out:      PK_0123456789abcdefghijklmnopqrstuvwx
+
+case:     an underscore inside the body
+in:       pk_0123456789abcdef_ghijklmnopqrstuvwxyz
+out:      pk_0123456789abcdef_ghijklmnopqrstuvwxyz
+
+case:     a run of the right length with no prefix in front of it
+in:       0123456789abcdefghijklmnopqrstuvwx
+out:      0123456789abcdefghijklmnopqrstuvwx
+
+# What the pattern redacts that nobody issued, and what it declines to. A digest
+# behind the prefix is a key's format exactly — hexadecimal digits are base62,
+# and nothing inside a digest ends a run — so it is redacted rather than read
+# apart from a key. An MD5 is two characters short of a body. The same holds
+# inside a base64url encoding, which is the one encoding that can hold the
+# underscore the prefix closes with.
+
+case:     a sha1 written behind the prefix
+in:       pk_0123456789abcdef0123456789abcdef01234567
+out:      «klaviyo-private-api-key»
+
+case:     an md5 written behind the prefix, two characters short of a body
+in:       pk_0123456789abcdef0123456789abcdef
+out:      pk_0123456789abcdef0123456789abcdef
+
+case:     a key's shape inside a base64url payload
+in:       payload=zzzzpk_0123456789abcdefghijklmnopqrstuvwxzzzz
+out:      payload=zzzz«klaviyo-private-api-key»
+
+# Nothing is asked of the character in front of a prefix, so a name whose own
+# letters end in pk carries a whole prefix and is read from there on. The
+# alternative is a demand that would drop a key written inside the one before
+# it, which is a live body left in the clear rather than an identifier redacted
+# from its fifth character.
+
+case:     an identifier whose letters end in the prefix
+in:       topk_0123456789abcdefghijklmnopqrstuvwx
+out:      to«klaviyo-private-api-key»
