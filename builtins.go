@@ -58,6 +58,7 @@ var builtins = []Pattern{
 	hashiCorpVaultToken,
 	hcpTerraformAPIToken,
 	herokuAPIToken,
+	honeycombAPIKey,
 	huggingFaceUserAccessToken,
 	jsonWebToken,
 	klaviyoPrivateAPIKey,

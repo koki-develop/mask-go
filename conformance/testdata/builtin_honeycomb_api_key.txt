@@ -1,0 +1,205 @@
+# What Honeycomb API keys the library redacts, and what it leaves alone.
+#
+# The exhaustive edges — every end of the alphabet, every count either side,
+# every character a body excludes — are in builtin_honeycomb_api_key_test.go.
+# What is here is the library end to end: the shapes a key is written in, the
+# kinds the pattern reads and the ones it declines, and the collisions the
+# grammar pays for.
+#
+# Every key here is built from the ordered run
+# 0123456789abcdefghijklmnopqrstuvwxyz, which no real credential is, carrying on
+# from 0 once the alphabet runs out. A body is letters and digits, so the run
+# serves for it: once and a half over for the fifty-eight characters behind an
+# ingest key's opening, and restarted at each half of a management key's, whose
+# twenty-six and thirty-two the colon divides. With the six characters of an
+# opening in front, an ingest key comes to sixty-four and a management key to
+# sixty-five.
+
+patterns: honeycomb-api-key
+
+# The kinds of key that carry an opening and a secret behind it. Honeycomb
+# writes the opening as hc, a character it assigns at key creation, two naming
+# the kind and an underscore; the two ingest kinds concatenate the key ID and
+# the secret, where a management key joins them with a colon. They are one
+# pattern because a caller redacting what Honeycomb issues has the same reason
+# for each of them, and no term of the vendor's covers two and leaves the third
+# out.
+
+case:     an ingest key in an environment assignment
+in:       HONEYCOMB_API_KEY=hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+out:      HONEYCOMB_API_KEY=«honeycomb-api-key»
+
+case:     an ingest key in the header it is sent in
+in:       X-Honeycomb-Team: hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+out:      X-Honeycomb-Team: «honeycomb-api-key»
+
+case:     a classic ingest key
+in:       hcaic_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+out:      «honeycomb-api-key»
+
+case:     a management key in the header it is sent in
+in:       Authorization: Bearer hcxmk_0123456789abcdefghijklmnop:0123456789abcdefghijklmnopqrstuv
+out:      Authorization: Bearer «honeycomb-api-key»
+
+case:     a key in the command line a request is made from
+in:       curl -H 'X-Honeycomb-Team: hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl' https://api.honeycomb.io/1/batch/my-dataset
+out:      curl -H 'X-Honeycomb-Team: «honeycomb-api-key»' https://api.honeycomb.io/1/batch/my-dataset
+
+case:     the two keys a collector is configured with
+in:       {"apiKey":"hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl","mgmtKey":"hcxmk_0123456789abcdefghijklmnop:0123456789abcdefghijklmnopqrstuv"}
+out:      {"apiKey":"«honeycomb-api-key»","mgmtKey":"«honeycomb-api-key»"}
+
+case:     a key followed by crlf
+in:       X-Honeycomb-Team: hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl\r\n
+out:      X-Honeycomb-Team: «honeycomb-api-key»\r\n
+
+# The openings that carry no secret. Honeycomb writes one of the same shape in
+# front of every resource it names — a team, an environment, a user — and a
+# configuration key's opening stands in front of its key ID, which the vendor
+# calls a label that identifies the key in its UI. So the two characters naming
+# the kind are read as a table rather than as any two letters, and a key ID
+# standing on its own is no value.
+
+case:     a configuration key id with a body behind it
+in:       hcxlk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+out:      hcxlk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+
+case:     the opening an environment identifier carries
+in:       hcxen_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+out:      hcxen_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+
+case:     an ingest key id on its own
+in:       key_id=hcxik_0123456789abcdefghijklmnop
+out:      key_id=hcxik_0123456789abcdefghijklmnop
+
+# The alphabet a key ID and a secret are written in: the letters of both cases
+# and the digits. What it leaves out is everything else, the underscore an
+# opening closes with among it.
+
+case:     an uppercase body
+in:       hcxik_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKL
+out:      «honeycomb-api-key»
+
+case:     a body carrying the separator
+in:       hcxik_0123456789abcdefghijklmnopqrs_uvwxyz0123456789abcdefghijkl
+out:      hcxik_0123456789abcdefghijklmnopqrs_uvwxyz0123456789abcdefghijkl
+
+# The colon belongs to one kind alone. A management key's key ID and secret are
+# joined by one; the ingest kinds write the two concatenated, and the colon is
+# no character of a body.
+
+case:     an ingest key written with a colon
+in:       hcxik_0123456789abcdefghijklmnop:0123456789abcdefghijklmnopqrstuv
+out:      hcxik_0123456789abcdefghijklmnop:0123456789abcdefghijklmnopqrstuv
+
+case:     a management key written without one
+in:       hcxmk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+out:      hcxmk_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+
+# The counts either side. The fifty-eight a body comes to is what Refinery reads
+# a whole ingest key's body at and what husky's sixty-four character classic
+# ingest key leaves behind the opening; the twenty-six and the thirty-two are
+# the key ID Honeycomb's OpenAPI states the width of and the secret its
+# authentication page writes behind one. Each is used as a count rather than a
+# floor: a body one character short is no key, and a body one character long is
+# a key and one character that belongs to no credential. The second of those is
+# the price of having no boundary behind the match — a boundary there would drop
+# this key rather than trim it, and a real key written against a character of
+# the same class would come through whole.
+
+case:     a body of fifty-eight characters is a key
+in:       hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+out:      «honeycomb-api-key»
+
+case:     a body of fifty-seven characters is not
+in:       hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk
+out:      hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijk
+
+case:     a run longer than a key is a key and what follows it
+in:       hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklm
+out:      «honeycomb-api-key»m
+
+case:     a key id of twenty-five characters is no management key
+in:       hcxmk_0123456789abcdefghijklmno:0123456789abcdefghijklmnopqrstuv
+out:      hcxmk_0123456789abcdefghijklmno:0123456789abcdefghijklmnopqrstuv
+
+# What a key may be written against. The opening is the whole of the anchor and
+# there is no boundary on either side of it, so a key keeps its span whatever
+# word character it abuts.
+
+case:     a key after an underscore
+in:       HONEYCOMB_API_KEY_hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+out:      HONEYCOMB_API_KEY_«honeycomb-api-key»
+
+case:     a key at the end of a sentence
+in:       the key is hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl.
+out:      the key is «honeycomb-api-key».
+
+case:     a key between multi-byte text with nothing between them
+in:       キーはhcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklです
+out:      キーは«honeycomb-api-key»です
+
+# Two keys written together, and one written inside another. The last five
+# characters of a body can spell hc, the assigned character and a kind, and the
+# separator closing that opening is then the character written straight behind
+# the key — so a key can begin five characters before the one in front of it
+# ends. The two spans overlap and are redacted as one.
+
+case:     two keys with nothing between them
+in:       hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklhcxmk_0123456789abcdefghijklmnop:0123456789abcdefghijklmnopqrstuv
+out:      «honeycomb-api-key»«honeycomb-api-key»
+
+case:     a key whose last characters open another
+in:       hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghcaik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+out:      «honeycomb-api-key»
+
+# The keys of this vendor's that carry no opening at all. A configuration key's
+# Token is twenty-two characters of letters and digits and a Classic team's API
+# key is thirty-two hexadecimal characters, both written with no prefix and no
+# separator. Either is a word of an identifier, a git short SHA or an MD5, so
+# nothing here reads them.
+
+case:     a configuration key token in the header it is sent in
+in:       X-Honeycomb-Team: 0123456789abcdefghijkl
+out:      X-Honeycomb-Team: 0123456789abcdefghijkl
+
+case:     a classic api key in an environment assignment
+in:       HONEYCOMB_API_KEY=0123456789abcdef0123456789abcdef
+out:      HONEYCOMB_API_KEY=0123456789abcdef0123456789abcdef
+
+# And what a digest written behind an opening comes to. A SHA-256 is six
+# characters longer than a body, so the first fifty-eight of one are a key here
+# and the six behind them stay: fifty-eight characters of the body's own
+# alphabet behind the vendor's own opening is a key's format exactly, and
+# declining it would decline every key Honeycomb happened to write in the
+# hexadecimal digits alone. A SHA-1 and an MD5 are short of the count.
+
+case:     a sha-256 behind an ingest opening
+in:       hcxik_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «honeycomb-api-key»abcdef
+
+case:     a sha-1 behind an ingest opening
+in:       hcxik_0123456789abcdef0123456789abcdef01234567
+out:      hcxik_0123456789abcdef0123456789abcdef01234567
+
+case:     an md5 behind an ingest opening
+in:       hcxik_0123456789abcdef0123456789abcdef
+out:      hcxik_0123456789abcdef0123456789abcdef
+
+# And the shapes that reach the grammar nowhere.
+
+case:     a body of the right length opening with no prefix
+in:       0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+out:      0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl
+
+case:     a key cut short with an ellipsis
+in:       hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abc...
+out:      hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abc...
+
+case:     prose
+in:       there is no credential in this sentence
+out:      there is no credential in this sentence
+
+case:     a log line naming the api a key authenticates against
+in:       time=2026-08-17T00:00:00Z level=info msg="sending events" url=https://api.honeycomb.io/1/batch/my-dataset
+out:      time=2026-08-17T00:00:00Z level=info msg="sending events" url=https://api.honeycomb.io/1/batch/my-dataset

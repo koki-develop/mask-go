@@ -508,6 +508,23 @@ var builtinPatterns = []struct {
 		benchmarks: herokuAPITokenFindBenchmarks,
 	},
 	{
+		name:    "honeycomb-api-key",
+		pattern: HoneycombAPIKey,
+		ref:     referenceHoneycombAPIKeyFind,
+		samples: []string{
+			"HONEYCOMB_API_KEY=hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl",
+			"hcaic_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl",
+			"hcxmk_0123456789abcdefghijklmnop:0123456789abcdefghijklmnopqrstuv",
+			"hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghcaik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijkl",
+			"hcxik_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklhcxmk_0123456789abcdefghijklmnop:0123456789abcdefghijklmnopqrstuv",
+		},
+		anchors: []string{
+			"hcxik_0123456789abcdef",
+			"hcxmk_0123456789abcdefghijklmnop:0123456789",
+		},
+		benchmarks: honeycombAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "huggingface-user-access-token",
 		pattern: HuggingFaceUserAccessToken,
 		ref:     referenceHuggingFaceUserAccessTokenFind,
