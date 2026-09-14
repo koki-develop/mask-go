@@ -68,6 +68,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"NotionPatterns":       NotionPatterns,
 	"NPMPatterns":          NPMPatterns,
 	"OnePasswordPatterns":  OnePasswordPatterns,
+	"OneSignalPatterns":    OneSignalPatterns,
 	"OpenAIPatterns":       OpenAIPatterns,
 	"OpenRouterPatterns":   OpenRouterPatterns,
 	"OryPatterns":          OryPatterns,

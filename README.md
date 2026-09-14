@@ -35,7 +35,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 ## Built-in patterns
 
-The 80 built-in patterns cover 67 vendors and locate 185 kinds of credential:
+The 81 built-in patterns cover 68 vendors and locate 187 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -78,6 +78,7 @@ The 80 built-in patterns cover 67 vendors and locate 185 kinds of credential:
 | `NotionPatterns() []Pattern` | Notion internal connection tokens, Notion OAuth access tokens, Notion personal access tokens |
 | `NPMPatterns() []Pattern` | npm granular access tokens, npm legacy read-only tokens, npm legacy automation tokens, npm legacy publish tokens |
 | `OnePasswordPatterns() []Pattern` | 1Password service account tokens |
+| `OneSignalPatterns() []Pattern` | OneSignal app API keys, organization API keys |
 | `OpenAIPatterns() []Pattern` | OpenAI project API keys, service account keys, Admin API keys, legacy user API keys |
 | `OpenRouterPatterns() []Pattern` | OpenRouter API keys |
 | `OryPatterns() []Pattern` | Ory Network project API keys, workspace API keys |

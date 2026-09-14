@@ -73,6 +73,7 @@ var builtins = []Pattern{
 	notionAPIToken,
 	npmAccessToken,
 	onePasswordServiceAccountToken,
+	oneSignalAPIKey,
 	openAIAPIKey,
 	openRouterAPIKey,
 	oryAPIKey,

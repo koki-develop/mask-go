@@ -1,0 +1,179 @@
+# What OneSignal API keys the library redacts, and what it leaves alone.
+#
+# The ordered run the corpus writes credentials from cannot be written into a
+# key: the alphabet a body is written in leaves out 0, 1, 8 and 9 and holds no
+# capital, so the run here is 234567abcdefghijklmnopqrstuvwxyz —
+# 0123456789abcdefghijklmnopqrstuvwxyz with those four digits taken away —
+# repeated to the hundred and three characters a body is at its shortest.
+#
+# The cases carrying a digest or a hexadecimal run write it in the sixteen
+# hexadecimal characters, which the run above cannot state; the app id is written
+# as the UUID OneSignal issues it as, in the run those sixteen give.
+
+patterns: onesignal-api-key
+
+# The two scopes a key is issued under. An app key sends the messages of one app
+# and reads the users behind them; an organization key reaches every app an
+# organization holds, and the keys themselves. Both are secrets OneSignal shows
+# once, and nothing but the three characters of the scope tells them apart.
+
+case:     an app key in an environment assignment
+in:       ONESIGNAL_APP_API_KEY=os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+out:      ONESIGNAL_APP_API_KEY=«onesignal-api-key»
+
+case:     an organization key in an environment assignment
+in:       ONESIGNAL_ORG_API_KEY=os_v2_org_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+out:      ONESIGNAL_ORG_API_KEY=«onesignal-api-key»
+
+case:     a key in the header OneSignal takes it in
+in:       Authorization: Key os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+out:      Authorization: Key «onesignal-api-key»
+
+case:     a key on the command line that sends with it
+in:       curl -X POST https://api.onesignal.com/notifications -H "Authorization: Key os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a"
+out:      curl -X POST https://api.onesignal.com/notifications -H "Authorization: Key «onesignal-api-key»"
+
+case:     a key in a json log line
+in:       {"level":"debug","api_key":"os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a"}
+out:      {"level":"debug","api_key":"«onesignal-api-key»"}
+
+case:     a key in a shell export
+in:       export ONESIGNAL_APP_API_KEY=os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+out:      export ONESIGNAL_APP_API_KEY=«onesignal-api-key»
+
+case:     a key in a yaml field
+in:       onesignal:\n  api_key: os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a\n
+out:      onesignal:\n  api_key: «onesignal-api-key»\n
+
+case:     a key in the call that takes one
+in:       client = OneSignal(api_key="os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a")
+out:      client = OneSignal(api_key="«onesignal-api-key»")
+
+case:     a key among the other fields of a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="POST /notifications" key=os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a status=200
+out:      time=2026-08-17T00:00:00Z level=info msg="POST /notifications" key=«onesignal-api-key» status=200
+
+case:     a key on each of two lines
+in:       app: os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a\norg: os_v2_org_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a\n
+out:      app: «onesignal-api-key»\norg: «onesignal-api-key»\n
+
+case:     a key of each scope on one line
+in:       os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a os_v2_org_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+out:      «onesignal-api-key» «onesignal-api-key»
+
+# What OneSignal writes beside a key and this leaves alone. The App ID is the
+# public identifier an SDK is set up with and a request names the app by, so it
+# is what a reader of a redacted log is looking for; it is a UUID, which carries
+# the hyphen and the digits a body may not.
+
+case:     the app id written beside a key
+in:       app_id=01234567-89ab-cdef-0123-456789abcdef api_key=os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+out:      app_id=01234567-89ab-cdef-0123-456789abcdef api_key=«onesignal-api-key»
+
+case:     the app id alone
+in:       {"app_id":"01234567-89ab-cdef-0123-456789abcdef","target_channel":"push"}
+out:      {"app_id":"01234567-89ab-cdef-0123-456789abcdef","target_channel":"push"}
+
+case:     the header with no key written behind it
+in:       Authorization: Key
+out:      Authorization: Key
+
+# The count is a floor and a key is redacted to the end of the run it stands in,
+# so a body longer than the shortest is redacted whole and a character of the
+# body's own alphabet written against a key is redacted with it.
+
+case:     a body longer than the shortest one
+in:       os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567ab
+out:      «onesignal-api-key»
+
+case:     a word written straight against a key
+in:       os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567asuffix
+out:      «onesignal-api-key»
+
+# Where the run ends is where the alphabet stops. The underscore every prefix
+# closes with is one no body admits, and so are the four digits the alphabet
+# leaves out, so each of them closes a key rather than being redacted with it.
+
+case:     an underscored word against a key
+in:       os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a_suffix
+out:      «onesignal-api-key»_suffix
+
+case:     a digit the alphabet leaves out against a key
+in:       os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a0123
+out:      «onesignal-api-key»0123
+
+# A key written inside another. The two letters every prefix opens with belong to
+# the alphabet a body is written in, so the run of the first key carries on into
+# the second key's opening and stops at its first underscore. The second key is
+# found at its own prefix, the spans overlap, and the two are redacted as one.
+
+case:     a key beginning inside the body of the key in front of it
+in:       os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567aos_v2_org_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+out:      «onesignal-api-key»
+
+# What is left alone. A body one character short of the floor is the shape a line
+# cut to a column limit leaves, and the characters written before the cut stay in
+# the text.
+
+case:     a body one character short of the floor
+in:       ONESIGNAL_APP_API_KEY=os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567
+out:      ONESIGNAL_APP_API_KEY=os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567
+
+case:     a key cut off at its prefix
+in:       ONESIGNAL_APP_API_KEY=os_v2_app_
+out:      ONESIGNAL_APP_API_KEY=os_v2_app_
+
+case:     a scope this pattern was never told about
+in:       os_v2_usr_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+out:      os_v2_usr_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+
+# The prefix and the body are read in the one case OneSignal writes them in, and
+# the alphabet holds no capital at all, so a body in capitals ends its run at the
+# first letter.
+
+case:     an uppercase prefix
+in:       OS_V2_APP_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+out:      OS_V2_APP_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+
+case:     a body written in capitals
+in:       os_v2_app_234567ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUVWXYZ234567A
+out:      os_v2_app_234567ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUVWXYZ234567A
+
+case:     a digit the alphabet leaves out inside the body
+in:       os_v2_app_234567abcdefghijklm0opqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+out:      os_v2_app_234567abcdefghijklm0opqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+
+# A digest written behind the prefix is not the collision it is for a pattern
+# reading base62. Four of the sixteen hexadecimal digits — 0, 1, 8 and 9 — are
+# ones this alphabet leaves out, so a run of a digest ends at the first of them it
+# writes, and each of the two below writes one at its opening.
+
+case:     a sha256 written behind the prefix
+in:       os_v2_app_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      os_v2_app_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a sha512 written behind the prefix, longer than the floor
+in:       os_v2_app_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      os_v2_app_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a run of the right length with no prefix in front of it
+in:       234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+out:      234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a
+
+# What the grammar takes on rather than reads apart from a key. Each of these is
+# a key's format exactly — the prefix, and a run of the alphabet reaching the
+# floor — so there is nothing left in the text to tell it from a key OneSignal
+# issued, and a pattern declining it would decline the real key of that shape.
+# The first is a hexadecimal run wide enough to reach the floor before it writes
+# one of the four digits the alphabet leaves out, which takes a hundred and three
+# characters and so no digest narrower than a sha512. The second is the prefix
+# inside a base64url payload, which is the one encoding that can hold the
+# underscores it carries.
+
+case:     a hexadecimal run whose first excluded digit stands past the floor
+in:       os_v2_app_234567abcdef234567abcdef234567abcdef234567abcdef234567abcdef234567abcdef234567abcdef234567abcdef234567abcdef0123456789abcdef0123
+out:      «onesignal-api-key»0123456789abcdef0123
+
+case:     a key's shape inside a base64url payload
+in:       payload=zzzzos_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567azzzz
+out:      payload=zzzz«onesignal-api-key»

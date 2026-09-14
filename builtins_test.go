@@ -712,6 +712,19 @@ var builtinPatterns = []struct {
 		benchmarks: onePasswordServiceAccountTokenFindBenchmarks,
 	},
 	{
+		name:    "onesignal-api-key",
+		pattern: OneSignalAPIKey,
+		ref:     referenceOneSignalAPIKeyFind,
+		samples: []string{
+			"ONESIGNAL_APP_API_KEY=os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a",
+			"os_v2_org_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a",
+			"os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567ab",
+			"os_v2_app_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567aos_v2_org_234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwxyz234567a",
+		},
+		anchors:    []string{"os_v2_app_234567", "os_v2_org_234567"},
+		benchmarks: oneSignalAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "openai-api-key",
 		pattern: OpenAIAPIKey,
 		ref:     referenceOpenAIAPIKeyFind,

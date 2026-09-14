@@ -251,6 +251,12 @@ func NPMPatterns() []Pattern { return []Pattern{npmAccessToken} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func OnePasswordPatterns() []Pattern { return []Pattern{onePasswordServiceAccountToken} }
 
+// OneSignalPatterns returns every built-in pattern that locates a credential
+// OneSignal issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func OneSignalPatterns() []Pattern { return []Pattern{oneSignalAPIKey} }
+
 // OpenAIPatterns returns every built-in pattern that locates a credential
 // OpenAI issues.
 //
