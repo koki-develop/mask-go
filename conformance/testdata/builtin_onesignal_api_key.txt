@@ -7,9 +7,8 @@
 # repeated to the hundred and three characters a body is at its shortest.
 #
 # The cases carrying a digest or a hexadecimal run write it in the sixteen
-# hexadecimal characters, which is what makes them hexadecimal and what the
-# alphabet cannot state; the app id is written as the UUID OneSignal issues it
-# as, in the run those sixteen give.
+# hexadecimal characters, which the run above cannot state; the app id is written
+# as the UUID OneSignal issues it as, in the run those sixteen give.
 
 patterns: onesignal-api-key
 
