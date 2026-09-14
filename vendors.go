@@ -185,6 +185,12 @@ func HuggingFacePatterns() []Pattern { return []Pattern{huggingFaceUserAccessTok
 // The returned slice is freshly allocated and may be modified by the caller.
 func KlaviyoPatterns() []Pattern { return []Pattern{klaviyoPrivateAPIKey} }
 
+// LangfusePatterns returns every built-in pattern that locates a credential
+// Langfuse issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func LangfusePatterns() []Pattern { return []Pattern{langfuseSecretKey} }
+
 // LangSmithPatterns returns every built-in pattern that locates a credential
 // LangSmith issues.
 //

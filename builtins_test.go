@@ -565,6 +565,19 @@ var builtinPatterns = []struct {
 		benchmarks: klaviyoPrivateAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "langfuse-secret-key",
+		pattern: LangfuseSecretKey,
+		ref:     referenceLangfuseSecretKeyFind,
+		samples: []string{
+			"LANGFUSE_SECRET_KEY=sk-lf-01234567-89ab-cdef-0123-456789abcdef",
+			"sk-lf-01234567-89AB-CDEF-0123-456789ABCDEF",
+			"sk-lf-01234567-89ab-cdef-0123-456789abcdef0",
+			"sk-lf-01234567-89ab-cdef-0123-456789abcdefsk-lf-01234567-89ab-cdef-0123-456789abcdef",
+		},
+		anchors:    []string{"sk-lf-01234567"},
+		benchmarks: langfuseSecretKeyFindBenchmarks,
+	},
+	{
 		name:    "langsmith-api-key",
 		pattern: LangSmithAPIKey,
 		ref:     referenceLangSmithAPIKeyFind,
