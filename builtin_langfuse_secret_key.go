@@ -2,11 +2,12 @@ package mask
 
 import "strings"
 
-// LangfuseSecretKey locates the secret keys Langfuse issues: the prefix sk-lf-
+// LangfuseSecretKey locates the secret keys Langfuse mints: the prefix sk-lf-
 // and the UUID behind it, forty-two characters in all. One shape serves every
-// key — a key is minted for a project or for an organization and reaches the
-// API through the same header either way, so nothing in the string says what it
-// is allowed to reach.
+// key Langfuse mints — a key is minted for a project or for an organization and
+// reaches the API through the same header either way, so nothing in the string
+// says what it is allowed to reach. A key a caller supplied rather than had
+// minted is not located.
 //
 // A key is located wherever it is written, with no word boundary either side,
 // and exactly forty-two characters of it are. So text of that shape is redacted
@@ -46,6 +47,27 @@ func LangfuseSecretKey() Pattern { return langfuseSecretKey }
 // which Node documents as generating an RFC 4122 version 4 UUID. So the length
 // and the alphabet are not read off a value somebody was shown — they are what
 // the code issuing the credential writes, which is the vendor stating them.
+//
+// What that code states is the key Langfuse mints, and there is a second way a
+// key comes to exist that it does not reach. The same function takes a pair of
+// keys from its caller instead of minting one, and the two doors to it ask for
+// less than a format. The admin API asks that a caller-supplied secret key begin
+// with sk-lf- and nothing else — no length, no alphabet — so sk-lf- and a
+// handful of digits is a key it accepts. The self-hosting door asks for nothing
+// at all: LANGFUSE_INIT_PROJECT_SECRET_KEY is an unconstrained string handed
+// straight to that function, and the example Langfuse prints beside it writes
+// sk-1234567890, which carries no lf- to be found.
+//
+// Neither is located here, because neither has a format to read. What is left
+// once the UUID goes is a prefix and then whatever an operator typed, so a scan
+// reaching the first would be reading sk-lf- and a run whose alphabet and length
+// nothing states; the second carries no prefix at all, and no pattern anchored
+// on one can reach it whatever its body were read as. What declining costs is a
+// live credential left in the output whole — and on a self-hosted deployment
+// that is the key most likely to be written down, since a provisioned one goes
+// into a compose file and every log line that echoes the environment.
+// Test_LangfuseSecretKey_aKeyNobodyMinted pins both shapes, so that this is a
+// decision on the record rather than something the next reader discovers.
 //
 // Two rulesets corroborate it and agree with each other. trufflehog reads
 // sk-lf- and the five groups of a UUID in lowercase hexadecimal, behind a
@@ -95,12 +117,13 @@ func LangfuseSecretKey() Pattern { return langfuseSecretKey }
 // prefix rather than for the prefix itself; what makes it this byte is that it
 // is the rarest of the five the prefix is written with. Over the log line these
 // benchmarks are written on the l stands seven times, the s six, the f three
-// and the hyphen twice, where the k stands not at all — the l in level, url and
-// cloud, the s in msg, https and events, and the f in info, flushing and the
-// vendor's own name. The k belongs to no body besides, neither to a group nor
-// to the separators between them, so the search can never stop inside one,
-// which is what keeps a line dense in UUIDs off the cost of this scan
-// altogether.
+// and the hyphen twice, where the k stands not at all — the ordinary words of a
+// log line carry the other four and spell no k.
+// Test_langfuseSecretKeyFindBenchmarks_lineTheAnchorWasChosenAgainst holds that
+// line to those counts, so the sentence is read as a measurement rather than as
+// a recollection. The k belongs to no body besides, neither to a group nor to
+// the separators between them, so the search can never stop inside one, which is
+// what keeps a line dense in UUIDs off the cost of this scan altogether.
 //
 // The scan resumes one byte past the start of a candidate whether that
 // candidate became a key or not, which is the default and needs no argument.
@@ -168,11 +191,11 @@ var langfuseSecretKey = newBuiltin("langfuse-secret-key", &langfuseSecretKeyTail
 		}
 		start := anchor - langfuseSecretKeyAnchorIndex
 
-		// The byte the prefix opens with is tested before the prefix is
-		// compared. Every anchor the search stops at reaches this line, and all
-		// but the few that open a candidate are turned away by one byte where a
-		// comparison of the whole prefix is a length and a read.
-		if src[start] != langfuseSecretKeyPrefix[0] || !strings.HasPrefix(src[start:], langfuseSecretKeyPrefix) {
+		// The prefix is read back from the anchor. Almost every anchor the
+		// search stops at reaches this line and is turned away here, so what
+		// this comparison costs is most of what the scan pays for a line
+		// carrying the letter but no key.
+		if !strings.HasPrefix(src[start:], langfuseSecretKeyPrefix) {
 			continue
 		}
 

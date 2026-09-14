@@ -25,12 +25,13 @@ import (
 // matter and in uppercase where the case is what a case is about: the
 // hexadecimal is read in either.
 //
-// Three groups of cases carry no run. The bodies that open or close on an end of
-// the alphabet write that character in place of the one the run puts there, the
-// bodies in Test_LangfuseSecretKey_aBodyOutsideVersionFour write the version and
-// variant characters of the UUID they are about, and the bodies in
-// Test_LangfuseSecretKey_aPlaceholderUUID are one repeated digit, which is what
-// makes them placeholders.
+// Where a case turns on a character the run does not put there, the body writes
+// that character and carries the run everywhere else: the bodies opening or
+// closing on an end of the alphabet, the ones carrying a character the alphabet
+// leaves out, and the bodies in Test_LangfuseSecretKey_aBodyOutsideVersionFour,
+// which write the version and variant characters of the UUID they are about. The
+// bodies in Test_LangfuseSecretKey_aPlaceholderUUID are built from no run at
+// all, being a single repeated digit, which is what makes them placeholders.
 
 func Test_LangfuseSecretKey(t *testing.T) {
 	tests := []struct {
@@ -503,8 +504,9 @@ func Test_LangfuseSecretKey_thePublicKeyBesideIt(t *testing.T) {
 	//
 	// Every one of these reaches the body of the scan's loop, because a public
 	// key carries the k the scan searches for at the index it reads a candidate
-	// back from. What turns them away is the single byte in front of that k, so
-	// these cases are what holds the one comparison the pair is told apart by.
+	// back from. What turns them away is the byte in front of that k, which is
+	// the one character the two halves of the pair differ in — so these cases
+	// are what holds the whole of the distinction between them.
 	tests := []struct {
 		name string
 		src  string
@@ -520,6 +522,46 @@ func Test_LangfuseSecretKey_thePublicKeyBesideIt(t *testing.T) {
 		{
 			name: "a public key written against a word character",
 			src:  "xpk-lf-01234567-89ab-cdef-0123-456789abcdef",
+		},
+	}
+
+	m := New(WithPatterns(LangfuseSecretKey()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Mask(tt.src); got != tt.src {
+				t.Errorf("Mask(%q) = %q, want the text unchanged", tt.src, got)
+			}
+		})
+	}
+}
+
+func Test_LangfuseSecretKey_aKeyNobodyMinted(t *testing.T) {
+	// The live credentials this pattern leaves in the output, held to being left
+	// there rather than quietly forgotten. builtin_langfuse_secret_key.go weighs
+	// the decline; this is what it costs.
+	//
+	// Langfuse mints a key as a UUID, and it also accepts one its caller wrote.
+	// The admin API asks only that such a key begin with the prefix, so the
+	// first of these is a key it would accept and this scan reads nothing in.
+	// The self-hosting door asks for nothing at all, and the example Langfuse
+	// prints beside it carries no lf- — so the second is out of reach of any
+	// pattern anchored on this prefix, whatever its body were read as.
+	//
+	// The bodies are the ordered run rather than the digits Langfuse's own
+	// examples write, which is what every value in this file is built from. What
+	// the cases turn on is the body being no UUID, and the run states that as
+	// well as any other short string would.
+	tests := []struct {
+		name string
+		src  string
+	}{
+		{
+			name: "a key the admin api would accept, whose body is no uuid",
+			src:  "LANGFUSE_SECRET_KEY=sk-lf-0123456789abcdef",
+		},
+		{
+			name: "a key a self-hosted deployment provisioned, carrying no lf-",
+			src:  "LANGFUSE_INIT_PROJECT_SECRET_KEY=sk-0123456789abcdef",
 		},
 	}
 
@@ -664,6 +706,43 @@ func Test_langfuseSecretKeyBodyChars(t *testing.T) {
 	}
 	if chars != langfuseSecretKeyBodyChars {
 		t.Errorf("the groups and their separators come to %d characters where the scan cuts a candidate at %d", chars, langfuseSecretKeyBodyChars)
+	}
+}
+
+// Test_langfuseSecretKeyFindBenchmarks_lineTheAnchorWasChosenAgainst holds the
+// line the benchmarks are written on to the counts the rationale reads the
+// anchor choice off. Those counts are the whole of the evidence for searching on
+// the k rather than on one of the other four, and nothing else reports them: a
+// word added to that line with a k in it falsifies the sentence in silence,
+// since every benchmark goes on timing whatever the line became.
+//
+// The other half of the anchor argument — that no body carries a k — is held by
+// Test_langfuseSecretKeyAnchor, which reads the declarations rather than the
+// line.
+func Test_langfuseSecretKeyFindBenchmarks_lineTheAnchorWasChosenAgainst(t *testing.T) {
+	var line string
+	for _, c := range langfuseSecretKeyFindBenchmarks() {
+		if c.name == "no value" {
+			line = c.src
+		}
+	}
+	if line == "" {
+		t.Fatal(`no benchmark case named "no value", so the line the anchor was chosen against is not here to count`)
+	}
+
+	for _, tt := range []struct {
+		c    byte
+		want int
+	}{
+		{langfuseSecretKeyAnchor, 0},
+		{'l', 7},
+		{'s', 6},
+		{'f', 3},
+		{langfuseSecretKeySeparator, 2},
+	} {
+		if got := strings.Count(line, string([]byte{tt.c})); got != tt.want {
+			t.Errorf("the line carries %q %d times, the rationale reads the anchor off %d", tt.c, got, tt.want)
+		}
 	}
 }
 
