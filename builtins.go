@@ -62,6 +62,7 @@ var builtins = []Pattern{
 	huggingFaceUserAccessToken,
 	jsonWebToken,
 	klaviyoPrivateAPIKey,
+	langfuseSecretKey,
 	langSmithAPIKey,
 	linearAPIKey,
 	mailchimpAPIKey,
