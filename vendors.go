@@ -167,6 +167,12 @@ func HashiCorpPatterns() []Pattern { return []Pattern{hashiCorpVaultToken, hcpTe
 // The returned slice is freshly allocated and may be modified by the caller.
 func HerokuPatterns() []Pattern { return []Pattern{herokuAPIToken} }
 
+// HoneycombPatterns returns every built-in pattern that locates a credential
+// Honeycomb issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func HoneycombPatterns() []Pattern { return []Pattern{honeycombAPIKey} }
+
 // HuggingFacePatterns returns every built-in pattern that locates a credential
 // Hugging Face issues.
 //
