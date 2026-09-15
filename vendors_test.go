@@ -52,6 +52,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"GooglePatterns":       GooglePatterns,
 	"GrafanaPatterns":      GrafanaPatterns,
 	"GroqPatterns":         GroqPatterns,
+	"HarnessPatterns":      HarnessPatterns,
 	"HashiCorpPatterns":    HashiCorpPatterns,
 	"HerokuPatterns":       HerokuPatterns,
 	"HoneycombPatterns":    HoneycombPatterns,

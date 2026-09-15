@@ -464,6 +464,23 @@ var builtinPatterns = []struct {
 		benchmarks: groqAPIKeyFindBenchmarks,
 	},
 	{
+		name:    "harness-api-key",
+		pattern: HarnessAPIKey,
+		ref:     referenceHarnessAPIKeyFind,
+		samples: []string{
+			"HARNESS_API_KEY=pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij",
+			"sat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij",
+			"pat.0123456789ab-defghijk_.0123456789abcdefghijklmn.0123456789abcdefghij",
+			"pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghijklmn",
+			"pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghijsat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij",
+		},
+		anchors: []string{
+			"pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.",
+			"sat.0123456789abcdefghijkl.0123456789abcdefghijklmn.",
+		},
+		benchmarks: harnessAPIKeyFindBenchmarks,
+	},
+	{
 		name:    "hashicorp-vault-token",
 		pattern: HashiCorpVaultToken,
 		ref:     referenceHashiCorpVaultTokenFind,

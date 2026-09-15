@@ -55,6 +55,7 @@ var builtins = []Pattern{
 	googleAPIKey,
 	grafanaServiceAccountToken,
 	groqAPIKey,
+	harnessAPIKey,
 	hashiCorpVaultToken,
 	hcpTerraformAPIToken,
 	herokuAPIToken,

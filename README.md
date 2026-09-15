@@ -35,7 +35,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 ## Built-in patterns
 
-The 81 built-in patterns cover 68 vendors and locate 187 kinds of credential:
+The 82 built-in patterns cover 69 vendors and locate 189 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -61,6 +61,7 @@ The 81 built-in patterns cover 68 vendors and locate 187 kinds of credential:
 | `GooglePatterns() []Pattern` | Google API keys |
 | `GrafanaPatterns() []Pattern` | Grafana service account tokens |
 | `GroqPatterns() []Pattern` | Groq API keys |
+| `HarnessPatterns() []Pattern` | Harness personal access tokens, service account tokens |
 | `HashiCorpPatterns() []Pattern` | HashiCorp Vault service tokens, batch tokens, recovery tokens, HCP Terraform API tokens |
 | `HerokuPatterns() []Pattern` | Heroku API tokens |
 | `HoneycombPatterns() []Pattern` | Honeycomb ingest keys, classic ingest keys, management keys |
