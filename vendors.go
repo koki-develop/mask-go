@@ -61,6 +61,12 @@ func BuildkitePatterns() []Pattern { return []Pattern{buildkiteToken} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func CircleCIPatterns() []Pattern { return []Pattern{circleCIAPIToken} }
 
+// ClojarsPatterns returns every built-in pattern that locates a credential
+// Clojars issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func ClojarsPatterns() []Pattern { return []Pattern{clojarsDeployToken} }
+
 // CloudflarePatterns returns every built-in pattern that locates a credential
 // Cloudflare issues.
 //

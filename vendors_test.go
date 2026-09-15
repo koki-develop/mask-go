@@ -37,6 +37,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"AxiomPatterns":        AxiomPatterns,
 	"BuildkitePatterns":    BuildkitePatterns,
 	"CircleCIPatterns":     CircleCIPatterns,
+	"ClojarsPatterns":      ClojarsPatterns,
 	"CloudflarePatterns":   CloudflarePatterns,
 	"CratesIOPatterns":     CratesIOPatterns,
 	"DatabricksPatterns":   DatabricksPatterns,

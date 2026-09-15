@@ -206,6 +206,19 @@ var builtinPatterns = []struct {
 		benchmarks: circleCIAPITokenFindBenchmarks,
 	},
 	{
+		name:    "clojars-deploy-token",
+		pattern: ClojarsDeployToken,
+		ref:     referenceClojarsDeployTokenFind,
+		samples: []string{
+			"CLOJARS_PASSWORD=CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+			"CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abCLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+			"CLOJARS_CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab",
+			"CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+		},
+		anchors:    []string{"CLOJARS_0123456789abcdef"},
+		benchmarks: clojarsDeployTokenFindBenchmarks,
+	},
+	{
 		name:    "cloudflare-api-key",
 		pattern: CloudflareAPIKey,
 		ref:     referenceCloudflareAPIKeyFind,
