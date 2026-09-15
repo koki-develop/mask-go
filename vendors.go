@@ -83,6 +83,12 @@ func DatabricksPatterns() []Pattern {
 	return []Pattern{databricksOAuthClientSecret, databricksPersonalAccessToken}
 }
 
+// DataStaxPatterns returns every built-in pattern that locates a credential
+// DataStax issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func DataStaxPatterns() []Pattern { return []Pattern{astraDBApplicationToken} }
+
 // DigitalOceanPatterns returns every built-in pattern that locates a credential
 // DigitalOcean issues.
 //

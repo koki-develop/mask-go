@@ -101,6 +101,20 @@ var builtinPatterns = []struct {
 		benchmarks: anthropicCredentialFindBenchmarks,
 	},
 	{
+		name:    "astra-db-application-token",
+		pattern: AstraDBApplicationToken,
+		ref:     referenceAstraDBApplicationTokenFind,
+		samples: []string{
+			"ASTRA_DB_APPLICATION_TOKEN=AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr",
+			"AstraCS:0123456789ab-defghijklmn:0123456789abcdefghijklmnopqrstuv_xyz0123456789abcdefghijklmnopqr",
+			"AstraCS:AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr",
+			"AstraCS:0123456789abcdefgAstraCS:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr",
+			"AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrAstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr",
+		},
+		anchors:    []string{"AstraCS:0123456789"},
+		benchmarks: astraDBApplicationTokenFindBenchmarks,
+	},
+	{
 		name:    "aws-access-key-id",
 		pattern: AWSAccessKeyID,
 		ref:     referenceAWSAccessKeyIDFind,

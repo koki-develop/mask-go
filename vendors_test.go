@@ -40,6 +40,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"CloudflarePatterns":   CloudflarePatterns,
 	"CratesIOPatterns":     CratesIOPatterns,
 	"DatabricksPatterns":   DatabricksPatterns,
+	"DataStaxPatterns":     DataStaxPatterns,
 	"DigitalOceanPatterns": DigitalOceanPatterns,
 	"DockerPatterns":       DockerPatterns,
 	"DopplerPatterns":      DopplerPatterns,
@@ -403,6 +404,7 @@ func Test_vendorAccessors_patternsWithNoVendorIsExactly(t *testing.T) {
 // pattern name it returns.
 var vendorPatternPrefixExceptions = map[string][]string{
 	"CratesIOPatterns":    {"crates-io-token"},
+	"DataStaxPatterns":    {"astra-db-application-token"},
 	"FlyIOPatterns":       {"fly-io-access-token"},
 	"HashiCorpPatterns":   {"hashicorp-vault-token", "hcp-terraform-api-token"},
 	"OnePasswordPatterns": {"1password-service-account-token"},
