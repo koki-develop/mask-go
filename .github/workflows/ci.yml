@@ -118,9 +118,13 @@ jobs:
             echo "$mine is not a package of this module" >&2
             exit 1
           fi
+      # A limit of the binary's own: the default is ten minutes and would end a
+      # run here whatever the job above is given. go test panics naming the
+      # test it hung in, where timeout-minutes only kills the runner, so it is
+      # set under the job's to be the one that fires.
       - env:
           PKG: ${{ matrix.pkg }}
-        run: go test -race "$PKG"
+        run: go test -race -timeout 18m "$PKG"
 
   # A fuzz target is given its own job rather than a turn in a loop on one
   # runner. A loop is thirty seconds per target one after another, and this
@@ -220,9 +224,17 @@ jobs:
           # 0. The shell named at the top of this file sets it too.
           set -o pipefail
           fuzztime=30s
+          # A budget of its own, defaulting to sixty seconds and spent per
+          # minimization attempt — which the fuzzer makes on every input that
+          # widens coverage, not only on a crasher, and which a -fuzztime
+          # deadline does not bound. At the default a target that finds one
+          # early stalls for the rest of its run. A second costs only how far
+          # a crasher is reduced before being written, and this job reads no
+          # more than that testdata/fuzz was written to.
+          fuzzminimizetime=1s
           log="$RUNNER_TEMP/fuzz.log"
           status=0
-          go test -run '^$' -fuzz "^${TARGET}$" -fuzztime "$fuzztime" "$PKG" 2>&1 | tee "$log" || status=${PIPESTATUS[0]}
+          go test -run '^$' -fuzz "^${TARGET}$" -fuzztime "$fuzztime" -fuzzminimizetime "$fuzzminimizetime" "$PKG" 2>&1 | tee "$log" || status=${PIPESTATUS[0]}
           if [ "$status" -eq 0 ]; then
             exit 0
           fi
