@@ -1,0 +1,199 @@
+# What Harness API keys the library redacts, and what it leaves alone.
+#
+# Every key here is built from the ordered run 0123456789abcdef carried on
+# through the alphabet, which no real credential is: twenty-two characters for
+# the account identifier, twenty-four for the token identifier and twenty for
+# the secret, which with the prefix and the two separators comes to
+# seventy-two. The counts are not an abbreviation — a run shortened for
+# readability would leave a case holding no key at all. The case that turns on
+# case is written with the same run in uppercase, and the cases that turn on
+# what the account identifier may hold write the hyphen and the underscore into
+# the run where those characters stand.
+
+patterns: harness-api-key
+
+# A key as it is written. Harness issues two kinds under one name — a personal
+# access token for a user and a service account token for a service account —
+# and they share a layout, so what differs below is where a key stands rather
+# than what it is.
+
+case:     a personal access token in an environment assignment
+in:       HARNESS_API_KEY=pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      HARNESS_API_KEY=«harness-api-key»
+
+case:     a service account token in an environment assignment
+in:       HARNESS_API_KEY=sat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      HARNESS_API_KEY=«harness-api-key»
+
+case:     a key in the api key header
+in:       x-api-key: pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      x-api-key: «harness-api-key»
+
+case:     a key on a command line
+in:       curl -H "x-api-key: pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij" https://app.harness.io/v1/orgs
+out:      curl -H "x-api-key: «harness-api-key»" https://app.harness.io/v1/orgs
+
+case:     a key in a json body
+in:       {"apiKey":"sat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij"}
+out:      {"apiKey":"«harness-api-key»"}
+
+case:     a key at the end of a sentence
+in:       the key is pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij.
+out:      the key is «harness-api-key».
+
+case:     a key flush against a multi-byte rune on both sides
+in:       日本語pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij日本語
+out:      日本語«harness-api-key»日本語
+
+case:     a key in a tab separated field
+in:       harness_api_key\tpat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      harness_api_key\t«harness-api-key»
+
+case:     a key followed by a crlf
+in:       HARNESS_API_KEY=pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij\r\n
+out:      HARNESS_API_KEY=«harness-api-key»\r\n
+
+case:     a key in a markdown code span
+in:       `pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij`
+out:      `«harness-api-key»`
+
+# The alphabets, which are not one class over the three parts. The account
+# identifier is read in base64url, so the hyphen and the underscore stand in it;
+# the token identifier and the secret are read in base62, which admits neither.
+# Both readings are the widest the three rules stating this format offer, and
+# the pattern's own file weighs taking the wider.
+
+case:     a hyphen and an underscore in the account identifier
+in:       pat.0123456789ab-defghijk_.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      «harness-api-key»
+
+case:     a hyphen in the token identifier
+in:       pat.0123456789abcdefghijkl.0123456789ab-defghijklmn.0123456789abcdefghij
+out:      pat.0123456789abcdefghijkl.0123456789ab-defghijklmn.0123456789abcdefghij
+
+case:     a hyphen in the secret
+in:       pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789ab-defghij
+out:      pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789ab-defghij
+
+case:     an uppercase body
+in:       pat.0123456789ABCDEFGHIJKL.0123456789ABCDEFGHIJKLMN.0123456789ABCDEFGHIJ
+out:      «harness-api-key»
+
+# The counts. Harness states none of them: what states them are the published
+# rulesets, which say what their authors observed rather than what the vendor
+# undertakes to keep issuing. The two identifiers are read at their counts
+# exactly, because those are also what keeps the grammar off an ordinary dotted
+# name; the secret is read as a floor, because nothing stands behind it to be
+# told apart from anything. So an identifier one character short is located
+# nowhere, and a secret one character longer is one key and the whole of it is
+# redacted.
+
+case:     an account identifier one character short
+in:       pat.0123456789abcdefghijk.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      pat.0123456789abcdefghijk.0123456789abcdefghijklmn.0123456789abcdefghij
+
+case:     a token identifier one character longer
+in:       pat.0123456789abcdefghijkl.0123456789abcdefghijklmno.0123456789abcdefghij
+out:      pat.0123456789abcdefghijkl.0123456789abcdefghijklmno.0123456789abcdefghij
+
+case:     a secret one character short of the floor
+in:       pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghi
+out:      pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghi
+
+case:     a secret one character longer than the floor
+in:       pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghijk
+out:      «harness-api-key»
+
+# The separators, which stand at three places and nowhere else. A key written
+# with one of them missing puts a character of an identifier where the layout
+# writes a stop, and the reading ends there.
+
+case:     no separator between the identifiers
+in:       pat.0123456789abcdefghijkl0123456789abcdefghijklmn.0123456789abcdefghijkl
+out:      pat.0123456789abcdefghijkl0123456789abcdefghijklmn.0123456789abcdefghijkl
+
+case:     no separator in front of the secret
+in:       pat.0123456789abcdefghijkl.0123456789abcdefghijklmn0123456789abcdefghij
+out:      pat.0123456789abcdefghijkl.0123456789abcdefghijklmn0123456789abcdefghij
+
+# What a key may be written against. There is no boundary on either side of the
+# prefix, so a key keeps its span whatever word character it abuts. The first
+# two cases are what a boundary in front would cost; the third is what it would
+# buy, which is a word closing on the three letters a key opens with. Behind a
+# key the secret's run is what ends the span, so a character of its alphabet
+# written against a key is redacted with it and a character of neither alphabet
+# stays where it was written.
+
+case:     a key after an underscore
+in:       HARNESS_API_KEY_pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      HARNESS_API_KEY_«harness-api-key»
+
+case:     a key after a letter
+in:       xpat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      x«harness-api-key»
+
+case:     a word closing on the three letters a key opens with
+in:       compat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      com«harness-api-key»
+
+case:     a hyphenated word written against a key
+in:       pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij-suffix
+out:      «harness-api-key»-suffix
+
+# Two keys written together, and a key written inside another. A key carries a
+# full stop at three places, so a candidate opens inside one wherever the three
+# characters in front of a stop spell a prefix — and where that candidate goes
+# on to be a key the two spans overlap and become one redaction. Two keys
+# written with nothing between them overlap as well, the first secret's run
+# reaching into the three letters the second opens with, which are written in
+# the run's own alphabet.
+
+case:     two keys with nothing between them
+in:       pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghijsat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      «harness-api-key»
+
+case:     two keys separated by a space
+in:       pat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij sat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      «harness-api-key» «harness-api-key»
+
+case:     a key opening inside the token identifier of another
+in:       pat.0123456789abcdefghijkl.0123456789abcdefghijkpat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij tail
+out:      «harness-api-key» tail
+
+# The prefix as ordinary text writes it: pat is where compat and the package
+# paths written through it end, and a full stop follows a dotted name wherever
+# the name goes on. What turns those away is the layout behind the prefix, which
+# none of them reaches.
+
+case:     a package path
+in:       org.example.compat.legacy.ClientAdapter was loaded from the shaded jar
+out:      org.example.compat.legacy.ClientAdapter was loaded from the shaded jar
+
+case:     a field access in a stack trace
+in:       at com.example.compat.Bridge.invoke(Bridge.java:118) and eleven frames below it
+out:      at com.example.compat.Bridge.invoke(Bridge.java:118) and eleven frames below it
+
+case:     a sentence closing on the three letters
+in:       the change is backwards compat. the release note says so and nothing else in the file changed
+out:      the change is backwards compat. the release note says so and nothing else in the file changed
+
+# And what this pattern leaves alone otherwise. A kind Harness does not issue, a
+# body of the right shape with no prefix in front of it, a digest written behind
+# the prefix — neither identifier is written to any digest's width — and the log
+# line no pattern here has anything to find in.
+
+case:     a kind harness does not issue
+in:       xat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      xat.0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+
+case:     a body of the right shape opening with no prefix
+in:       0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+out:      0123456789abcdefghijkl.0123456789abcdefghijklmn.0123456789abcdefghij
+
+case:     a sha256 behind the prefix
+in:       pat.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      pat.0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://app.harness.io/v1/orgs
+out:      time=2026-08-17T00:00:00Z level=info msg="calling api" url=https://app.harness.io/v1/orgs
