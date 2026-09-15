@@ -1,0 +1,162 @@
+# What Clojars deploy tokens the library redacts, and what it leaves alone.
+#
+# Every token here is built from the ordered run 0123456789abcdef, which no real
+# credential is. The run written three times over and then twelve characters of
+# it again is the sixty characters of a body, and with the prefix in front that
+# comes to the sixty-eight characters Clojars' own generator writes. The count is
+# not an abbreviation — a run shortened for readability would leave a case
+# holding no token at all. The body is hexadecimal and lowercase, so the run
+# repeats those sixteen characters rather than carrying on through the alphabet,
+# and the case that turns on case is written with the same run in uppercase.
+# Where a case turns on what stands at the first character of a body, that
+# character is written first and the run follows it — three times over and
+# eleven more, which is sixty again — so that the run stands unbroken behind the
+# character the case is about rather than being cut in half by it.
+
+patterns: clojars-deploy-token
+
+# A token as it is written. It stands in for the password of the account that
+# made it, so it is written wherever that password would be: in the deployment
+# credentials a build tool reads, and in the environment variables Clojars names
+# for them.
+
+case:     a token in an environment assignment
+in:       CLOJARS_PASSWORD=CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      CLOJARS_PASSWORD=«clojars-deploy-token»
+
+case:     a token in a deployment settings map
+in:       {:username "example" :password "CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab"}
+out:      {:username "example" :password "«clojars-deploy-token»"}
+
+case:     a token on a command line
+in:       lein deploy clojars --password CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      lein deploy clojars --password «clojars-deploy-token»
+
+case:     a token in a basic auth header
+in:       Authorization: Basic example:CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      Authorization: Basic example:«clojars-deploy-token»
+
+case:     a token at the end of a sentence
+in:       the token is CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab.
+out:      the token is «clojars-deploy-token».
+
+case:     a token flush against a multi-byte rune on both sides
+in:       日本語CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab日本語
+out:      日本語«clojars-deploy-token»日本語
+
+case:     a token in a tab separated field
+in:       deploy_token\tCLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      deploy_token\t«clojars-deploy-token»
+
+case:     a token followed by a crlf
+in:       CLOJARS_PASSWORD=CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab\r\n
+out:      CLOJARS_PASSWORD=«clojars-deploy-token»\r\n
+
+case:     a token in a markdown code span
+in:       `CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab`
+out:      `«clojars-deploy-token»`
+
+# The alphabet, which is lowercase hexadecimal: the class Clojars' own generator
+# leaves a body in, and the class its own answer to whether a value is token
+# shaped asks for. The case below writes the last letter of that class at the
+# first and the last character of a body, which the ordered run reaches at
+# neither end. A published ruleset reads this format as sixty characters of
+# letters and digits without regard to case, so the two that follow are what the
+# vendor's narrower reading turns away.
+
+case:     a body opening and closing on the last letter of the alphabet
+in:       CLOJARS_f0123456789abcdef0123456789abcdef0123456789abcdef0123456789f
+out:      «clojars-deploy-token»
+
+case:     an uppercase body
+in:       CLOJARS_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789AB
+out:      CLOJARS_0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789AB
+
+case:     a body carrying a letter past f
+in:       CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdez0123456789ab
+out:      CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdez0123456789ab
+
+# The count, which is thirty bytes written two characters to a byte. It is read
+# as a count and not as a floor, which cuts both ways: a body one character
+# short is located nowhere, and a run one character longer is a token with a
+# character written after it.
+
+case:     a body one character short
+in:       CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789a
+out:      CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789a
+
+case:     a run one character longer is a token and the character after it
+in:       CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abc
+out:      «clojars-deploy-token»c
+
+# What a token may be written against. There is no boundary on either side of
+# the prefix, so a token keeps its span whatever word character it abuts, and
+# what stands past the sixty-eighth character stays where it was written.
+
+case:     a token after a letter
+in:       xCLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      x«clojars-deploy-token»
+
+case:     a word written against a token
+in:       CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789absuffix
+out:      «clojars-deploy-token»suffix
+
+case:     a hyphenated word written against a token
+in:       CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab-suffix
+out:      «clojars-deploy-token»-suffix
+
+# Two tokens written together, and a token written inside a candidate. No
+# character of the prefix is a hexadecimal digit, so the prefix stands once in a
+# token and a second token can begin at no character of the first — the two
+# redactions below meet rather than overlap. The scan advances rather than
+# consuming its match all the same, and what that finds is the token standing
+# behind a candidate that is no token.
+
+case:     two tokens with nothing between them
+in:       CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abCLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      «clojars-deploy-token»«clojars-deploy-token»
+
+case:     a candidate whose body opens with a prefix
+in:       CLOJARS_CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      CLOJARS_«clojars-deploy-token»
+
+# The prefix as ordinary text writes it. Clojars names the deployment
+# environment variables with the same eight characters a token opens with, so
+# what turns those away is the body: an uppercase letter is no hexadecimal
+# digit, and the reading ends at the first character of the body.
+
+case:     the deployment environment variables
+in:       CLOJARS_USERNAME=example CLOJARS_PASSWORD=
+out:      CLOJARS_USERNAME=example CLOJARS_PASSWORD=
+
+case:     the environment variable the vendor's own service reads
+in:       CLOJARS_ENVIRONMENT=production
+out:      CLOJARS_ENVIRONMENT=production
+
+# And what this pattern leaves alone otherwise. A body of the right shape with
+# no prefix in front of it; the other secret Clojars keeps, a password reset
+# code being forty hexadecimal characters and no prefix at all; a digest written
+# behind the prefix; and the log line no pattern here has anything to find in.
+# No digest in common use is sixty hexadecimal characters, so a SHA-1 at forty
+# falls short of the count and is located nowhere, where a SHA-256 at sixty-four
+# is four characters past it and leaves those four in the text.
+
+case:     a body of the right shape opening with no prefix
+in:       0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+out:      0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab
+
+case:     a password reset code
+in:       0123456789abcdef0123456789abcdef01234567
+out:      0123456789abcdef0123456789abcdef01234567
+
+case:     a sha1 behind the prefix
+in:       CLOJARS_0123456789abcdef0123456789abcdef01234567
+out:      CLOJARS_0123456789abcdef0123456789abcdef01234567
+
+case:     a sha256 behind the prefix
+in:       CLOJARS_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+out:      «clojars-deploy-token»cdef
+
+case:     a log line
+in:       time=2026-08-17T00:00:00Z level=info msg="deploying" url=https://repo.clojars.org/org/example/example-lib/1.0.0/example-lib-1.0.0.jar
+out:      time=2026-08-17T00:00:00Z level=info msg="deploying" url=https://repo.clojars.org/org/example/example-lib/1.0.0/example-lib-1.0.0.jar

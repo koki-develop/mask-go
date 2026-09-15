@@ -38,6 +38,7 @@ var builtins = []Pattern{
 	axiomPersonalAccessToken,
 	buildkiteToken,
 	circleCIAPIToken,
+	clojarsDeployToken,
 	cloudflareAPIKey,
 	cloudflareAPIToken,
 	cloudflareOriginCAKey,
