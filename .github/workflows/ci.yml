@@ -50,10 +50,10 @@ jobs:
   # The packages are written out here rather than listed by a job of their own,
   # and the fuzz targets below are not. A matrix reads its rows from a job that
   # has finished, so a listing costs a runner booted, a toolchain installed and
-  # a checkout done in front of every job of the matrix — most of a minute
-  # ahead of a run of two and a half, which is the wall clock this split is for.
-  # The fuzzing pays that once for fifty-odd jobs it could not name by hand and
-  # which no wall clock waits on; two rows would pay it for two.
+  # a checkout done before the matrix starts at all — a delay taken out of the
+  # wall clock this split exists to cut. The fuzzing pays it once for targets it
+  # could not name by hand and which no wall clock waits on; a matrix this size
+  # would pay it to save spelling out its own rows.
   #
   # What the listing buys is that a package added to the module cannot go
   # untested, and the step below buys the same thing inside a job that is
@@ -62,7 +62,7 @@ jobs:
   # then fails the run rather than being quietly left out of it.
   test-race:
     name: test-race (${{ matrix.dir }})
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions:
       contents: read
     runs-on: ubuntu-latest
