@@ -1,0 +1,211 @@
+# What Astra DB application tokens the library redacts, and what it leaves
+# alone.
+#
+# A token is the prefix AstraCS:, twenty-four characters of client identifier, a
+# colon, and sixty-four of secret, ninety-seven characters in all. The
+# identifier here is the ordered run 0123456789 carried on through the alphabet
+# to twenty-four characters, 0123456789abcdefghijklmn, and the secret is the
+# same run to sixty-four, which reaches z and starts the alphabet again,
+# 0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr. No real
+# credential is either.
+#
+# Where a case turns on a character the run does not put there, the half writes
+# that character and carries the run everywhere else: the ones carrying the
+# hyphen and the underscore, and the ones carrying a character the alphabet
+# leaves out. A half opening and closing on an end of the alphabet writes that
+# end at both of its ends and carries the run between them, which is the run
+# shortened by two rather than shifted along: .betterleaks.toml says why a value
+# written here has to carry the run where a body begins.
+#
+# The placeholder is the one token built from no run at all, both of its halves
+# being a single repeated digit.
+
+patterns: astra-db-application-token
+
+# Where a token is written. DataStax hands one to its CLI, its SDKs and its APIs
+# as a single opaque string, so the places it stands are the places a string is
+# passed: an environment, a command line, a header, a config file.
+
+case:     a token in an environment assignment
+in:       ASTRA_DB_APPLICATION_TOKEN=AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      ASTRA_DB_APPLICATION_TOKEN=«astra-db-application-token»
+
+case:     a token exported from a dotenv file
+in:       export ASTRA_DB_APPLICATION_TOKEN="AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr"
+out:      export ASTRA_DB_APPLICATION_TOKEN="«astra-db-application-token»"
+
+case:     a token on the command line the cli takes one on
+in:       astra db list --token AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      astra db list --token «astra-db-application-token»
+
+case:     a token in the bearer header the devops api reads it from
+in:       Authorization: Bearer AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      Authorization: Bearer «astra-db-application-token»
+
+case:     a token in the config profile the cli writes
+in:       [default]\nASTRA_DB_APPLICATION_TOKEN=AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      [default]\nASTRA_DB_APPLICATION_TOKEN=«astra-db-application-token»
+
+case:     a token in json
+in:       {"token":"AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr"}
+out:      {"token":"«astra-db-application-token»"}
+
+case:     a token in yaml
+in:       astra:\n  application-token: AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      astra:\n  application-token: «astra-db-application-token»
+
+case:     a token in a container environment
+in:       docker run -e ASTRA_DB_APPLICATION_TOKEN=AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr app
+out:      docker run -e ASTRA_DB_APPLICATION_TOKEN=«astra-db-application-token» app
+
+case:     a token in a diff line
+in:       +ASTRA_DB_APPLICATION_TOKEN=AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      +ASTRA_DB_APPLICATION_TOKEN=«astra-db-application-token»
+
+case:     a token in a log line
+in:       time=2026-09-14T00:00:00Z level=error msg="request rejected" token=AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      time=2026-09-14T00:00:00Z level=error msg="request rejected" token=«astra-db-application-token»
+
+# The alphabet the two halves are read in. DataStax states none, so the wider of
+# the two this package declares is read: the letters of both cases, the digits,
+# the hyphen and the underscore.
+
+case:     a hyphen in the identifier and an underscore in the secret
+in:       AstraCS:0123456789ab-defghijklmn:0123456789abcdefghijklmnopqrstuv_xyz0123456789abcdefghijklmnopqr
+out:      «astra-db-application-token»
+
+case:     halves opening and closing on the last digit
+in:       AstraCS:90123456789abcdefghijkl9:90123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnop9
+out:      «astra-db-application-token»
+
+case:     halves opening and closing on the last uppercase letter
+in:       AstraCS:Z0123456789abcdefghijklZ:Z0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopZ
+out:      «astra-db-application-token»
+
+case:     halves opening and closing on the last lowercase letter
+in:       AstraCS:z0123456789abcdefghijklz:z0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopz
+out:      «astra-db-application-token»
+
+case:     the letter above the alphabet where the identifier opens
+in:       AstraCS:{123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      AstraCS:{123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+
+case:     the letter above the alphabet where the secret closes
+in:       AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopq{
+out:      AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopq{
+
+case:     a full stop in the secret
+in:       AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuv.xyz0123456789abcdefghijklmnopqr
+out:      AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuv.xyz0123456789abcdefghijklmnopqr
+
+# The counts, which are what put the divider where the scan reads it. DataStax
+# states the whole of a token at ninety-seven characters and the identifier at
+# twenty-four, so both are read exactly and neither is a floor.
+
+case:     an identifier one character short of the count
+in:       AstraCS:0123456789abcdefghijklm:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      AstraCS:0123456789abcdefghijklm:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+
+case:     an identifier one character past the count
+in:       AstraCS:0123456789abcdefghijklmno:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      AstraCS:0123456789abcdefghijklmno:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+
+case:     a character of the alphabet where the divider stands
+in:       AstraCS:0123456789abcdefghijklmn00123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      AstraCS:0123456789abcdefghijklmn00123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+
+case:     a run longer than the count is a token and what follows it
+in:       AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrs
+out:      «astra-db-application-token»s
+
+# The prefix is read as DataStax writes it, and it is the whole of what tells a
+# token from two runs written against a colon.
+
+case:     the prefix in lowercase
+in:       astracs:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      astracs:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+
+case:     the prefix in capitals
+in:       ASTRACS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      ASTRACS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+
+case:     a hyphen where the prefix closes on its colon
+in:       AstraCS-0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      AstraCS-0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+
+case:     the body of a token with no prefix in front of it
+in:       0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+
+# Nothing is asked of the character either side of a token. A demand in front
+# would drop the token a word character is written against rather than trim it,
+# and the counts being exact are what leave whatever follows a token in the
+# text.
+
+case:     a token after an underscore
+in:       ASTRA_DB_APPLICATION_TOKEN_AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      ASTRA_DB_APPLICATION_TOKEN_«astra-db-application-token»
+
+case:     a token after a letter
+in:       xAstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      x«astra-db-application-token»
+
+case:     a token at the end of a sentence
+in:       the token is AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr.
+out:      the token is «astra-db-application-token».
+
+case:     a token immediately against japanese on both sides
+in:       日本語AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr日本語
+out:      日本語«astra-db-application-token»日本語
+
+case:     a token against an invalid byte
+in:       \xffAstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      \xff«astra-db-application-token»
+
+# A candidate can open inside another, and an identifier closing on the prefix
+# is the one place it can: a half carries no colon, so the only colon a second
+# candidate can open against inside the first is the divider. The token here is
+# whole and the candidate opening inside it is not, so a stream holds the text
+# from that candidate on until enough arrives to decide it.
+
+case:     a token whose identifier closes on the prefix
+in:       AstraCS:0123456789abcdefgAstraCS:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      «astra-db-application-token»
+
+case:     a token beginning inside the candidate in front of it
+in:       AstraCS:0123456789abcdefgAstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      AstraCS:0123456789abcdefg«astra-db-application-token»
+
+case:     two tokens with nothing between them
+in:       AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrAstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      «astra-db-application-token»«astra-db-application-token»
+
+case:     two tokens separated by a space
+in:       AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr AstraCS:0123456789abcdefghijklmn:0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      «astra-db-application-token» «astra-db-application-token»
+
+# What the grammar takes on, and what it declines to be anchored on. A
+# placeholder written behind the prefix is a token's format character for
+# character and is redacted; the halves DataStax also issues separately carry no
+# prefix at all, and reading twenty-four or sixty-four characters of this
+# alphabet on their own would redact the identifiers a log is kept by.
+
+case:     a placeholder written behind the prefix
+in:       ASTRA_DB_APPLICATION_TOKEN=AstraCS:000000000000000000000000:0000000000000000000000000000000000000000000000000000000000000000
+out:      ASTRA_DB_APPLICATION_TOKEN=«astra-db-application-token»
+
+case:     the client identifier on its own
+in:       clientId=0123456789abcdefghijklmn
+out:      clientId=0123456789abcdefghijklmn
+
+case:     the secret on its own
+in:       secret=0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+out:      secret=0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr
+
+case:     an iso timestamp in a log line
+in:       time=2026-09-14T00:00:00Z level=info msg="astra db request finished" rows=12
+out:      time=2026-09-14T00:00:00Z level=info msg="astra db request finished" rows=12
+
+case:     a git sha
+in:       commit 0123456789abcdef0123456789abcdef01234567
+out:      commit 0123456789abcdef0123456789abcdef01234567

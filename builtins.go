@@ -31,6 +31,7 @@ var builtins = []Pattern{
 	ageSecretKey,
 	airtablePersonalAccessToken,
 	anthropicCredential,
+	astraDBApplicationToken,
 	awsAccessKeyID,
 	awsSecretAccessKey,
 	axiomAPIToken,
