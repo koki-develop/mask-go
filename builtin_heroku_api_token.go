@@ -151,7 +151,7 @@ func HerokuAPIToken() Pattern { return herokuAPIToken }
 // body's alphabet may hold a prefix at any of its characters, so no two
 // candidates can be told apart by where the run before them ended. What rules
 // out a quadratic input is the counts being counts — a candidate reads at most
-// sixty bytes and stops, whatever the run behind it runs to.
+// sixty-five bytes and stops, whatever the run behind it runs to.
 // Test_HerokuAPIToken_scanIsLinear drives the inputs that would find that
 // wrong.
 //

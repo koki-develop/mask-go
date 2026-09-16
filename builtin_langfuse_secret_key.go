@@ -135,7 +135,7 @@ func LangfuseSecretKey() Pattern { return langfuseSecretKey }
 // assumption.
 //
 // What rules out a quadratic input is the count being a count: a candidate
-// reads at most thirty-six bytes and stops, whatever the run behind it runs to,
+// reads at most forty-two bytes and stops, whatever the run behind it runs to,
 // so the scan keeps no cursor and needs none.
 // Test_LangfuseSecretKey_scanIsLinear drives the inputs that would find that
 // wrong.

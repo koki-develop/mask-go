@@ -111,7 +111,7 @@ func HuggingFaceUserAccessToken() Pattern { return huggingFaceUserAccessToken }
 // resolves them.
 //
 // The scan keeps no cursor and needs none: a candidate reads at most
-// thirty-four bytes and stops, which bounds what it reads with no state to be
+// thirty-seven bytes and stops, which bounds what it reads with no state to be
 // wrong about, and is what rules out a quadratic input.
 //
 // What this pattern over-matches on is thirty-four letters and digits written

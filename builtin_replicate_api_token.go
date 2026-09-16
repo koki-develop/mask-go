@@ -110,9 +110,9 @@ func ReplicateAPIToken() Pattern { return replicateAPIToken }
 // output whole. The two spans overlap where it happens, and Masker.locate
 // resolves them.
 //
-// The scan keeps no cursor and needs none: a candidate reads at most
-// thirty-seven bytes and stops, which bounds what it reads with no state to be
-// wrong about, and is what rules out a quadratic input.
+// The scan keeps no cursor and needs none: a candidate reads at most forty
+// bytes and stops, which bounds what it reads with no state to be wrong about,
+// and is what rules out a quadratic input.
 //
 // What this pattern over-matches on is thirty-seven letters and digits written
 // behind the prefix, which is the vendor's format exactly, and the shape worth
