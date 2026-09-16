@@ -85,8 +85,10 @@ type streamOptions struct {
 // generous enough that no credential written in one piece comes near it, and
 // zero holds without limit for a caller who would rather spend the memory. Any
 // n below zero is read as that same zero rather than as a limit no text can
-// come under, which is what strings.SplitN reads a negative count as and what a
-// caller computing the limit from a budget gets when the budget runs out.
+// come under, which is what a caller computing the limit from a budget gets
+// when the budget runs out. strings.SplitN reads a negative count as no limit
+// as well, though it spells that with the negative itself rather than with
+// zero.
 //
 // What is redacted after that is redacted a write at a time, since a stream
 // cannot hold the rest of itself back to redact it as one. Fill writes a rune
