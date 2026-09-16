@@ -738,11 +738,11 @@ func offsetsWorthDriving(src string, bounds [][2]int) []int {
 // two grows with every pattern and the detector multiplies the whole of it.
 // That is why the growth is not something a faster machine settles.
 //
-// CI gives the run under the detector ten minutes, and a run of it varies by
-// more than a tenth between two runs of the same commit — one such pair timed
-// out and passed. So what the budget has to hold is a spread rather than a
-// number, and a suite that fits only on its good runs does not fit. That is
-// what this is aimed well under the limit for rather than just inside it.
+// CI gives the run under the detector twenty minutes, and a run of it varies by
+// more than a tenth between two runs of the same commit. So what the budget has
+// to hold is a spread rather than a number, and a suite that fits only on its
+// good runs does not fit. That is what this is aimed well under the limit for
+// rather than just inside it.
 //
 // What moves under the detector is the scale and not the test, which is what
 // CLAUDE.md asks for. Every set and every case is still driven, and so are both

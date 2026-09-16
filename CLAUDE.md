@@ -77,7 +77,7 @@ Tools are pinned in `mise.toml`. `mise bootstrap` installs the git hooks.
   down there and the two runs do not cover the same thing. CI does both.
 
   The race run has a budget: CI gives each package a job of its own and each job
-  ten minutes on four cores. A set driven over every case at every offset is
+  twenty minutes on four cores. A set driven over every case at every offset is
   where that goes, so measure `GOMAXPROCS=4 go test -race ./<package>` either
   side of widening one.
 - `go test ./conformance -update` — regenerate the conformance corpus and check

@@ -119,7 +119,7 @@ any other way is read and its cases run — nothing about the suite would fail.
 - Which offsets of a case those two drive it at is `offsetsDriven`'s
   (`properties_test.go`), and it is every one of them without the race detector
   and a sample with it. That is where the run under the detector is kept inside
-  the ten minutes CI gives it, and the file says why sampling there loses
+  the twenty minutes CI gives it, and the file says why sampling there loses
   nothing the run without the detector does not still cover. A property added
   here that walks a case offset by offset reads `offsetsDriven` rather than
   `len(c.in) + 1`, or the next pattern added puts the budget back over.
