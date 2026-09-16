@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.0](https://github.com/koki-develop/mask-go/compare/v0.5.0...v0.6.0) (2026-09-16)
+
+
+### Features
+
+* Locate the API keys Harness issues ([#97](https://github.com/koki-develop/mask-go/issues/97)) ([#182](https://github.com/koki-develop/mask-go/issues/182)) ([65de66d](https://github.com/koki-develop/mask-go/commit/65de66d93967c7a80f86db50b0c05252af3fcc4c))
+* Locate the API keys Honeycomb issues ([#96](https://github.com/koki-develop/mask-go/issues/96)) ([#180](https://github.com/koki-develop/mask-go/issues/180)) ([3a5c694](https://github.com/koki-develop/mask-go/commit/3a5c69477a097682058732536c406892a72a8be7))
+* Locate the API keys OneSignal issues ([#106](https://github.com/koki-develop/mask-go/issues/106)) ([#181](https://github.com/koki-develop/mask-go/issues/181)) ([630d2ee](https://github.com/koki-develop/mask-go/commit/630d2ee70f18b097171a6fad9005699e773aab44))
+* Locate the API tokens Axiom issues ([#142](https://github.com/koki-develop/mask-go/issues/142)) ([#175](https://github.com/koki-develop/mask-go/issues/175)) ([fb4f3b4](https://github.com/koki-develop/mask-go/commit/fb4f3b43416f144828a750645fab673dea41417d))
+* Locate the application tokens DataStax issues for Astra DB ([#85](https://github.com/koki-develop/mask-go/issues/85)) ([#183](https://github.com/koki-develop/mask-go/issues/183)) ([91c8a1b](https://github.com/koki-develop/mask-go/commit/91c8a1b26fd59299ca327252f9d0b509e9644de1))
+* Locate the deploy tokens Clojars issues ([#79](https://github.com/koki-develop/mask-go/issues/79)) ([#184](https://github.com/koki-develop/mask-go/issues/184)) ([b248501](https://github.com/koki-develop/mask-go/commit/b2485017b8b5ed8644177d84202f14ed797e8758))
+* Locate the Origin CA keys Cloudflare issues ([#116](https://github.com/koki-develop/mask-go/issues/116)) ([#177](https://github.com/koki-develop/mask-go/issues/177)) ([9b0ac3b](https://github.com/koki-develop/mask-go/commit/9b0ac3b7a5bfa4daebacf75ec75ffe5fcad7f7b3))
+* Locate the private API keys Klaviyo issues ([#146](https://github.com/koki-develop/mask-go/issues/146)) ([#176](https://github.com/koki-develop/mask-go/issues/176)) ([5dce8f2](https://github.com/koki-develop/mask-go/commit/5dce8f28dbbd37b369a5fe05044797e7a45c9d9f))
+* Locate the secret keys Langfuse issues ([#78](https://github.com/koki-develop/mask-go/issues/78)) ([#179](https://github.com/koki-develop/mask-go/issues/179)) ([44813fa](https://github.com/koki-develop/mask-go/commit/44813facca664bc3e9df10689e3e1be996aae8db))
+
 ## [0.5.0](https://github.com/koki-develop/mask-go/compare/v0.4.0...v0.5.0) (2026-09-11)
 
 
