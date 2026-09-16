@@ -1742,6 +1742,9 @@ func TestWriter_dstPartialWriteWithAnError(t *testing.T) {
 	// A write reporting (n > 0, err) is a failure the same as one reporting
 	// (0, err): the stream stands where the failed write left it, so nothing
 	// after the partial bytes it did take reaches dst.
+	if got := dst.buf.String(); got != "abc" {
+		t.Errorf("dst holds %q, want only the bytes the partial write took", got)
+	}
 	if dst.calls != 1 {
 		t.Errorf("dst.Write was called %d time(s) after a partial failure, want 1", dst.calls)
 	}
