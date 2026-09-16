@@ -72,10 +72,10 @@ func SlackToken() Pattern { return slackToken }
 // documents no alphabet — but it is a small one, and smaller than the shape of
 // the secrets makes it look: the shortest secret Slack's own examples carry is
 // twenty-four characters of mixed case and digits, where all digits is one
-// chance in something like ten to the nineteen, and the narrowest is
-// thirty-two of hexadecimal, where it is one in a million and a half. Against
-// that stands every eighteen digit identifier written after a prefix, which
-// exists today.
+// chance in something like ten to the nineteen, and the narrowest is thirty-two
+// of hexadecimal, where it is one in three and a half million. Against that
+// stands every eighteen digit identifier written after a prefix, which exists
+// today.
 //
 // That the secret may not be the first segment is what keeps a bare digest out.
 // Every Slack token Slack's own examples show carries at least one part
