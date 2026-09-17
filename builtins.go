@@ -112,6 +112,7 @@ var builtins = []Pattern{
 	supabaseSecretKey,
 	tailscaleKey,
 	telegramAuthenticationToken,
+	tencentCloudSecretID,
 	typeformPersonalAccessToken,
 	xaiAPIKey,
 }

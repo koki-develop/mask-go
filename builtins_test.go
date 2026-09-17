@@ -1266,6 +1266,22 @@ var builtinPatterns = []struct {
 		benchmarks: telegramAuthenticationTokenFindBenchmarks,
 	},
 	{
+		name:    "tencentcloud-secret-id",
+		pattern: TencentCloudSecretID,
+		ref:     referenceTencentCloudSecretIDFind,
+		samples: []string{
+			"TENCENTCLOUD_SECRET_ID=AKID0123456789abcdefghijklmnopqrstuv",
+			"AKID0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr",
+			"AKID0123456789abcdef-123456789abcdef_123456789abcdefghijklmnopqrstuv",
+			// A SecretId opening inside the body of the one in front of it, so
+			// the two spans overlap and are resolved into one redaction.
+			"AKIDAKID0123456789abcdefghijklmnopqrstuv",
+			"AKID0123456789abcdefghijklmnopqrstuvAKID0123456789abcdefghijklmnopqrstuv",
+		},
+		anchors:    []string{"AKID0123456789abcdefghijklmnopqrstu"},
+		benchmarks: tencentCloudSecretIDFindBenchmarks,
+	},
+	{
 		name:    "typeform-personal-access-token",
 		pattern: TypeformPersonalAccessToken,
 		ref:     referenceTypeformPersonalAccessTokenFind,
