@@ -65,6 +65,7 @@ var vendorAccessors = map[string]func() []Pattern{
 	"LinearPatterns":       LinearPatterns,
 	"MailchimpPatterns":    MailchimpPatterns,
 	"MailerSendPatterns":   MailerSendPatterns,
+	"MongoDBPatterns":      MongoDBPatterns,
 	"NeonPatterns":         NeonPatterns,
 	"NetlifyPatterns":      NetlifyPatterns,
 	"NewRelicPatterns":     NewRelicPatterns,
@@ -409,6 +410,7 @@ var vendorPatternPrefixExceptions = map[string][]string{
 	"DataStaxPatterns":    {"astra-db-application-token"},
 	"FlyIOPatterns":       {"fly-io-access-token"},
 	"HashiCorpPatterns":   {"hashicorp-vault-token", "hcp-terraform-api-token"},
+	"MongoDBPatterns":     {"atlas-service-account-secret"},
 	"OnePasswordPatterns": {"1password-service-account-token"},
 }
 
