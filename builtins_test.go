@@ -1251,6 +1251,22 @@ var builtinPatterns = []struct {
 		benchmarks: telegramAuthenticationTokenFindBenchmarks,
 	},
 	{
+		name:    "typeform-personal-access-token",
+		pattern: TypeformPersonalAccessToken,
+		ref:     referenceTypeformPersonalAccessTokenFind,
+		samples: []string{
+			"TYPEFORM_TOKEN=tfp_0123456789abcdefghijklmnopqrstuvwxyz0123",
+			"tfp_0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklm",
+			"tfp_0123456789abcdefghijklmnopqrstuvwxyz0123_456789ab",
+			"tfp_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123",
+			// A token beginning inside the body of the one in front of it, so
+			// the two spans overlap and are resolved into one redaction.
+			"tfp_tfp_0123456789abcdefghijklmnopqrstuvwxyz0123",
+		},
+		anchors:    []string{"tfp_0123456789abcdef"},
+		benchmarks: typeformPersonalAccessTokenFindBenchmarks,
+	},
+	{
 		name:    "xai-api-key",
 		pattern: XAIAPIKey,
 		ref:     referenceXAIAPIKeyFind,

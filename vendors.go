@@ -447,6 +447,12 @@ func TailscalePatterns() []Pattern { return []Pattern{tailscaleKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func TelegramPatterns() []Pattern { return []Pattern{telegramAuthenticationToken} }
 
+// TypeformPatterns returns every built-in pattern that locates a credential
+// Typeform issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func TypeformPatterns() []Pattern { return []Pattern{typeformPersonalAccessToken} }
+
 // XAIPatterns returns every built-in pattern that locates a credential xAI
 // issues.
 //

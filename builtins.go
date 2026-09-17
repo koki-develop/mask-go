@@ -111,5 +111,6 @@ var builtins = []Pattern{
 	supabaseSecretKey,
 	tailscaleKey,
 	telegramAuthenticationToken,
+	typeformPersonalAccessToken,
 	xaiAPIKey,
 }
