@@ -1,0 +1,102 @@
+# What Typeform personal access tokens the library redacts, and what it leaves
+# alone. Typeform writes one prefix for this credential, tfp_, and the body
+# behind it is read as a floor of forty letters, digits and underscores, run on
+# to wherever that run ends: the sources this format rests on disagree on its
+# width, so a body has none of its own to stop at.
+#
+# That reading is what the last group of cases is about. A token written against
+# more of the alphabet is redacted together with what it was written against,
+# because nothing in the text divides the two; ordinary punctuation ends a run
+# and is left alone.
+#
+# Every token here is built from the ordered run
+# 0123456789abcdefghijklmnopqrstuvwxyz, which no real credential is: that run and
+# 0123 behind it come to a body of forty. The case written in uppercase carries a
+# run of its own instead, the digits and then the uppercase letters ascending,
+# since the run above holds no uppercase letter.
+
+patterns: typeform-personal-access-token
+
+# The places a token is written: the environment a script reads it from, the
+# header Typeform's documentation passes it in, the command that documentation
+# makes its first request with, and a response body carrying one.
+
+case:     a token in an environment assignment
+in:       TYPEFORM_TOKEN=tfp_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      TYPEFORM_TOKEN=«typeform-personal-access-token»
+
+case:     a token in a bearer header
+in:       Authorization: Bearer tfp_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      Authorization: Bearer «typeform-personal-access-token»
+
+case:     a token in the command that makes a first request
+in:       curl -H 'Authorization: Bearer tfp_0123456789abcdefghijklmnopqrstuvwxyz0123' https://api.typeform.com/me
+out:      curl -H 'Authorization: Bearer «typeform-personal-access-token»' https://api.typeform.com/me
+
+case:     a token in json
+in:       {"token":"tfp_0123456789abcdefghijklmnopqrstuvwxyz0123"}
+out:      {"token":"«typeform-personal-access-token»"}
+
+case:     a token between tabs
+in:       field\ttfp_0123456789abcdefghijklmnopqrstuvwxyz0123\tnext
+out:      field\t«typeform-personal-access-token»\tnext
+
+case:     a token followed by crlf
+in:       TYPEFORM_TOKEN=tfp_0123456789abcdefghijklmnopqrstuvwxyz0123\r\n
+out:      TYPEFORM_TOKEN=«typeform-personal-access-token»\r\n
+
+# Bodies the alphabet admits that the run above does not reach: an underscore
+# inside one, which is the shape Typeform's own detection rule reads, and the
+# uppercase letters.
+
+case:     a body divided by an underscore
+in:       TYPEFORM_TOKEN=tfp_0123456789abcdefghijklmnopqrstuvwxyz0123_456789ab
+out:      TYPEFORM_TOKEN=«typeform-personal-access-token»
+
+case:     a body of uppercase letters
+in:       TYPEFORM_TOKEN=tfp_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123
+out:      TYPEFORM_TOKEN=«typeform-personal-access-token»
+
+# What the floor costs and what bounds it. A token standing in front of more of
+# the alphabet is redacted to the end of that run, since the body has no width to
+# end at; a character outside the alphabet ends the run and stays in the text.
+
+case:     a word joined to a token by an underscore
+in:       tfp_0123456789abcdefghijklmnopqrstuvwxyz0123_suffix
+out:      «typeform-personal-access-token»
+
+case:     a token at the end of a sentence
+in:       the token is tfp_0123456789abcdefghijklmnopqrstuvwxyz0123.
+out:      the token is «typeform-personal-access-token».
+
+case:     a token in a query string
+in:       ?token=tfp_0123456789abcdefghijklmnopqrstuvwxyz0123&page=2
+out:      ?token=«typeform-personal-access-token»&page=2
+
+# What the pattern leaves alone: a body short of the floor, the prefix written in
+# another case or with another separator, and the vendor's own name, which
+# carries the byte the scan searches the input for.
+
+case:     a body one character short of the floor
+in:       TYPEFORM_TOKEN=tfp_0123456789abcdefghijklmnopqrstuvwxyz012
+out:      TYPEFORM_TOKEN=tfp_0123456789abcdefghijklmnopqrstuvwxyz012
+
+case:     an uppercase prefix
+in:       TYPEFORM_TOKEN=TFP_0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      TYPEFORM_TOKEN=TFP_0123456789abcdefghijklmnopqrstuvwxyz0123
+
+case:     a hyphen where the prefix carries its underscore
+in:       TYPEFORM_TOKEN=tfp-0123456789abcdefghijklmnopqrstuvwxyz0123
+out:      TYPEFORM_TOKEN=tfp-0123456789abcdefghijklmnopqrstuvwxyz0123
+
+case:     a body broken by a space
+in:       TYPEFORM_TOKEN=tfp_0123456789abcdefghijklmnopqrstuvwxy 0123
+out:      TYPEFORM_TOKEN=tfp_0123456789abcdefghijklmnopqrstuvwxy 0123
+
+case:     the vendor's name in a url
+in:       GET https://api.typeform.com/forms/abc123/responses
+out:      GET https://api.typeform.com/forms/abc123/responses
+
+case:     prose naming the credential
+in:       generate a personal access token from your account settings
+out:      generate a personal access token from your account settings
