@@ -115,6 +115,21 @@ var builtinPatterns = []struct {
 		benchmarks: astraDBApplicationTokenFindBenchmarks,
 	},
 	{
+		name:    "atlas-service-account-secret",
+		pattern: AtlasServiceAccountSecret,
+		ref:     referenceAtlasServiceAccountSecretFind,
+		samples: []string{
+			"MONGODB_ATLAS_CLIENT_SECRET=mdb_sa_sk_0123456789abcdefghijklmnopqrstuvwxyz0123",
+			"mdb_sa_sk_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123",
+			"mdb_sa_sk_-123456789abcdefghijklmnopqrstuvwxyz012_",
+			"mdb_sa_sk_mdb_sa_sk_0123456789abcdefghijklmnopqrstuvwxyz0123",
+			"mdb_sa_sk_0123456789abcdefghijklmnopqrstuvwxyz0123mdb_sa_sk_0123456789abcdefghijklmnopqrstuvwxyz0123",
+			"mdb_sa_sk_0123456789abcdefghijklmnopqrstuvwxyz0123 mdb_sa_sk_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123",
+		},
+		anchors:    []string{"mdb_sa_sk_0123456789abcdef"},
+		benchmarks: atlasServiceAccountSecretFindBenchmarks,
+	},
+	{
 		name:    "aws-access-key-id",
 		pattern: AWSAccessKeyID,
 		ref:     referenceAWSAccessKeyIDFind,

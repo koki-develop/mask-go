@@ -32,6 +32,7 @@ var builtins = []Pattern{
 	airtablePersonalAccessToken,
 	anthropicCredential,
 	astraDBApplicationToken,
+	atlasServiceAccountSecret,
 	awsAccessKeyID,
 	awsSecretAccessKey,
 	axiomAPIToken,

@@ -233,6 +233,12 @@ func MailchimpPatterns() []Pattern { return []Pattern{mailchimpAPIKey} }
 // The returned slice is freshly allocated and may be modified by the caller.
 func MailerSendPatterns() []Pattern { return []Pattern{mailerSendAPIToken} }
 
+// MongoDBPatterns returns every built-in pattern that locates a credential
+// MongoDB issues.
+//
+// The returned slice is freshly allocated and may be modified by the caller.
+func MongoDBPatterns() []Pattern { return []Pattern{atlasServiceAccountSecret} }
+
 // NeonPatterns returns every built-in pattern that locates a credential Neon
 // issues.
 //

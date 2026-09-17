@@ -35,7 +35,7 @@ m := mask.New(mask.WithPatterns(slices.Concat(
 
 ## Built-in patterns
 
-The 85 built-in patterns cover 72 vendors and locate 192 kinds of credential:
+The 86 built-in patterns cover 73 vendors and locate 193 kinds of credential:
 
 | Accessor | Locates |
 | --- | --- |
@@ -75,6 +75,7 @@ The 85 built-in patterns cover 72 vendors and locate 192 kinds of credential:
 | `LinearPatterns() []Pattern` | Linear personal API keys |
 | `MailchimpPatterns() []Pattern` | Mailchimp API keys |
 | `MailerSendPatterns() []Pattern` | MailerSend API tokens |
+| `MongoDBPatterns() []Pattern` | Atlas service account secrets |
 | `NeonPatterns() []Pattern` | Neon personal API keys, organization API keys, project-scoped API keys |
 | `NetlifyPatterns() []Pattern` | Netlify personal access tokens, Netlify CLI tokens, OAuth access tokens, app.netlify.com tokens, build tokens |
 | `NewRelicPatterns() []Pattern` | New Relic user keys |
