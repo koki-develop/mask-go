@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0](https://github.com/koki-develop/mask-go/compare/v0.6.0...v0.7.0) (2026-09-17)
+
+
+### Features
+
+* Locate the personal access tokens Typeform issues ([#77](https://github.com/koki-develop/mask-go/issues/77)) ([#186](https://github.com/koki-develop/mask-go/issues/186)) ([c84d621](https://github.com/koki-develop/mask-go/commit/c84d621cd59b86f8d24a0ecf14188d4f58555d2c))
+* Locate the SecretIds Tencent Cloud issues ([#84](https://github.com/koki-develop/mask-go/issues/84)) ([#189](https://github.com/koki-develop/mask-go/issues/189)) ([cb42610](https://github.com/koki-develop/mask-go/commit/cb42610c0ef71cc8b2122e5c91439684082bddd7))
+* Locate the service account secrets MongoDB issues for Atlas ([#82](https://github.com/koki-develop/mask-go/issues/82)) ([#188](https://github.com/koki-develop/mask-go/issues/188)) ([4c6c0f3](https://github.com/koki-develop/mask-go/commit/4c6c0f34b355eb5f41547447cc64a54a494f6d42))
+
 ## [0.6.0](https://github.com/koki-develop/mask-go/compare/v0.5.0...v0.6.0) (2026-09-16)
 
 
