@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
         with:
           cache: save
       # Without the detector, deliberately. The race detector allocates on
@@ -87,7 +87,7 @@ jobs:
       # race for the key on the first run after the toolchain moves and none of
       # them after: actions/cache writes nothing back where it restored an exact
       # hit, so once one of them has filled it the rest only read it.
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
         with:
           cache: save
           build: race
@@ -144,7 +144,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
       - name: List every fuzz target
         id: list
         run: |
@@ -200,7 +200,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
       # A plain go test runs a fuzz target over its corpus alone, which is the
       # inputs someone thought of. Every target is given a little time to look
       # for the ones nobody did.
@@ -312,7 +312,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
       - run: go build
 
   lint:
@@ -324,7 +324,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
       - name: Check that every file is formatted
         run: |
           unformatted=$(gofmt -l .)
@@ -345,5 +345,5 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
       - run: betterleaks git
