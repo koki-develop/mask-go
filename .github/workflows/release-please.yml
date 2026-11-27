@@ -50,7 +50,7 @@ jobs:
         with:
           persist-credentials: false
       # Restore only: nothing here is compiled.
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
         with:
           cache: restore
       - name: Notify the module index
